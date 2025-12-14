@@ -1,5 +1,5 @@
 // frontend/src/pages/Messages.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
 
@@ -19,7 +19,10 @@ export default function Messages() {
   const [messages, setMessages] = useState([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
 
+  const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
+
+  const messagesEndRef = useRef(null);
 
   /* =====================================================
      HELPERS
@@ -44,6 +47,10 @@ export default function Messages() {
       avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
     };
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   /* =====================================================
@@ -93,15 +100,17 @@ export default function Messages() {
   /* =====================================================
      LOAD CONVERSATION
   ===================================================== */
-  const loadConversation = async (userId) => {
-    if (!userId) return;
+  const loadConversation = async (user) => {
+    if (!user?._id) return;
+
+    setActiveChat(user);
+    setMessages([]);
 
     try {
       setLoadingConversation(true);
-      setMessages([]);
 
       const res = await fetch(
-        `${API_URL}/messages/conversation/${userId}`,
+        `${API_URL}/messages/conversation/${user._id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -110,21 +119,69 @@ export default function Messages() {
       );
 
       const data = await res.json();
-
-      if (!res.ok) {
-        console.error(data);
-        setMessages([]);
-        return;
-      }
-
       setMessages(Array.isArray(data) ? data : []);
+
+      // marquer lus
+      fetch(`${API_URL}/messages/read-all/${user._id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     } catch (err) {
       console.error("Erreur conversation", err);
       setMessages([]);
     } finally {
       setLoadingConversation(false);
+      setTimeout(scrollToBottom, 50);
     }
   };
+
+  /* =====================================================
+     SEND MESSAGE
+  ===================================================== */
+  const sendMessage = async () => {
+    if (!input.trim() || !activeChat) return;
+
+    const content = input.trim();
+    setInput("");
+
+    const tempMessage = {
+      _id: "temp-" + Date.now(),
+      sender: me?._id,
+      receiver: activeChat._id,
+      content,
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+    setTimeout(scrollToBottom, 10);
+
+    try {
+      const res = await fetch(`${API_URL}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiver: activeChat._id,
+          content,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data?.data) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === tempMessage._id ? data.data : m))
+        );
+      }
+    } catch (err) {
+      console.error("Erreur envoi message", err);
+    }
+  };
+
+  useEffect(scrollToBottom, [messages]);
 
   /* =====================================================
      UI
@@ -169,10 +226,7 @@ export default function Messages() {
               className={`conversation-item ${
                 activeChat?._id === friend._id ? "active" : ""
               }`}
-              onClick={() => {
-                setActiveChat(friend);
-                loadConversation(friend._id);
-              }}
+              onClick={() => loadConversation(friend)}
             >
               <img
                 src={friend.avatar}
@@ -268,6 +322,25 @@ export default function Messages() {
                     </div>
                   );
                 })}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* INPUT */}
+            <div className="chat-input-bar">
+              <input
+                className="chat-input"
+                placeholder="Message..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              />
+              <button
+                className="chat-send-btn"
+                onClick={sendMessage}
+              >
+                Envoyer
+              </button>
             </div>
           </>
         )}
