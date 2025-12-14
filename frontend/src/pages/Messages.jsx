@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import ConversationItem from "../components/ConversationItem";
 import VideoCallOverlay from "../components/VideoCallOverlay";
+import { fetchFriends } from "../api/socialApi";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 
@@ -17,10 +18,13 @@ export default function Messages() {
 
   const [loadingInbox, setLoadingInbox] = useState(true);
   const [loadingConversation, setLoadingConversation] = useState(false);
+  const [loadingFriends, setLoadingFriends] = useState(false);
 
   const [inbox, setInbox] = useState([]);
   const [messages, setMessages] = useState([]);
   const [error, setError] = useState("");
+  const [friends, setFriends] = useState([]);
+  const [friendsError, setFriendsError] = useState("");
 
   const [callVisible, setCallVisible] = useState(false);
   const [callMode, setCallMode] = useState(null);
@@ -226,6 +230,30 @@ export default function Messages() {
   }, [fetchInbox]);
 
   /* ============================================================
+     FETCH FRIENDS
+  ============================================================ */
+  const fetchFriendsList = useCallback(async () => {
+    if (!token) return;
+
+    setLoadingFriends(true);
+    setFriendsError("");
+
+    try {
+      const list = await fetchFriends();
+      setFriends(list);
+    } catch (err) {
+      setFriendsError(err.message || "Erreur récupération amis");
+      setFriends([]);
+    } finally {
+      setLoadingFriends(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchFriendsList();
+  }, [fetchFriendsList]);
+
+  /* ============================================================
      OUVRIR CONVERSATION
   ============================================================ */
   const openChat = async (conv) => {
@@ -236,6 +264,18 @@ export default function Messages() {
 
     await fetchConversation(conv.user._id);
     await markAllRead(conv.user._id);
+  };
+
+  const openFriendChat = (friend) => {
+    if (!friend?._id) return;
+
+    const existingConv = inbox.find((c) => c.user?._id === friend._id);
+    if (existingConv) {
+      openChat(existingConv);
+      return;
+    }
+
+    openChat({ user: friend, lastMessage: null, unreadCount: 0 });
   };
 
   /* ============================================================
@@ -382,6 +422,34 @@ export default function Messages() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+
+          <div className="friends-section">
+            <div className="section-title">Vos amis</div>
+
+            {loadingFriends ? (
+              <div className="skeleton-wrapper">
+                <div className="skeleton-item"></div>
+                <div className="skeleton-item"></div>
+              </div>
+            ) : friendsError ? (
+              <div className="empty-state">{friendsError}</div>
+            ) : friends.length === 0 ? (
+              <div className="empty-state">Aucun ami pour le moment.</div>
+            ) : (
+              <div className="conversations-list">
+                {friends.map((friend) => (
+                  <ConversationItem
+                    key={friend._id}
+                    name={friend.name}
+                    avatar={friend.avatar}
+                    isOnline={onlineUserIds.includes(friend._id)}
+                    last="Démarrer une conversation"
+                    onClick={() => openFriendChat(friend)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {loadingInbox ? (
