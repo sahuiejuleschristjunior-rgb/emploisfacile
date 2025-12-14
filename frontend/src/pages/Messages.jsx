@@ -1,18 +1,14 @@
 // frontend/src/pages/Messages.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import "../styles/messages.css";
 
 export default function Messages() {
-  // =====================================================
-  // STATE
-  // =====================================================
   const [activeChat, setActiveChat] = useState(false);
 
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
-      {/* =====================================================
-          LEFT COLUMN — LISTE DES DISCUSSIONS
-      ===================================================== */}
+      
+      {/* ================= LEFT COLUMN ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
           <h2>Messages</h2>
@@ -26,29 +22,29 @@ export default function Messages() {
         </div>
 
         <div className="messages-list">
-          {/* Placeholder — sera remplacé par les amis */}
           <div
             className="messages-empty"
             onClick={() => setActiveChat(true)}
           >
-            Aucun ami ou conversation
-            <br />
-            <small>(tap ici pour ouvrir le chat)</small>
+            Aucun ami ou conversation  
+            <span>(tap ici pour ouvrir le chat)</span>
           </div>
         </div>
       </aside>
 
-      {/* =====================================================
-          RIGHT COLUMN — CONTENU DU CHAT
-      ===================================================== */}
+      {/* ================= RIGHT COLUMN ================= */}
       <main className="messages-content">
-        {/* Bouton retour (mobile uniquement) */}
-        <button
-          className="mobile-back-btn"
-          onClick={() => setActiveChat(false)}
-        >
-          ←
-        </button>
+        
+        {/* HEADER CHAT (mobile only) */}
+        <div className="messages-chat-header">
+          <button
+            className="messages-back"
+            onClick={() => setActiveChat(false)}
+          >
+            ←
+          </button>
+          <span>Sélectionne une conversation</span>
+        </div>
 
         <div className="messages-placeholder">
           <h3>Sélectionne une conversation</h3>
@@ -56,6 +52,7 @@ export default function Messages() {
             Choisis un ami ou une discussion pour commencer à échanger.
           </p>
         </div>
+
       </main>
     </div>
   );
