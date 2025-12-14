@@ -602,3 +602,60 @@
     font-size: 20px;
   }
 }
+.messages-page {
+  display: flex;
+  height: 100vh;
+  background: #18191a;
+  color: #e4e6eb;
+}
+
+/* LEFT */
+.messages-sidebar {
+  width: 360px;
+  background: #242526;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #3a3b3c;
+}
+
+.messages-sidebar-header {
+  padding: 16px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.messages-search {
+  padding: 0 16px 12px;
+}
+
+.messages-search input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 20px;
+  border: none;
+  background: #3a3b3c;
+  color: #fff;
+}
+
+.messages-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.messages-empty {
+  padding: 20px;
+  opacity: 0.6;
+}
+
+/* RIGHT */
+.messages-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.messages-placeholder {
+  text-align: center;
+  opacity: 0.7;
+}
