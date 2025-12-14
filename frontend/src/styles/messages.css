@@ -327,3 +327,55 @@
     justify-content: center;
   }
 }
+/* =========================
+   MESSAGES ALIGNMENT
+========================= */
+
+.chat-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Ligne de message */
+.message-row {
+  display: flex;
+  width: 100%;
+}
+
+/* Message reçu */
+.message-row.other {
+  justify-content: flex-start;
+}
+
+/* Message envoyé */
+.message-row.me {
+  justify-content: flex-end;
+}
+
+/* Bulle commune */
+.message-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+/* Bulle reçue */
+.message-row.other .message-bubble {
+  background: #2a2a2a;
+  color: #fff;
+  border-bottom-left-radius: 6px;
+}
+
+/* Bulle envoyée */
+.message-row.me .message-bubble {
+  background: #1877f2;
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}
