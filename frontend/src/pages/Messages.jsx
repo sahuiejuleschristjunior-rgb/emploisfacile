@@ -6,7 +6,26 @@ export default function Messages() {
   // =====================================================
   // STATE
   // =====================================================
-  const [activeChat, setActiveChat] = useState(false);
+  const [activeChat, setActiveChat] = useState(null);
+
+  // =====================================================
+  // MOCK AMIS (temporaire)
+  // sera remplacé par l'API plus tard
+  // =====================================================
+  const friends = [
+    {
+      id: 1,
+      name: "Jean Dupont",
+      avatar: "https://i.pravatar.cc/150?img=3",
+      lastMessage: "Salut, ça va ?",
+    },
+    {
+      id: 2,
+      name: "Marie Kouassi",
+      avatar: "https://i.pravatar.cc/150?img=5",
+      lastMessage: "On se parle plus tard",
+    },
+  ];
 
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
@@ -27,30 +46,72 @@ export default function Messages() {
         </div>
 
         <div className="messages-list">
-          {/* Placeholder — sera remplacé par les amis */}
-          <div
-            className="messages-empty"
-            onClick={() => setActiveChat(true)}
-          >
-            Aucun ami ou conversation
-            <br />
-            <small>(choisis un ami pour echanger)</small>
-          </div>
+          {friends.map((friend) => (
+            <div
+              key={friend.id}
+              className={`conversation-item ${
+                activeChat?.id === friend.id ? "active" : ""
+              }`}
+              onClick={() => setActiveChat(friend)}
+            >
+              <img
+                src={friend.avatar}
+                alt={friend.name}
+                className="conversation-avatar"
+              />
+
+              <div className="conversation-info">
+                <div className="conversation-name">
+                  {friend.name}
+                </div>
+                <div className="conversation-last-message">
+                  {friend.lastMessage}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </aside>
 
       {/* =====================================================
-          RIGHT COLUMN — CONTENU DU CHAT
+          RIGHT COLUMN — CHAT
       ===================================================== */}
       <main className="messages-content">
-        <div className="messages-placeholder">
-          <h3>Sélectionne une conversation</h3>
-          <p>
-            Choisis un ami ou une discussion pour commencer à échanger.
-          </p>
-        </div>
-      </main>
+        {!activeChat ? (
+          <div className="messages-placeholder">
+            <h3>Sélectionne une conversation</h3>
+            <p>
+              Choisis un ami ou une discussion pour commencer à échanger.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* ================= HEADER DU CHAT ================= */}
+            <div className="chat-header">
+              <img
+                src={activeChat.avatar}
+                alt={activeChat.name}
+                className="chat-avatar"
+              />
+              <div className="chat-user-info">
+                <div className="chat-username">
+                  {activeChat.name}
+                </div>
+                <div className="chat-status">
+                  En ligne
+                </div>
+              </div>
+            </div>
 
+            {/* ================= BODY DU CHAT ================= */}
+            <div className="chat-body">
+              <div className="chat-empty">
+                Aucun message pour le moment
+              </div>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
