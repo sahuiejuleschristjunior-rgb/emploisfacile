@@ -3,25 +3,28 @@ import { useEffect, useMemo, useState } from "react";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
 
+const API_URL = import.meta.env.VITE_API_URL;
+const token = localStorage.getItem("token");
+const me = JSON.parse(localStorage.getItem("user"));
+
 export default function Messages() {
   /* =====================================================
      STATE
   ===================================================== */
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
-  const [activeChat, setActiveChat] = useState(null);
-  const [search, setSearch] = useState("");
   const [errorFriends, setErrorFriends] = useState("");
+
+  const [activeChat, setActiveChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loadingConversation, setLoadingConversation] = useState(false);
+
+  const [search, setSearch] = useState("");
 
   /* =====================================================
      HELPERS
   ===================================================== */
   const normalizeFriend = (f) => {
-    // f peut être:
-    // 1) { user: { _id, name, avatar }, category }
-    // 2) { user: "ObjectId", category }
-    // 3) parfois { _id, name, avatar } (si tu changes côté API plus tard)
-
     const userObj =
       f && typeof f.user === "object" && f.user
         ? f.user
@@ -39,15 +42,13 @@ export default function Messages() {
       _id: userId,
       name: userObj?.name || f?.name || "Utilisateur",
       avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
-      // compat: parfois tu avais relationCategory au lieu de category
-      category: f?.category || f?.relationCategory || "public",
-      lastMessage: f?.lastMessage || null,
+      category: f?.category || "public",
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
     };
   };
 
   /* =====================================================
-     LOAD FRIENDS (DB)
+     LOAD FRIENDS
   ===================================================== */
   useEffect(() => {
     const loadFriends = async () => {
@@ -56,8 +57,6 @@ export default function Messages() {
         setErrorFriends("");
 
         const data = await fetchFriends();
-
-        // ✅ support: fetchFriends() peut renvoyer [] OU { friends: [] }
         const raw = Array.isArray(data)
           ? data
           : Array.isArray(data?.friends)
@@ -66,12 +65,12 @@ export default function Messages() {
 
         const list = raw
           .map(normalizeFriend)
-          .filter((u) => u && u._id); // garde seulement ceux avec id
+          .filter((u) => u && u._id);
 
         setFriends(list);
       } catch (err) {
         console.error("Erreur chargement amis :", err);
-        setErrorFriends(err?.message || "Erreur chargement amis");
+        setErrorFriends("Erreur chargement amis");
         setFriends([]);
       } finally {
         setLoadingFriends(false);
@@ -85,22 +84,55 @@ export default function Messages() {
      FILTER
   ===================================================== */
   const filteredFriends = useMemo(() => {
-    const q = (search || "").trim().toLowerCase();
+    const q = search.trim().toLowerCase();
     if (!q) return friends;
-
     return friends.filter((f) =>
-      (f?.name || "").toLowerCase().includes(q)
+      (f.name || "").toLowerCase().includes(q)
     );
   }, [friends, search]);
+
+  /* =====================================================
+     LOAD CONVERSATION
+  ===================================================== */
+  const loadConversation = async (userId) => {
+    if (!userId) return;
+
+    try {
+      setLoadingConversation(true);
+      setMessages([]);
+
+      const res = await fetch(
+        `${API_URL}/messages/conversation/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error(data);
+        setMessages([]);
+        return;
+      }
+
+      setMessages(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Erreur conversation", err);
+      setMessages([]);
+    } finally {
+      setLoadingConversation(false);
+    }
+  };
 
   /* =====================================================
      UI
   ===================================================== */
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
-      {/* =====================================================
-          LEFT — LISTE DES AMIS
-      ===================================================== */}
+      {/* ================= LEFT — AMIS ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
           <h2>Messages</h2>
@@ -121,16 +153,16 @@ export default function Messages() {
           )}
 
           {!loadingFriends && errorFriends && (
-            <div className="messages-empty">
-              {errorFriends}
-            </div>
+            <div className="messages-empty">{errorFriends}</div>
           )}
 
-          {!loadingFriends && !errorFriends && filteredFriends.length === 0 && (
-            <div className="messages-empty">
-              Aucun ami pour le moment
-            </div>
-          )}
+          {!loadingFriends &&
+            !errorFriends &&
+            filteredFriends.length === 0 && (
+              <div className="messages-empty">
+                Aucun ami pour le moment
+              </div>
+            )}
 
           {filteredFriends.map((friend) => (
             <div
@@ -138,10 +170,13 @@ export default function Messages() {
               className={`conversation-item ${
                 activeChat?._id === friend._id ? "active" : ""
               }`}
-              onClick={() => setActiveChat(friend)}
+              onClick={() => {
+                setActiveChat(friend);
+                loadConversation(friend._id);
+              }}
             >
               <img
-                src={friend.avatar || "/default-avatar.png"}
+                src={friend.avatar}
                 alt={friend.name}
                 className="conversation-avatar"
               />
@@ -150,7 +185,6 @@ export default function Messages() {
                 <div className="conversation-name">
                   {friend.name}
                 </div>
-
                 <div className="conversation-last-message">
                   Démarrer une conversation
                 </div>
@@ -166,30 +200,29 @@ export default function Messages() {
         </div>
       </aside>
 
-      {/* =====================================================
-          RIGHT — CHAT
-      ===================================================== */}
+      {/* ================= RIGHT — CHAT ================= */}
       <main className="messages-content">
         {!activeChat ? (
           <div className="messages-placeholder">
             <h3>Sélectionne un ami</h3>
-            <p>
-              Clique sur un ami pour commencer une conversation.
-            </p>
+            <p>Clique sur un ami pour commencer une conversation.</p>
           </div>
         ) : (
           <>
-            {/* ================= HEADER CHAT ================= */}
+            {/* HEADER */}
             <div className="chat-header">
               <button
                 className="chat-back-btn"
-                onClick={() => setActiveChat(null)}
+                onClick={() => {
+                  setActiveChat(null);
+                  setMessages([]);
+                }}
               >
                 ←
               </button>
 
               <img
-                src={activeChat.avatar || "/default-avatar.png"}
+                src={activeChat.avatar}
                 alt={activeChat.name}
                 className="chat-avatar"
               />
@@ -198,17 +231,35 @@ export default function Messages() {
                 <div className="chat-username">
                   {activeChat.name}
                 </div>
-                <div className="chat-status">
-                  En ligne
-                </div>
+                <div className="chat-status">En ligne</div>
               </div>
             </div>
 
-            {/* ================= BODY CHAT ================= */}
+            {/* BODY */}
             <div className="chat-body">
-              <div className="chat-empty">
-                Aucun message pour le moment
-              </div>
+              {loadingConversation && (
+                <div className="chat-empty">Chargement…</div>
+              )}
+
+              {!loadingConversation && messages.length === 0 && (
+                <div className="chat-empty">
+                  Aucun message pour le moment  
+                  <br />
+                  Commence la conversation 👋
+                </div>
+              )}
+
+              {!loadingConversation &&
+                messages.map((msg) => (
+                  <div
+                    key={msg._id}
+                    className={`message-bubble ${
+                      msg.sender === me?._id ? "me" : "other"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                ))}
             </div>
           </>
         )}
