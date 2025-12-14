@@ -18,10 +18,24 @@ export default function Messages() {
     const loadFriends = async () => {
       try {
         setLoadingFriends(true);
+
         const data = await fetchFriends();
-        setFriends(data?.friends || []);
+
+        // ✅ NORMALISATION SÉCURISÉE
+        const list = Array.isArray(data?.friends)
+          ? data.friends
+              .map((f) => ({
+                ...f.user,
+                lastMessage: f.lastMessage || null,
+                unreadCount: f.unreadCount || 0,
+              }))
+              .filter(Boolean)
+          : [];
+
+        setFriends(list);
       } catch (err) {
         console.error("Erreur chargement amis :", err);
+        setFriends([]);
       } finally {
         setLoadingFriends(false);
       }
@@ -32,7 +46,6 @@ export default function Messages() {
 
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
-      
       {/* =====================================================
           LEFT — LISTE DES CONVERSATIONS
       ===================================================== */}
@@ -50,7 +63,7 @@ export default function Messages() {
 
         <div className="messages-list">
           {loadingFriends && (
-            <div className="messages-empty">Chargement...</div>
+            <div className="messages-empty">Chargement…</div>
           )}
 
           {!loadingFriends && friends.length === 0 && (
@@ -77,10 +90,19 @@ export default function Messages() {
                 <div className="conversation-name">
                   {friend.name}
                 </div>
+
                 <div className="conversation-last-message">
-                  {friend.lastMessage || "Aucun message"}
+                  {friend.lastMessage
+                    ? friend.lastMessage.content
+                    : "Démarrer une conversation"}
                 </div>
               </div>
+
+              {friend.unreadCount > 0 && (
+                <div className="conv-unread-badge">
+                  {friend.unreadCount}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -101,8 +123,7 @@ export default function Messages() {
           <>
             {/* ================= HEADER CHAT ================= */}
             <div className="chat-header">
-              
-              {/* 🔙 Bouton retour (MOBILE ONLY) */}
+              {/* 🔙 RETOUR MOBILE */}
               <button
                 className="chat-back-btn"
                 onClick={() => setActiveChat(null)}
