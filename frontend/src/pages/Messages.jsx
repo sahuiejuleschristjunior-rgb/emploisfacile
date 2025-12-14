@@ -241,9 +241,22 @@ export default function Messages() {
     try {
       const list = await fetchFriends();
 <<<<<<< ours
+<<<<<<< ours
       setFriends(list);
 =======
       const users = list?.friends?.map((f) => f.user).filter(Boolean) || [];
+      setFriends(users);
+>>>>>>> theirs
+=======
+
+      if (list?.success === false) {
+        throw new Error(list?.message || "Erreur récupération amis");
+      }
+
+      const users = Array.isArray(list?.friends)
+        ? list.friends.map((f) => f.user).filter(Boolean)
+        : [];
+
       setFriends(users);
 >>>>>>> theirs
     } catch (err) {
@@ -422,6 +435,7 @@ export default function Messages() {
           </div>
 
 <<<<<<< ours
+<<<<<<< ours
           <div className="search-bar">
             <input
               placeholder="Rechercher..."
@@ -464,6 +478,8 @@ export default function Messages() {
               <div className="skeleton-item"></div>
               <div className="skeleton-item"></div>
 =======
+=======
+>>>>>>> theirs
           <div className="messages-scroll-area">
             <div className="search-bar">
               <input
@@ -471,6 +487,9 @@ export default function Messages() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+<<<<<<< ours
+>>>>>>> theirs
+=======
 >>>>>>> theirs
             </div>
 
