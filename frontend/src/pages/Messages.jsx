@@ -1,5 +1,5 @@
 // frontend/src/pages/Messages.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
 
@@ -10,6 +10,41 @@ export default function Messages() {
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [activeChat, setActiveChat] = useState(null);
+  const [search, setSearch] = useState("");
+  const [errorFriends, setErrorFriends] = useState("");
+
+  /* =====================================================
+     HELPERS
+  ===================================================== */
+  const normalizeFriend = (f) => {
+    // f peut être:
+    // 1) { user: { _id, name, avatar }, category }
+    // 2) { user: "ObjectId", category }
+    // 3) parfois { _id, name, avatar } (si tu changes côté API plus tard)
+
+    const userObj =
+      f && typeof f.user === "object" && f.user
+        ? f.user
+        : typeof f === "object" && f?._id && f?.name
+        ? f
+        : null;
+
+    const userId =
+      userObj?._id ||
+      (typeof f?.user === "string" ? f.user : null) ||
+      f?._id ||
+      null;
+
+    return {
+      _id: userId,
+      name: userObj?.name || f?.name || "Utilisateur",
+      avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
+      // compat: parfois tu avais relationCategory au lieu de category
+      category: f?.category || f?.relationCategory || "public",
+      lastMessage: f?.lastMessage || null,
+      unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
+    };
+  };
 
   /* =====================================================
      LOAD FRIENDS (DB)
@@ -18,23 +53,25 @@ export default function Messages() {
     const loadFriends = async () => {
       try {
         setLoadingFriends(true);
+        setErrorFriends("");
 
         const data = await fetchFriends();
 
-        // ✅ NORMALISATION SÉCURISÉE
-        const list = Array.isArray(data?.friends)
+        // ✅ support: fetchFriends() peut renvoyer [] OU { friends: [] }
+        const raw = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.friends)
           ? data.friends
-              .map((f) => ({
-                ...f.user,
-                lastMessage: f.lastMessage || null,
-                unreadCount: f.unreadCount || 0,
-              }))
-              .filter(Boolean)
           : [];
+
+        const list = raw
+          .map(normalizeFriend)
+          .filter((u) => u && u._id); // garde seulement ceux avec id
 
         setFriends(list);
       } catch (err) {
         console.error("Erreur chargement amis :", err);
+        setErrorFriends(err?.message || "Erreur chargement amis");
         setFriends([]);
       } finally {
         setLoadingFriends(false);
@@ -44,10 +81,25 @@ export default function Messages() {
     loadFriends();
   }, []);
 
+  /* =====================================================
+     FILTER
+  ===================================================== */
+  const filteredFriends = useMemo(() => {
+    const q = (search || "").trim().toLowerCase();
+    if (!q) return friends;
+
+    return friends.filter((f) =>
+      (f?.name || "").toLowerCase().includes(q)
+    );
+  }, [friends, search]);
+
+  /* =====================================================
+     UI
+  ===================================================== */
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
       {/* =====================================================
-          LEFT — LISTE DES CONVERSATIONS
+          LEFT — LISTE DES AMIS
       ===================================================== */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
@@ -57,7 +109,9 @@ export default function Messages() {
         <div className="messages-search">
           <input
             type="text"
-            placeholder="Rechercher un ami ou une discussion"
+            placeholder="Rechercher un ami"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
@@ -66,13 +120,19 @@ export default function Messages() {
             <div className="messages-empty">Chargement…</div>
           )}
 
-          {!loadingFriends && friends.length === 0 && (
+          {!loadingFriends && errorFriends && (
             <div className="messages-empty">
-              Aucun ami ou conversation
+              {errorFriends}
             </div>
           )}
 
-          {friends.map((friend) => (
+          {!loadingFriends && !errorFriends && filteredFriends.length === 0 && (
+            <div className="messages-empty">
+              Aucun ami pour le moment
+            </div>
+          )}
+
+          {filteredFriends.map((friend) => (
             <div
               key={friend._id}
               className={`conversation-item ${
@@ -92,9 +152,7 @@ export default function Messages() {
                 </div>
 
                 <div className="conversation-last-message">
-                  {friend.lastMessage
-                    ? friend.lastMessage.content
-                    : "Démarrer une conversation"}
+                  Démarrer une conversation
                 </div>
               </div>
 
@@ -114,16 +172,15 @@ export default function Messages() {
       <main className="messages-content">
         {!activeChat ? (
           <div className="messages-placeholder">
-            <h3>Sélectionne une conversation</h3>
+            <h3>Sélectionne un ami</h3>
             <p>
-              Choisis un ami ou une discussion pour commencer à échanger.
+              Clique sur un ami pour commencer une conversation.
             </p>
           </div>
         ) : (
           <>
             {/* ================= HEADER CHAT ================= */}
             <div className="chat-header">
-              {/* 🔙 RETOUR MOBILE */}
               <button
                 className="chat-back-btn"
                 onClick={() => setActiveChat(null)}
