@@ -42,7 +42,6 @@ export default function Messages() {
       _id: userId,
       name: userObj?.name || f?.name || "Utilisateur",
       avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
-      category: f?.category || "public",
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
     };
   };
@@ -132,6 +131,7 @@ export default function Messages() {
   ===================================================== */
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
+      
       {/* ================= LEFT — AMIS ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
@@ -250,16 +250,20 @@ export default function Messages() {
               )}
 
               {!loadingConversation &&
-                messages.map((msg) => (
-                  <div
-                    key={msg._id}
-                    className={`message-bubble ${
-                      msg.sender === me?._id ? "me" : "other"
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                ))}
+                messages.map((msg) => {
+                  const isMe = msg.sender === me?._id;
+
+                  return (
+                    <div
+                      key={msg._id}
+                      className={`message-row ${isMe ? "me" : "other"}`}
+                    >
+                      <div className="message-bubble">
+                        {msg.content}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </>
         )}
