@@ -1,0 +1,605 @@
+// CommentsModal.jsx
+import { useEffect, useState, useRef, useCallback } from "react";
+import "../styles/comments-modal.css";
+import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
+
+/* ----------------------------
+   Inline SVG icons (small)
+   ---------------------------- */
+const Icon = {
+  Like: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M2 12c0 4.418 3.582 8 8 8h4.5c.92 0 1.75-.57 2.03-1.43L19.9 14.5c.2-.66.02-1.36-.47-1.87l-4.4-4.4A2.5 2.5 0 0 0 13.46 7H12V4.5A2.5 2.5 0 0 0 9.5 2 2.5 2.5 0 0 0 7 4.5V7H6c-3.866 0-4 0-4 5z" fill="#FFD54A"/>
+    </svg>
+  ),
+  Love: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 21s-6.716-4.816-9.04-7.04C-.033 10.98 1.084 6.5 4.404 5.11 6.465 4.2 9.5 6 12 8.5c2.5-2.5 5.535-4.3 7.596-3.39C22.916 6.5 24.033 10.98 21.04 13.96 18.716 16.184 12 21 12 21z" fill="#FF6B88"/>
+    </svg>
+  ),
+  Haha: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" fill="#FFDD55"/><path d="M8 15c.8-1 1.7-1 2.5-1s1.7 0 2.5 1" stroke="#3b3b3b" strokeWidth="1.2" strokeLinecap="round"/><circle cx="9" cy="10" r="1" fill="#3b3b3b"/><circle cx="15" cy="10" r="1" fill="#3b3b3b"/>
+    </svg>
+  ),
+  Wow: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" fill="#8BD8FF"/><path d="M12 8v4" stroke="#00334d" strokeWidth="1.2" strokeLinecap="round"/><circle cx="12" cy="16" r="1" fill="#00334d"/>
+    </svg>
+  ),
+  Sad: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" fill="#9FB4FF"/><path d="M9 16s1-1 3-1 3 1 3 1" stroke="#05224a" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  ),
+  Angry: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="10" fill="#FF9E9E"/><path d="M8 15s1-1 4-1 4 1 4 1" stroke="#5a160f" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  )
+};
+
+const REACTION_CONFIG = {
+  like: { label: "J’aime", svg: <Icon.Like /> },
+  love: { label: "J’adore", svg: <Icon.Love /> },
+  haha: { label: "Haha", svg: <Icon.Haha /> },
+  wow: { label: "Wouah", svg: <Icon.Wow /> },
+  sad: { label: "Triste", svg: <Icon.Sad /> },
+  angry: { label: "Grrr", svg: <Icon.Angry /> },
+};
+const REACTION_TYPES = Object.keys(REACTION_CONFIG);
+
+/* ----------------------------
+   Simple Carousel component
+   props:
+     - items: array of {type: 'image'|'video', url}
+     - maxHeight optional
+----------------------------*/
+function MediaCarousel({ items = [], maxHeight = "70vh" }) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => setIndex(0), [items]);
+  if (!items || items.length === 0) return null;
+
+  const next = () => setIndex((i) => (i + 1) % items.length);
+  const prev = () => setIndex((i) => (i - 1 + items.length) % items.length);
+
+  const item = items[index];
+
+  return (
+    <div className="cm-post-media" role="group">
+      {items.length > 1 && (
+        <button className="cm-media-nav cm-media-prev" onClick={prev} aria-label="Précédent">‹</button>
+      )}
+
+      <div className="cm-media-current" style={{ maxHeight }}>
+        {item.type === "video" ? (
+          <video controls src={getImageUrl(item.url)} style={{ maxHeight, borderRadius: 14 }} />
+        ) : (
+          <img src={getImageUrl(item.url)} alt="" style={{ maxHeight, borderRadius: 14 }} />
+        )}
+      </div>
+
+      {items.length > 1 && (
+        <button className="cm-media-nav cm-media-next" onClick={next} aria-label="Suivant">›</button>
+      )}
+
+      {items.length > 1 && (
+        <div className="cm-media-counter">{index + 1} / {items.length}</div>
+      )}
+    </div>
+  );
+}
+
+/* ----------------------------
+   Utility: normalize media field
+   comment.media may be a single object or an array
+----------------------------*/
+const normalizeMedia = (m) => {
+  if (!m) return [];
+  if (Array.isArray(m)) return m;
+  // if m has url & type (single media object)
+  if (m.url) return [m];
+  return [];
+};
+
+/* ----------------------------
+   Main component
+----------------------------*/
+export default function CommentsModal({
+  post: initialPost,
+  onClose,
+  API_URL: propApiUrl,
+  token: propToken,
+  userId: propUserId,
+}) {
+  const token = propToken || (typeof window !== "undefined" && localStorage.getItem("token"));
+  const API_URL = propApiUrl || import.meta.env.VITE_API_URL || "";
+  const resolvedUserId =
+    propUserId ||
+    (() => {
+      try {
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return payload.id || payload._id || payload.userId || null;
+      } catch {
+        return null;
+      }
+    })();
+
+  const userId = resolvedUserId;
+
+  const [post, setPost] = useState(initialPost || null);
+  const [loading, setLoading] = useState(true);
+  const [visibleCommentsCount, setVisibleCommentsCount] = useState(12);
+
+  const [commentInput, setCommentInput] = useState("");
+  const [commentMedia, setCommentMedia] = useState(null);
+
+  const [replyInput, setReplyInput] = useState({});
+  const [replyMedia, setReplyMedia] = useState({});
+  const [replyOpen, setReplyOpen] = useState({});
+  const [showAllReplies, setShowAllReplies] = useState({});
+
+  const [reactionMenu, setReactionMenu] = useState({ open: false, context: null, commentId: null, replyId: null });
+  const [actionMenu, setActionMenu] = useState({ open: false, context: null, commentId: null, replyId: null });
+
+  const [expandedMap, setExpandedMap] = useState({}); // "post" or commentId
+
+  const commentsListRef = useRef(null);
+  const commentsRefs = useRef({});
+
+  useEffect(() => {
+    let abort = false;
+    const load = async () => {
+      if (!initialPost || !initialPost._id) {
+        setPost(initialPost || null);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch(`${API_URL}/posts/${initialPost._id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+        if (abort) return;
+        if (res.ok) {
+          setPost(data.post || data);
+        } else {
+          setPost(initialPost);
+        }
+      } catch (err) {
+        console.error("CommentsModal load error:", err);
+        setPost(initialPost);
+      } finally {
+        if (!abort) setLoading(false);
+      }
+    };
+    load();
+    return () => { abort = true; };
+  }, [initialPost && initialPost._id, API_URL, token]);
+
+  useEffect(() => {
+    // ensure visibleCommentsCount not larger than total
+    setVisibleCommentsCount((v) => Math.min(v, (post?.comments?.length || 0)));
+  }, [post?.comments?.length]);
+
+  const safeFetch = useCallback((url, opts = {}) => {
+    const headers = { ...(opts.headers || {}) };
+    if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
+    return fetch(url, { ...opts, headers });
+  }, [token]);
+
+  const isOwner = useCallback((objUserId) => String(objUserId) === String(userId), [userId]);
+
+  const toggleReactionMenu = (context, commentId, replyId = null) => {
+    setReactionMenu((prev) => {
+      const same = prev.open && prev.context === context && prev.commentId === commentId && prev.replyId === replyId;
+      return same ? { open: false, context: null, commentId: null, replyId: null } : { open: true, context, commentId, replyId };
+    });
+    setActionMenu({ open: false, context: null, commentId: null, replyId: null });
+  };
+
+  const toggleActionMenu = (context, commentId, replyId = null) => {
+    setActionMenu((prev) => {
+      const same = prev.open && prev.context === context && prev.commentId === commentId && prev.replyId === replyId;
+      return same ? { open: false, context: null, commentId: null, replyId: null } : { open: true, context, commentId, replyId };
+    });
+    setReactionMenu({ open: false, context: null, commentId: null, replyId: null });
+  };
+
+  const getVisibleComments = () => {
+    const comments = post?.comments || [];
+    if (!comments.length) return [];
+    const start = Math.max(0, comments.length - visibleCommentsCount);
+    return comments.slice(start);
+  };
+
+  const showMoreComments = () => {
+    setVisibleCommentsCount((v) => Math.min((post?.comments?.length || 0), v + 12));
+    setTimeout(() => {
+      commentsListRef.current?.scrollTo({ top: commentsListRef.current.scrollHeight, behavior: "smooth" });
+    }, 80);
+  };
+
+  const handleCommentMedia = (e) => {
+    const f = e.target.files[0];
+    if (f) setCommentMedia(f);
+  };
+
+  const submitComment = async () => {
+    const text = (commentInput || "").trim();
+    if (!text && !commentMedia) return;
+    try {
+      const headers = {};
+      let body;
+      if (commentMedia) {
+        body = new FormData();
+        body.append("text", text);
+        body.append("media", commentMedia);
+      } else {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify({ text });
+      }
+      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment`, {
+        method: "POST",
+        headers,
+        body,
+      });
+      const updated = await res.json();
+      if (!res.ok) throw new Error("comment failed");
+      setPost(updated);
+      setCommentInput("");
+      setCommentMedia(null);
+      setVisibleCommentsCount((c) => Math.max(c, (updated.comments || []).length));
+      setTimeout(() => commentsListRef.current?.scrollTo({ top: commentsListRef.current.scrollHeight, behavior: "smooth" }), 120);
+    } catch (err) {
+      console.error("submitComment", err);
+    }
+  };
+
+  const handleReplyMedia = (e, comment) => {
+    const f = e.target.files[0];
+    if (f) setReplyMedia((p) => ({ ...p, [comment._id]: f }));
+  };
+
+  const submitReply = async (comment) => {
+    const text = (replyInput[comment._id] || "").trim();
+    const file = replyMedia[comment._id] || null;
+    if (!text && !file) return;
+    try {
+      const headers = {};
+      let body;
+      if (file) {
+        body = new FormData();
+        body.append("text", text);
+        body.append("media", file);
+      } else {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify({ text });
+      }
+      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/reply`, {
+        method: "POST",
+        headers,
+        body,
+      });
+      const updated = await res.json();
+      if (!res.ok) throw new Error("reply failed");
+      setPost(updated);
+      setReplyInput((p) => ({ ...p, [comment._id]: "" }));
+      setReplyMedia((p) => ({ ...p, [comment._id]: null }));
+      setReplyOpen((p) => ({ ...p, [comment._id]: false }));
+    } catch (err) {
+      console.error("submitReply", err);
+    }
+  };
+
+  const deleteComment = async (comment) => {
+    try {
+      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}`, { method: "DELETE" });
+      const updated = await res.json();
+      if (!res.ok) throw new Error("deleteComment failed");
+      setPost(updated);
+      setActionMenu({ open: false, context: null, commentId: null, replyId: null });
+    } catch (err) {
+      console.error("deleteComment", err);
+    }
+  };
+
+  const deleteReply = async (comment, reply) => {
+    try {
+      const replyId = reply._id || reply.id;
+      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/reply/${replyId}`, { method: "DELETE" });
+      const updated = await res.json();
+      if (!res.ok) throw new Error("deleteReply failed");
+      setPost(updated);
+      setActionMenu({ open: false, context: null, commentId: null, replyId: null });
+    } catch (err) {
+      console.error("deleteReply", err);
+    }
+  };
+
+  const reactToComment = async (comment, type) => {
+    try {
+      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/react`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const updated = await res.json();
+      if (!res.ok) throw new Error("react failed");
+      setPost(updated);
+      setReactionMenu({ open: false, context: null, commentId: null, replyId: null });
+    } catch (err) {
+      console.error("reactToComment", err);
+    }
+  };
+
+  const reactToReply = async (comment, reply, type) => {
+    try {
+      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/reply/${reply._id}/react`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const updated = await res.json();
+      if (!res.ok) throw new Error("react failed");
+      setPost(updated);
+      setReactionMenu({ open: false, context: null, commentId: null, replyId: null });
+    } catch (err) {
+      console.error("reactToReply", err);
+    }
+  };
+
+  const toggleExpanded = (key) => {
+    setExpandedMap((p) => ({ ...p, [key]: !p[key] }));
+    setTimeout(() => {
+      const el = key === "post" ? document.querySelector(".cm-post-text") : commentsRefs.current[key];
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 320);
+  };
+
+  const getReactionSummary = (reactions = []) => {
+    if (!reactions || reactions.length === 0) return { total: 0, types: [] };
+    const counts = {};
+    reactions.forEach((r) => { if (!r?.type) return; counts[r.type] = (counts[r.type] || 0) + 1; });
+    const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    return { total: reactions.length, types: sorted.map(([t]) => t).slice(0,3) };
+  };
+
+  const handleClose = () => { onClose && onClose(); };
+
+  if (!post) return null;
+
+  const visibleComments = getVisibleComments();
+
+  return (
+    <div className="cm-backdrop" onMouseDown={handleClose} role="dialog" aria-modal="true">
+      <div className="cm-container" onMouseDown={(e) => e.stopPropagation()}>
+        <button className="cm-close" aria-label="Fermer" onClick={handleClose}>✕</button>
+
+        {/* LEFT: post preview */}
+        <div className="cm-left">
+          <div className="cm-post-header">
+            <div className="cm-avatar" style={getAvatarStyle(post.user?.avatar)} />
+            <div className="cm-post-meta">
+              <div className="cm-post-author">{post.user?.name}</div>
+              <div className="cm-post-date">{new Date(post.createdAt).toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className={`cm-post-text-wrap ${expandedMap.post ? "expanded" : ""}`}>
+            {post.text && (
+              <>
+                <div className="cm-post-text">{post.text}</div>
+                {post.text.length > 220 && (
+                  <button className="cm-toggle-text" onClick={() => toggleExpanded("post")}>
+                    {expandedMap.post ? "Voir moins" : "Voir plus"}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Post media carousel */}
+          <div style={{ marginBottom: 12 }}>
+            <MediaCarousel items={post.media || []} maxHeight="56vh" />
+          </div>
+        </div>
+
+        {/* RIGHT: comments */}
+        <div className="cm-right">
+          <div className="cm-right-header">
+            <div className="cm-title">Commentaires ({post.comments?.length || 0})</div>
+          </div>
+
+          <div className="cm-comments" ref={commentsListRef}>
+            { (post.comments?.length > visibleComments.length) && (
+              <div className="cm-load-more-row">
+                <button className="cm-load-more" onClick={showMoreComments}>
+                  Voir {Math.min(visibleCommentsCount + 12, post.comments.length) - visibleCommentsCount} commentaires précédents
+                </button>
+              </div>
+            )}
+
+            { loading && [...Array(4)].map((_, i) => (
+              <div key={i} className="cm-skeleton">
+                <div className="cm-sk-avatar" />
+                <div className="cm-sk-lines"><div className="cm-sk-line long" /><div className="cm-sk-line short" /></div>
+              </div>
+            )) }
+
+            { !loading && visibleComments.map((c) => {
+              const summary = getReactionSummary(c.reactions);
+              const mediaItems = normalizeMedia(c.media);
+              return (
+                <div className="cm-comment-wrap" key={c._id} ref={(el) => (commentsRefs.current[c._id] = el)}>
+                  <div className="cm-comment">
+                    <div className="cm-comment-avatar" style={getAvatarStyle(c.user?.avatar)} />
+
+                    <div className="cm-comment-body">
+                      <div className={`cm-comment-bubble ${expandedMap[c._id] ? "expanded" : ""}`}>
+                        <div className="cm-comment-author-row">
+                          <span className="cm-comment-author">{c.user?.name}</span>
+                          <span className="cm-comment-date muted">{new Date(c.createdAt).toLocaleString()}</span>
+                        </div>
+
+                        <div className="cm-comment-text">{c.text}</div>
+
+                        {c.text?.length > 200 && (
+                          <button className="cm-toggle-text small" onClick={() => toggleExpanded(c._id)}>
+                            {expandedMap[c._id] ? "Voir moins" : "Voir plus"}
+                          </button>
+                        )}
+
+                        {/* comment media (carousel if several) */}
+                        { mediaItems.length > 0 && (
+                          <div style={{ marginTop: 10 }}>
+                            <MediaCarousel items={mediaItems} maxHeight="240px" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="cm-comment-actions-row">
+                        <button className="cm-action" onClick={() => toggleReactionMenu("comment", c._id)}>
+                          {REACTION_CONFIG.like.svg} {summary.total > 0 ? ` ${summary.total}` : ""}
+                        </button>
+
+                        <button className="cm-action" onClick={() => setReplyOpen((p) => ({ ...p, [c._id]: !p[c._id] }))}>
+                          {replyOpen[c._id] ? "Annuler" : "Répondre"}
+                        </button>
+
+                        {isOwner(c.user?._id) && (
+                          <button className="cm-action" onClick={() => toggleActionMenu("comment", c._id)}>⋮</button>
+                        )}
+                      </div>
+
+                      {/* reaction picker */}
+                      {reactionMenu.open && reactionMenu.context === "comment" && reactionMenu.commentId === c._id && (
+                        <div className="cm-reaction-picker">
+                          {REACTION_TYPES.map((t) => (
+                            <button key={t} className="cm-reaction-pill" onClick={() => reactToComment(c, t)}>
+                              <span style={{ display: "inline-flex", alignItems: "center" }}>{REACTION_CONFIG[t].svg}</span>
+                              <span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* action dropdown */}
+                      {actionMenu.open && actionMenu.context === "comment" && actionMenu.commentId === c._id && (
+                        <div className="cm-dropdown">
+                          <button className="danger" onClick={() => deleteComment(c)}>Supprimer</button>
+                        </div>
+                      )}
+
+                      {/* reply input */}
+                      {replyOpen[c._id] && (
+                        <div className="cm-reply-input-row">
+                          <label className="cm-upload-btn">
+                            📎
+                            <input type="file" accept="image/*,video/*" style={{ display: "none" }} onChange={(e) => handleReplyMedia(e, c)} />
+                          </label>
+
+                          <input
+                            value={replyInput[c._id] || ""}
+                            onChange={(e) => setReplyInput((p) => ({ ...p, [c._id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && submitReply(c)}
+                            placeholder="Écrire une réponse..."
+                            className="cm-reply-input"
+                          />
+
+                          <button className="cm-send-btn small" onClick={() => submitReply(c)}>Envoyer</button>
+                        </div>
+                      )}
+
+                      {/* preview reply media */}
+                      {replyMedia[c._id] && (
+                        <div className="cm-reply-preview">
+                          {replyMedia[c._id].type.startsWith("image/") ? (
+                            <img className="cm-reply-preview-media" src={URL.createObjectURL(replyMedia[c._id])} alt="" />
+                          ) : (
+                            <video className="cm-reply-preview-media" controls src={URL.createObjectURL(replyMedia[c._id])} />
+                          )}
+                        </div>
+                      )}
+
+                      {/* replies list */}
+                      {(showAllReplies[c._id] ? c.replies : (c.replies || []).slice(-3)).map((r) => {
+                        const sum = getReactionSummary(r.reactions);
+                        return (
+                          <div key={r._id} className="cm-reply">
+                            <div className="cm-reply-avatar" style={getAvatarStyle(r.user?.avatar)} />
+                            <div className="cm-reply-body">
+                              <div className="cm-reply-author">{r.user?.name} <span className="muted small"> {new Date(r.createdAt).toLocaleString()}</span></div>
+                              <div className="cm-reply-text">{r.text}</div>
+
+                              {r.media && (
+                                <div className="cm-reply-media" style={{ marginTop: 8 }}>
+                                  {normalizeMedia(r.media).map((m, i) => m.type === "image" ? <img key={i} src={getImageUrl(m.url)} alt="" /> : <video key={i} controls src={getImageUrl(m.url)} />)}
+                                </div>
+                              )}
+
+                              <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                                <button className="cm-action" onClick={() => toggleReactionMenu("reply", c._id, r._id)}>{REACTION_CONFIG.like.svg}{sum.total ? ` ${sum.total}` : ""}</button>
+                                {isOwner(r.user?._id) && <button className="cm-action" onClick={() => toggleActionMenu("reply", c._id, r._id)}>⋮</button>}
+                              </div>
+
+                              {reactionMenu.open && reactionMenu.context === "reply" && reactionMenu.commentId === c._id && reactionMenu.replyId === r._id && (
+                                <div className="cm-reaction-picker" style={{ marginTop: 6 }}>
+                                  {REACTION_TYPES.map((t) => <button key={t} className="cm-reaction-pill" onClick={() => reactToReply(c, r, t)}>{REACTION_CONFIG[t].svg}<span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span></button>)}
+                                </div>
+                              )}
+
+                              {actionMenu.open && actionMenu.context === "reply" && actionMenu.commentId === c._id && actionMenu.replyId === r._id && (
+                                <div className="cm-dropdown" style={{ marginTop: 6 }}>
+                                  <button className="danger" onClick={() => deleteReply(c, r)}>Supprimer</button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {c.replies?.length > 3 && !showAllReplies[c._id] && (
+                        <button className="cm-see-more-replies" onClick={() => setShowAllReplies((p) => ({ ...p, [c._id]: true }))}>Voir plus de réponses</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }) }
+          </div>
+
+          {/* Bottom input - inside right column (or bottom when mobile) */}
+          <div className="cm-input-bar">
+            {commentMedia && (
+              <div className="cm-comment-preview">
+                {commentMedia.type?.startsWith?.("image/") ? (
+                  <img className="cm-comment-preview-media" src={URL.createObjectURL(commentMedia)} alt="" />
+                ) : (
+                  <video className="cm-comment-preview-media" controls src={URL.createObjectURL(commentMedia)} />
+                )}
+              </div>
+            )}
+
+            <label className="cm-upload-btn">
+              📎
+              <input type="file" accept="image/*,video/*" style={{ display: "none" }} onChange={handleCommentMedia} />
+            </label>
+
+            <input
+              className="cm-text-input"
+              placeholder="Écrire un commentaire..."
+              value={commentInput}
+              onChange={(e) => setCommentInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submitComment()}
+            />
+
+            <button className="cm-send-btn" onClick={submitComment}>Envoyer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

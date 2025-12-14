@@ -1,0 +1,156 @@
+/* ----------------------------------
+   Job Feed General 
+---------------------------------- */
+.job-feed {
+    padding: 1rem 0;
+}
+
+.job-feed-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #3b82f6; /* Bordure bleue */
+}
+
+/* ----------------------------------
+   Job Card 
+---------------------------------- */
+.job-list {
+    display: grid;
+    gap: 1.5rem;
+    /* Mise en page pour simuler une colonne unique ou des grilles responsives */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+}
+
+.job-card {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-top: 5px solid #3b82f6; /* Accent similaire au style Facebook */
+}
+
+.job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.job-header {
+    display: flex;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.job-info {
+    flex-grow: 1;
+}
+
+.job-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.job-author {
+    display: block;
+    font-size: 0.9rem;
+    color: #3b82f6;
+    margin-top: 0.25rem;
+}
+
+.job-meta {
+    display: block;
+    font-size: 0.8rem;
+    color: #718096;
+    margin-top: 0.25rem;
+}
+
+.job-body {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.job-description {
+    color: #4a5568;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+}
+
+.job-salary {
+    display: block;
+    font-weight: 500;
+    color: #2f855a; /* Vert pour le salaire */
+    margin-top: 0.5rem;
+}
+
+.job-date {
+    display: block;
+    font-size: 0.75rem;
+    color: #a0aec0;
+    margin-top: 0.5rem;
+}
+
+.job-actions {
+    text-align: right;
+}
+
+/* Boutons de candidature */
+.job-apply-btn, .job-applied-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: 9999px; /* Bouton pill */
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.job-apply-btn {
+    background-color: #3b82f6; /* Bleu primaire */
+    color: white;
+    border: 1px solid #3b82f6;
+}
+
+.job-apply-btn:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+.job-apply-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.job-applied-btn {
+    background-color: #e2e8f0; /* Gris clair */
+    color: #718096;
+    border: 1px solid #e2e8f0;
+    cursor: default;
+}
+
+/* États de chargement et d'erreur */
+.loader {
+    text-align: center;
+    padding: 2rem;
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.error-message {
+    padding: 1rem;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-radius: 0.5rem;
+    border: 1px solid #fca5a5;
+    margin-bottom: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #718096;
+    background-color: #f7fafc;
+    border-radius: 0.75rem;
+    border: 1px dashed #e2e8f0;
+}

@@ -1,0 +1,15 @@
+/* Neutralisation totale du template Vite */
+
+#root {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: initial !important;
+}
+
+.logo,
+.card,
+.read-the-docs {
+  display: none !important;
+}

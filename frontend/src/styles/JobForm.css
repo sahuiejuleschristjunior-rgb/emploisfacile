@@ -1,0 +1,95 @@
+/* GLOBAL WRAPPER */
+.job-form-wrapper {
+    margin-top: 25px;
+    padding: 0 20px;
+}
+
+.section-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #1d3b73;
+}
+
+/* CARD */
+.job-form-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* INPUT GROUPS */
+.input-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    color: #444;
+    margin-bottom: 6px;
+}
+
+.input-group input,
+.input-group textarea,
+.input-group select {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #dce3ef;
+    font-size: 0.95rem;
+    background: #f9fbfd;
+}
+
+/* INLINE ROW */
+.input-row {
+    display: flex;
+    gap: 12px;
+}
+
+/* BUTTON */
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: #1d3b73;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    margin-top: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+}
+
+/* ALERTS */
+.alert {
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background: #ffe5e5;
+    color: #c0392b;
+}
+
+.alert-success {
+   background: #e7f9e9;
+    color: #2e7d32;
+}
+
+/* RESPONSIVE MOBILE */
+@media(max-width: 768px) {
+    .input-row {
+        flex-direction: column;
+    }
+
+    .job-form-wrapper {
+        padding: 0 15px;
+    }
+}

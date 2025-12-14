@@ -1,0 +1,285 @@
+/* =================================
+   STYLES DU COMPOSANT POST (Post.jsx)
+   Ce fichier est importé dans PostPage.jsx 
+   et devrait correspondre aux styles de FacebookLayout.css.
+   ================================= */
+
+/* Carte du post */
+.fb-post-card {
+  /* Correspondance avec le fond de fb-layout.css */
+  background: #242526; 
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  color: #e4e6eb; /* Texte clair */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  max-width: 680px; /* S'assurer que le post ne s'étire pas trop */
+  width: 100%;
+}
+
+/* HEADER */
+.fb-post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fb-post-avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #3a3b3c; /* Thème sombre */
+  /* Les styles d'images de fond sont appliqués inline */
+}
+
+.fb-post-user-info {
+  flex: 1;
+}
+
+.fb-post-author {
+  font-weight: 600;
+  font-size: 15px;
+  color: #e4e6eb;
+}
+
+.fb-post-meta {
+  font-size: 12px;
+  /* Changé du noir opaque à un gris pour le thème sombre */
+  color: #b0b3b8; 
+}
+
+/* MENU */
+.fb-post-menu {
+  position: relative;
+}
+
+.fb-post-menu-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #b0b3b8; /* Thème sombre */
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+}
+.fb-post-menu-btn:hover {
+    background: #3a3b3c;
+}
+
+.fb-post-menu-popup {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 40px;
+  background: #242526; /* Thème sombre */
+  border: 1px solid #3a3b3c;
+  border-radius: 8px;
+  padding: 4px 0;
+  width: 140px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.fb-post-menu:hover .fb-post-menu-popup {
+  display: block;
+}
+
+.fb-post-menu-popup button {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: #e4e6eb;
+  cursor: pointer;
+}
+
+.fb-post-menu-popup button:hover {
+  background: #3a3b3c;
+}
+
+/* TEXTE */
+.fb-post-text {
+  margin: 12px 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #e4e6eb;
+}
+
+/* STATS */
+.fb-post-stats {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  /* Changé du noir opaque à un gris pour le thème sombre */
+  color: #b0b3b8; 
+  font-size: 13px;
+}
+
+/* ACTIONS */
+.fb-post-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid #3a3b3c; /* Thème sombre */
+  /* Suppression de la bordure du bas, car le CommentInput prend la suite */
+}
+
+.fb-action-btn {
+  flex: 1;
+  text-align: center;
+  background: none;
+  border: none;
+  color: #b0b3b8; /* Gris pour les icônes/texte */
+  font-size: 14px;
+  padding: 8px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.1s;
+}
+
+.fb-action-btn:hover {
+  background: #3a3b3c;
+  border-radius: 6px;
+}
+
+/* Style spécifique pour le bouton Liked */
+.fb-action-btn.liked {
+    color: #2d88ff; /* Bleu Facebook */
+    font-weight: 600;
+}
+.fb-action-btn.liked:hover {
+    background: #3a3b3c;
+}
+
+/* ========================================= */
+/* 💥 STYLES ZONE DE SAISIE COMMENTAIRE      */
+/* ========================================= */
+
+.fb-comment-input-form {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    gap: 8px;
+    border-bottom: 1px solid #3a3b3c;
+}
+
+.fb-comment-input {
+    flex: 1;
+    background: #3a3b3c;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 12px;
+    color: #e4e6eb;
+    font-size: 14px;
+    outline: none;
+}
+
+.fb-comment-input::placeholder {
+    color: #b0b3b8;
+}
+
+.fb-comment-send-btn {
+    background: none;
+    border: none;
+    color: #2d88ff; /* Bleu */
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 8px;
+}
+
+.fb-comment-send-btn:disabled {
+    color: #b0b3b8;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========================================= */
+/* STYLES COMMENTAIRES ET RÉPONSES           */
+/* ========================================= */
+
+.fb-post-comments {
+  margin-top: 12px;
+}
+
+.fb-comment-block {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fb-comment-avatar {
+  width: 35px;
+  height: 35px;
+  min-width: 35px; /* Correction */
+  border-radius: 50%;
+  background: #444;
+}
+
+.fb-comment-content {
+  flex: 1;
+  /* Conteneur principal du texte du commentaire/réponse */
+  background: #3a3b3c; /* Fond du commentaire */
+  padding: 8px 12px;
+  border-radius: 18px;
+  position: relative;
+}
+
+/* Correction de l'en-tête, maintenant dans fb-comment-content */
+.fb-comment-content .fb-comment-header {
+  display: block; /* Enlève le flex du style initial, car le nom et la date sont inclus */
+  font-size: 12px;
+  color: #b0b3b8;
+  margin-bottom: 4px;
+}
+.fb-comment-content strong {
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 8px;
+    color: #e4e6eb;
+}
+
+.fb-comment-text {
+  margin-top: 4px; /* Rétabli le style comme prévu */
+  color: #e4e6eb;
+}
+
+.fb-replies {
+  margin-left: 0; /* Pas d'indentation ici */
+  margin-top: 8px;
+  /* Correction de la bordure si les styles de layout ne sont pas appliqués */
+  /* border-left: 2px solid #3a3b3c; */ 
+  padding-left: 0;
+}
+
+.fb-reply-block {
+  display: flex;
+  gap: 8px; /* Réduit l'espacement pour la réponse */
+  margin-bottom: 8px;
+  padding-left: 10px; /* Indentation pour la réponse */
+}
+
+.fb-reply-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px; /* Correction */
+  border-radius: 50%;
+  background: #555;
+}
+
+/* Boutons */
+.fb-reply-btn {
+  background: none;
+  border: none;
+  color: #b0b3b8; /* Gris pour le thème sombre */
+  cursor: pointer;
+  margin-top: 5px;
+  font-size: 13px;
+  padding: 0 4px;
+}
+.fb-reply-btn:hover {
+    text-decoration: underline;
+}

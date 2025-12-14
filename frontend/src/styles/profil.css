@@ -1,0 +1,374 @@
+.profil-wrapper {
+  color: white;
+  background: #18191a;
+  min-height: 100vh;
+}
+
+/* =========================== */
+/* COUVERTURE (Agrandie et arrondie) */
+/* =========================== */
+
+.profil-cover {
+  position: relative;
+  /* 💥 Agrandir la couverture pour qu'elle soit bien visible */
+  height: 350px; 
+  background: #242526;
+  overflow: hidden;
+  /* 💥 Arrondir les coins supérieurs du bloc de couverture */
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  max-width: 900px;
+  margin: 0 auto; /* Pour centrer le bloc */
+}
+
+.profil-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* BOUTON DE COUVERTURE */
+.change-cover-btn {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(45, 136, 255, 0.9);
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.change-cover-btn:hover:not(:disabled) {
+  background: #1c6ad6;
+}
+
+/* =========================== */
+/* AVATAR & INFOS (Conteneur principal gris) */
+/* =========================== */
+
+.profil-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 💥 Ajustement de la marge haute après l'agrandissement de la couverture */
+  margin-top: -100px; 
+  padding: 0 20px 20px 20px;
+  background: #242526; 
+  
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 900px; 
+  
+  /* 💥 Ajout des bords arrondis aux coins inférieurs */
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  
+  border-bottom: 1px solid #3a3b3c;
+  /* Enlever la bordure qui se chevauche avec le border-radius */
+  border-top: none; 
+}
+
+/* Conteneur pour l'avatar et les infos */
+.profil-header-content {
+    display: flex;
+    align-items: flex-end; /* 💥 Alignement bas des éléments pour que l'avatar soit bas */
+    gap: 20px; 
+    width: 100%;
+    justify-content: flex-start;
+    padding-left: 20px; 
+}
+
+
+.profil-avatar {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 4px solid #18191a; 
+  background: #444;
+  margin: 0; 
+  background-size: cover !important;
+  background-position: center !important;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* BOUTON AVATAR (appareil photo) */
+.change-avatar-btn {
+  position: absolute;
+  bottom: 0px; 
+  right: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #3a3b3c;
+  color: #e4e6eb;
+  border: 2px solid #18191a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background 0.2s;
+}
+
+.change-avatar-btn:hover:not(:disabled) {
+  background: #4e4f50;
+}
+
+/* Espace pour le texte et les boutons */
+.profil-info-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Marge supérieure ajustée pour aligner l'ensemble avec le bas de l'avatar */
+    margin-top: 55px; 
+}
+
+.profil-header h2 {
+  margin-top: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #e4e6eb;
+}
+
+.profil-email {
+  color: #b0b3b8;
+  margin-top: 5px;
+  font-size: 16px;
+}
+
+.profil-btn {
+  margin-top: 15px; 
+  background: #2d88ff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+/* =========================== */
+/* TABS (Ajustement) */
+/* =========================== */
+
+.profil-tabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 35px;
+  max-width: 900px;
+  margin: 0px auto;
+  padding: 10px 20px;
+  border-bottom: 1px solid #3a3b3c;
+  background: #242526; 
+}
+
+.profil-tabs button {
+  background: none;
+  border: none;
+  color: #b0b3b8;
+  font-size: 17px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+}
+
+.profil-tabs button:hover:not(.active) {
+    background: #3a3b3c;
+    color: #e4e6eb;
+}
+
+.profil-tabs .active {
+  color: #2d88ff;
+  border-bottom: 3px solid #2d88ff;
+  background: none;
+}
+
+/* =========================== */
+/* CONTENU           */
+/* =========================== */
+
+.profil-content {
+  max-width: 680px; 
+  margin: 25px auto;
+  padding: 0 16px;
+}
+
+.profil-empty {
+  text-align: center;
+  padding: 25px;
+  color: #777;
+}
+
+.profil-about,
+.profil-photos {
+  background: #242526;
+  border-radius: 8px;
+  padding: 20px;
+  color: #e4e6eb;
+}
+
+.profil-loading {
+    text-align: center;
+    color: #b0b3b8;
+    padding-top: 50px;
+}
+/* =============================
+   AVATARS FACEPILE (amis + followers)
+============================= */
+
+.profil-friends-preview,
+.profil-followers-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.profil-friend-item,
+.profil-follower-item {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #000;
+}
+
+.profil-friend-avatar,
+.profil-follower-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+}
+
+/* =============================
+   PROFIL HEADER
+============================= */
+
+.profil-header {
+  padding: 15px;
+  background: #111;
+  border-bottom: 1px solid #222;
+}
+
+.profil-header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.profil-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #000;
+  background-size: cover;
+  background-position: center;
+  margin-top: -60px;
+  z-index: 2;
+}
+
+.profil-info-area {
+  margin-top: 10px;
+}
+
+.profil-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 15px;
+  color: #ccc;
+}
+
+/* =============================
+   ACTIONS : AMIS / FOLLOW / MESSAGE
+============================= */
+
+.profil-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  width: 100%;
+  align-items: center;
+}
+
+.profil-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  width: 80%;
+  max-width: 260px;
+  transition: 0.2s ease;
+}
+
+.profil-btn.primary {
+  background: #1877f2;
+  color: #fff;
+  border: none;
+}
+
+.profil-btn.primary:hover {
+  background: #166fe0;
+}
+
+.profil-btn.secondary {
+  background: #333;
+  color: #eee;
+  border: 1px solid #444;
+}
+
+.profil-btn.secondary:hover {
+  background: #444;
+}
+
+.profil-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+/* =============================
+   COVER
+============================= */
+
+.profil-cover img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #222;
+}
+
+/* =============================
+   CONTENT
+============================= */
+
+.profil-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profil-empty {
+  margin-top: 20px;
+  text-align: center;
+  color: #aaa;
+  font-size: 16px;
+}
