@@ -1,11 +1,6 @@
-window.addEventListener("error", (e) => {
-  console.log("🔥 GLOBAL ERROR:", e.message, e.filename, e.lineno);
-});
-
-window.addEventListener("unhandledrejection", (e) => {
-  console.log("🔥 PROMISE ERROR:", e.reason);
-});
-
+// ================================
+// IMPORTS — TOUJOURS EN PREMIER
+// ================================
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import ChangePassword from "./pages/ChangePassword";
@@ -28,7 +23,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PostPage from "./pages/PostPage";
 import ChatPage from "./pages/ChatPage";
 
-import Messages from "./pages/Messages";
+import Messages from "./pages/Messages.jsx";
 import JobDetailPage from "./pages/JobDetailPage";
 
 import RecruiterDashboard from "./pages/RecruiterDashboard";
@@ -39,13 +34,27 @@ import RecruiterAllApplications from "./pages/RecruiterAllApplications";
 import FacebookFeed from "./components/FacebookFeed";
 
 import PhotoViewerPage from "./pages/PhotoViewerPage";
-import RelationsPage from "./pages/RelationsPage"; // ✅ AJOUTÉ
+import RelationsPage from "./pages/RelationsPage";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { SocketProvider } from "./context/SocketContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// ================================
+// CODE RUNTIME (APRÈS IMPORTS)
+// ================================
+window.addEventListener("error", (e) => {
+  console.log("🔥 GLOBAL ERROR:", e.message, e.filename, e.lineno);
+});
+
+window.addEventListener("unhandledrejection", (e) => {
+  console.log("🔥 PROMISE ERROR:", e.reason);
+});
+
+// ================================
+// APP
+// ================================
 export default function App() {
   return (
     <AuthProvider>
@@ -53,7 +62,6 @@ export default function App() {
         <NotificationProvider>
           <BrowserRouter>
             <Routes>
-
               {/* Landing */}
               <Route
                 path="/"
@@ -75,9 +83,7 @@ export default function App() {
               {/* Profil Public */}
               <Route path="/profil/:id" element={<PublicProfile />} />
 
-              {/* ================================================
-                    FACEBOOK LAYOUT
-              ================================================ */}
+              {/* ================= FACEBOOK LAYOUT ================= */}
               <Route
                 path="/fb"
                 element={
@@ -98,9 +104,7 @@ export default function App() {
                   }
                 />
 
-                {/* ✅ RELATIONS BRANCHÉ */}
                 <Route path="relations" element={<RelationsPage />} />
-
                 <Route path="emplois" element={<EmploisPage />} />
                 <Route path="notifications" element={<NotifsPage />} />
               </Route>
@@ -230,7 +234,6 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-
             </Routes>
           </BrowserRouter>
         </NotificationProvider>
@@ -239,7 +242,9 @@ export default function App() {
   );
 }
 
-/* Role Router */
+// ================================
+// ROLE ROUTER
+// ================================
 function DashboardRouter() {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/fb" replace />;
