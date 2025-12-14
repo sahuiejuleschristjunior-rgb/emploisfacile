@@ -1,11 +1,18 @@
 // frontend/src/pages/Messages.jsx
-import React from "react";
+import React, { useState } from "react";
 import "../styles/messages.css";
 
 export default function Messages() {
+  // =====================================================
+  // STATE
+  // =====================================================
+  const [activeChat, setActiveChat] = useState(false);
+
   return (
-    <div className="messages-page">
-      {/* ================= LEFT COLUMN ================= */}
+    <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
+      {/* =====================================================
+          LEFT COLUMN — LISTE DES DISCUSSIONS
+      ===================================================== */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
           <h2>Messages</h2>
@@ -19,15 +26,30 @@ export default function Messages() {
         </div>
 
         <div className="messages-list">
-          {/* Placeholder – amis / conversations viendront ici */}
-          <div className="messages-empty">
+          {/* Placeholder — sera remplacé par les amis */}
+          <div
+            className="messages-empty"
+            onClick={() => setActiveChat(true)}
+          >
             Aucun ami ou conversation
+            <br />
+            <small>(tap ici pour ouvrir le chat)</small>
           </div>
         </div>
       </aside>
 
-      {/* ================= RIGHT COLUMN ================= */}
+      {/* =====================================================
+          RIGHT COLUMN — CONTENU DU CHAT
+      ===================================================== */}
       <main className="messages-content">
+        {/* Bouton retour (mobile uniquement) */}
+        <button
+          className="mobile-back-btn"
+          onClick={() => setActiveChat(false)}
+        >
+          ←
+        </button>
+
         <div className="messages-placeholder">
           <h3>Sélectionne une conversation</h3>
           <p>
