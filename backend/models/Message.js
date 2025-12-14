@@ -33,19 +33,25 @@ const messageSchema = new mongoose.Schema(
     // Type de message (texte, système, appel vidéo, fichier…)
     type: {
       type: String,
-      enum: ["text", "system", "video", "file", "videoCall"],
+      enum: ["text", "system", "video", "file", "videoCall", "audio"],
       default: "text",
     },
 
     // Contenu du message (texte)
     content: {
       type: String,
-      required: true,
       trim: true,
+      default: "",
     },
 
     // URL d’un fichier (si type = file)
     fileUrl: {
+      type: String,
+      default: null,
+    },
+
+    // URL d'un audio (si type = audio)
+    audioUrl: {
       type: String,
       default: null,
     },
@@ -55,6 +61,15 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+
+    // Réactions emoji
+    reactions: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        emoji: { type: String },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
 
     // Lecture
     isRead: {

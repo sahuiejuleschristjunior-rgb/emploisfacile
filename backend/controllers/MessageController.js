@@ -3,6 +3,10 @@ const Message = require("../models/Message");
 const User = require("../models/User");
 const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
+const path = require("path");
+const fs = require("fs");
+
+const typingState = new Map();
 
 /* ============================================================
 🔥 UTILITAIRE : PUSH NOTIF + SOCKET
@@ -81,6 +85,81 @@ exports.sendMessage = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors de l'envoi du message.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+POST /api/messages/audio
+➤ Envoyer un message vocal
+============================================================ */
+function ensureAudioDir() {
+  const uploadDir = path.join(__dirname, "../uploads/audio");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+}
+
+exports.sendAudioMessage = async (req, res) => {
+  try {
+    ensureAudioDir();
+
+    const sender = req.user.id;
+    const { receiver, applicationId, jobId, content } = req.body;
+    const file = req.file;
+
+    if (!receiver || !file) {
+      return res.status(400).json({
+        message: "Receiver et audio sont requis.",
+      });
+    }
+
+    const receiverUser = await User.findById(receiver);
+    if (!receiverUser) {
+      return res.status(404).json({ message: "Destinataire introuvable." });
+    }
+
+    const audioUrl = `/uploads/audio/${file.filename}`;
+
+    const message = await Message.create({
+      sender,
+      receiver,
+      content: content || "",
+      application: applicationId || null,
+      job: jobId || null,
+      type: "audio",
+      audioUrl,
+      isRead: false,
+    });
+
+    getIO().to(receiver.toString()).emit("new_message", {
+      from: sender,
+      to: receiver,
+      message,
+    });
+
+    getIO().to(sender.toString()).emit("new_message", {
+      from: sender,
+      to: receiver,
+      message,
+    });
+
+    await pushNotification(receiver, {
+      from: sender,
+      type: "message",
+      text: "Nouvelle note vocale",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Note vocale envoyée.",
+      data: message,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de l'envoi de l'audio.",
       details: error.message,
     });
   }
@@ -250,6 +329,135 @@ exports.markAllAsReadForConversation = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors de la mise à jour du statut en lecture.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+POST /api/messages/:id/react
+➤ Ajouter / retirer une réaction
+============================================================ */
+exports.reactToMessage = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const { emoji } = req.body;
+    const userId = req.user.id;
+
+    if (!emoji) {
+      return res.status(400).json({ message: "Emoji requis." });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message introuvable." });
+    }
+
+    if (
+      message.sender.toString() !== userId &&
+      message.receiver.toString() !== userId
+    ) {
+      return res.status(403).json({ message: "Non autorisé." });
+    }
+
+    const currentReactions = [...(message.reactions || [])];
+    const existingIndex = currentReactions.findIndex(
+      (r) => r.user && r.user.toString() === userId
+    );
+
+    if (existingIndex >= 0 && currentReactions[existingIndex].emoji === emoji) {
+      currentReactions.splice(existingIndex, 1);
+    } else if (existingIndex >= 0) {
+      currentReactions[existingIndex].emoji = emoji;
+      currentReactions[existingIndex].createdAt = new Date();
+    } else {
+      currentReactions.push({ user: userId, emoji });
+    }
+
+    message.reactions = currentReactions;
+    await message.save();
+
+    const populated = await message.populate({
+      path: "reactions.user",
+      select: "name avatar",
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de la réaction.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+GET /api/messages/:id/reactions
+➤ Récupérer les réactions d’un message
+============================================================ */
+exports.getMessageReactions = async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id).populate({
+      path: "reactions.user",
+      select: "name avatar",
+    });
+
+    if (!message) {
+      return res.status(404).json({ message: "Message introuvable." });
+    }
+
+    if (
+      message.sender.toString() !== req.user.id &&
+      message.receiver.toString() !== req.user.id
+    ) {
+      return res.status(403).json({ message: "Non autorisé." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      reactions: message.reactions || [],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du chargement des réactions.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+POST /api/messages/typing
+➤ Flag typing temporaire en mémoire
+============================================================ */
+exports.setTypingFlag = async (req, res) => {
+  try {
+    const senderId = req.user.id;
+    const { receiverId, isTyping } = req.body;
+
+    if (!receiverId) {
+      return res.status(400).json({ message: "receiverId requis." });
+    }
+
+    const key = `${senderId}:${receiverId}`;
+    typingState.set(key, { isTyping: Boolean(isTyping), at: Date.now() });
+
+    const now = Date.now();
+    for (const [k, value] of typingState.entries()) {
+      if (now - value.at > 30000) {
+        typingState.delete(k);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      typing: Boolean(isTyping),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de la mise à jour du statut de frappe.",
       details: error.message,
     });
   }
