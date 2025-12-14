@@ -34,7 +34,7 @@ export default function Messages() {
           >
             Aucun ami ou conversation
             <br />
-            <small>(tap ici pour ouvrir le chat)</small>
+            <small>(choisis un ami pour echanger)</small>
           </div>
         </div>
       </aside>
