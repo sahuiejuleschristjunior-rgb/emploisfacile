@@ -131,7 +131,6 @@ export default function Messages() {
   ===================================================== */
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
-      
       {/* ================= LEFT — AMIS ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
@@ -251,7 +250,12 @@ export default function Messages() {
 
               {!loadingConversation &&
                 messages.map((msg) => {
-                  const isMe = msg.sender === me?._id;
+                  const senderId =
+                    typeof msg.sender === "object"
+                      ? msg.sender?._id
+                      : msg.sender;
+
+                  const isMe = senderId === me?._id;
 
                   return (
                     <div
