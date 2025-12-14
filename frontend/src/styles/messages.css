@@ -659,3 +659,41 @@
   text-align: center;
   opacity: 0.7;
 }
+/* ==============================
+   MOBILE RESPONSIVE
+================================ */
+@media (max-width: 768px) {
+
+  .messages-page {
+    display: block;
+    height: 100vh;
+  }
+
+  /* SIDEBAR (LISTE) */
+  .messages-sidebar {
+    width: 100%;
+    height: 100vh;
+    border-right: none;
+  }
+
+  /* CONTENU CHAT */
+  .messages-content {
+    width: 100%;
+    height: 100vh;
+  }
+
+  /* CACHER LE CHAT PAR DÉFAUT */
+  .messages-content {
+    display: none;
+  }
+
+  /* MODE CHAT ACTIF */
+  .messages-page.chat-open .messages-sidebar {
+    display: none;
+  }
+
+  .messages-page.chat-open .messages-content {
+    display: flex;
+    flex-direction: column;
+  }
+}
