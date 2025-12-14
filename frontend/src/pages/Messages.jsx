@@ -10,6 +10,7 @@ export default function Messages() {
 
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
+      
       {/* =====================================================
           LEFT COLUMN — LISTE DES DISCUSSIONS
       ===================================================== */}
@@ -42,14 +43,6 @@ export default function Messages() {
           RIGHT COLUMN — CONTENU DU CHAT
       ===================================================== */}
       <main className="messages-content">
-        {/* Bouton retour (mobile uniquement) */}
-        <button
-          className="mobile-back-btn"
-          onClick={() => setActiveChat(false)}
-        >
-          ←
-        </button>
-
         <div className="messages-placeholder">
           <h3>Sélectionne une conversation</h3>
           <p>
@@ -57,6 +50,7 @@ export default function Messages() {
           </p>
         </div>
       </main>
+
     </div>
   );
 }
