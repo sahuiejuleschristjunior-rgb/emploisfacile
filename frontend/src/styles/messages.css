@@ -379,3 +379,49 @@
   color: #fff;
   border-bottom-right-radius: 6px;
 }
+/* ===============================
+   MESSAGE ROW
+================================ */
+
+.message-row {
+  display: flex;
+  margin-bottom: 6px; /* messages rapprochés */
+}
+
+.message-row.me {
+  justify-content: flex-end;
+}
+
+.message-row.other {
+  justify-content: flex-start;
+}
+
+/* ===============================
+   MESSAGE BUBBLE
+================================ */
+
+.message-bubble {
+  max-width: 72%;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.35;
+  border-radius: 14px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* ===============================
+   ENVOYEUR — ON GARDE TA COULEUR ACTUELLE
+================================ */
+
+/* ⚠️ rien à changer ici */
+
+/* ===============================
+   RECEVEUR — ROSE PRO
+================================ */
+
+.message-row.other .message-bubble {
+  background: linear-gradient(135deg, #ff5c8d, #ff7aa2);
+  color: #ffffff;
+  border-bottom-left-radius: 4px;
+}
