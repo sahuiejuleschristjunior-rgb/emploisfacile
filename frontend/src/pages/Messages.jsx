@@ -240,7 +240,12 @@ export default function Messages() {
 
     try {
       const list = await fetchFriends();
+<<<<<<< ours
       setFriends(list);
+=======
+      const users = list?.friends?.map((f) => f.user).filter(Boolean) || [];
+      setFriends(users);
+>>>>>>> theirs
     } catch (err) {
       setFriendsError(err.message || "Erreur récupération amis");
       setFriends([]);
@@ -411,11 +416,12 @@ export default function Messages() {
     <div className="messages-page">
       {/* LISTE */}
       {view === "list" && (
-        <>
+        <div className="messages-list-view">
           <div className="messages-top-header">
             <div className="msg-title-pill">Messages</div>
           </div>
 
+<<<<<<< ours
           <div className="search-bar">
             <input
               placeholder="Rechercher..."
@@ -457,28 +463,73 @@ export default function Messages() {
               <div className="skeleton-item"></div>
               <div className="skeleton-item"></div>
               <div className="skeleton-item"></div>
+=======
+          <div className="messages-scroll-area">
+            <div className="search-bar">
+              <input
+                placeholder="Rechercher..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+>>>>>>> theirs
             </div>
-          ) : (
-            <div className="conversations-list">
-              {filteredInbox.map((c, idx) => (
-                <ConversationItem
-                  key={c.user?._id || idx}
-                  name={c.user?.name}
-                  avatar={c.user?.avatar}
-                  last={c.lastMessage?.content}
-                  lastTime={c.lastMessage?.createdAt}
-                  unreadCount={c.unreadCount}
-                  isOnline={onlineUserIds.includes(c.user?._id)}
-                  onClick={() => openChat(c)}
-                />
-              ))}
 
-              {!filteredInbox.length && !error && (
-                <div className="empty-state">Aucun message pour le moment.</div>
+            <div className="friends-section">
+              <div className="section-title">Vos amis</div>
+
+              {loadingFriends ? (
+                <div className="skeleton-wrapper">
+                  <div className="skeleton-item"></div>
+                  <div className="skeleton-item"></div>
+                </div>
+              ) : friendsError ? (
+                <div className="empty-state">{friendsError}</div>
+              ) : friends.length === 0 ? (
+                <div className="empty-state">Aucun ami pour le moment.</div>
+              ) : (
+                <div className="conversations-list friends-list">
+                  {friends.map((friend) => (
+                    <ConversationItem
+                      key={friend._id}
+                      name={friend.name}
+                      avatar={friend.avatar}
+                      isOnline={onlineUserIds.includes(friend._id)}
+                      last="Démarrer une conversation"
+                      onClick={() => openFriendChat(friend)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          )}
-        </>
+
+            {loadingInbox ? (
+              <div className="skeleton-wrapper">
+                <div className="skeleton-item"></div>
+                <div className="skeleton-item"></div>
+                <div className="skeleton-item"></div>
+              </div>
+            ) : (
+              <div className="conversations-list">
+                {filteredInbox.map((c, idx) => (
+                  <ConversationItem
+                    key={c.user?._id || idx}
+                    name={c.user?.name}
+                    avatar={c.user?.avatar}
+                    last={c.lastMessage?.content}
+                    lastTime={c.lastMessage?.createdAt}
+                    unreadCount={c.unreadCount}
+                    isOnline={onlineUserIds.includes(c.user?._id)}
+                    onClick={() => openChat(c)}
+                  />
+                ))}
+
+                {!filteredInbox.length && !error && (
+                  <div className="empty-state">Aucun message pour le moment.</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* CHAT */}

@@ -10,6 +10,12 @@
   overflow: hidden;
 }
 
+.messages-list-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ========================= */
 /* HEADER STYLE CHATGPT     */
 /* ========================= */
@@ -99,6 +105,16 @@
 .conversations-list {
   overflow-y: auto;
   height: calc(100vh - 185px);
+}
+
+.messages-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.friends-list {
+  height: auto;
+  max-height: 220px;
 }
 
 /* ========================= */
