@@ -1,37 +1,40 @@
 // frontend/src/pages/Messages.jsx
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/messages.css";
+import { fetchFriends } from "../api/socialApi";
 
 export default function Messages() {
-  // =====================================================
-  // STATE
-  // =====================================================
+  /* =====================================================
+     STATE
+  ===================================================== */
+  const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
   const [activeChat, setActiveChat] = useState(null);
 
-  // =====================================================
-  // MOCK AMIS (temporaire)
-  // sera remplacé par l'API plus tard
-  // =====================================================
-  const friends = [
-    {
-      id: 1,
-      name: "Jean Dupont",
-      avatar: "https://i.pravatar.cc/150?img=3",
-      lastMessage: "Salut, ça va ?",
-    },
-    {
-      id: 2,
-      name: "Marie Kouassi",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      lastMessage: "On se parle plus tard",
-    },
-  ];
+  /* =====================================================
+     LOAD FRIENDS (DB)
+  ===================================================== */
+  useEffect(() => {
+    const loadFriends = async () => {
+      try {
+        setLoadingFriends(true);
+        const data = await fetchFriends();
+        setFriends(data?.friends || []);
+      } catch (err) {
+        console.error("Erreur chargement amis :", err);
+      } finally {
+        setLoadingFriends(false);
+      }
+    };
+
+    loadFriends();
+  }, []);
 
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
       
       {/* =====================================================
-          LEFT COLUMN — LISTE DES DISCUSSIONS
+          LEFT — LISTE DES CONVERSATIONS
       ===================================================== */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
@@ -46,16 +49,26 @@ export default function Messages() {
         </div>
 
         <div className="messages-list">
+          {loadingFriends && (
+            <div className="messages-empty">Chargement...</div>
+          )}
+
+          {!loadingFriends && friends.length === 0 && (
+            <div className="messages-empty">
+              Aucun ami ou conversation
+            </div>
+          )}
+
           {friends.map((friend) => (
             <div
-              key={friend.id}
+              key={friend._id}
               className={`conversation-item ${
-                activeChat?.id === friend.id ? "active" : ""
+                activeChat?._id === friend._id ? "active" : ""
               }`}
               onClick={() => setActiveChat(friend)}
             >
               <img
-                src={friend.avatar}
+                src={friend.avatar || "/default-avatar.png"}
                 alt={friend.name}
                 className="conversation-avatar"
               />
@@ -65,7 +78,7 @@ export default function Messages() {
                   {friend.name}
                 </div>
                 <div className="conversation-last-message">
-                  {friend.lastMessage}
+                  {friend.lastMessage || "Aucun message"}
                 </div>
               </div>
             </div>
@@ -74,7 +87,7 @@ export default function Messages() {
       </aside>
 
       {/* =====================================================
-          RIGHT COLUMN — CHAT
+          RIGHT — CHAT
       ===================================================== */}
       <main className="messages-content">
         {!activeChat ? (
@@ -86,13 +99,23 @@ export default function Messages() {
           </div>
         ) : (
           <>
-            {/* ================= HEADER DU CHAT ================= */}
+            {/* ================= HEADER CHAT ================= */}
             <div className="chat-header">
+              
+              {/* 🔙 Bouton retour (MOBILE ONLY) */}
+              <button
+                className="chat-back-btn"
+                onClick={() => setActiveChat(null)}
+              >
+                ←
+              </button>
+
               <img
-                src={activeChat.avatar}
+                src={activeChat.avatar || "/default-avatar.png"}
                 alt={activeChat.name}
                 className="chat-avatar"
               />
+
               <div className="chat-user-info">
                 <div className="chat-username">
                   {activeChat.name}
@@ -103,7 +126,7 @@ export default function Messages() {
               </div>
             </div>
 
-            {/* ================= BODY DU CHAT ================= */}
+            {/* ================= BODY CHAT ================= */}
             <div className="chat-body">
               <div className="chat-empty">
                 Aucun message pour le moment
