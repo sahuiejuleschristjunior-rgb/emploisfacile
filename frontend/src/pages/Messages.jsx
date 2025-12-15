@@ -188,6 +188,7 @@ export default function Messages() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
@@ -501,12 +502,15 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
-      recordingChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          recordingChunksRef.current.push(e.data);
-        }
-      };
+  const stopRecordVisualization = () => {
+    if (recordVizFrame.current) {
+      cancelAnimationFrame(recordVizFrame.current);
+      recordVizFrame.current = null;
+    }
+  };
+  
+  const startRecording = async (event) => {
+  if (!activeChat || isRecording) return;
 
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
@@ -553,6 +557,17 @@ export default function Messages() {
       clearInterval(recordTimerRef.current);
       stopRecordVisualization();
     }
+
+    if (recordLocked) {
+      setRecordCanceled(false);
+      recordCanceledRef.current = false;
+      return;
+    }
+
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
@@ -1123,11 +1138,17 @@ export default function Messages() {
                         : "Glisser vers la droite pour annuler / vers le haut pour verrouiller"}
                     </div>
                     <div className="recording-level">
-                      <div
-                        className="recording-level-bar"
-                        ref={recordLevelBarRef}
-                        style={{ "--record-level": recordLevel }}
-                      />
+                      {Array.from({ length: 8 }).map((_, idx) => {
+                        const height = Math.max(10, recordLevel * 80 * Math.random());
+                        return (
+                          <span
+                            // eslint-disable-next-line react/no-array-index-key
+                            key={idx}
+                            className="recording-level-bar"
+                            style={{ height: `${height}px` }}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                   <div
