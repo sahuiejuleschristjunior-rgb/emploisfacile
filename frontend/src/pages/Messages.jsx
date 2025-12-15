@@ -464,10 +464,11 @@ export default function Messages() {
     stopRecordVisualization();
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+    const deltaX = 0;
 
     recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
     setRecordTime(0);
-    setRecordOffset(0);
+    setRecordOffset(deltaX);
     setRecordCanceled(false);
     setRecordLocked(false);
     setRecordLevel(0);
@@ -493,9 +494,6 @@ export default function Messages() {
       analyser.connect(destination);
 
       const recorder = new MediaRecorder(destination.stream);
-
-  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
