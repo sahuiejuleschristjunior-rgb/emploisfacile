@@ -464,11 +464,10 @@ export default function Messages() {
     stopRecordVisualization();
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = 0;
 
     recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
     setRecordTime(0);
-    setRecordOffset(deltaX);
+    setRecordOffset(0);
     setRecordCanceled(false);
     setRecordLocked(false);
     setRecordLevel(0);
@@ -543,10 +542,6 @@ export default function Messages() {
       recordStartRef.current = null;
     }
 
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
