@@ -118,6 +118,7 @@ export default function Messages() {
   const audioGainRef = useRef(null);
   const recordVizFrame = useRef(null);
   const [recordLevel, setRecordLevel] = useState(0);
+  const recordLevelBarRef = useRef(null);
   const audioRefs = useRef({});
   const [audioStatus, setAudioStatus] = useState({});
   const currentAudioRef = useRef(null);
@@ -466,16 +467,13 @@ export default function Messages() {
       recordVizFrame.current = null;
     }
   };
-  
-  const startRecording = async (event) => {
-  if (!activeChat || isRecording) return;
 
-  try {
-    const clientX = event?.touches?.[0]?.clientX ?? event?.clientX ?? 0;
-    const clientY = event?.touches?.[0]?.clientY ?? event?.clientY ?? 0;
+  const startRecording = async (event) => {
+    if (!activeChat || isRecording) return;
+    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
     recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
-
     setRecordTime(0);
     setRecordOffset(0);
     setRecordCanceled(false);
@@ -484,82 +482,93 @@ export default function Messages() {
     recordCanceledRef.current = false;
 
     recordTimerRef.current = setInterval(() => {
-      setRecordTime(Date.now() - recordStartRef.current.at);
+      setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
     }, 200);
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Guard the entire async recording setup in a single try/catch block
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 1.8;
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const destination = audioContext.createMediaStreamDestination();
 
-    const audioContext =
-      new (window.AudioContext || window.webkitAudioContext)();
+      source.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(destination);
 
-    const source = audioContext.createMediaStreamSource(stream);
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 1.8;
+      const recorder = new MediaRecorder(destination.stream);
 
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
+  const stopRecordVisualization = () => {
+    if (recordVizFrame.current) {
+      cancelAnimationFrame(recordVizFrame.current);
+      recordVizFrame.current = null;
+    }
+  };
+  
+  const startRecording = async (event) => {
+  if (!activeChat || isRecording) return;
 
-    const destination = audioContext.createMediaStreamDestination();
+      recorder.onstop = () => {
+        const duration = Date.now() - (recordStartRef.current?.at || Date.now());
+        const canceled = recordCanceledRef.current || duration < 300;
+        stream.getTracks().forEach((t) => t.stop());
+        stopRecordVisualization();
+        audioContext.close();
+        if (canceled || !recordingChunksRef.current.length) {
+          recordingChunksRef.current = [];
+          setRecordLevel(0);
+          return;
+        }
+        if (!recordCanceledRef.current) {
+          const blob = new Blob(recordingChunksRef.current, {
+            type: "audio/webm",
+          });
+          uploadAudio(blob);
+        }
+      };
 
-    source.connect(gainNode);
-    gainNode.connect(analyser);
-    analyser.connect(destination);
+      const animateLevel = () => {
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(buffer);
+        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+        const level = Math.min(1, max * 1.4);
+        if (recordLevelBarRef.current) {
+          recordLevelBarRef.current.style.setProperty(
+            "--record-level",
+            level.toString()
+          );
+        }
+        recordVizFrame.current = requestAnimationFrame(animateLevel);
+      };
+      animateLevel();
 
-    const recorder = new MediaRecorder(destination.stream);
-
-    recordingChunksRef.current = [];
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        recordingChunksRef.current.push(e.data);
-      }
-    };
-
-    recorder.onstop = () => {
-      const duration = Date.now() - recordStartRef.current.at;
-      const canceled = recordCanceledRef.current || duration < 300;
-
-      stream.getTracks().forEach((t) => t.stop());
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      audioContextRef.current = audioContext;
+      audioAnalyserRef.current = analyser;
+      audioGainRef.current = gainNode;
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Erreur accès micro", err);
+      clearInterval(recordTimerRef.current);
       stopRecordVisualization();
-      audioContext.close();
+    }
 
-      if (canceled) {
-        recordingChunksRef.current = [];
-        setRecordLevel(0);
-        return;
-      }
+    if (recordLocked) {
+      setRecordCanceled(false);
+      recordCanceledRef.current = false;
+      return;
+    }
 
-      const blob = new Blob(recordingChunksRef.current, {
-        type: "audio/webm",
-      });
-
-      uploadAudio(blob);
-    };
-
-    const animateLevel = () => {
-      const buffer = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(buffer);
-      const max = Math.max(...buffer) / 255;
-      setRecordLevel(max);
-      recordVizFrame.current = requestAnimationFrame(animateLevel);
-    };
-
-    animateLevel();
-
-    recorder.start();
-
-    mediaRecorderRef.current = recorder;
-    audioContextRef.current = audioContext;
-    audioAnalyserRef.current = analyser;
-    audioGainRef.current = gainNode;
-
-    setIsRecording(true);
-  } catch (err) {
-    console.error("Erreur accès micro", err);
-    clearInterval(recordTimerRef.current);
-    stopRecordVisualization();
-  }
-};
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
+  };
 
   const updateRecordingDrag = (event) => {
     if (!isRecording || !recordStartRef.current) return;
@@ -595,6 +604,11 @@ export default function Messages() {
     clearInterval(recordTimerRef.current);
     setIsRecording(false);
     setRecordLocked(false);
+    setRecordLevel(0);
+    stopRecordVisualization();
+    if (recordLevelBarRef.current) {
+      recordLevelBarRef.current.style.setProperty("--record-level", "0");
+    }
     const recorder = mediaRecorderRef.current;
     mediaRecorderRef.current = null;
     if (recorder && recorder.state !== "inactive") {
