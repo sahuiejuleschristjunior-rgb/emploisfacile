@@ -146,6 +146,11 @@ exports.sendAudioMessage = async (req, res) => {
       message,
     });
 
+    getIO()
+      .to(receiver.toString())
+      .to(sender.toString())
+      .emit("audio_message", { message });
+
     await pushNotification(receiver, {
       from: sender,
       type: "message",
@@ -321,6 +326,10 @@ exports.markAllAsReadForConversation = async (req, res) => {
       }
     );
 
+    getIO()
+      .to(String(otherUserId))
+      .emit("message_read", { withUserId: myId });
+
     return res.status(200).json({
       success: true,
       message: "Tous les messages ont été marqués comme lus.",
@@ -381,6 +390,11 @@ exports.reactToMessage = async (req, res) => {
       path: "reactions.user",
       select: "name avatar",
     });
+
+    getIO()
+      .to(message.sender.toString())
+      .to(message.receiver.toString())
+      .emit("reaction_update", { message: populated });
 
     return res.status(200).json({
       success: true,
