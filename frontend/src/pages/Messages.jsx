@@ -481,7 +481,6 @@ export default function Messages() {
       setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
     }, 200);
 
-    // Guard the entire async recording setup in a single try/catch block
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -514,6 +513,8 @@ export default function Messages() {
         if (canceled) {
           recordingChunksRef.current = [];
           setRecordLevel(0);
+        if (canceled) {
+          recordingChunksRef.current = [];
           return;
         }
         const blob = new Blob(recordingChunksRef.current, {
@@ -579,6 +580,38 @@ export default function Messages() {
     setRecordLocked(false);
     setRecordLevel(0);
     stopRecordVisualization();
+  const updateRecordingDrag = (event) => {
+    if (!isRecording || !recordStartRef.current) return;
+    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+    const deltaX = (recordStartRef.current.x || clientX) - clientX;
+    const deltaY = (recordStartRef.current.y || clientY) - clientY;
+
+    if (deltaY > 70) {
+      setRecordLocked(true);
+    }
+
+    if (recordLocked) {
+      setRecordCanceled(false);
+      recordCanceledRef.current = false;
+      return;
+    }
+
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
+  };
+
+  const stopRecording = (forceCancel = false) => {
+    if (!isRecording) return;
+    if (forceCancel) {
+      recordCanceledRef.current = true;
+      setRecordCanceled(true);
+    }
+    clearInterval(recordTimerRef.current);
+    setIsRecording(false);
+    setRecordLocked(false);
     const recorder = mediaRecorderRef.current;
     mediaRecorderRef.current = null;
     if (recorder && recorder.state !== "inactive") {
