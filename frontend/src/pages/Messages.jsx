@@ -494,12 +494,14 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
-      recordingChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          recordingChunksRef.current.push(e.data);
-        }
-      };
+      source.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(destination);
+
+      const recorder = new MediaRecorder(destination.stream);
+
+  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
@@ -535,6 +537,21 @@ export default function Messages() {
       };
       animateLevel();
 
+      const animateLevel = () => {
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(buffer);
+        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+        const level = Math.min(1, max * 1.4);
+        if (recordLevelBarRef.current) {
+          recordLevelBarRef.current.style.setProperty(
+            "--record-level",
+            level.toString()
+          );
+        }
+        recordVizFrame.current = requestAnimationFrame(animateLevel);
+      };
+      animateLevel();
+
       recorder.start();
       mediaRecorderRef.current = recorder;
       audioContextRef.current = audioContext;
@@ -548,6 +565,11 @@ export default function Messages() {
       setIsRecording(false);
       recordStartRef.current = null;
     }
+
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
@@ -1093,6 +1115,16 @@ export default function Messages() {
                 <div
                   className={`recording-banner ${recordCanceled ? "canceled" : ""}`}
                 >
+                  <button
+                    className="recording-cancel"
+                    type="button"
+                    onClick={() => {
+                      stopRecording(true);
+                    }}
+                    aria-label="Annuler"
+                  >
+                    <CloseIcon />
+                  </button>
                   <div className="recording-icon">
                     <MicIcon pulse={!recordCanceled} />
                   </div>
