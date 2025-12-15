@@ -503,12 +503,8 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
-      recordingChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          recordingChunksRef.current.push(e.data);
-        }
-      };
+  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
@@ -557,6 +553,17 @@ export default function Messages() {
       setIsRecording(false);
       recordStartRef.current = null;
     }
+
+    if (recordLocked) {
+      setRecordCanceled(false);
+      recordCanceledRef.current = false;
+      return;
+    }
+
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
