@@ -56,6 +56,13 @@ const messageSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Identifiant client temporaire pour éviter les doublons d'affichage
+    clientTempId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
     // ID de salle pour appels vidéo WebRTC
     callRoomId: {
       type: String,
