@@ -188,7 +188,6 @@ export default function Messages() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
@@ -470,6 +469,8 @@ export default function Messages() {
 
   const startRecording = async (event) => {
     if (!activeChat || isRecording) return;
+    clearInterval(recordTimerRef.current);
+    stopRecordVisualization();
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
@@ -502,101 +503,69 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
-  const stopRecordVisualization = () => {
-    if (recordVizFrame.current) {
-      cancelAnimationFrame(recordVizFrame.current);
-      recordVizFrame.current = null;
-    }
-  };
-  
-const startRecording = async (event) => {
-  if (!activeChat || isRecording) return;
-
   const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
   const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
-  recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
-  setRecordTime(0);
-  setRecordOffset(0);
-  setRecordCanceled(false);
-  setRecordLocked(false);
-  setRecordLevel(0);
-  recordCanceledRef.current = false;
+      recorder.onstop = () => {
+        const duration = Date.now() - (recordStartRef.current?.at || Date.now());
+        const canceled = recordCanceledRef.current || duration < 300;
+        stream.getTracks().forEach((t) => t.stop());
+        stopRecordVisualization();
+        audioContext.close();
+        if (canceled || !recordingChunksRef.current.length) {
+          recordingChunksRef.current = [];
+          setRecordLevel(0);
+          return;
+        }
+        if (!recordCanceledRef.current) {
+          const blob = new Blob(recordingChunksRef.current, {
+            type: "audio/webm",
+          });
+          uploadAudio(blob);
+        }
+      };
 
-  recordTimerRef.current = setInterval(() => {
-    setRecordTime(Date.now() - recordStartRef.current.at);
-  }, 200);
+      const animateLevel = () => {
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(buffer);
+        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+        const level = Math.min(1, max * 1.4);
+        if (recordLevelBarRef.current) {
+          recordLevelBarRef.current.style.setProperty(
+            "--record-level",
+            level.toString()
+          );
+        }
+        recordVizFrame.current = requestAnimationFrame(animateLevel);
+      };
+      animateLevel();
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const source = audioContext.createMediaStreamSource(stream);
-
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 1.8;
-
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-
-    const destination = audioContext.createMediaStreamDestination();
-
-    source.connect(gainNode);
-    gainNode.connect(analyser);
-    analyser.connect(destination);
-
-    const recorder = new MediaRecorder(destination.stream);
-    recordingChunksRef.current = [];
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) recordingChunksRef.current.push(e.data);
-    };
-
-    recorder.onstop = () => {
-      const duration = Date.now() - recordStartRef.current.at;
-      const canceled = recordCanceledRef.current || duration < 300;
-
-      stream.getTracks().forEach((t) => t.stop());
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      audioContextRef.current = audioContext;
+      audioAnalyserRef.current = analyser;
+      audioGainRef.current = gainNode;
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Erreur accès micro", err);
+      clearInterval(recordTimerRef.current);
       stopRecordVisualization();
-      audioContext.close();
+      setIsRecording(false);
+      recordStartRef.current = null;
+    }
 
-      if (canceled || !recordingChunksRef.current.length) {
-        recordingChunksRef.current = [];
-        setRecordLevel(0);
-        return;
-      }
+    if (recordLocked) {
+      setRecordCanceled(false);
+      recordCanceledRef.current = false;
+      return;
+    }
 
-      const blob = new Blob(recordingChunksRef.current, {
-        type: "audio/webm",
-      });
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
+  };
 
-      uploadAudio(blob);
-    };
-
-    const animateLevel = () => {
-      const buffer = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(buffer);
-      const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
-      setRecordLevel(Math.min(1, max * 1.4));
-      recordVizFrame.current = requestAnimationFrame(animateLevel);
-    };
-
-    animateLevel();
-
-    recorder.start();
-
-    mediaRecorderRef.current = recorder;
-    audioContextRef.current = audioContext;
-    audioAnalyserRef.current = analyser;
-    audioGainRef.current = gainNode;
-
-    setIsRecording(true);
-  } catch (err) {
-    console.error("Erreur accès micro", err);
-    clearInterval(recordTimerRef.current);
-    stopRecordVisualization();
-  }
-};
   const updateRecordingDrag = (event) => {
     if (!isRecording || !recordStartRef.current) return;
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
@@ -1165,17 +1134,11 @@ const startRecording = async (event) => {
                         : "Glisser vers la droite pour annuler / vers le haut pour verrouiller"}
                     </div>
                     <div className="recording-level">
-                      {Array.from({ length: 8 }).map((_, idx) => {
-                        const height = Math.max(10, recordLevel * 80 * Math.random());
-                        return (
-                          <span
-                            // eslint-disable-next-line react/no-array-index-key
-                            key={idx}
-                            className="recording-level-bar"
-                            style={{ height: `${height}px` }}
-                          />
-                        );
-                      })}
+                      <div
+                        className="recording-level-bar"
+                        ref={recordLevelBarRef}
+                        style={{ "--record-level": recordLevel }}
+                      />
                     </div>
                   </div>
                   <div
