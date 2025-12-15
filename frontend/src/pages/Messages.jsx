@@ -113,11 +113,6 @@ export default function Messages() {
   const [recordOffset, setRecordOffset] = useState(0);
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
-  const audioContextRef = useRef(null);
-  const audioAnalyserRef = useRef(null);
-  const audioGainRef = useRef(null);
-  const recordVizFrame = useRef(null);
-  const [recordLevel, setRecordLevel] = useState(0);
   const audioRefs = useRef({});
   const [audioStatus, setAudioStatus] = useState({});
 
@@ -185,6 +180,7 @@ export default function Messages() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
@@ -457,129 +453,71 @@ export default function Messages() {
   ===================================================== */
   const recordCanceledRef = useRef(false);
 
-  const stopRecordVisualization = () => {
-    if (recordVizFrame.current) {
-      cancelAnimationFrame(recordVizFrame.current);
-      recordVizFrame.current = null;
-    }
-  };
-
   const startRecording = async (event) => {
-    if (!activeChat || isRecording) return;
-    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+  if (!activeChat || isRecording) return;
 
-    recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
-    setRecordTime(0);
-    setRecordOffset(0);
-    setRecordCanceled(false);
-    setRecordLocked(false);
-    setRecordLevel(0);
-    recordCanceledRef.current = false;
+  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
-    recordTimerRef.current = setInterval(() => {
-      setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
-    }, 200);
+  recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
+  setRecordTime(0);
+  setRecordOffset(0);
+  setRecordCanceled(false);
+  setRecordLocked(false);
+  setRecordLevel(0);
+  recordCanceledRef.current = false;
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = 1.8;
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      const destination = audioContext.createMediaStreamDestination();
+  recordTimerRef.current = setInterval(() => {
+    setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
+  }, 200);
 
-      source.connect(gainNode);
-      gainNode.connect(analyser);
-      analyser.connect(destination);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const recorder = new MediaRecorder(destination.stream);
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(stream);
 
-      recordingChunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          recordingChunksRef.current.push(e.data);
-        }
-      };
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = 1.8;
 
-      recorder.onstop = () => {
-        const duration = Date.now() - (recordStartRef.current?.at || Date.now());
-        const canceled = recordCanceledRef.current || duration < 300;
-        stream.getTracks().forEach((t) => t.stop());
-        stopRecordVisualization();
-        audioContext.close();
-        if (canceled) {
-          recordingChunksRef.current = [];
-          setRecordLevel(0);
-        if (canceled) {
-          recordingChunksRef.current = [];
-          return;
-        }
-        const blob = new Blob(recordingChunksRef.current, {
-          type: "audio/webm",
-        });
-        uploadAudio(blob);
-      };
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
 
-      const animateLevel = () => {
-        const buffer = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(buffer);
-        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
-        setRecordLevel(max);
-        recordVizFrame.current = requestAnimationFrame(animateLevel);
-      };
-      animateLevel();
+    const destination = audioContext.createMediaStreamDestination();
 
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      audioContextRef.current = audioContext;
-      audioAnalyserRef.current = analyser;
-      audioGainRef.current = gainNode;
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Erreur accès micro", err);
-      clearInterval(recordTimerRef.current);
+    source.connect(gainNode);
+    gainNode.connect(analyser);
+    analyser.connect(destination);
+
+    const recorder = new MediaRecorder(destination.stream);
+
+    recordingChunksRef.current = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordingChunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = () => {
       stopRecordVisualization();
-    }
-  };
+    };
 
-  const updateRecordingDrag = (event) => {
-    if (!isRecording || !recordStartRef.current) return;
-    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = (recordStartRef.current.x || clientX) - clientX;
-    const deltaY = (recordStartRef.current.y || clientY) - clientY;
+    recorder.start();
 
-    if (deltaY > 70) {
-      setRecordLocked(true);
-    }
+    mediaRecorderRef.current = recorder;
+    audioContextRef.current = audioContext;
+    audioAnalyserRef.current = analyser;
+    audioGainRef.current = gainNode;
 
-    if (recordLocked) {
-      setRecordCanceled(false);
-      recordCanceledRef.current = false;
-      return;
-    }
+    setIsRecording(true);
 
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
-  };
-
-  const stopRecording = (forceCancel = false) => {
-    if (!isRecording) return;
-    if (forceCancel) {
-      recordCanceledRef.current = true;
-      setRecordCanceled(true);
-      setRecordTime(0);
-    }
+  } catch (err) {
+    console.error("Erreur accès micro", err);
     clearInterval(recordTimerRef.current);
-    setIsRecording(false);
-    setRecordLocked(false);
-    setRecordLevel(0);
     stopRecordVisualization();
+    setIsRecording(false);
+  }
+};
+
   const updateRecordingDrag = (event) => {
     if (!isRecording || !recordStartRef.current) return;
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
@@ -617,12 +555,6 @@ export default function Messages() {
     if (recorder && recorder.state !== "inactive") {
       recorder.stop();
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    audioAnalyserRef.current = null;
-    audioGainRef.current = null;
   };
 
   const uploadAudio = async (blob) => {
@@ -1112,19 +1044,6 @@ export default function Messages() {
                         : recordLocked
                         ? "Verrouillé — appuie pour envoyer"
                         : "Glisser vers la gauche pour annuler / vers le haut pour verrouiller"}
-                    </div>
-                    <div className="recording-level">
-                      {Array.from({ length: 8 }).map((_, idx) => {
-                        const height = Math.max(10, recordLevel * 80 * Math.random());
-                        return (
-                          <span
-                            // eslint-disable-next-line react/no-array-index-key
-                            key={idx}
-                            className="recording-level-bar"
-                            style={{ height: `${height}px` }}
-                          />
-                        );
-                      })}
                     </div>
                   </div>
                   <div
