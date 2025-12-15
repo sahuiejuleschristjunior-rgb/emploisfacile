@@ -454,69 +454,54 @@ export default function Messages() {
   const recordCanceledRef = useRef(false);
 
   const startRecording = async (event) => {
-  if (!activeChat || isRecording) return;
+    if (!activeChat || isRecording) return;
+    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
-  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+    recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
+    setRecordTime(0);
+    setRecordOffset(0);
+    setRecordCanceled(false);
+    setRecordLocked(false);
+    recordCanceledRef.current = false;
 
-  recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
-  setRecordTime(0);
-  setRecordOffset(0);
-  setRecordCanceled(false);
-  setRecordLocked(false);
-  setRecordLevel(0);
-  recordCanceledRef.current = false;
+    recordTimerRef.current = setInterval(() => {
+      setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
+    }, 200);
 
-  recordTimerRef.current = setInterval(() => {
-    setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
-  }, 200);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingChunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          recordingChunksRef.current.push(e.data);
+        }
+      };
 
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const source = audioContext.createMediaStreamSource(stream);
+      recorder.onstop = () => {
+        const duration = Date.now() - (recordStartRef.current?.at || Date.now());
+        const canceled = recordCanceledRef.current || duration < 300;
+        stream.getTracks().forEach((t) => t.stop());
+        if (canceled) {
+          recordingChunksRef.current = [];
+          return;
+        }
+        const blob = new Blob(recordingChunksRef.current, {
+          type: "audio/webm",
+        });
+        uploadAudio(blob);
+      };
 
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 1.8;
-
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-
-    const destination = audioContext.createMediaStreamDestination();
-
-    source.connect(gainNode);
-    gainNode.connect(analyser);
-    analyser.connect(destination);
-
-    const recorder = new MediaRecorder(destination.stream);
-
-    recordingChunksRef.current = [];
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) recordingChunksRef.current.push(e.data);
-    };
-
-    recorder.onstop = () => {
-      stopRecordVisualization();
-    };
-
-    recorder.start();
-
-    mediaRecorderRef.current = recorder;
-    audioContextRef.current = audioContext;
-    audioAnalyserRef.current = analyser;
-    audioGainRef.current = gainNode;
-
-    setIsRecording(true);
-
-  } catch (err) {
-    console.error("Erreur accès micro", err);
-    clearInterval(recordTimerRef.current);
-    stopRecordVisualization();
-    setIsRecording(false);
-  }
-};
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Erreur accès micro", err);
+      clearInterval(recordTimerRef.current);
+    }
+  };
 
   const updateRecordingDrag = (event) => {
     if (!isRecording || !recordStartRef.current) return;
