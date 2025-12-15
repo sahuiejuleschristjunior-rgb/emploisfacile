@@ -466,14 +466,11 @@ export default function Messages() {
       recordVizFrame.current = null;
     }
   };
-
+  
   const startRecording = async (event) => {
     if (!activeChat || isRecording) return;
-    try {
-      
-    } catch (error) {
-      
-    }
+    try{
+
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
