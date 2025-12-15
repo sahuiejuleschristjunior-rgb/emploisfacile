@@ -1,11 +1,11 @@
 // src/context/SocketContext.jsx
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
-  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -13,16 +13,16 @@ export function SocketProvider({ children }) {
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
-    const socket = io(SOCKET_URL, {
+    const instance = io(SOCKET_URL, {
       auth: { token },
       transports: ["polling", "websocket"],
       reconnection: true,
     });
 
-    socketRef.current = socket;
+    setSocket(instance);
 
-    socket.on("connect", () =>
-      console.log("🌐 SOCKET GLOBAL CONNECTÉ :", socket.id)
+    instance.on("connect", () =>
+      console.log("🌐 SOCKET GLOBAL CONNECTÉ :", instance.id)
     );
 
     return () => {
@@ -31,9 +31,7 @@ export function SocketProvider({ children }) {
   }, []);
 
   return (
-    <SocketContext.Provider value={socketRef.current}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
   );
 }
 

@@ -71,15 +71,16 @@ function initSocket(server) {
     console.log("🔌 Socket connecté :", userId, "| ID :", socket.id);
 
     /* ============================================================
-       MESSAGES — TEMPS RÉEL
+       MESSAGES — TEMPS RÉÉL
     ============================================================ */
-    socket.on("send_message", ({ receiver, content }) => {
+    socket.on("send_message", ({ receiver, content, type }) => {
       if (!receiver || !content) return;
 
       const payload = {
         sender: userId,
         receiver,
         content,
+        type: type || "text",
         createdAt: new Date(),
       };
 
@@ -96,9 +97,9 @@ function initSocket(server) {
     /* ============================================================
        TYPING
     ============================================================ */
-    socket.on("typing", ({ to }) => {
+    socket.on("typing", ({ to, isTyping }) => {
       if (!to) return;
-      io.to(String(to)).emit("typing", { from: userId });
+      io.to(String(to)).emit("typing", { from: userId, isTyping: !!isTyping });
     });
 
     /* ============================================================
