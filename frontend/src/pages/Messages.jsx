@@ -472,6 +472,7 @@ export default function Messages() {
     setRecordLocked(false);
     setRecordLevel(0);
     recordCanceledRef.current = false;
+    recordingChunksRef.current = [];
 
     recordTimerRef.current = setInterval(() => {
       setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
@@ -494,6 +495,11 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
+      recorder.ondataavailable = (e) => {
+        if (e?.data && e.data.size > 0) {
+          recordingChunksRef.current.push(e.data);
+        }
+      };
       source.connect(gainNode);
       gainNode.connect(analyser);
       analyser.connect(destination);
@@ -566,10 +572,6 @@ export default function Messages() {
       recordStartRef.current = null;
     }
 
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
