@@ -113,8 +113,15 @@ export default function Messages() {
   const [recordOffset, setRecordOffset] = useState(0);
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const audioAnalyserRef = useRef(null);
+  const audioGainRef = useRef(null);
+  const recordVizFrame = useRef(null);
+  const [recordLevel, setRecordLevel] = useState(0);
   const audioRefs = useRef({});
   const [audioStatus, setAudioStatus] = useState({});
+  const currentAudioRef = useRef(null);
+  const currentAudioIdRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -453,6 +460,13 @@ export default function Messages() {
   ===================================================== */
   const recordCanceledRef = useRef(false);
 
+  const stopRecordVisualization = () => {
+    if (recordVizFrame.current) {
+      cancelAnimationFrame(recordVizFrame.current);
+      recordVizFrame.current = null;
+    }
+  };
+
   const startRecording = async (event) => {
     if (!activeChat || isRecording) return;
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
@@ -463,6 +477,7 @@ export default function Messages() {
     setRecordOffset(0);
     setRecordCanceled(false);
     setRecordLocked(false);
+    setRecordLevel(0);
     recordCanceledRef.current = false;
 
     recordTimerRef.current = setInterval(() => {
@@ -471,7 +486,19 @@ export default function Messages() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 1.8;
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      const destination = audioContext.createMediaStreamDestination();
+
+      source.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(destination);
+
+      const recorder = new MediaRecorder(destination.stream);
 
       recordingChunksRef.current = [];
       recorder.ondataavailable = (e) => {
@@ -484,6 +511,11 @@ export default function Messages() {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
         const canceled = recordCanceledRef.current || duration < 300;
         stream.getTracks().forEach((t) => t.stop());
+        stopRecordVisualization();
+        audioContext.close();
+        if (canceled) {
+          recordingChunksRef.current = [];
+          setRecordLevel(0);
         if (canceled) {
           recordingChunksRef.current = [];
           return;
@@ -494,12 +526,25 @@ export default function Messages() {
         uploadAudio(blob);
       };
 
+      const animateLevel = () => {
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(buffer);
+        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+        setRecordLevel(max);
+        recordVizFrame.current = requestAnimationFrame(animateLevel);
+      };
+      animateLevel();
+
       recorder.start();
       mediaRecorderRef.current = recorder;
+      audioContextRef.current = audioContext;
+      audioAnalyserRef.current = analyser;
+      audioGainRef.current = gainNode;
       setIsRecording(true);
     } catch (err) {
       console.error("Erreur accès micro", err);
       clearInterval(recordTimerRef.current);
+      stopRecordVisualization();
     }
   };
 
@@ -507,10 +552,10 @@ export default function Messages() {
     if (!isRecording || !recordStartRef.current) return;
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = (recordStartRef.current.x || clientX) - clientX;
-    const deltaY = (recordStartRef.current.y || clientY) - clientY;
+    const deltaX = clientX - (recordStartRef.current.x || clientX);
+    const deltaY = clientY - (recordStartRef.current.y || clientY);
 
-    if (deltaY > 70) {
+    if (deltaY < -70) {
       setRecordLocked(true);
     }
 
@@ -531,6 +576,8 @@ export default function Messages() {
     if (forceCancel) {
       recordCanceledRef.current = true;
       setRecordCanceled(true);
+      setRecordTime(0);
+      recordingChunksRef.current = [];
     }
     clearInterval(recordTimerRef.current);
     setIsRecording(false);
@@ -540,6 +587,12 @@ export default function Messages() {
     if (recorder && recorder.state !== "inactive") {
       recorder.stop();
     }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    audioAnalyserRef.current = null;
+    audioGainRef.current = null;
   };
 
   const uploadAudio = async (blob) => {
@@ -596,10 +649,31 @@ export default function Messages() {
   const togglePlay = (messageId) => {
     const audio = audioRefs.current[messageId];
     if (!audio) return;
+
     if (audio.paused) {
+      if (
+        currentAudioRef.current &&
+        currentAudioRef.current !== audio &&
+        currentAudioIdRef.current
+      ) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        setAudioStatus((prev) => ({
+          ...prev,
+          [currentAudioIdRef.current]: {
+            ...(prev[currentAudioIdRef.current] || {}),
+            currentTime: 0,
+            playing: false,
+          },
+        }));
+      }
+      currentAudioRef.current = audio;
+      currentAudioIdRef.current = messageId;
       audio.play();
     } else {
       audio.pause();
+      currentAudioRef.current = audio;
+      currentAudioIdRef.current = messageId;
     }
   };
 
@@ -625,6 +699,12 @@ export default function Messages() {
     node.onpause = updateStatus;
     node.onended = () => {
       node.currentTime = 0;
+      if (currentAudioRef.current === node) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current = null;
+        currentAudioIdRef.current = null;
+      }
       updateStatus();
     };
   };
@@ -1028,12 +1108,25 @@ export default function Messages() {
                         ? "Annulé"
                         : recordLocked
                         ? "Verrouillé — appuie pour envoyer"
-                        : "Glisser vers la gauche pour annuler / vers le haut pour verrouiller"}
+                        : "Glisser vers la droite pour annuler / vers le haut pour verrouiller"}
+                    </div>
+                    <div className="recording-level">
+                      {Array.from({ length: 8 }).map((_, idx) => {
+                        const height = Math.max(10, recordLevel * 80 * Math.random());
+                        return (
+                          <span
+                            // eslint-disable-next-line react/no-array-index-key
+                            key={idx}
+                            className="recording-level-bar"
+                            style={{ height: `${height}px` }}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                   <div
                     className="recording-slider"
-                    style={{ transform: `translateX(-${Math.max(0, recordOffset)}px)` }}
+                    style={{ transform: `translateX(${Math.max(0, recordOffset)}px)` }}
                   />
                   {recordLocked && (
                     <button
