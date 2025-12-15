@@ -44,15 +44,6 @@ const SendIcon = () => (
   </svg>
 );
 
-const CloseIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-    <path
-      fill="currentColor"
-      d="M6.34 6.34a1 1 0 0 1 1.32-.08l.1.08L12 10.59l4.24-4.25a1 1 0 0 1 1.5 1.32l-.08.1L13.4 12l4.26 4.24a1 1 0 0 1-1.32 1.5l-.1-.08L12 13.4l-4.24 4.26a1 1 0 0 1-1.5-1.32l.08-.1L10.6 12 6.34 7.76a1 1 0 0 1 0-1.42Z"
-    />
-  </svg>
-);
-
 const EmojiIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
     <path
@@ -503,6 +494,12 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
+      source.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(destination);
+
+      const recorder = new MediaRecorder(destination.stream);
+
   const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
   const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
@@ -540,6 +537,21 @@ export default function Messages() {
       };
       animateLevel();
 
+      const animateLevel = () => {
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(buffer);
+        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+        const level = Math.min(1, max * 1.4);
+        if (recordLevelBarRef.current) {
+          recordLevelBarRef.current.style.setProperty(
+            "--record-level",
+            level.toString()
+          );
+        }
+        recordVizFrame.current = requestAnimationFrame(animateLevel);
+      };
+      animateLevel();
+
       recorder.start();
       mediaRecorderRef.current = recorder;
       audioContextRef.current = audioContext;
@@ -552,12 +564,6 @@ export default function Messages() {
       stopRecordVisualization();
       setIsRecording(false);
       recordStartRef.current = null;
-    }
-
-    if (recordLocked) {
-      setRecordCanceled(false);
-      recordCanceledRef.current = false;
-      return;
     }
 
     setRecordOffset(deltaX);
