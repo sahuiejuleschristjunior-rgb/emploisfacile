@@ -32,7 +32,8 @@ POST /api/messages
 exports.sendMessage = async (req, res) => {
   try {
     const sender = req.user.id;
-    const { receiver, content, applicationId, jobId, type } = req.body;
+    const { receiver, content, applicationId, jobId, type, clientTempId } =
+      req.body;
 
     if (!receiver || !content) {
       return res
@@ -54,6 +55,7 @@ exports.sendMessage = async (req, res) => {
       application: applicationId || null,
       job: jobId || null,
       type: type || "text",
+      clientTempId: clientTempId || null,
       isRead: false,
     });
 
@@ -107,7 +109,7 @@ exports.sendAudioMessage = async (req, res) => {
     ensureAudioDir();
 
     const sender = req.user.id;
-    const { receiver, applicationId, jobId, content } = req.body;
+    const { receiver, applicationId, jobId, content, clientTempId } = req.body;
     const file = req.file;
 
     if (!receiver || !file) {
@@ -131,6 +133,7 @@ exports.sendAudioMessage = async (req, res) => {
       job: jobId || null,
       type: "audio",
       audioUrl,
+      clientTempId: clientTempId || null,
       isRead: false,
     });
 
@@ -145,6 +148,11 @@ exports.sendAudioMessage = async (req, res) => {
       to: receiver,
       message,
     });
+
+    getIO()
+      .to(receiver.toString())
+      .to(sender.toString())
+      .emit("audio_message", { message });
 
     await pushNotification(receiver, {
       from: sender,
@@ -321,6 +329,10 @@ exports.markAllAsReadForConversation = async (req, res) => {
       }
     );
 
+    getIO()
+      .to(String(otherUserId))
+      .emit("message_read", { withUserId: myId });
+
     return res.status(200).json({
       success: true,
       message: "Tous les messages ont été marqués comme lus.",
@@ -381,6 +393,11 @@ exports.reactToMessage = async (req, res) => {
       path: "reactions.user",
       select: "name avatar",
     });
+
+    getIO()
+      .to(message.sender.toString())
+      .to(message.receiver.toString())
+      .emit("reaction_update", { message: populated });
 
     return res.status(200).json({
       success: true,
