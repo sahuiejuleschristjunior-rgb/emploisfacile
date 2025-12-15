@@ -106,6 +106,7 @@ export default function Messages() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
+  const [recordLocked, setRecordLocked] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
   const recordStartRef = useRef(null);
   const recordTimerRef = useRef(null);
@@ -205,10 +206,49 @@ export default function Messages() {
   const upsertMessage = (incoming) => {
     if (!incoming) return;
     setMessages((prev) => {
-      const exists = prev.some((m) => m._id === incoming._id);
-      const next = exists
-        ? prev.map((m) => (m._id === incoming._id ? { ...m, ...incoming } : m))
-        : [...prev, incoming];
+      let next = [...prev];
+
+      // Supprimer un éventuel temporaire correspondant à l'ID client
+      if (incoming.clientTempId) {
+        next = next.filter((m) => m.clientTempId !== incoming.clientTempId);
+      }
+
+      // Supprimer un éventuel temporaire équivalent (même contenu + participants)
+      const samePair = next.findIndex((m) => {
+        const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
+        const receiverId =
+          typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
+        const incomingSender =
+          typeof incoming.sender === "object"
+            ? incoming.sender?._id
+            : incoming.sender;
+        const incomingReceiver =
+          typeof incoming.receiver === "object"
+            ? incoming.receiver?._id
+            : incoming.receiver;
+
+        const sameUsers =
+          senderId === incomingSender && receiverId === incomingReceiver;
+        const isTemp = typeof m._id === "string" && m._id.startsWith("temp-");
+        const sameText =
+          incoming.type === "text" &&
+          (m.type === "text" || !m.type) &&
+          (m.content || "").trim() === (incoming.content || "").trim();
+        const sameAudio = incoming.type === "audio" && m.type === "audio";
+        return isTemp && sameUsers && (sameText || sameAudio);
+      });
+
+      if (samePair >= 0) {
+        next.splice(samePair, 1);
+      }
+
+      const existsIndex = next.findIndex((m) => m._id === incoming._id);
+      if (existsIndex >= 0) {
+        next[existsIndex] = { ...next[existsIndex], ...incoming };
+      } else {
+        next.push(incoming);
+      }
+
       return next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     });
   };
@@ -231,7 +271,13 @@ export default function Messages() {
 
         const list = raw
           .map(normalizeFriend)
-          .filter((u) => u && u._id);
+          .filter((u) => u && u._id)
+          .reduce((acc, user) => {
+            if (!acc.some((u) => u._id === user._id)) {
+              acc.push(user);
+            }
+            return acc;
+          }, []);
 
         setFriends(list);
       } catch (err) {
@@ -367,12 +413,14 @@ export default function Messages() {
     const content = input.trim();
     setInput("");
 
+    const clientTempId = "temp-" + Date.now();
     const tempMessage = {
-      _id: "temp-" + Date.now(),
+      _id: clientTempId,
       sender: me?._id,
       receiver: activeChat._id,
       content,
       type: "text",
+      clientTempId,
     };
 
     setMessages((prev) => [...prev, tempMessage]);
@@ -388,15 +436,22 @@ export default function Messages() {
         body: JSON.stringify({
           receiver: activeChat._id,
           content,
+          clientTempId,
         }),
       });
 
       const data = await res.json();
 
       if (res.ok && data?.data) {
-        setMessages((prev) =>
-          prev.map((m) => (m._id === tempMessage._id ? data.data : m))
-        );
+        setMessages((prev) => {
+          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
+          const exists = withoutTemp.some((m) => m._id === data.data._id);
+          return exists
+            ? withoutTemp.map((m) =>
+                m._id === data.data._id ? { ...m, ...data.data } : m
+              )
+            : [...withoutTemp, data.data];
+        });
       }
     } catch (err) {
       console.error("Erreur envoi message", err);
@@ -411,11 +466,13 @@ export default function Messages() {
   const startRecording = async (event) => {
     if (!activeChat || isRecording) return;
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
-    recordStartRef.current = { at: Date.now(), x: clientX };
+    recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
     setRecordTime(0);
     setRecordOffset(0);
     setRecordCanceled(false);
+    setRecordLocked(false);
     recordCanceledRef.current = false;
 
     recordTimerRef.current = setInterval(() => {
@@ -459,17 +516,35 @@ export default function Messages() {
   const updateRecordingDrag = (event) => {
     if (!isRecording || !recordStartRef.current) return;
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const delta = (recordStartRef.current.x || clientX) - clientX;
-    setRecordOffset(delta);
-    const canceled = delta > 80;
+    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+    const deltaX = (recordStartRef.current.x || clientX) - clientX;
+    const deltaY = (recordStartRef.current.y || clientY) - clientY;
+
+    if (deltaY > 70) {
+      setRecordLocked(true);
+    }
+
+    if (recordLocked) {
+      setRecordCanceled(false);
+      recordCanceledRef.current = false;
+      return;
+    }
+
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
     setRecordCanceled(canceled);
     recordCanceledRef.current = canceled;
   };
 
-  const stopRecording = () => {
+  const stopRecording = (forceCancel = false) => {
     if (!isRecording) return;
+    if (forceCancel) {
+      recordCanceledRef.current = true;
+      setRecordCanceled(true);
+    }
     clearInterval(recordTimerRef.current);
     setIsRecording(false);
+    setRecordLocked(false);
     const recorder = mediaRecorderRef.current;
     mediaRecorderRef.current = null;
     if (recorder && recorder.state !== "inactive") {
@@ -482,13 +557,15 @@ export default function Messages() {
     const fileName = `voice-${Date.now()}.webm`;
 
     const tempUrl = URL.createObjectURL(blob);
+    const clientTempId = "temp-" + Date.now();
     const tempMessage = {
-      _id: "temp-" + Date.now(),
+      _id: clientTempId,
       sender: me?._id,
       receiver: activeChat._id,
       type: "audio",
       audioUrl: tempUrl,
       content: "",
+      clientTempId,
     };
 
     setMessages((prev) => [...prev, tempMessage]);
@@ -496,6 +573,7 @@ export default function Messages() {
     const formData = new FormData();
     formData.append("audio", blob, fileName);
     formData.append("receiver", activeChat._id);
+    formData.append("clientTempId", clientTempId);
 
     try {
       const res = await fetch(`${API_URL}/messages/audio`, {
@@ -508,9 +586,15 @@ export default function Messages() {
 
       const data = await res.json();
       if (res.ok && data?.data) {
-        setMessages((prev) =>
-          prev.map((m) => (m._id === tempMessage._id ? data.data : m))
-        );
+        setMessages((prev) => {
+          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
+          const exists = withoutTemp.some((m) => m._id === data.data._id);
+          return exists
+            ? withoutTemp.map((m) =>
+                m._id === data.data._id ? { ...m, ...data.data } : m
+              )
+            : [...withoutTemp, data.data];
+        });
       }
     } catch (err) {
       console.error("Erreur upload audio", err);
@@ -908,8 +992,12 @@ export default function Messages() {
               className="chat-input-bar"
               onMouseMove={updateRecordingDrag}
               onTouchMove={updateRecordingDrag}
-              onMouseUp={isRecording ? stopRecording : undefined}
-              onTouchEnd={isRecording ? stopRecording : undefined}
+              onMouseUp={
+                isRecording && !recordLocked ? () => stopRecording(false) : undefined
+              }
+              onTouchEnd={
+                isRecording && !recordLocked ? () => stopRecording(false) : undefined
+              }
             >
               <div className="attach-wrapper" ref={attachMenuRef}>
                 <button
@@ -932,9 +1020,7 @@ export default function Messages() {
                     className="recording-cancel"
                     type="button"
                     onClick={() => {
-                      recordCanceledRef.current = true;
-                      setRecordCanceled(true);
-                      stopRecording();
+                      stopRecording(true);
                     }}
                     aria-label="Annuler"
                   >
@@ -950,13 +1036,25 @@ export default function Messages() {
                     <div className="recording-hint">
                       {recordCanceled
                         ? "Annulé"
-                        : "Glisser vers la gauche pour annuler"}
+                        : recordLocked
+                        ? "Verrouillé — appuie pour envoyer"
+                        : "Glisser vers la gauche pour annuler / vers le haut pour verrouiller"}
                     </div>
                   </div>
                   <div
                     className="recording-slider"
                     style={{ transform: `translateX(-${Math.max(0, recordOffset)}px)` }}
                   />
+                  {recordLocked && (
+                    <button
+                      className="recording-send"
+                      type="button"
+                      onClick={() => stopRecording(false)}
+                      aria-label="Envoyer la note vocale"
+                    >
+                      <SendIcon />
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
