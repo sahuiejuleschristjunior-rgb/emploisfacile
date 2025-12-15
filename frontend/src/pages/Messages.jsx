@@ -469,6 +469,11 @@ export default function Messages() {
 
   const startRecording = async (event) => {
     if (!activeChat || isRecording) return;
+    try {
+      
+    } catch (error) {
+      
+    }
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
