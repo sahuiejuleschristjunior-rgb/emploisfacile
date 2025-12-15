@@ -494,6 +494,15 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
+      source.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(destination);
+
+      const recorder = new MediaRecorder(destination.stream);
+
+  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
         const canceled = recordCanceledRef.current || duration < 300;
@@ -528,6 +537,21 @@ export default function Messages() {
       };
       animateLevel();
 
+      const animateLevel = () => {
+        const buffer = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(buffer);
+        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+        const level = Math.min(1, max * 1.4);
+        if (recordLevelBarRef.current) {
+          recordLevelBarRef.current.style.setProperty(
+            "--record-level",
+            level.toString()
+          );
+        }
+        recordVizFrame.current = requestAnimationFrame(animateLevel);
+      };
+      animateLevel();
+
       recorder.start();
       mediaRecorderRef.current = recorder;
       audioContextRef.current = audioContext;
@@ -542,6 +566,10 @@ export default function Messages() {
       recordStartRef.current = null;
     }
 
+    setRecordOffset(deltaX);
+    const canceled = deltaX > 80;
+    setRecordCanceled(canceled);
+    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
@@ -1213,4 +1241,4 @@ export default function Messages() {
       </main>
     </div>
   );
-}
+} 
