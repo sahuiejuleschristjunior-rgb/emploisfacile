@@ -531,21 +531,6 @@ export default function Messages() {
       };
       animateLevel();
 
-      const animateLevel = () => {
-        const buffer = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(buffer);
-        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
-        const level = Math.min(1, max * 1.4);
-        if (recordLevelBarRef.current) {
-          recordLevelBarRef.current.style.setProperty(
-            "--record-level",
-            level.toString()
-          );
-        }
-        recordVizFrame.current = requestAnimationFrame(animateLevel);
-      };
-      animateLevel();
-
       recorder.start();
       mediaRecorderRef.current = recorder;
       audioContextRef.current = audioContext;
