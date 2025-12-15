@@ -97,9 +97,9 @@ function initSocket(server) {
     /* ============================================================
        TYPING
     ============================================================ */
-    socket.on("typing", ({ to, isTyping }) => {
+    socket.on("typing", ({ to, isTyping = true }) => {
       if (!to) return;
-      io.to(String(to)).emit("typing", { from: userId, isTyping: !!isTyping });
+      io.to(String(to)).emit("typing", { from: userId, isTyping });
     });
 
     /* ============================================================

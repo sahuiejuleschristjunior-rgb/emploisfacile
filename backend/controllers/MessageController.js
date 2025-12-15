@@ -326,6 +326,10 @@ exports.markAllAsReadForConversation = async (req, res) => {
       }
     );
 
+    getIO()
+      .to(String(otherUserId))
+      .emit("message_read", { withUserId: myId });
+
     return res.status(200).json({
       success: true,
       message: "Tous les messages ont été marqués comme lus.",
