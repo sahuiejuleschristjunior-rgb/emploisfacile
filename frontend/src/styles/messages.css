@@ -809,6 +809,22 @@
   gap: 4px;
 }
 
+.recording-level {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+  padding-top: 4px;
+}
+
+.recording-level-bar {
+  width: 4px;
+  background: linear-gradient(180deg, #76e0a8 0%, #2ecc71 100%);
+  border-radius: 999px;
+  display: inline-block;
+  transition: height 80ms ease;
+}
+
 .recording-hint {
   color: #b0b3b8;
   font-size: 12px;
