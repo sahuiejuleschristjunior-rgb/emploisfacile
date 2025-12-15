@@ -187,6 +187,7 @@ export default function Messages() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
@@ -483,7 +484,6 @@ export default function Messages() {
       setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
     }, 200);
 
-    // Guard the entire async recording setup in a single try/catch block
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -516,6 +516,8 @@ export default function Messages() {
         if (canceled) {
           recordingChunksRef.current = [];
           setRecordLevel(0);
+        if (canceled) {
+          recordingChunksRef.current = [];
           return;
         }
         const blob = new Blob(recordingChunksRef.current, {
@@ -580,8 +582,6 @@ export default function Messages() {
     clearInterval(recordTimerRef.current);
     setIsRecording(false);
     setRecordLocked(false);
-    setRecordLevel(0);
-    stopRecordVisualization();
     const recorder = mediaRecorderRef.current;
     mediaRecorderRef.current = null;
     if (recorder && recorder.state !== "inactive") {
