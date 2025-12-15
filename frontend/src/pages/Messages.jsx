@@ -178,18 +178,7 @@ export default function Messages() {
     const seconds = total % 60;
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
-
-  const upsertMessage = (incoming) => {
-    if (!incoming) return;
-    setMessages((prev) => {
-      const exists = prev.some((m) => m._id === incoming._id);
-      const next = exists
-        ? prev.map((m) => (m._id === incoming._id ? { ...m, ...incoming } : m))
-        : [...prev, incoming];
-      return next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    });
-  };
-
+  
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
