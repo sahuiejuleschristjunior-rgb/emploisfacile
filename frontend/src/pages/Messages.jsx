@@ -494,12 +494,6 @@ export default function Messages() {
 
       const recorder = new MediaRecorder(destination.stream);
 
-      source.connect(gainNode);
-      gainNode.connect(analyser);
-      analyser.connect(destination);
-
-      const recorder = new MediaRecorder(destination.stream);
-
   const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
   const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
