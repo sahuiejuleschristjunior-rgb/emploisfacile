@@ -78,7 +78,6 @@ export default function RelationsPage() {
   const handleChangeCategory = async (friendId, newCategory) => {
     try {
       await changeFriendCategory(friendId, newCategory);
-      await loadFriends();
 
       setFriends((prev) =>
         prev.map((f) =>
