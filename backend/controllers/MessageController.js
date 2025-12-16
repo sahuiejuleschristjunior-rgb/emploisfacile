@@ -5,8 +5,11 @@ const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
 const path = require("path");
 const fs = require("fs");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 
 const typingState = new Map();
+const execFileAsync = promisify(execFile);
 
 /* ============================================================
 🔥 UTILITAIRE : PUSH NOTIF + SOCKET
@@ -104,6 +107,32 @@ function ensureAudioDir() {
   return uploadDir;
 }
 
+async function enhanceAudioQuality(filePath) {
+  const outputPath = `${filePath}.tmp.webm`;
+  const filters =
+    "loudnorm=I=-16:LRA=11:TP=-1.5,agate=threshold=-55dB:ratio=1.2:attack=5:release=100";
+
+  const args = [
+    "-i",
+    filePath,
+    "-af",
+    filters,
+    "-c:a",
+    "libopus",
+    "-b:a",
+    "32k",
+    "-ar",
+    "48000",
+    "-vn",
+    "-f",
+    "webm",
+    outputPath,
+  ];
+
+  await execFileAsync("ffmpeg", args);
+  fs.renameSync(outputPath, filePath);
+}
+
 exports.sendAudioMessage = async (req, res) => {
   try {
     ensureAudioDir();
@@ -122,6 +151,8 @@ exports.sendAudioMessage = async (req, res) => {
     if (!receiverUser) {
       return res.status(404).json({ message: "Destinataire introuvable." });
     }
+
+    await enhanceAudioQuality(file.path);
 
     const audioUrl = `/uploads/audio/${file.filename}`;
 
