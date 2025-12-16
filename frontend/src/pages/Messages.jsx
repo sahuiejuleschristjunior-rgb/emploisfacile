@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
+import VideoCallOverlay from "../components/VideoCallOverlay";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_HOST = API_URL?.replace(/\/?api$/, "");
@@ -190,6 +191,13 @@ export default function Messages() {
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [callStatus, setCallStatus] = useState({ type: null, startedAt: null });
+  const [callOverlay, setCallOverlay] = useState({
+    visible: false,
+    mode: "caller",
+    callType: "video",
+    offer: null,
+    otherUser: null,
+  });
 
   const recordStartRef = useRef(null);
   const recordTimerRef = useRef(null);
@@ -509,6 +517,28 @@ export default function Messages() {
       }
     });
 
+    socket.on("call_offer", ({ from, offer, callType }) => {
+      if (!from || !offer) return;
+      const caller =
+        friends.find((f) => f._id === from) ||
+        (activeChat?._id === from ? activeChat : null) ||
+        { _id: from, name: "Contact" };
+
+      setCallOverlay({
+        visible: true,
+        mode: "callee",
+        callType: callType || "video",
+        offer,
+        otherUser: caller,
+      });
+
+      setCallStatus({
+        type: callType || "video",
+        startedAt: Date.now(),
+        contact: caller.name,
+      });
+    });
+
     socket.on("message_updated", (payload) => {
       const message = payload?.message || payload;
       if (isMessageInActiveChat(message)) {
@@ -555,11 +585,28 @@ export default function Messages() {
       }));
     });
 
+    socket.on("call_hangup", ({ from }) => {
+      setCallOverlay((prev) => {
+        if (!prev.visible || !prev.otherUser || prev.otherUser._id !== from) {
+          return prev;
+        }
+
+        return {
+          visible: false,
+          mode: "caller",
+          callType: "video",
+          offer: null,
+          otherUser: null,
+        };
+      });
+      setCallStatus({ type: null, startedAt: null, contact: null });
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activeChat, token]);
+  }, [activeChat, friends, token]);
 
   /* =====================================================
      LOAD CONVERSATION
@@ -1247,12 +1294,39 @@ export default function Messages() {
     setInput("");
   };
 
+  const resetCallOverlay = () => {
+    setCallOverlay({
+      visible: false,
+      mode: "caller",
+      callType: "video",
+      offer: null,
+      otherUser: null,
+    });
+  };
+
   const startCall = (type) => {
     if (!activeChat) return;
-    setCallStatus({ type, startedAt: Date.now(), contact: activeChat.name });
+
+    setCallOverlay({
+      visible: true,
+      mode: "caller",
+      callType: type || "video",
+      offer: null,
+      otherUser: activeChat,
+    });
+
+    setCallStatus({
+      type: type || "video",
+      startedAt: Date.now(),
+      contact: activeChat.name,
+    });
   };
 
   const endCall = () => {
+    if (socketRef.current && callOverlay.otherUser?._id) {
+      socketRef.current.emit("call_hangup", { to: callOverlay.otherUser._id });
+    }
+    resetCallOverlay();
     setCallStatus({ type: null, startedAt: null, contact: null });
   };
 
@@ -1267,6 +1341,7 @@ export default function Messages() {
   }, [messages]);
 
   useEffect(() => {
+    resetCallOverlay();
     setCallStatus({ type: null, startedAt: null, contact: null });
   }, [activeChat?._id]);
 
@@ -1470,6 +1545,7 @@ export default function Messages() {
                 onClick={() => {
                   setActiveChat(null);
                   setMessages([]);
+                  resetCallOverlay();
                   setCallStatus({ type: null, startedAt: null, contact: null });
                 }}
               >
@@ -1909,6 +1985,20 @@ export default function Messages() {
           </>
         )}
       </main>
+
+      <VideoCallOverlay
+        visible={callOverlay.visible}
+        mode={callOverlay.mode}
+        callType={callOverlay.callType}
+        socket={socketRef.current}
+        me={me}
+        otherUser={callOverlay.otherUser}
+        incomingOffer={callOverlay.offer}
+        onClose={() => {
+          resetCallOverlay();
+          setCallStatus({ type: null, startedAt: null, contact: null });
+        }}
+      />
     </div>
   );
 }
