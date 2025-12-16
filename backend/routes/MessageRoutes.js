@@ -57,6 +57,18 @@ router.post(
   MessageController.setTypingFlag
 );
 
+router.patch(
+  "/:id",
+  isAuthenticated,
+  MessageController.updateMessage
+);
+
+router.patch(
+  "/:id/pin",
+  isAuthenticated,
+  MessageController.togglePin
+);
+
 router.delete(
   "/:id",
   isAuthenticated,
