@@ -210,6 +210,34 @@ export default function Messages() {
     return `${API_HOST || ""}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
+  const copyToClipboard = async (text) => {
+    if (!text) return false;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (err) {
+      console.error("Erreur copie presse-papiers", err);
+    }
+
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      return success;
+    } catch (err) {
+      console.error("Échec de la copie via fallback", err);
+      return false;
+    }
+  };
+
   const formatTime = (time) => {
     if (!time && time !== 0) return "0:00";
     const total = Math.floor(time);
@@ -530,6 +558,52 @@ export default function Messages() {
       });
     } catch (err) {
       console.error("Erreur suppression message", err);
+    }
+  };
+
+  const getMessageShareText = (msg) => {
+    if (!msg) return "";
+    if (msg.type === "audio") {
+      const url = resolveUrl(msg.audioUrl);
+      const preview = getAudioPreviewText(msg);
+      return url ? `${preview}\n${url}` : preview;
+    }
+    return msg.content || "";
+  };
+
+  const copyMessage = async (msg) => {
+    const text = getMessageShareText(msg);
+    if (!text) return;
+    const copied = await copyToClipboard(text);
+    setMessageActions(null);
+    if (copied) {
+      alert("Message copié dans le presse-papiers");
+    }
+  };
+
+  const shareMessage = async (msg) => {
+    if (!msg) return;
+    const text = getMessageShareText(msg);
+    const url = msg.type === "audio" ? resolveUrl(msg.audioUrl) : undefined;
+    const title = msg.type === "audio" ? "Message vocal" : "Message";
+
+    if (navigator?.share) {
+      try {
+        await navigator.share({ text, url, title });
+        setMessageActions(null);
+        return;
+      } catch (err) {
+        if (err?.name === "AbortError") {
+          return;
+        }
+        console.error("Erreur partage message", err);
+      }
+    }
+
+    const copied = await copyToClipboard(text);
+    setMessageActions(null);
+    if (copied) {
+      alert("Lien de partage copié dans le presse-papiers");
     }
   };
 
@@ -1436,6 +1510,8 @@ export default function Messages() {
                   </div>
                 )}
                 <div className="message-actions-buttons">
+                  <button onClick={() => copyMessage(messageActions)}>Copier</button>
+                  <button onClick={() => shareMessage(messageActions)}>Partager</button>
                   <button onClick={() => startReply(messageActions)}>Répondre</button>
                   <button className="danger" onClick={() => askDelete(messageActions)}>
                     Supprimer
