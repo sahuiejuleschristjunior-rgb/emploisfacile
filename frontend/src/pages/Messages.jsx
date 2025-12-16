@@ -82,6 +82,61 @@ const CloseIcon = () => (
   </svg>
 );
 
+const PinIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M9.6 3.5a1 1 0 0 0-.54 1.3l1.37 3.5-3.74 4.2a1 1 0 0 0 .75 1.65h4.56L12 20a1 1 0 0 0 2 0l-.05-5.85h4.56a1 1 0 0 0 .75-1.65l-3.75-4.2 1.38-3.5a1 1 0 0 0-1.86-.72l-1.42 3.6h-2.6L11.47 4.1A1 1 0 0 0 9.6 3.5Z"
+    />
+  </svg>
+);
+
+const EditIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M18.7 2.3a1 1 0 0 0-1.4 0L8 11.6V15h3.4l9.3-9.3a1 1 0 0 0 0-1.4l-2-2ZM20 21a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h14a1 1 0 0 1 1 1Z"
+    />
+  </svg>
+);
+
+const CopyIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M9 3a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3V9a3 3 0 0 0-3-3h-1V6a3 3 0 0 0-3-3H9Zm6 4v1a1 1 0 0 0 1 1h1v7a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1Z"
+    />
+  </svg>
+);
+
+const ShareIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M18 8a3 3 0 0 0-2.52 1.34l-5.16-2.4a3 3 0 1 0-.64 1.28l5.07 2.36a3 3 0 0 0 0 3.44l-5.07 2.36A3 3 0 1 0 9 17.07l5.16-2.4A3 3 0 1 0 18 8Z"
+    />
+  </svg>
+);
+
+const ReplyIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M10.3 5.3a1 1 0 0 1 1.4 0l6 6a1 1 0 0 1 0 1.4l-6 6a1 1 0 1 1-1.4-1.4L14.58 13H7a1 1 0 1 1 0-2h7.59L10.3 6.7a1 1 0 0 1 0-1.4Z"
+    />
+  </svg>
+);
+
+const DeleteIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M9 3a1 1 0 0 0-1 1v1H5a1 1 0 1 0 0 2h1v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7h1a1 1 0 1 0 0-2h-3V4a1 1 0 0 0-1-1H9Zm2 3h2v1a1 1 0 1 0 2 0V6h1v12H8V6h1v1a1 1 0 1 0 2 0V6Z"
+    />
+  </svg>
+);
+
+
 export default function Messages() {
   /* =====================================================
      STATE
@@ -1699,19 +1754,59 @@ export default function Messages() {
                   </div>
                 )}
                 <div className="message-actions-buttons">
-                  <button onClick={() => togglePin(messageActions)}>
-                    {isPinnedByMe(messageActions) ? "Désépingler" : "Épingler"}
+                  <button
+                    className="message-action-icon"
+                    onClick={() => togglePin(messageActions)}
+                    aria-label={
+                      isPinnedByMe(messageActions) ? "Désépingler" : "Épingler"
+                    }
+                    title={
+                      isPinnedByMe(messageActions) ? "Désépingler" : "Épingler"
+                    }
+                  >
+                    <PinIcon />
                   </button>
                   {canEditMessage(messageActions) && (
-                    <button onClick={() => startEdit(messageActions)}>
-                      Modifier
+                    <button
+                      className="message-action-icon"
+                      onClick={() => startEdit(messageActions)}
+                      aria-label="Modifier"
+                      title="Modifier"
+                    >
+                      <EditIcon />
                     </button>
                   )}
-                  <button onClick={() => copyMessage(messageActions)}>Copier</button>
-                  <button onClick={() => shareMessage(messageActions)}>Partager</button>
-                  <button onClick={() => startReply(messageActions)}>Répondre</button>
-                  <button className="danger" onClick={() => askDelete(messageActions)}>
-                    Supprimer
+                  <button
+                    className="message-action-icon"
+                    onClick={() => copyMessage(messageActions)}
+                    aria-label="Copier"
+                    title="Copier"
+                  >
+                    <CopyIcon />
+                  </button>
+                  <button
+                    className="message-action-icon"
+                    onClick={() => shareMessage(messageActions)}
+                    aria-label="Partager"
+                    title="Partager"
+                  >
+                    <ShareIcon />
+                  </button>
+                  <button
+                    className="message-action-icon"
+                    onClick={() => startReply(messageActions)}
+                    aria-label="Répondre"
+                    title="Répondre"
+                  >
+                    <ReplyIcon />
+                  </button>
+                  <button
+                    className="message-action-icon danger"
+                    onClick={() => askDelete(messageActions)}
+                    aria-label="Supprimer"
+                    title="Supprimer"
+                  >
+                    <DeleteIcon />
                   </button>
                 </div>
               </div>
