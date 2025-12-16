@@ -1329,6 +1329,25 @@ export default function Messages() {
                   {messageActions.content ||
                     (messageActions.type === "audio" ? "Message vocal" : "Message")}
                 </div>
+                {!isMessageFromMe(messageActions) && (
+                  <div className="message-actions-reactions">
+                    <div className="message-actions-subtitle">Réagir</div>
+                    <div className="reaction-bar">
+                      {REACTIONS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          className="reaction-btn"
+                          onClick={() => {
+                            sendReaction(messageActions._id, emoji);
+                            setMessageActions(null);
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="message-actions-buttons">
                   <button onClick={() => startReply(messageActions)}>Répondre</button>
                   <button className="danger" onClick={() => askDelete(messageActions)}>
