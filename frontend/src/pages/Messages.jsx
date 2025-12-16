@@ -73,6 +73,15 @@ const PauseIcon = () => (
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M5.3 5.3a1 1 0 0 1 1.4 0L12 10.59l5.3-5.3a1 1 0 1 1 1.4 1.42L13.41 12l5.3 5.3a1 1 0 0 1-1.42 1.4L12 13.41l-5.3 5.3a1 1 0 1 1-1.4-1.42L10.59 12 5.3 6.7a1 1 0 0 1 0-1.4Z"
+    />
+  </svg>
+);
+
 export default function Messages() {
   // =============================
   // STATE
@@ -409,6 +418,7 @@ export default function Messages() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      activeStreamRef.current = stream;
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const gainNode = audioContext.createGain();
@@ -434,7 +444,6 @@ export default function Messages() {
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
         const canceled = recordCanceledRef.current || duration < 300;
-        stream.getTracks().forEach((t) => t.stop());
         stopRecordVisualization();
         audioContext.close().catch(() => {});
         audioContextRef.current = null;
@@ -442,6 +451,7 @@ export default function Messages() {
         audioGainRef.current = null;
         if (canceled || !recordingChunksRef.current.length) {
           recordingChunksRef.current = [];
+          cleanupAudioContext();
           setRecordLevel(0);
           return;
         }
@@ -452,8 +462,10 @@ export default function Messages() {
       };
 
       const animateLevel = () => {
-        const buffer = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(buffer);
+        const analyserNode = audioAnalyserRef.current;
+        if (!analyserNode) return;
+        const buffer = new Uint8Array(analyserNode.frequencyBinCount);
+        analyserNode.getByteFrequencyData(buffer);
         const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
         const level = Math.min(1, max * 1.4);
         setRecordLevel(level);
@@ -462,14 +474,15 @@ export default function Messages() {
         }
         recordVizFrame.current = requestAnimationFrame(animateLevel);
       };
-      animateLevel();
 
       recorder.start();
       setIsRecording(true);
+      animateLevel();
     } catch (err) {
       console.error("Erreur accès micro", err);
       cleanupRecording();
       setIsRecording(false);
+      setRecordLevel(0);
       recordStartRef.current = null;
     }
   };
@@ -977,7 +990,7 @@ export default function Messages() {
               </div>
             )}
 
-            {showEmojiPicker && reactionPicker.messageId && (
+            {reactionPicker.messageId && (
               <div className="reaction-picker">
                 <div className="reaction-bar">
                   {REACTIONS.map((emoji) => (
