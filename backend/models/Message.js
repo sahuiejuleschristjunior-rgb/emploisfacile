@@ -56,6 +56,30 @@ const messageSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Réponse à un autre message (optionnel)
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
+
+    // Extrait rapide du message auquel on répond pour l'affichage
+    replyPreview: {
+      messageId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Message",
+        default: null,
+      },
+      content: {
+        type: String,
+        default: "",
+      },
+      type: {
+        type: String,
+        default: "text",
+      },
+    },
+
     // Identifiant client temporaire pour éviter les doublons d'affichage
     clientTempId: {
       type: String,

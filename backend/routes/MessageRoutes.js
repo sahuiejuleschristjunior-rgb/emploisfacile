@@ -57,6 +57,12 @@ router.post(
   MessageController.setTypingFlag
 );
 
+router.delete(
+  "/:id",
+  isAuthenticated,
+  MessageController.deleteMessage
+);
+
 /* ============================================================
    OBTENIR LA CONVERSATION ENTRE 2 UTILISATEURS
    GET /api/messages/conversation/:userId

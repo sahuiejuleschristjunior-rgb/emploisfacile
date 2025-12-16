@@ -35,8 +35,15 @@ POST /api/messages
 exports.sendMessage = async (req, res) => {
   try {
     const sender = req.user.id;
-    const { receiver, content, applicationId, jobId, type, clientTempId } =
-      req.body;
+    const {
+      receiver,
+      content,
+      applicationId,
+      jobId,
+      type,
+      clientTempId,
+      replyTo,
+    } = req.body;
 
     if (!receiver || !content) {
       return res
@@ -51,6 +58,20 @@ exports.sendMessage = async (req, res) => {
         .json({ message: "Destinataire introuvable." });
     }
 
+    let replyPreview = null;
+    let replyMessageId = null;
+    if (replyTo) {
+      const repliedMessage = await Message.findById(replyTo);
+      if (repliedMessage) {
+        replyMessageId = repliedMessage._id;
+        replyPreview = {
+          messageId: replyMessageId,
+          content: repliedMessage.content || "",
+          type: repliedMessage.type || "text",
+        };
+      }
+    }
+
     const message = await Message.create({
       sender,
       receiver,
@@ -59,6 +80,8 @@ exports.sendMessage = async (req, res) => {
       job: jobId || null,
       type: type || "text",
       clientTempId: clientTempId || null,
+      replyTo: replyMessageId,
+      replyPreview,
       isRead: false,
     });
 
@@ -138,7 +161,8 @@ exports.sendAudioMessage = async (req, res) => {
     ensureAudioDir();
 
     const sender = req.user.id;
-    const { receiver, applicationId, jobId, content, clientTempId } = req.body;
+    const { receiver, applicationId, jobId, content, clientTempId, replyTo } =
+      req.body;
     const file = req.file;
 
     if (!receiver || !file) {
@@ -156,6 +180,20 @@ exports.sendAudioMessage = async (req, res) => {
 
     const audioUrl = `/uploads/audio/${file.filename}`;
 
+    let replyPreview = null;
+    let replyMessageId = null;
+    if (replyTo) {
+      const repliedMessage = await Message.findById(replyTo);
+      if (repliedMessage) {
+        replyMessageId = repliedMessage._id;
+        replyPreview = {
+          messageId: replyMessageId,
+          content: repliedMessage.content || "",
+          type: repliedMessage.type || "text",
+        };
+      }
+    }
+
     const message = await Message.create({
       sender,
       receiver,
@@ -165,6 +203,8 @@ exports.sendAudioMessage = async (req, res) => {
       type: "audio",
       audioUrl,
       clientTempId: clientTempId || null,
+      replyTo: replyMessageId,
+      replyPreview,
       isRead: false,
     });
 
@@ -221,7 +261,8 @@ exports.getConversation = async (req, res) => {
     })
       .sort({ createdAt: 1 })
       .populate("sender", "name avatar role")
-      .populate("receiver", "name avatar role");
+      .populate("receiver", "name avatar role")
+      .populate("replyTo", "content type sender receiver");
 
     return res.status(200).json(messages);
   } catch (error) {
@@ -471,6 +512,61 @@ exports.getMessageReactions = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors du chargement des réactions.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+DELETE /api/messages/:id
+➤ Supprimer un message
+============================================================ */
+exports.deleteMessage = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user.id;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message introuvable." });
+    }
+
+    if (
+      message.sender.toString() !== userId &&
+      message.receiver.toString() !== userId
+    ) {
+      return res.status(403).json({ message: "Non autorisé." });
+    }
+
+    const mediaPaths = [];
+    if (message.audioUrl) {
+      mediaPaths.push(path.join(__dirname, `..${message.audioUrl}`));
+    }
+    if (message.fileUrl) {
+      mediaPaths.push(path.join(__dirname, `..${message.fileUrl}`));
+    }
+
+    mediaPaths.forEach((p) => {
+      try {
+        if (fs.existsSync(p)) {
+          fs.unlinkSync(p);
+        }
+      } catch (err) {
+        console.error("Erreur suppression fichier message", err);
+      }
+    });
+
+    await message.deleteOne();
+
+    getIO()
+      .to(message.sender.toString())
+      .to(message.receiver.toString())
+      .emit("message_deleted", { messageId });
+
+    return res.status(200).json({ success: true, message: "Message supprimé." });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de la suppression du message.",
       details: error.message,
     });
   }

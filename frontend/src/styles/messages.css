@@ -383,6 +383,37 @@
   border-bottom-left-radius: 6px;
 }
 
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-body {
+  word-break: break-word;
+}
+
+.reply-preview-block {
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #ff7aa8;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #f3f3f3;
+}
+
+.reply-preview-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #ffb7d5;
+  margin-bottom: 2px;
+}
+
+.reply-preview-text {
+  color: #ffffff;
+}
+
 /* Option: si tu as encore un trait/border bleu quelque part */
 .messages-content,
 .chat-header,
@@ -859,6 +890,95 @@
   justify-content: center;
   gap: 6px;
   min-width: 64px;
+}
+
+.reply-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #1d1d1d;
+  border: 1px solid #2c2c2c;
+  border-left: 3px solid #ff4d8d;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin: 8px 8px 0;
+}
+
+.reply-banner-title {
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.reply-banner-preview {
+  color: #d7d7d7;
+  font-size: 13px;
+}
+
+.reply-banner-close {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+
+.message-actions-sheet,
+.message-delete-sheet {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  background: #1c1c1c;
+  border: 1px solid #2d2d2d;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 30;
+}
+
+.message-actions-header {
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.message-actions-preview {
+  font-size: 13px;
+  color: #dcdcdc;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.message-actions-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.message-actions-buttons button {
+  background: #2a2a2a;
+  color: #ffffff;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.message-actions-buttons button:hover {
+  background: #333;
+  transform: translateY(-1px);
+}
+
+.message-actions-buttons .danger {
+  background: #ff4d8d;
+  border-color: #ff4d8d;
+  color: #ffffff;
 }
 
 @media (min-width: 769px) {

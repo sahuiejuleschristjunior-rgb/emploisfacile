@@ -102,6 +102,10 @@ export default function Messages() {
     anchor: null,
   });
 
+  const [replyTo, setReplyTo] = useState(null);
+  const [messageActions, setMessageActions] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -135,6 +139,8 @@ export default function Messages() {
   const longPressTimer = useRef(null);
   const typingTimeoutRef = useRef(null);
   const socketRef = useRef(null);
+  const swipeDataRef = useRef({});
+  const inputRef = useRef(null);
   const [typingState, setTypingState] = useState({});
 
   /* =====================================================
@@ -311,6 +317,13 @@ export default function Messages() {
       }
     });
 
+    socket.on("message_deleted", ({ messageId }) => {
+      if (!messageId) return;
+      setMessages((prev) =>
+        prev.filter((m) => m._id !== messageId && m.clientTempId !== messageId)
+      );
+    });
+
     socket.on("message_read", ({ messageId, withUserId }) => {
       if (!messageId && !withUserId) return;
       setMessages((prev) =>
@@ -381,6 +394,15 @@ export default function Messages() {
     if (!input.trim() || !activeChat) return;
     const content = input.trim();
     setInput("");
+    const replyPreview = replyTo
+      ? {
+          messageId: replyTo._id,
+          content:
+            replyTo.content ||
+            (replyTo.type === "audio" ? "Message vocal" : "Message"),
+          type: replyTo.type || "text",
+        }
+      : null;
 
     const clientTempId = `temp-${Date.now()}`;
     const tempMessage = {
@@ -390,11 +412,14 @@ export default function Messages() {
       content,
       type: "text",
       clientTempId,
+      replyTo: replyPreview?.messageId || replyTo?._id || null,
+      replyPreview,
       createdAt: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, tempMessage]);
     setTimeout(() => scrollToBottom(true), 10);
+    setReplyTo(null);
 
     try {
       const res = await fetch(`${API_URL}/messages`, {
@@ -403,7 +428,12 @@ export default function Messages() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ receiver: activeChat._id, content, clientTempId }),
+        body: JSON.stringify({
+          receiver: activeChat._id,
+          content,
+          clientTempId,
+          replyTo: replyPreview?.messageId || replyTo?._id,
+        }),
       });
       const data = await res.json();
       if (res.ok && data?.data) {
@@ -411,6 +441,42 @@ export default function Messages() {
       }
     } catch (err) {
       console.error("Erreur envoi message", err);
+    }
+  };
+
+  /* =====================================================
+     MESSAGE ACTIONS
+  ===================================================== */
+  const startReply = (msg) => {
+    setReplyTo(msg);
+    setMessageActions(null);
+    setTimeout(() => inputRef.current?.focus(), 20);
+  };
+
+  const askDelete = (msg) => {
+    setDeleteTarget(msg);
+    setMessageActions(null);
+  };
+
+  const deleteMessage = async (msg) => {
+    if (!msg?._id) return;
+    setMessages((prev) =>
+      prev.filter(
+        (m) =>
+          m._id !== msg._id &&
+          m.clientTempId !== msg._id &&
+          m.clientTempId !== msg.clientTempId
+      )
+    );
+    setDeleteTarget(null);
+
+    try {
+      await fetch(`${API_URL}/messages/${msg._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error("Erreur suppression message", err);
     }
   };
 
@@ -744,16 +810,45 @@ export default function Messages() {
     }
   };
 
-  const handleBubblePressStart = (msg, event) => {
-    event.preventDefault();
+  const handleBubblePointerStart = (msg, event) => {
+    const point = event.touches?.[0] || event;
+    if (!point) return;
+    swipeDataRef.current = {
+      startX: point.clientX,
+      startY: point.clientY,
+      messageId: msg._id,
+      actionTriggered: false,
+    };
     clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      setReactionPicker({ messageId: msg._id, anchor: msg._id });
-    }, 450);
+      setMessageActions(msg);
+    }, 550);
   };
 
-  const handleBubblePressEnd = () => {
+  const handleBubblePointerMove = (msg, event) => {
+    const point = event.touches?.[0] || event;
+    const data = swipeDataRef.current;
+    if (!point || !data?.messageId || data.messageId !== msg._id || data.actionTriggered) {
+      return;
+    }
+
+    const dx = point.clientX - data.startX;
+    const dy = point.clientY - data.startY;
+
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+      clearTimeout(longPressTimer.current);
+      swipeDataRef.current = { ...data, actionTriggered: true };
+      if (dx > 0) {
+        startReply(msg);
+      } else {
+        askDelete(msg);
+      }
+    }
+  };
+
+  const handleBubblePointerEnd = () => {
     clearTimeout(longPressTimer.current);
+    swipeDataRef.current = {};
   };
 
   useEffect(() => {
@@ -761,10 +856,16 @@ export default function Messages() {
       if (reactionPicker.messageId && !e.target.closest?.(".reaction-picker")) {
         setReactionPicker({ messageId: null, anchor: null });
       }
+      if (messageActions && !e.target.closest?.(".message-actions-sheet")) {
+        setMessageActions(null);
+      }
+      if (deleteTarget && !e.target.closest?.(".message-delete-sheet")) {
+        setDeleteTarget(null);
+      }
     };
     window.addEventListener("click", closePicker);
     return () => window.removeEventListener("click", closePicker);
-  }, [reactionPicker.messageId]);
+  }, [reactionPicker.messageId, messageActions, deleteTarget]);
 
   /* =====================================================
      ATTACH MENU
@@ -886,16 +987,42 @@ export default function Messages() {
           {formatTime(status.currentTime)} / {formatTime(status.duration)}
         </div>
 
-        <audio ref={(node) => bindAudioRef(msg, node)} src={url} preload="metadata" />
-      </div>
+      <audio ref={(node) => bindAudioRef(msg, node)} src={url} preload="metadata" />
+    </div>
     );
   };
 
-  const renderMessageContent = (msg) => {
-    if (msg.type === "audio") {
-      return renderAudioBubble(msg);
+  const getReplyPreview = (msg) => {
+    if (msg.replyPreview) return msg.replyPreview;
+    if (msg.replyTo && typeof msg.replyTo === "object") {
+      return {
+        messageId: msg.replyTo._id,
+        content:
+          msg.replyTo.content ||
+          (msg.replyTo.type === "audio" ? "Message vocal" : "Message"),
+        type: msg.replyTo.type || "text",
+      };
     }
-    return msg.content;
+    return null;
+  };
+
+  const renderMessageContent = (msg) => {
+    const preview = getReplyPreview(msg);
+    const content = msg.type === "audio" ? renderAudioBubble(msg) : msg.content;
+
+    return (
+      <div className="message-content">
+        {preview && (
+          <div className="reply-preview-block">
+            <div className="reply-preview-label">Réponse à</div>
+            <div className="reply-preview-text">
+              {preview.content || (preview.type === "audio" ? "Message vocal" : "Message")}
+            </div>
+          </div>
+        )}
+        <div className="message-body">{content}</div>
+      </div>
+    );
   };
 
   /* =====================================================
@@ -1005,11 +1132,13 @@ export default function Messages() {
                     <div key={msg._id} className={`message-row ${isMe ? "me" : "other"}`}>
                       <div
                         className={`message-bubble message-${msg.type || "text"}`}
-                        onMouseDown={(e) => handleBubblePressStart(msg, e)}
-                        onMouseUp={handleBubblePressEnd}
-                        onMouseLeave={handleBubblePressEnd}
-                        onTouchStart={(e) => handleBubblePressStart(msg, e)}
-                        onTouchEnd={handleBubblePressEnd}
+                        onMouseDown={(e) => handleBubblePointerStart(msg, e)}
+                        onMouseMove={(e) => handleBubblePointerMove(msg, e)}
+                        onMouseUp={handleBubblePointerEnd}
+                        onMouseLeave={handleBubblePointerEnd}
+                        onTouchStart={(e) => handleBubblePointerStart(msg, e)}
+                        onTouchMove={(e) => handleBubblePointerMove(msg, e)}
+                        onTouchEnd={handleBubblePointerEnd}
                       >
                         {renderMessageContent(msg)}
                         {renderReactions(msg)}
@@ -1022,6 +1151,25 @@ export default function Messages() {
             </div>
 
             {/* INPUT */}
+            {replyTo && (
+              <div className="reply-banner">
+                <div className="reply-banner-text">
+                  <div className="reply-banner-title">
+                    Répondre à {replyTo?.sender?.name || "ce message"}
+                  </div>
+                  <div className="reply-banner-preview">
+                    {replyTo.content || (replyTo.type === "audio" ? "Message vocal" : "Message")}
+                  </div>
+                </div>
+                <button
+                  className="reply-banner-close"
+                  onClick={() => setReplyTo(null)}
+                  aria-label="Annuler la réponse"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            )}
             <div
               className="chat-input-bar"
               onMouseMove={updateRecordingDrag}
@@ -1096,6 +1244,7 @@ export default function Messages() {
                   <input
                     className="chat-input"
                     placeholder="Message..."
+                    ref={inputRef}
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && sendMessage()}
@@ -1162,6 +1311,38 @@ export default function Messages() {
                       {emoji}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {messageActions && (
+              <div className="message-actions-sheet" role="dialog">
+                <div className="message-actions-header">Action sur le message</div>
+                <div className="message-actions-preview">
+                  {messageActions.content ||
+                    (messageActions.type === "audio" ? "Message vocal" : "Message")}
+                </div>
+                <div className="message-actions-buttons">
+                  <button onClick={() => startReply(messageActions)}>Répondre</button>
+                  <button className="danger" onClick={() => askDelete(messageActions)}>
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {deleteTarget && (
+              <div className="message-delete-sheet" role="alertdialog">
+                <div className="message-actions-header">Supprimer ce message ?</div>
+                <div className="message-actions-preview">
+                  {deleteTarget.content ||
+                    (deleteTarget.type === "audio" ? "Message vocal" : "Message")}
+                </div>
+                <div className="message-actions-buttons">
+                  <button onClick={() => setDeleteTarget(null)}>Annuler</button>
+                  <button className="danger" onClick={() => deleteMessage(deleteTarget)}>
+                    Supprimer
+                  </button>
                 </div>
               </div>
             )}
