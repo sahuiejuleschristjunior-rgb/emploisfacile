@@ -9,12 +9,25 @@ const { getIO } = require("../socket");
    🔥 UTILITAIRE — NOTIFICATION + SOCKET
 ============================================================ */
 async function pushNotification(userId, data) {
+  const filter = {
+    user: userId,
+    from: data.from,
+    type: data.type,
+    post: data.post || null,
+    story: data.story || null,
+    read: false,
+  };
+
+  const existing = await Notification.findOne(filter).sort({ createdAt: -1 });
+  if (existing) return existing;
+
   const notif = await Notification.create({
     user: userId,
     from: data.from,
     type: data.type,
     text: data.text,
     story: data.story || null,
+    post: data.post || null,
     read: false,
   });
 
@@ -76,84 +89,5 @@ exports.list = async (req, res) => {
   } catch (err) {
     console.error("STORY LIST ERROR:", err);
     res.status(500).json({ error: "Erreur lors du chargement des stories." });
-  }
-};
-
-
-/* ============================================================
-   📌 RÉACTION À UNE STORY + NOTIFICATION
-============================================================ */
-exports.reactToStory = async (req, res) => {
-  try {
-    const storyId = req.params.id;
-    const userId = req.user.id;
-    const { reaction } = req.body;
-
-    const validReactions = ["❤️", "😂", "👍", "🔥", "😮", "😢"];
-    if (!validReactions.includes(reaction)) {
-      return res.status(400).json({ message: "Type de réaction invalide." });
-    }
-
-    const story = await Story.findById(storyId);
-    if (!story) {
-      return res.status(404).json({ message: "Story non trouvée." });
-    }
-
-    const existingIndex = story.reactions.findIndex(
-      (r) => r.user.toString() === userId
-    );
-
-    let action = null;
-
-    if (existingIndex !== -1) {
-      // Si déjà réagi
-      const existing = story.reactions[existingIndex];
-
-      if (existing.type === reaction) {
-        story.reactions.splice(existingIndex, 1);
-        action = "removed";
-      } else {
-        story.reactions[existingIndex].type = reaction;
-        action = "updated";
-      }
-    } else {
-      story.reactions.push({ user: userId, type: reaction });
-      action = "created";
-    }
-
-    await story.save();
-
-    // 👍 Tant que c'est pas toi qui réagit à ta propre story : envoyer une notif
-    if (String(story.user) !== String(userId)) {
-      await pushNotification(story.user, {
-        from: userId,
-        type: "story_reaction",
-        text: "A réagi à votre story.",
-        story: story._id,
-      });
-
-      // Socket temps réel
-      getIO().to(String(story.user)).emit("story:reaction", {
-        storyId,
-        userId,
-        reaction,
-      });
-    }
-
-    res.json({
-      action,
-      isReacted: action !== "removed",
-      message:
-        action === "removed"
-          ? "Réaction retirée"
-          : action === "updated"
-          ? "Réaction mise à jour"
-          : "Réaction ajoutée",
-    });
-  } catch (error) {
-    console.error("Erreur réaction story :", error);
-    res.status(500).json({
-      message: "Erreur interne du serveur lors de la gestion de la réaction.",
-    });
   }
 };

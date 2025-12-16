@@ -12,12 +12,25 @@ const typingState = new Map();
 🔥 UTILITAIRE : PUSH NOTIF + SOCKET
 ============================================================ */
 async function pushNotification(userId, data) {
+  const filter = {
+    user: userId,
+    from: data.from,
+    type: data.type,
+    post: data.post || null,
+    story: data.story || null,
+    read: false,
+  };
+
+  const existing = await Notification.findOne(filter).sort({ createdAt: -1 });
+  if (existing) return existing;
+
   const notif = await Notification.create({
     user: userId,
     from: data.from,
     type: data.type,
     text: data.text,
     post: null,
+    story: null,
     read: false,
   });
 
@@ -123,51 +136,45 @@ exports.sendAudioMessage = async (req, res) => {
       return res.status(404).json({ message: "Destinataire introuvable." });
     }
 
-    const audioUrl = `/uploads/audio/${file.filename}`;
-
     const message = await Message.create({
       sender,
       receiver,
-      content: content || "",
+      content: content || "message audio",
       application: applicationId || null,
       job: jobId || null,
       type: "audio",
-      audioUrl,
+      audioUrl: "/uploads/audio/" + req.file.filename,
       clientTempId: clientTempId || null,
       isRead: false,
     });
 
-    getIO().to(receiver.toString()).emit("new_message", {
+    getIO().to(receiver.toString()).emit("audio_message", {
       from: sender,
       to: receiver,
       message,
     });
 
-    getIO().to(sender.toString()).emit("new_message", {
+    getIO().to(sender.toString()).emit("audio_message", {
       from: sender,
       to: receiver,
       message,
     });
-
-    getIO()
-      .to(receiver.toString())
-      .to(sender.toString())
-      .emit("audio_message", { message });
 
     await pushNotification(receiver, {
       from: sender,
       type: "message",
-      text: "Nouvelle note vocale",
+      text: "Nouveau message audio",
     });
 
     return res.status(201).json({
       success: true,
-      message: "Note vocale envoyée.",
+      message: "Message audio envoyé.",
       data: message,
     });
   } catch (error) {
+    console.error("sendAudioMessage ERROR:", error);
     return res.status(500).json({
-      error: "Erreur lors de l'envoi de l'audio.",
+      error: "Erreur lors de l'envoi du message audio.",
       details: error.message,
     });
   }
@@ -175,132 +182,28 @@ exports.sendAudioMessage = async (req, res) => {
 
 /* ============================================================
 GET /api/messages/conversation/:userId
-➤ Récupérer la conversation
+➤ Récupérer une conversation entre deux utilisateurs
 ============================================================ */
 exports.getConversation = async (req, res) => {
   try {
-    const myId = req.user.id;
-    const otherId = req.params.userId;
+    const userId = req.user.id;
+    const otherUserId = req.params.userId;
 
-    const messages = await Message.find({
+    const conversation = await Message.find({
       $or: [
-        { sender: myId, receiver: otherId },
-        { sender: otherId, receiver: myId },
+        { sender: userId, receiver: otherUserId },
+        { sender: otherUserId, receiver: userId },
       ],
     })
       .sort({ createdAt: 1 })
-      .populate("sender", "name avatar role")
-      .populate("receiver", "name avatar role");
+      .populate("sender", "name avatar")
+      .populate("receiver", "name avatar");
 
-    return res.status(200).json(messages);
+    return res.json(conversation);
   } catch (error) {
+    console.error("getConversation ERROR:", error);
     return res.status(500).json({
-      error: "Erreur lors du chargement de la conversation.",
-      details: error.message,
-    });
-  }
-};
-
-/* ============================================================
-GET /api/messages/inbox
-➤ Inbox
-============================================================ */
-exports.getInbox = async (req, res) => {
-  try {
-    const myId = new mongoose.Types.ObjectId(req.user.id);
-
-    const messages = await Message.aggregate([
-      {
-        $match: {
-          $or: [{ sender: myId }, { receiver: myId }],
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      {
-        $group: {
-          _id: {
-            $cond: [
-              { $eq: ["$sender", myId] },
-              "$receiver",
-              "$sender",
-            ],
-          },
-          lastMessage: { $first: "$$ROOT" },
-          unreadCount: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ["$receiver", myId] },
-                    { $eq: ["$isRead", false] },
-                  ],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-        },
-      },
-    ]);
-
-    const inbox = await Promise.all(
-      messages.map(async (item) => {
-        const user = await User.findById(item._id).select(
-          "name avatar role"
-        );
-        return {
-          user,
-          lastMessage: item.lastMessage,
-          unreadCount: item.unreadCount,
-        };
-      })
-    );
-
-    return res.status(200).json(inbox);
-  } catch (error) {
-    return res.status(500).json({
-      error: "Erreur lors du chargement de la boîte de réception.",
-      details: error.message,
-    });
-  }
-};
-
-/* ============================================================
-PATCH /api/messages/:id/read
-➤ Marquer un message comme lu
-============================================================ */
-exports.markAsRead = async (req, res) => {
-  try {
-    const messageId = req.params.id;
-    const userId = req.user.id;
-
-    const message = await Message.findById(messageId);
-    if (!message) {
-      return res.status(404).json({ message: "Message introuvable." });
-    }
-
-    if (message.receiver.toString() !== userId) {
-      return res.status(403).json({ message: "Non autorisé." });
-    }
-
-    message.isRead = true;
-    message.readAt = new Date();
-    await message.save();
-
-    getIO().to(message.sender.toString()).emit("message_read", {
-      messageId: message._id,
-      readAt: message.readAt,
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: "Message marqué comme lu.",
-      data: message,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      error: "Erreur lors de la mise à jour du statut.",
+      error: "Erreur lors de la récupération de la conversation.",
       details: error.message,
     });
   }
@@ -310,136 +213,56 @@ exports.markAsRead = async (req, res) => {
 PATCH /api/messages/read-all/:userId
 ➤ Marquer toute la conversation comme lue
 ============================================================ */
-exports.markAllAsReadForConversation = async (req, res) => {
+exports.markConversationRead = async (req, res) => {
   try {
-    const myId = req.user.id;
+    const userId = req.user.id;
     const otherUserId = req.params.userId;
 
-    const updated = await Message.updateMany(
+    await Message.updateMany(
       {
         sender: otherUserId,
-        receiver: myId,
+        receiver: userId,
         isRead: false,
       },
-      {
-        $set: {
-          isRead: true,
-          readAt: new Date(),
-        },
-      }
+      { $set: { isRead: true } }
     );
 
-    getIO()
-      .to(String(otherUserId))
-      .emit("message_read", { withUserId: myId });
-
-    return res.status(200).json({
-      success: true,
-      message: "Tous les messages ont été marqués comme lus.",
-      updatedCount: updated.modifiedCount,
+    getIO().to(otherUserId.toString()).emit("message_read", {
+      by: userId,
+      about: otherUserId,
     });
+
+    res.json({ success: true });
   } catch (error) {
     return res.status(500).json({
-      error: "Erreur lors de la mise à jour du statut en lecture.",
+      error: "Erreur lors du marquage en lu.",
       details: error.message,
     });
   }
 };
 
 /* ============================================================
-POST /api/messages/:id/react
-➤ Ajouter / retirer une réaction
+PATCH /api/messages/:id/read
+➤ Marquer un message comme lu
 ============================================================ */
-exports.reactToMessage = async (req, res) => {
+exports.markMessageRead = async (req, res) => {
   try {
-    const messageId = req.params.id;
-    const { emoji } = req.body;
-    const userId = req.user.id;
+    const message = await Message.findById(req.params.id);
 
-    if (!emoji) {
-      return res.status(400).json({ message: "Emoji requis." });
-    }
+    if (!message) return res.status(404).json({ error: "Message introuvable" });
 
-    const message = await Message.findById(messageId);
-    if (!message) {
-      return res.status(404).json({ message: "Message introuvable." });
-    }
-
-    if (
-      message.sender.toString() !== userId &&
-      message.receiver.toString() !== userId
-    ) {
-      return res.status(403).json({ message: "Non autorisé." });
-    }
-
-    const currentReactions = [...(message.reactions || [])];
-    const existingIndex = currentReactions.findIndex(
-      (r) => r.user && r.user.toString() === userId
-    );
-
-    if (existingIndex >= 0 && currentReactions[existingIndex].emoji === emoji) {
-      currentReactions.splice(existingIndex, 1);
-    } else if (existingIndex >= 0) {
-      currentReactions[existingIndex].emoji = emoji;
-      currentReactions[existingIndex].createdAt = new Date();
-    } else {
-      currentReactions.push({ user: userId, emoji });
-    }
-
-    message.reactions = currentReactions;
+    message.isRead = true;
     await message.save();
 
-    const populated = await message.populate({
-      path: "reactions.user",
-      select: "name avatar",
+    getIO().to(message.sender.toString()).emit("message_read", {
+      by: req.user.id,
+      about: message.receiver,
     });
 
-    getIO()
-      .to(message.sender.toString())
-      .to(message.receiver.toString())
-      .emit("reaction_update", { message: populated });
-
-    return res.status(200).json({
-      success: true,
-      data: populated,
-    });
+    res.json({ success: true });
   } catch (error) {
     return res.status(500).json({
-      error: "Erreur lors de la réaction.",
-      details: error.message,
-    });
-  }
-};
-
-/* ============================================================
-GET /api/messages/:id/reactions
-➤ Récupérer les réactions d’un message
-============================================================ */
-exports.getMessageReactions = async (req, res) => {
-  try {
-    const message = await Message.findById(req.params.id).populate({
-      path: "reactions.user",
-      select: "name avatar",
-    });
-
-    if (!message) {
-      return res.status(404).json({ message: "Message introuvable." });
-    }
-
-    if (
-      message.sender.toString() !== req.user.id &&
-      message.receiver.toString() !== req.user.id
-    ) {
-      return res.status(403).json({ message: "Non autorisé." });
-    }
-
-    return res.status(200).json({
-      success: true,
-      reactions: message.reactions || [],
-    });
-  } catch (error) {
-    return res.status(500).json({
-      error: "Erreur lors du chargement des réactions.",
+      error: "Erreur lors du marquage en lu.",
       details: error.message,
     });
   }
@@ -447,70 +270,75 @@ exports.getMessageReactions = async (req, res) => {
 
 /* ============================================================
 POST /api/messages/typing
-➤ Flag typing temporaire en mémoire
+➤ Indiquer que l’utilisateur tape
 ============================================================ */
-exports.setTypingFlag = async (req, res) => {
+exports.typing = async (req, res) => {
   try {
-    const senderId = req.user.id;
     const { receiverId, isTyping } = req.body;
+    const senderId = req.user.id;
 
     if (!receiverId) {
-      return res.status(400).json({ message: "receiverId requis." });
+      return res.status(400).json({ error: "receiverId requis" });
     }
 
-    const key = `${senderId}:${receiverId}`;
-    typingState.set(key, { isTyping: Boolean(isTyping), at: Date.now() });
+    typingState.set(`${senderId}-${receiverId}`, isTyping === true);
 
-    const now = Date.now();
-    for (const [k, value] of typingState.entries()) {
-      if (now - value.at > 30000) {
-        typingState.delete(k);
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      typing: Boolean(isTyping),
+    getIO().to(receiverId.toString()).emit("typing", {
+      from: senderId,
+      isTyping: isTyping === true,
     });
+
+    res.json({ success: true });
   } catch (error) {
-    return res.status(500).json({
-      error: "Erreur lors de la mise à jour du statut de frappe.",
-      details: error.message,
-    });
+    console.error("typing ERROR:", error);
+    return res.status(500).json({ error: "Erreur typing" });
   }
 };
 
 /* ============================================================
-🆕 GET /api/messages/friends
-➤ Liste des amis pour démarrer une conversation
+PATCH /api/messages/:id/react
+➤ Réagir à un message
 ============================================================ */
-exports.getMessageFriends = async (req, res) => {
+exports.reactToMessage = async (req, res) => {
   try {
-    const me = req.user.id;
+    const messageId = req.params.id;
+    const { emoji } = req.body;
 
-    const user = await User.findById(me).populate(
-      "friends.user",
-      "name avatar role"
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ error: "Message introuvable" });
+    }
+
+    message.reactions = message.reactions || [];
+    const existingReactionIndex = message.reactions.findIndex(
+      (r) => r.user.toString() === req.user.id
     );
 
-    const friends = (user.friends || [])
-      .filter((f) => f.user)
-      .map((f) => ({
-        _id: f.user._id,
-        name: f.user.name,
-        avatar: f.user.avatar,
-        role: f.user.role,
-        category: f.category,
-      }));
+    if (existingReactionIndex >= 0) {
+      message.reactions[existingReactionIndex].emoji = emoji;
+    } else {
+      message.reactions.push({ user: req.user.id, emoji });
+    }
 
-    return res.status(200).json({
-      success: true,
-      friends,
-    });
+    await message.save();
+
+    const payload = { messageId, reactions: message.reactions };
+
+    getIO().to(message.receiver.toString()).emit("reaction_update", payload);
+    getIO().to(message.sender.toString()).emit("reaction_update", payload);
+
+    res.json({ success: true, reactions: message.reactions });
   } catch (error) {
-    return res.status(500).json({
-      error: "Erreur lors du chargement des amis pour messages",
-      details: error.message,
-    });
+    console.error("reactToMessage ERROR:", error);
+    return res.status(500).json({ error: "Erreur réaction" });
   }
+};
+
+/* ============================================================
+MIDDLEWARE : VALIDER ID
+============================================================ */
+exports.validateObjectId = (req, res, next) => {
+  const isValid = mongoose.Types.ObjectId.isValid(req.params.id);
+  if (!isValid) return res.status(400).json({ error: "ID invalide" });
+  next();
 };
