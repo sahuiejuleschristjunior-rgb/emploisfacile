@@ -160,6 +160,21 @@ export default function VideoCallOverlay({
     if (!socket || !otherUser?._id) return;
     if (pcRef.current) return;
 
+    const hasLivePeer =
+      pcRef.current &&
+      !["failed", "disconnected", "closed"].includes(
+        pcRef.current.connectionState
+      ) &&
+      !["failed", "disconnected", "closed"].includes(
+        pcRef.current.iceConnectionState
+      );
+
+    if (hasLivePeer) return;
+
+    if (pcRef.current) {
+      cleanUpCall();
+    }
+
     try {
       setStatus(mode === "caller" ? "calling" : "in-call");
 
