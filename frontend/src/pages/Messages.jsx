@@ -1,6 +1,5 @@
 // frontend/src/pages/Messages.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
 
@@ -83,8 +82,7 @@ export default function Messages() {
   const [errorFriends, setErrorFriends] = useState("");
 
   const [activeChat, setActiveChat] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [loadingConversation, setLoadingConversation] = useState(false);
+  const [loadingConversation] = useState(false);
 
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
@@ -121,8 +119,6 @@ export default function Messages() {
   const attachSwipeStart = useRef(null);
   const longPressTimer = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const socketRef = useRef(null);
-  const [typingState, setTypingState] = useState({});
 
   /* =====================================================
      HELPERS
@@ -164,13 +160,6 @@ export default function Messages() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const resolveUrl = (url) => {
-    if (!url) return "";
-    if (url.startsWith("blob:")) return url;
-    if (url.startsWith("http")) return url;
-    return `${API_HOST || ""}${url.startsWith("/") ? "" : "/"}${url}`;
-  };
-
   const formatTime = (time) => {
     if (!time && time !== 0) return "0:00";
     const total = Math.floor(time);
@@ -179,67 +168,7 @@ export default function Messages() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const isMessageInActiveChat = (msg) => {
-    if (!activeChat || !msg) return false;
-    const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
-    const receiverId =
-      typeof msg.receiver === "object" ? msg.receiver?._id : msg.receiver;
-    return (
-      senderId === activeChat._id ||
-      receiverId === activeChat._id ||
-      (senderId === me?._id && receiverId === me?._id)
-    );
-  };
-
-  const upsertMessage = (incoming) => {
-    if (!incoming) return;
-    setMessages((prev) => {
-      let next = [...prev];
-
-      // Supprimer un éventuel temporaire correspondant à l'ID client
-      if (incoming.clientTempId) {
-        next = next.filter((m) => m.clientTempId !== incoming.clientTempId);
-      }
-
-      // Supprimer un éventuel temporaire équivalent (même contenu + participants)
-      const samePair = next.findIndex((m) => {
-        const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
-        const receiverId =
-          typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
-        const incomingSender =
-          typeof incoming.sender === "object"
-            ? incoming.sender?._id
-            : incoming.sender;
-        const incomingReceiver =
-          typeof incoming.receiver === "object"
-            ? incoming.receiver?._id
-            : incoming.receiver;
-
-        const sameUsers =
-          senderId === incomingSender && receiverId === incomingReceiver;
-        const isTemp = typeof m._id === "string" && m._id.startsWith("temp-");
-        const sameText =
-          incoming.type === "text" &&
-          (m.type === "text" || !m.type) &&
-          (m.content || "").trim() === (incoming.content || "").trim();
-        const sameAudio = incoming.type === "audio" && m.type === "audio";
-        return isTemp && sameUsers && (sameText || sameAudio);
-      });
-
-      if (samePair >= 0) {
-        next.splice(samePair, 1);
-      }
-
-      const existsIndex = next.findIndex((m) => m._id === incoming._id);
-      if (existsIndex >= 0) {
-        next[existsIndex] = { ...next[existsIndex], ...incoming };
-      } else {
-        next.push(incoming);
-      }
-
-      return next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    });
-  };
+  const isMessageInActiveChat = () => false;
 
   /* =====================================================
      LOAD FRIENDS
@@ -292,158 +221,20 @@ export default function Messages() {
   /* =====================================================
      SOCKET IO
   ===================================================== */
-  useEffect(() => {
-    if (!token) return undefined;
-    const socket = io(SOCKET_URL, {
-      path: "/socket.io/",
-      auth: { token },
-      transports: ["websocket", "polling"],
-    });
-
-    socketRef.current = socket;
-
-    const handleMessage = (payload) => {
-      const message = payload?.message || payload;
-      if (isMessageInActiveChat(message)) {
-        upsertMessage(message);
-        if (message?.sender !== me?._id) {
-          fetch(`${API_URL}/messages/${message._id}/read`, {
-            method: "PATCH",
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => {});
-        }
-      }
-    };
-
-    socket.on("new_message", handleMessage);
-    socket.on("audio_message", handleMessage);
-
-    socket.on("reaction_update", (payload) => {
-      if (payload?.message && isMessageInActiveChat(payload.message)) {
-        upsertMessage(payload.message);
-      }
-    });
-
-    socket.on("message_read", ({ messageId, withUserId }) => {
-      if (!messageId && !withUserId) return;
-      setMessages((prev) =>
-        prev.map((m) => {
-          const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
-          const receiverId =
-            typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
-          if (
-            (messageId && m._id === messageId) ||
-            (withUserId && senderId === me?._id && receiverId === withUserId)
-          ) {
-            return { ...m, isRead: true, readAt: new Date() };
-          }
-          return m;
-        })
-      );
-    });
-
-    socket.on("typing", ({ from, isTyping }) => {
-      if (!from || !activeChat || from !== activeChat._id) return;
-      setTypingState((prev) => ({
-        ...prev,
-        [from]: { isTyping: isTyping !== false, at: Date.now() },
-      }));
-    });
-
-    return () => {
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, [activeChat, token]);
-
   /* =====================================================
-     LOAD CONVERSATION
+     LOAD CONVERSATION (DISABLED)
   ===================================================== */
-  const loadConversation = async (user) => {
+  const loadConversation = (user) => {
     if (!user?._id) return;
-
     setActiveChat(user);
-    setMessages([]);
-
-    try {
-      setLoadingConversation(true);
-
-      const res = await fetch(`${API_URL}/messages/conversation/${user._id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      setMessages(Array.isArray(data) ? data : []);
-
-      fetch(`${API_URL}/messages/read-all/${user._id}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (err) {
-      console.error("Erreur conversation", err);
-      setMessages([]);
-    } finally {
-      setLoadingConversation(false);
-      setTimeout(() => scrollToBottom(true), 50);
-    }
   };
 
   /* =====================================================
      SEND MESSAGE
   ===================================================== */
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (!input.trim() || !activeChat) return;
-
-    const content = input.trim();
     setInput("");
-
-    const clientTempId = "temp-" + Date.now();
-    const tempMessage = {
-      _id: clientTempId,
-      sender: me?._id,
-      receiver: activeChat._id,
-      content,
-      type: "text",
-      clientTempId,
-    };
-
-    setMessages((prev) => [...prev, tempMessage]);
-    setTimeout(() => scrollToBottom(true), 10);
-
-    try {
-      const res = await fetch(`${API_URL}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          receiver: activeChat._id,
-          content,
-          clientTempId,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data?.data) {
-        setMessages((prev) => {
-          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
-          const exists = withoutTemp.some((m) => m._id === data.data._id);
-          return exists
-            ? withoutTemp.map((m) =>
-                m._id === data.data._id ? { ...m, ...data.data } : m
-              )
-            : [...withoutTemp, data.data];
-        });
-      }
-    } catch (err) {
-      console.error("Erreur envoi message", err);
-    }
   };
 
   /* =====================================================
@@ -464,15 +255,15 @@ export default function Messages() {
     stopRecordVisualization();
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = 0;
 
     recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
     setRecordTime(0);
-    setRecordOffset(deltaX);
+    setRecordOffset(0);
     setRecordCanceled(false);
     setRecordLocked(false);
     setRecordLevel(0);
     recordCanceledRef.current = false;
+    recordingChunksRef.current = [];
 
     recordTimerRef.current = setInterval(() => {
       setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
@@ -494,6 +285,12 @@ export default function Messages() {
       analyser.connect(destination);
 
       const recorder = new MediaRecorder(destination.stream);
+
+      recorder.ondataavailable = (e) => {
+        if (e?.data && e.data.size > 0) {
+          recordingChunksRef.current.push(e.data);
+        }
+      };
 
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
@@ -543,10 +340,6 @@ export default function Messages() {
       recordStartRef.current = null;
     }
 
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
@@ -566,10 +359,6 @@ export default function Messages() {
       return;
     }
 
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
   };
 
   const stopRecording = (forceCancel = false) => {
@@ -601,56 +390,7 @@ export default function Messages() {
     audioGainRef.current = null;
   };
 
-  const uploadAudio = async (blob) => {
-    if (!activeChat) return;
-    const fileName = `voice-${Date.now()}.webm`;
-
-    const tempUrl = URL.createObjectURL(blob);
-    const clientTempId = "temp-" + Date.now();
-    const tempMessage = {
-      _id: clientTempId,
-      sender: me?._id,
-      receiver: activeChat._id,
-      type: "audio",
-      audioUrl: tempUrl,
-      content: "",
-      clientTempId,
-    };
-
-    setMessages((prev) => [...prev, tempMessage]);
-
-    const formData = new FormData();
-    formData.append("audio", blob, fileName);
-    formData.append("receiver", activeChat._id);
-    formData.append("clientTempId", clientTempId);
-
-    try {
-      const res = await fetch(`${API_URL}/messages/audio`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (res.ok && data?.data) {
-        setMessages((prev) => {
-          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
-          const exists = withoutTemp.some((m) => m._id === data.data._id);
-          return exists
-            ? withoutTemp.map((m) =>
-                m._id === data.data._id ? { ...m, ...data.data } : m
-              )
-            : [...withoutTemp, data.data];
-        });
-      }
-    } catch (err) {
-      console.error("Erreur upload audio", err);
-    } finally {
-      setTimeout(() => scrollToBottom(true), 30);
-    }
-  };
+  const uploadAudio = async () => {};
 
   const togglePlay = (messageId) => {
     const audio = audioRefs.current[messageId];
@@ -718,27 +458,8 @@ export default function Messages() {
   /* =====================================================
      REACTIONS
   ===================================================== */
-  const sendReaction = async (messageId, emoji) => {
-    try {
-      const res = await fetch(`${API_URL}/messages/${messageId}/react`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ emoji }),
-      });
-      const data = await res.json();
-      if (res.ok && data?.data) {
-        setMessages((prev) =>
-          prev.map((m) => (m._id === messageId ? data.data : m))
-        );
-      }
-    } catch (err) {
-      console.error("Erreur réaction", err);
-    } finally {
-      setReactionPicker({ messageId: null, x: 0, y: 0 });
-    }
+  const sendReaction = async () => {
+    setReactionPicker({ messageId: null, x: 0, y: 0 });
   };
 
   const handleBubblePressStart = (msg, event) => {
@@ -788,109 +509,21 @@ export default function Messages() {
     return () => window.removeEventListener("click", closeAttach);
   }, [showAttachMenu]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTypingState((prev) => {
-        const now = Date.now();
-        const next = { ...prev };
-        Object.entries(prev).forEach(([userId, state]) => {
-          if (!state?.at || now - state.at > 2500) {
-            delete next[userId];
-          }
-        });
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   /* =====================================================
      TYPING FLAG
   ===================================================== */
-  const sendTypingFlag = (flag) => {
-    if (!activeChat) return;
-    socketRef.current?.emit("typing", { to: activeChat._id, isTyping: flag });
-    fetch(`${API_URL}/messages/typing`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ receiverId: activeChat._id, isTyping: flag }),
-    }).catch(() => {});
-  };
-
   const handleInputChange = (value) => {
     setInput(value);
-    sendTypingFlag(true);
-    clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => sendTypingFlag(false), 1200);
   };
-
-  useEffect(() => scrollToBottom(false), [messages]);
 
   /* =====================================================
      RENDER HELPERS
   ===================================================== */
-  const renderReactions = (msg) => {
-    if (!Array.isArray(msg.reactions) || msg.reactions.length === 0) return null;
-    const grouped = msg.reactions.reduce((acc, r) => {
-      if (!r?.emoji) return acc;
-      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-      return acc;
-    }, {});
+  const renderReactions = () => null;
 
-    return (
-      <div className="message-reactions">
-        {Object.entries(grouped).map(([emoji, count]) => (
-          <span key={emoji} className="reaction-pill">
-            {emoji}
-            {count > 1 && <span className="reaction-count">{count}</span>}
-          </span>
-        ))}
-      </div>
-    );
-  };
+  const renderAudioBubble = () => null;
 
-  const renderAudioBubble = (msg) => {
-    const status = audioStatus[msg._id] || {};
-    const progress = status.duration
-      ? Math.min((status.currentTime / status.duration) * 100, 100)
-      : 0;
-    const url = resolveUrl(msg.audioUrl);
-
-    return (
-      <div className="audio-bubble">
-        <button
-          className={`audio-play ${status.playing ? "playing" : ""}`}
-          onClick={() => togglePlay(msg._id)}
-        >
-          {status.playing ? <PauseIcon /> : <PlayIcon />}
-        </button>
-
-        <div className="audio-progress">
-          <div className="audio-progress-bar" style={{ width: `${progress}%` }} />
-        </div>
-
-        <div className="audio-duration">
-          {formatTime(status.currentTime)} / {formatTime(status.duration)}
-        </div>
-
-        <audio
-          ref={(node) => bindAudioRef(msg, node)}
-          src={url}
-          preload="metadata"
-        />
-      </div>
-    );
-  };
-
-  const renderMessageContent = (msg) => {
-    if (msg.type === "audio") {
-      return renderAudioBubble(msg);
-    }
-    return msg.content;
-  };
+  const renderMessageContent = () => null;
 
   const handleAttachTouchStart = (event) => {
     attachSwipeStart.current = event.touches?.[0]?.clientY || null;
@@ -989,15 +622,14 @@ export default function Messages() {
           <>
             {/* HEADER */}
             <div className="chat-header">
-              <button
-                className="chat-back-btn"
-                onClick={() => {
-                  setActiveChat(null);
-                  setMessages([]);
-                }}
-              >
-                <BackIcon />
-              </button>
+                <button
+                  className="chat-back-btn"
+                  onClick={() => {
+                    setActiveChat(null);
+                  }}
+                >
+                  <BackIcon />
+                </button>
 
               <img
                 src={activeChat.avatar}
@@ -1010,57 +642,16 @@ export default function Messages() {
                   {activeChat.name}
                 </div>
                 <div className="chat-status">
-                  {typingState[activeChat._id]?.isTyping
-                    ? "En train d'écrire..."
-                    : "En ligne"}
+                  Conversation désactivée
                 </div>
               </div>
             </div>
 
             {/* BODY */}
             <div className="chat-body" ref={chatBodyRef}>
-              {loadingConversation && (
-                <div className="chat-empty">Chargement…</div>
-              )}
-
-              {!loadingConversation && messages.length === 0 && (
-                <div className="chat-empty">
-                  Aucun message pour le moment
-                  <br />
-                  Commence la conversation 👋
-                </div>
-              )}
-
-              {!loadingConversation &&
-                messages.map((msg) => {
-                  const senderId =
-                    typeof msg.sender === "object"
-                      ? msg.sender?._id
-                      : msg.sender;
-
-                  const isMe = senderId === me?._id;
-
-                  return (
-                    <div
-                      key={msg._id}
-                      className={`message-row ${isMe ? "me" : "other"}`}
-                    >
-                      <div
-                        className={`message-bubble message-${msg.type || "text"}`}
-                        onMouseDown={(e) => handleBubblePressStart(msg, e)}
-                        onMouseUp={handleBubblePressEnd}
-                        onMouseLeave={handleBubblePressEnd}
-                        onTouchStart={(e) => handleBubblePressStart(msg, e)}
-                        onTouchEnd={handleBubblePressEnd}
-                      >
-                        {renderMessageContent(msg)}
-                        {renderReactions(msg)}
-                      </div>
-                    </div>
-                  );
-                })}
-
-              <div ref={messagesEndRef} />
+              <div className="chat-empty">
+                Conversation désactivée – base en cours de reconstruction
+              </div>
             </div>
 
             {/* INPUT */}
@@ -1152,11 +743,7 @@ export default function Messages() {
                   <button
                     className="emoji-btn"
                     type="button"
-                    onClick={() => {
-                      if (!messages.length) return;
-                      const lastMessage = messages[messages.length - 1];
-                      setReactionPicker({ messageId: lastMessage._id, anchor: "input" });
-                    }}
+                    onClick={() => {}}
                     aria-label="Réagir"
                   >
                     <EmojiIcon />
