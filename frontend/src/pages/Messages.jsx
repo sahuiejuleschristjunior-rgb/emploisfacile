@@ -168,6 +168,12 @@ export default function Messages() {
     };
   };
 
+  const isMessageFromMe = (msg) => {
+    const senderId =
+      typeof msg?.sender === "object" ? msg?.sender?._id : msg?.sender;
+    return senderId === me?._id;
+  };
+
   const scrollToBottom = (force = false) => {
     const container = chatBodyRef.current;
     if (container) {
@@ -458,7 +464,7 @@ export default function Messages() {
     setMessageActions(null);
   };
 
-  const deleteMessage = async (msg) => {
+  const deleteMessage = async (msg, scope = "me") => {
     if (!msg?._id) return;
     setMessages((prev) =>
       prev.filter(
@@ -471,7 +477,8 @@ export default function Messages() {
     setDeleteTarget(null);
 
     try {
-      await fetch(`${API_URL}/messages/${msg._id}`, {
+      const deleteScope = scope || "me";
+      await fetch(`${API_URL}/messages/${msg._id}?scope=${deleteScope}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -1340,9 +1347,20 @@ export default function Messages() {
                 </div>
                 <div className="message-actions-buttons">
                   <button onClick={() => setDeleteTarget(null)}>Annuler</button>
-                  <button className="danger" onClick={() => deleteMessage(deleteTarget)}>
-                    Supprimer
+                  <button
+                    className="danger"
+                    onClick={() => deleteMessage(deleteTarget, "me")}
+                  >
+                    Supprimer ici
                   </button>
+                  {isMessageFromMe(deleteTarget) && (
+                    <button
+                      className="danger"
+                      onClick={() => deleteMessage(deleteTarget, "all")}
+                    >
+                      Supprimer pour tous
+                    </button>
+                  )}
                 </div>
               </div>
             )}
