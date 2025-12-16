@@ -114,6 +114,7 @@ export default function Messages() {
   const [recordLevel, setRecordLevel] = useState(0);
 
   const [audioStatus, setAudioStatus] = useState({});
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
   const recordStartRef = useRef(null);
   const recordTimerRef = useRef(null);
@@ -141,6 +142,7 @@ export default function Messages() {
   const socketRef = useRef(null);
   const swipeDataRef = useRef({});
   const inputRef = useRef(null);
+  const messageRefs = useRef({});
   const [typingState, setTypingState] = useState({});
 
   /* =====================================================
@@ -189,6 +191,18 @@ export default function Messages() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const scrollToMessage = (messageId) => {
+    if (!messageId || !chatBodyRef.current) return;
+    const node = messageRefs.current[messageId];
+    if (!node) return;
+
+    const container = chatBodyRef.current;
+    const offset = Math.max(0, node.offsetTop - container.clientHeight / 4);
+    container.scrollTo({ top: offset, behavior: "smooth" });
+    setHighlightedMessageId(messageId);
+    setTimeout(() => setHighlightedMessageId(null), 1600);
+  };
+
   const resolveUrl = (url) => {
     if (!url) return "";
     if (url.startsWith("blob:")) return url;
@@ -210,6 +224,22 @@ export default function Messages() {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const getAudioDurationSeconds = (msg) => {
+    if (!msg || msg.type !== "audio") return null;
+    const status = audioStatus[msg._id] || {};
+    const duration =
+      status.duration || msg.audioDuration || msg.duration || msg.length || msg.audioLength;
+    if (!duration || Number.isNaN(Number(duration))) return null;
+    return Number(duration);
+  };
+
+  const getAudioPreviewText = (msg) => {
+    if (!msg || msg.type !== "audio") return msg?.content || "Message";
+    const duration = getAudioDurationSeconds(msg);
+    const base = "Message vocal";
+    return duration ? `${base} (${formatTime(duration)})` : base;
+  };
+
   const buildReplyData = (target) => {
     if (!target?._id) return { replyId: null, preview: null };
 
@@ -217,9 +247,7 @@ export default function Messages() {
       replyId: target._id,
       preview: {
         messageId: target._id,
-        content:
-          target.content ||
-          (target.type === "audio" ? "Message vocal" : "Message"),
+        content: target.content || (target.type === "audio" ? getAudioPreviewText(target) : "Message"),
         type: target.type || "text",
       },
     };
@@ -239,24 +267,29 @@ export default function Messages() {
 
   const upsertMessage = (incoming) => {
     if (!incoming) return;
+    const withTimestamp = {
+      createdAt: incoming.createdAt || new Date().toISOString(),
+      ...incoming,
+    };
     setMessages((prev) => {
       const next = [...prev];
 
-      if (incoming.clientTempId) {
-        const idx = next.findIndex((m) => m.clientTempId === incoming.clientTempId);
+      if (withTimestamp.clientTempId) {
+        const idx = next.findIndex((m) => m.clientTempId === withTimestamp.clientTempId);
         if (idx >= 0) {
           next.splice(idx, 1);
         }
       }
 
-      const sameIdIdx = next.findIndex((m) => m._id === incoming._id);
+      const sameIdIdx = next.findIndex((m) => m._id === withTimestamp._id);
       if (sameIdIdx >= 0) {
-        next[sameIdIdx] = { ...next[sameIdIdx], ...incoming };
+        next[sameIdIdx] = { ...next[sameIdIdx], ...withTimestamp };
       } else {
-        next.push(incoming);
+        next.push(withTimestamp);
       }
 
-      next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const safeTime = (m) => new Date(m?.createdAt || Date.now()).getTime();
+      next.sort((a, b) => safeTime(a) - safeTime(b));
       return next;
     });
   };
@@ -1027,11 +1060,23 @@ export default function Messages() {
         messageId: msg.replyTo._id,
         content:
           msg.replyTo.content ||
-          (msg.replyTo.type === "audio" ? "Message vocal" : "Message"),
+          (msg.replyTo.type === "audio" ? getAudioPreviewText(msg.replyTo) : "Message"),
         type: msg.replyTo.type || "text",
       };
     }
     return null;
+  };
+
+  const findMessageById = (id) =>
+    messages.find((m) => m._id === id || m.clientTempId === id) || null;
+
+  const getPreviewContentText = (preview) => {
+    if (!preview) return "";
+    if (preview.type === "audio") {
+      const source = findMessageById(preview.messageId);
+      return getAudioPreviewText(source || preview);
+    }
+    return preview.content || "Message";
   };
 
   const renderMessageContent = (msg) => {
@@ -1041,10 +1086,21 @@ export default function Messages() {
     return (
       <div className="message-content">
         {preview && (
-          <div className="reply-preview-block">
+          <div
+            className="reply-preview-block"
+            role="button"
+            tabIndex={0}
+            onClick={() => scrollToMessage(preview.messageId)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                scrollToMessage(preview.messageId);
+              }
+            }}
+          >
             <div className="reply-preview-label">Réponse à</div>
             <div className="reply-preview-text">
-              {preview.content || (preview.type === "audio" ? "Message vocal" : "Message")}
+              {getPreviewContentText(preview)}
             </div>
           </div>
         )}
@@ -1162,7 +1218,16 @@ export default function Messages() {
                   return (
                     <div key={msg._id} className={`message-row ${isMe ? "me" : "other"}`}>
                       <div
-                        className={`message-bubble message-${msg.type || "text"}`}
+                        ref={(node) => {
+                          if (!node) {
+                            delete messageRefs.current[msg._id];
+                            return;
+                          }
+                          messageRefs.current[msg._id] = node;
+                        }}
+                        className={`message-bubble message-${msg.type || "text"} ${
+                          highlightedMessageId === msg._id ? "message-highlight" : ""
+                        }`}
                         onMouseDown={(e) => handleBubblePointerStart(msg, e)}
                         onMouseMove={(e) => handleBubblePointerMove(msg, e)}
                         onMouseUp={handleBubblePointerEnd}
@@ -1188,9 +1253,7 @@ export default function Messages() {
                   <div className="reply-banner-title">
                     Répondre à {replyTo?.sender?.name || "ce message"}
                   </div>
-                  <div className="reply-banner-preview">
-                    {replyTo.content || (replyTo.type === "audio" ? "Message vocal" : "Message")}
-                  </div>
+                  <div className="reply-banner-preview">{getAudioPreviewText(replyTo)}</div>
                 </div>
                 <button
                   className="reply-banner-close"
