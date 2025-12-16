@@ -1299,6 +1299,7 @@
   cursor: pointer;
   display: grid;
   place-items: center;
+  transition: transform 0.15s ease, background 0.2s ease;
 }
 
 .vc-local-wrapper {
@@ -1346,8 +1347,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 12px 16px;
+  background: rgba(10, 10, 10, 0.65);
+  padding: 12px 18px;
   border-radius: 999px;
 }
 
@@ -1358,7 +1359,6 @@
   border: none;
   background: #2a2b2f;
   color: #fff;
-  font-size: 22px;
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -1380,4 +1380,27 @@
 
 .vc-btn-accept {
   background: #2e7d32;
+}
+
+.vc-incoming-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.75));
+  gap: 14px;
+  padding: 20px;
+}
+
+.vc-incoming-text {
+  color: #f5f7fb;
+  font-weight: 700;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+.vc-incoming-actions {
+  display: flex;
+  gap: 18px;
 }
