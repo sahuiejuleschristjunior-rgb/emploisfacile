@@ -6,12 +6,27 @@ const { getIO } = require("../socket");
    🔥 ENVOYER NOTIFICATION + SOCKET
 ============================================================ */
 async function pushNotification(userId, data) {
+  const filter = {
+    user: userId,
+    from: data.from,
+    type: data.type,
+    post: data.post || null,
+    story: data.story || null,
+    read: false,
+  };
+
+  const existing = await Notification.findOne(filter).sort({ createdAt: -1 });
+  if (existing) {
+    return existing;
+  }
+
   const notif = await Notification.create({
     user: userId,
     from: data.from,
     type: data.type,
     text: data.text || "",
     post: data.post || null,
+    story: data.story || null,
     read: false,
   });
 
@@ -129,6 +144,9 @@ exports.rejectFriendRequest = async (req, res) => {
     const userMe = await User.findById(me);
     const userOther = await User.findById(other);
 
+    if (!userOther)
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+
     userMe.friendRequestsReceived = userMe.friendRequestsReceived.filter(
       (id) => id.toString() !== other
     );
@@ -163,7 +181,7 @@ exports.rejectFriendRequest = async (req, res) => {
 };
 
 /* ============================================================
-   🔥 ANNULER DEMANDE ENVOYÉE
+   🔥 AMIS — ANNULER DEMANDE
 ============================================================ */
 exports.cancelFriendRequest = async (req, res) => {
   try {
@@ -176,13 +194,23 @@ exports.cancelFriendRequest = async (req, res) => {
     userMe.friendRequestsSent = userMe.friendRequestsSent.filter(
       (id) => id.toString() !== other
     );
-    userOther.friendRequestsReceived =
-      userOther.friendRequestsReceived.filter(
-        (id) => id.toString() !== me
-      );
+
+    userOther.friendRequestsReceived = userOther.friendRequestsReceived.filter(
+      (id) => id.toString() !== me
+    );
 
     await userMe.save();
     await userOther.save();
+
+    await Notification.updateMany(
+      {
+        user: other,
+        from: me,
+        type: "friend_request",
+        read: false,
+      },
+      { $set: { read: true } }
+    );
 
     res.json({ success: true, message: "Demande annulée." });
   } catch (err) {
@@ -238,26 +266,24 @@ exports.changeFriendCategory = async (req, res) => {
       return res.status(400).json({ error: "Catégorie invalide" });
     }
 
-    const user = await User.findById(me);
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: me, "friends.user": friendId },
+      { $set: { "friends.$.category": category } },
+      { new: true }
+    ).populate("friends.user", "name avatar");
 
-    const relation = user.friends.find(
-      (f) => f.user.toString() === friendId
-    );
-
-    if (!relation) {
+    if (!updatedUser) {
       return res.status(404).json({ error: "Ami introuvable" });
     }
 
-    relation.category = category;
-
-    // 🔥 LIGNE CRITIQUE
-    user.markModified("friends");
-
-    await user.save();
+    const updatedRelation = updatedUser.friends.find(
+      (f) => f.user && f.user._id.toString() === friendId
+    );
 
     res.json({
       success: true,
-      category,
+      category: updatedRelation?.category || category,
+      friend: updatedRelation || null,
     });
   } catch (err) {
     console.error("changeFriendCategory:", err);
@@ -278,24 +304,20 @@ exports.getRelationStatus = async (req, res) => {
 
   res.json({
     success: true,
-    status: {
-      isFriend,
-      requestSent: me.friendRequestsSent.includes(other),
-      requestReceived: me.friendRequestsReceived.includes(other),
-      isFollowing: me.following.includes(other),
-      isBlocked: me.blockedUsers.includes(other),
-    },
+    isFriend,
+    hasSentRequest: me.friendRequestsSent.includes(other),
+    hasReceivedRequest: me.friendRequestsReceived.includes(other),
   });
 };
 
 /* ============================================================
-   🔥 DEMANDES D’AMIS REÇUES
+   🔥 DEMANDES ENTRANTES
 ============================================================ */
 exports.getFriendRequests = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate(
       "friendRequestsReceived",
-      "name avatar"
+      "name email avatar"
     );
 
     res.json({
