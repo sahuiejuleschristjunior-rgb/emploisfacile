@@ -16,22 +16,23 @@ const mongoose = require("mongoose");
   📞 call
   👀 read_receipt
   ✍️ typing
+  📰 story_new
 */
 
 const NotificationSchema = new mongoose.Schema(
   {
     // Destinataire de la notification
-    user: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User", 
-      required: true 
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
     },
 
     // Expéditeur / auteur de l’action
-    from: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User", 
-      required: true 
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
     },
 
     // Type de notification
@@ -52,12 +53,13 @@ const NotificationSchema = new mongoose.Schema(
         "call",
         "read_receipt",
         "typing",
+        "story_new",
       ],
     },
 
     // Post lié (like / comment / reply)
-    post: { 
-      type: mongoose.Schema.Types.ObjectId, 
+    post: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Post",
       default: null,
     },
@@ -76,9 +78,9 @@ const NotificationSchema = new mongoose.Schema(
     },
 
     // Statut : lu / non-lu
-    read: { 
-      type: Boolean, 
-      default: false 
+    read: {
+      type: Boolean,
+      default: false
     },
   },
   { timestamps: true }
