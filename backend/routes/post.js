@@ -1,18 +1,25 @@
 const router = require("express").Router();
+
+// ✔️ Middleware d'auth
 const auth = require("../middlewares/authMiddleware");
+
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 const postCtrl = require("../controllers/postController");
 
 /* =====================================================
-   📁 UPLOADS
+   📁 Création automatique du dossier uploads
 ===================================================== */
 const uploadDir = path.join(__dirname, "..", "uploads");
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+/* =====================================================
+   📦 Configuration Multer (stockage + filtrage)
+===================================================== */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
@@ -22,32 +29,116 @@ const storage = multer.diskStorage({
   },
 });
 
+// Formats autorisés
+const allowedTypes = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "video/mp4",
+  "video/quicktime",
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+];
+
+function fileFilter(req, file, cb) {
+  if (!allowedTypes.includes(file.mimetype)) {
+    return cb(new Error("Format non supporté"), false);
+  }
+  cb(null, true);
+}
+
 const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
 });
 
 /* =====================================================
-   📌 POSTS
+   📌 ROUTES POSTS
 ===================================================== */
 
-router.post("/", auth, upload.single("media"), postCtrl.create);
+// ➤ Créer un post (texte + fichiers)
+router.post("/", auth, upload.array("files", 10), postCtrl.create);
+
+// ⭐⭐⭐ NOUVELLE ROUTE SCROLL INFINI
 router.get("/paginated", auth, postCtrl.listPaginated);
+
+// ➤ Liste complète des posts
 router.get("/", auth, postCtrl.list);
-router.get("/:id", auth, postCtrl.getById);
-router.post("/:id/like", auth, postCtrl.toggleLike);
-router.post("/:id/react", auth, postCtrl.react);
-router.delete("/:id", auth, postCtrl.remove);
 
-/* =====================================================
-   💬 COMMENTAIRES
-===================================================== */
+// ⭐⭐⭐ ROUTE PUBLIC PROFILE (placer AVANT les routes dynamiques !)
+router.get("/user/:id", auth, postCtrl.getPostsByUser);
 
-router.post("/:id/comment", auth, postCtrl.comment);
+// ➤ Like / unlike post
+router.post("/:id/like", auth, postCtrl.like);
+
+// =====================================================
+// ⭐⭐⭐ COMMENTAIRES
+// =====================================================
+
+// ➤ Commentaire (texte + média)
+router.post(
+  "/:id/comment",
+  auth,
+  upload.single("media"),
+  postCtrl.comment
+);
+
+// ➤ Like commentaire
+router.post(
+  "/:postId/comment/:commentId/like",
+  auth,
+  postCtrl.likeComment
+);
+
+// ➤ Réaction commentaire (👍❤️😂😮😢😡)
+router.post(
+  "/:postId/comment/:commentId/react",
+  auth,
+  postCtrl.reactToComment
+);
+
+// ➤ Supprimer un commentaire
+router.delete("/:postId/comment/:commentId", auth, postCtrl.deleteComment);
+
+// =====================================================
+// ⭐⭐⭐ RÉPONSES AUX COMMENTAIRES
+// =====================================================
+
+// ➤ Répondre à un commentaire (texte + média)
 router.post(
   "/:postId/comment/:commentId/reply",
   auth,
+  upload.single("media"),
   postCtrl.reply
 );
+
+// ➤ Like réponse
+router.post(
+  "/:postId/comment/:commentId/reply/:replyId/like",
+  auth,
+  postCtrl.likeReply
+);
+
+// ➤ Réaction réponse
+router.post(
+  "/:postId/comment/:commentId/reply/:replyId/react",
+  auth,
+  postCtrl.reactToReply
+);
+
+// ➤ Supprimer une réponse
+router.delete(
+  "/:postId/comment/:commentId/reply/:replyId",
+  auth,
+  postCtrl.deleteReply
+);
+
+// =====================================================
+// ➤ Supprimer un post
+// =====================================================
+router.delete("/:id", auth, postCtrl.deletePost);
 
 module.exports = router;
