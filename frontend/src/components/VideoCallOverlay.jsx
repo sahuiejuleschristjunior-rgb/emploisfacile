@@ -1,4 +1,3 @@
-// src/components/VideoCallOverlay.jsx
 import { useEffect, useRef, useState } from "react";
 
 const RTC_CONFIG = {
@@ -35,9 +34,7 @@ const Icon = ({ name, size = 22 }) => {
       <path d="M14.75 6h-7.5A2.25 2.25 0 0 0 5 8.25v7.5A2.25 2.25 0 0 0 7.25 18h7.5A2.25 2.25 0 0 0 17 15.75v-1.38l2.38 1.58a.75.75 0 0 0 1.17-.62V8.67a.75.75 0 0 0-1.17-.62L17 9.63V8.25A2.25 2.25 0 0 0 14.75 6Z" />
     ),
     videoOff: (
-      <g>
-        <path d="M7.25 6A2.25 2.25 0 0 0 5 8.25v6.19l-1.12-1.12a1 1 0 0 0-1.4 1.42L5.46 17.7A2.24 2.24 0 0 0 7.25 18h6.21a2.24 2.24 0 0 0 1.55-.61l1.93 1.93a1 1 0 0 0 1.4-1.42L7.67 6.42A2.23 2.23 0 0 0 7.25 6Zm9.5 2.22v1.41l1.42-1a.75.75 0 0 1 1.17.62v5.66a.75.75 0 0 1-1.17.62L16.75 14.7v1.05a.25.25 0 0 1-.42.18l-1.6-1.6a.75.75 0 0 0-.03-.97l-3.76-3.76a.74.74 0 0 0-.97-.03L8.42 8.74a.25.25 0 0 1 .18-.42h6.15a1 1 0 0 1 1 1Z" />
-      </g>
+      <path d="M3 3l18 18-1.4 1.4L3 4.4 4.4 3Zm5.6 3H14.75A2.25 2.25 0 0 1 17 8.25v1.38l2.38-1.58a.75.75 0 0 1 1.17.62v5.66a.75.75 0 0 1-1.17.62L17 14.37v1.38A2.25 2.25 0 0 1 14.75 18H8.6l1.9-1.9h4.25a.25.25 0 0 0 .25-.25V8.25a.25.25 0 0 0-.25-.25H6.7L8.6 6Z" />
     ),
     phone: (
       <path d="M5.54 4.47 7.7 3.64a2 2 0 0 1 2.42.9l1.16 2.1a2 2 0 0 1-.45 2.44l-.64.6a7.7 7.7 0 0 0 3.15 3.15l.61-.64a2 2 0 0 1 2.44-.45l2.09 1.16a2 2 0 0 1 .9 2.42l-.83 2.16a2 2 0 0 1-2.12 1.3 15.5 15.5 0 0 1-9.9-6.36 15.5 15.5 0 0 1-2.63-5.44 2 2 0 0 1 1.2-2.34Z" />
@@ -52,20 +49,17 @@ const Icon = ({ name, size = 22 }) => {
 
 export default function VideoCallOverlay({
   visible,
-  mode,          // "caller" | "callee"
+  mode, // "caller" | "callee"
   socket,
   me,
   otherUser,
   incomingOffer,
-  callType = "video", // "video" | "audio"
+  callType = "video",
   onClose,
 }) {
-  /* ============================================================
-     HOOKS
-  ============================================================ */
   const isVideoCall = callType !== "audio";
 
-  const [status, setStatus] = useState("idle");          // "idle" | "calling" | "in-call"
+  const [status, setStatus] = useState("idle");
   const [accepted, setAccepted] = useState(mode === "caller");
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(isVideoCall);
@@ -75,18 +69,10 @@ export default function VideoCallOverlay({
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
 
-  /* ============================================================
-     CLEANUP
-  ============================================================ */
   const cleanUpCall = () => {
     try {
-      if (pcRef.current) {
-        pcRef.current.ontrack = null;
-        pcRef.current.onicecandidate = null;
-        pcRef.current.close();
-      }
-    } catch (e) {}
-
+      if (pcRef.current) pcRef.current.close();
+    } catch {}
     pcRef.current = null;
 
     if (localStreamRef.current) {
@@ -99,317 +85,123 @@ export default function VideoCallOverlay({
   };
 
   const handleHangup = () => {
-    if (socket && otherUser?._id) {
-      socket.emit("call_hangup", { to: otherUser._id });
-    }
+    socket?.emit("call_hangup", { to: otherUser?._id });
     cleanUpCall();
+    setAccepted(false);
     setStatus("idle");
-    setAccepted(mode === "caller");
-    onClose && onClose();
+    onClose?.();
   };
 
-  /* ============================================================
-     SOCKET LISTENERS
-  ============================================================ */
   useEffect(() => {
     if (!socket || !otherUser) return;
 
-    const handleCallAnswer = ({ from, answer }) => {
-      if (!pcRef.current) return;
-      if (from !== otherUser._id) return;
+    socket.on("call_answer", async ({ from, answer }) => {
+      if (from === otherUser._id && pcRef.current) {
+        await pcRef.current.setRemoteDescription(answer);
+        setStatus("in-call");
+      }
+    });
 
-      pcRef.current
-        .setRemoteDescription(new RTCSessionDescription(answer))
-        .then(() => setStatus("in-call"))
-        .catch((err) => console.error("Remote answer error:", err));
-    };
+    socket.on("call_ice_candidate", ({ from, candidate }) => {
+      if (from === otherUser._id && pcRef.current) {
+        pcRef.current.addIceCandidate(candidate);
+      }
+    });
 
-    const handleIceCandidate = ({ from, candidate }) => {
-      if (!pcRef.current) return;
-      if (from !== otherUser._id) return;
-
-      pcRef.current
-        .addIceCandidate(new RTCIceCandidate(candidate))
-        .catch((err) => console.error("ICE error:", err));
-    };
-
-    const handleHangupRemote = ({ from }) => {
-      if (from !== otherUser._id) return;
-
-      cleanUpCall();
-      setStatus("idle");
-      setAccepted(mode === "caller");
-      onClose && onClose();
-    };
-
-    socket.on("call_answer", handleCallAnswer);
-    socket.on("call_ice_candidate", handleIceCandidate);
-    socket.on("call_hangup", handleHangupRemote);
+    socket.on("call_hangup", ({ from }) => {
+      if (from === otherUser._id) {
+        cleanUpCall();
+        setAccepted(false);
+        setStatus("idle");
+        onClose?.();
+      }
+    });
 
     return () => {
-      socket.off("call_answer", handleCallAnswer);
-      socket.off("call_ice_candidate", handleIceCandidate);
-      socket.off("call_hangup", handleHangupRemote);
+      socket.off("call_answer");
+      socket.off("call_ice_candidate");
+      socket.off("call_hangup");
     };
   }, [socket, otherUser?._id]);
 
-  /* ============================================================
-     PEER CONNECTION
-  ============================================================ */
-  const startPeerConnection = async (withOffer = false) => {
-    if (!socket || !otherUser?._id) return;
-    if (pcRef.current) return;
+  const startPeerConnection = async (withOffer) => {
+    if (pcRef.current || !socket || !otherUser) return;
 
-    const hasLivePeer =
-      pcRef.current &&
-      !["failed", "disconnected", "closed"].includes(
-        pcRef.current.connectionState
-      ) &&
-      !["failed", "disconnected", "closed"].includes(
-        pcRef.current.iceConnectionState
-      );
+    setStatus(mode === "caller" ? "calling" : "in-call");
 
-    if (hasLivePeer) return;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: isVideoCall,
+      audio: true,
+    });
 
-    if (pcRef.current) {
-      cleanUpCall();
+    localStreamRef.current = stream;
+    if (localVideoRef.current && isVideoCall) {
+      localVideoRef.current.srcObject = stream;
     }
 
-    try {
-      setStatus(mode === "caller" ? "calling" : "in-call");
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    pcRef.current = pc;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: isVideoCall,
-        audio: true,
-      });
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-      localStreamRef.current = stream;
-      if (isVideoCall && localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
+    pc.ontrack = (e) => {
+      remoteVideoRef.current.srcObject = e.streams[0];
+    };
 
-      const pc = new RTCPeerConnection(RTC_CONFIG);
-      pcRef.current = pc;
-
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-      pc.ontrack = (event) => {
-        const [remote] = event.streams;
-        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remote;
-      };
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("call_ice_candidate", {
-            to: otherUser._id,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      if (withOffer) {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-
-        socket.emit("call_offer", {
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        socket.emit("call_ice_candidate", {
           to: otherUser._id,
-          offer,
-          callType,
+          candidate: e.candidate,
         });
       }
-    } catch (err) {
-      console.error("startPeerConnection error:", err);
-      cleanUpCall();
-      onClose && onClose();
+    };
+
+    if (withOffer) {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit("call_offer", { to: otherUser._id, offer, callType });
     }
   };
 
-  /* ============================================================
-     MODE CALLER — AUTO START
-  ============================================================ */
   useEffect(() => {
     if (visible && mode === "caller") {
       startPeerConnection(true);
     }
+  }, [visible]);
 
-    // ⭐ AJOUT : receveur active sa caméra automatiquement
-    if (visible && mode === "callee" && !accepted) {
-      startPeerConnection(false);
-    }
-
-    return () => cleanUpCall();
-  }, [visible, mode, otherUser?._id]);
-
-  /* ============================================================
-     MODE CALLEE — ACCEPT
-  ============================================================ */
   const handleAccept = async () => {
-    if (!incomingOffer || !socket || !otherUser?._id) return;
-
     setAccepted(true);
     setStatus("in-call");
-
     await startPeerConnection(false);
-
-    try {
-      await pcRef.current.setRemoteDescription(
-        new RTCSessionDescription(incomingOffer)
-      );
-
-      const answer = await pcRef.current.createAnswer();
-      await pcRef.current.setLocalDescription(answer);
-
-      socket.emit("call_answer", {
-        to: otherUser._id,
-        answer,
-      });
-    } catch (err) {
-      console.error("Accept error:", err);
-      cleanUpCall();
-      onClose && onClose();
-    }
+    await pcRef.current.setRemoteDescription(incomingOffer);
+    const answer = await pcRef.current.createAnswer();
+    await pcRef.current.setLocalDescription(answer);
+    socket.emit("call_answer", { to: otherUser._id, answer });
   };
 
-  /* ============================================================
-     CONTROLES LOCAUX (MIC / CAM)
-  ============================================================ */
-  const toggleMic = () => {
-    const enabled = !isMicOn;
-    setIsMicOn(enabled);
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((t) => {
-        t.enabled = enabled;
-      });
-    }
-  };
-
-  const toggleCamera = () => {
-    if (!isVideoCall) return;
-
-    const enabled = !isCamOn;
-    setIsCamOn(enabled);
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach((t) => {
-        t.enabled = enabled;
-      });
-    }
-  };
-
-  /* ============================================================
-     RENDER
-  ============================================================ */
   if (!visible || !otherUser) return null;
-
-  const title =
-    mode === "caller"
-      ? `${callType === "audio" ? "Appel audio" : "Appel vidéo"} avec ${
-          otherUser.name
-        }`
-      : !accepted
-      ? `${otherUser.name} vous appelle…`
-      : `${callType === "audio" ? "Appel audio" : "Appel vidéo"} avec ${
-          otherUser.name
-        }`;
 
   return (
     <div className="vc-overlay">
       <div className="vc-call">
-        {/* Vidéo distante en fond plein écran */}
         {isVideoCall ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="vc-video-remote"
-          />
+          <video ref={remoteVideoRef} autoPlay playsInline className="vc-video-remote" />
         ) : (
-          <audio
-            ref={remoteVideoRef}
-            autoPlay
-            className="vc-audio-remote"
-            controls={false}
-          />
+          <audio ref={remoteVideoRef} autoPlay />
         )}
 
-        {/* Barre haute */}
-        <div className="vc-top-bar">
-          <div className="vc-title">
-            <div className="vc-title-name">{title}</div>
-            <div className="vc-title-sub">
-              {status === "calling" && "Appel en cours…"}
-              {status === "in-call" && "Connecté"}
-            </div>
-          </div>
-          <button className="vc-btn-top vc-btn-close" onClick={handleHangup} aria-label="Raccrocher">
-            <Icon name="phoneDown" size={18} />
-          </button>
-        </div>
-
-        {/* Votre vidéo en petit carré */}
-        <div className="vc-local-wrapper">
-          {isVideoCall ? (
-            <video
-              ref={localVideoRef}
-              autoPlay
-              muted
-              playsInline
-              className="vc-video-local"
-            />
-          ) : (
-            <div className="vc-audio-local">🎧 Vous</div>
-          )}
-          <div className="vc-local-label">Vous</div>
-        </div>
-
         <div className="vc-bottom-bar">
-          <button
-            className={`vc-round-btn ${isMicOn ? "" : "vc-btn-off"}`}
-            onClick={toggleMic}
-            aria-label={isMicOn ? "Couper le micro" : "Réactiver le micro"}
-          >
-            <Icon name={isMicOn ? "micOn" : "micOff"} />
-          </button>
-          {isVideoCall && (
-            <button
-              className={`vc-round-btn ${isCamOn ? "" : "vc-btn-off"}`}
-              onClick={toggleCamera}
-              aria-label={isCamOn ? "Couper la caméra" : "Réactiver la caméra"}
-            >
-              <Icon name={isCamOn ? "videoOn" : "videoOff"} />
-            </button>
-          )}
-          <button
-            className="vc-round-btn vc-btn-hangup"
-            onClick={handleHangup}
-            aria-label="Raccrocher"
-          >
+          <button className="vc-round-btn vc-btn-hangup" onClick={handleHangup}>
             <Icon name="phoneDown" />
           </button>
         </div>
 
         {mode === "callee" && !accepted && (
           <div className="vc-incoming-overlay">
-            <div className="vc-incoming-text">
-              {callType === "audio" ? "Appel audio" : "Appel vidéo"}
-            </div>
-            <div className="vc-incoming-actions">
-              <button
-                className="vc-round-btn vc-btn-hangup"
-                onClick={handleHangup}
-                aria-label="Refuser l'appel"
-              >
-                <Icon name="phoneDown" size={26} />
-              </button>
-              <button
-                className="vc-round-btn vc-btn-accept"
-                onClick={handleAccept}
-                aria-label="Décrocher"
-              >
-                <Icon name="phone" size={26} />
-              </button>
-            </div>
+            <button className="vc-round-btn vc-btn-accept" onClick={handleAccept}>
+              <Icon name="phone" size={28} />
+            </button>
           </div>
         )}
       </div>
