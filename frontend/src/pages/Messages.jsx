@@ -447,8 +447,8 @@ export default function Messages() {
   };
 
  /* =====================================================
-   AUDIO
-===================================================== */
+     AUDIO
+  ===================================================== */
 const recordCanceledRef = useRef(false);
 
 const stopRecordVisualization = () => {
@@ -509,15 +509,18 @@ const startRecording = async (event) => {
     };
 
     recorder.onstop = () => {
-      const duration =
-        Date.now() - (recordStartRef.current?.at || Date.now());
+      const duration = Date.now() - (recordStartRef.current?.at || Date.now());
+      const canceled = recordCanceledRef.current || duration < 300;
 
-      const canceled =
-        recordCanceledRef.current || duration < 300;
-
+      // stop micro
       stream.getTracks().forEach((t) => t.stop());
+
       stopRecordVisualization();
-      audioContext.close();
+
+      // ferme audio context (protégé)
+      try {
+        audioContext.close();
+      } catch {}
 
       if (canceled || !recordingChunksRef.current.length) {
         recordingChunksRef.current = [];
@@ -525,10 +528,7 @@ const startRecording = async (event) => {
         return;
       }
 
-      const blob = new Blob(recordingChunksRef.current, {
-        type: "audio/webm",
-      });
-
+      const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
       uploadAudio(blob);
     };
 
@@ -536,14 +536,16 @@ const startRecording = async (event) => {
       const buffer = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(buffer);
 
-      const max =
-        buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
-
+      const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
       const level = Math.min(1, max * 1.4);
+
       setRecordLevel(level);
 
-      recordVizFrame.current =
-        requestAnimationFrame(animateLevel);
+      if (recordLevelBarRef.current) {
+        recordLevelBarRef.current.style.setProperty("--record-level", String(level));
+      }
+
+      recordVizFrame.current = requestAnimationFrame(animateLevel);
     };
 
     animateLevel();
@@ -571,21 +573,25 @@ const updateRecordingDrag = (event) => {
   const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
   const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
-  const deltaX = clientX - recordStartRef.current.x;
-  const deltaY = clientY - recordStartRef.current.y;
+  const deltaX = clientX - (recordStartRef.current.x || clientX);
+  const deltaY = clientY - (recordStartRef.current.y || clientY);
 
+  // 🔒 verrouillage vers le haut
   if (deltaY < -70) {
     setRecordLocked(true);
   }
 
+  // si verrouillé => on n'annule plus
   if (recordLocked) {
     setRecordCanceled(false);
     recordCanceledRef.current = false;
+    setRecordOffset(0);
     return;
   }
 
   setRecordOffset(deltaX);
 
+  // ➡️ annulation vers la droite
   const canceled = deltaX > 80;
   setRecordCanceled(canceled);
   recordCanceledRef.current = canceled;
@@ -597,6 +603,7 @@ const stopRecording = (forceCancel = false) => {
   if (forceCancel) {
     recordCanceledRef.current = true;
     setRecordCanceled(true);
+    setRecordTime(0);
     recordingChunksRef.current = [];
   }
 
@@ -607,22 +614,28 @@ const stopRecording = (forceCancel = false) => {
 
   stopRecordVisualization();
 
+  if (recordLevelBarRef.current) {
+    recordLevelBarRef.current.style.setProperty("--record-level", "0");
+  }
+
   const recorder = mediaRecorderRef.current;
   mediaRecorderRef.current = null;
 
   if (recorder && recorder.state !== "inactive") {
-    recorder.stop();
+    recorder.stop(); // déclenche recorder.onstop
   }
 
+  // audioContext est déjà fermé dans onstop, mais on protège
   if (audioContextRef.current) {
-    audioContextRef.current.close();
+    try {
+      audioContextRef.current.close();
+    } catch {}
     audioContextRef.current = null;
   }
 
   audioAnalyserRef.current = null;
   audioGainRef.current = null;
 };
-
   /* =====================================================
      REACTIONS
   ===================================================== */
