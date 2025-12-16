@@ -80,6 +80,15 @@ const VideoIcon = () => (
   </svg>
 );
 
+const PhoneDownIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M4.1 14.18c3.8-3.38 12-3.38 15.8 0a1 1 0 0 1 .1 1.4l-2 2.4a1 1 0 0 1-1.12.28l-2.77-1.1a1 1 0 0 1-.61-.92l-.01-.8c-.9-.14-1.9-.14-2.8 0v.8a1 1 0 0 1-.6.92l-2.78 1.1a1 1 0 0 1-1.12-.28l-2-2.4a1 1 0 0 1 .1-1.4Z"
+    />
+  </svg>
+);
+
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
     <path fill="currentColor" d="M7 5.5v13l11-6.5-11-6.5Z" />
@@ -491,6 +500,10 @@ export default function Messages() {
       auth: { token },
       transports: ["websocket", "polling"],
     });
+
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     socketRef.current = socket;
 
@@ -1554,13 +1567,24 @@ export default function Messages() {
                 <button
                   type="button"
                   className="chat-action-btn"
-                  title="Appel vidéo"
-                  onClick={() => startCall("video")}
-                >
-                  <VideoIcon />
-                </button>
-              </div>
-            </div>
+              title="Appel vidéo"
+              onClick={() => startCall("video")}
+            >
+              <VideoIcon />
+            </button>
+
+            {callOverlay.visible && (
+              <button
+                type="button"
+                className="chat-action-btn chat-action-btn--hangup"
+                title="Raccrocher"
+                onClick={endCall}
+              >
+                <PhoneDownIcon />
+              </button>
+            )}
+          </div>
+        </div>
 
             {/* BODY */}
             <div className="chat-body" ref={chatBodyRef}>
