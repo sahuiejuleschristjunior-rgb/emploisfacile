@@ -8,25 +8,12 @@ const { getIO } = require("../socket");
    🔥 UTILITAIRE — NOTIFICATION + SOCKET
 ============================================================ */
 async function pushNotification(userId, data) {
-  const filter = {
-    user: userId,
-    from: data.from,
-    type: data.type,
-    post: data.post || null,
-    story: data.story || null,
-    read: false,
-  };
-
-  const existing = await Notification.findOne(filter).sort({ createdAt: -1 });
-  if (existing) return existing;
-
   const notif = await Notification.create({
     user: userId,
     from: data.from,
     type: data.type,
     text: data.text,
     post: data.post || null,
-    story: data.story || null,
     read: false,
   });
 
@@ -94,13 +81,42 @@ exports.list = async (req, res) => {
 ============================================================ */
 exports.create = async (req, res) => {
   try {
-    const post = await Post.create({
-      ...req.body,
-      user: req.user.id,
-      image: req.file ? "/uploads/" + req.file.filename : null,
+    const text = typeof req.body.text === "string" ? req.body.text : "";
+    let media = [];
+
+    if (req.body.media) {
+      try {
+        media = Array.isArray(req.body.media)
+          ? req.body.media
+          : JSON.parse(req.body.media);
+      } catch {
+        media = [];
+      }
+    }
+
+    if (req.files?.length) {
+      const uploaded = req.files.map((f) => ({
+        url: "/uploads/" + f.filename,
+        type: f.mimetype.startsWith("image")
+          ? "image"
+          : f.mimetype.startsWith("video")
+          ? "video"
+          : "audio",
+      }));
+
+      media = [...media, ...uploaded];
+    }
+
+    const created = await Post.create({
+      user: req.userId,
+      text,
+      media,
     });
 
-    getIO().emit("post:new", post);
+    const post = await Post.findById(created._id)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
 
     res.status(201).json(post);
   } catch (err) {
@@ -109,42 +125,487 @@ exports.create = async (req, res) => {
 };
 
 /* ============================================================
-   📌 RÉCUPÉRER UN POST
+   📌 COMMENTAIRE (texte + média) + NOTIFICATION
 ============================================================ */
-exports.getById = async (req, res) => {
+exports.comment = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id)
+    // texte vient de JSON OU de FormData
+    const rawText = req.body.text || "";
+    const text = rawText.trim();
+
+    // fichier venant de multer.single("media") ou .array()
+    let media = null;
+    if (req.file) {
+      media = {
+        url: "/uploads/" + req.file.filename,
+        type: req.file.mimetype.startsWith("image")
+          ? "image"
+          : req.file.mimetype.startsWith("video")
+          ? "video"
+          : "audio",
+      };
+    } else if (req.files && req.files[0]) {
+      const f = req.files[0];
+      media = {
+        url: "/uploads/" + f.filename,
+        type: f.mimetype.startsWith("image")
+          ? "image"
+          : f.mimetype.startsWith("video")
+          ? "video"
+          : "audio",
+      };
+    }
+
+    if (!text && !media) {
+      return res.status(400).json({ error: "Commentaire vide" });
+    }
+
+    const postId = req.params.id || req.params.postId;
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const userId = req.userId;
+
+    const comment = {
+      user: userId,
+      text: text || "",
+      media: media || undefined,
+      likes: [],
+      reactions: [],
+    };
+
+    post.comments.push(comment);
+    await post.save();
+
+    // 🔥 NOTIFICATION — commenter un post
+    if (String(post.user) !== String(userId)) {
+      await pushNotification(post.user, {
+        from: userId,
+        post: post._id,
+        type: "comment",
+        text: "A commenté votre publication.",
+      });
+    }
+
+    const updated = await Post.findById(post._id)
       .populate("user", "name email avatar avatarColor")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("COMMENT ERROR:", err);
+    res.status(500).json({ error: "Erreur ajout commentaire" });
+  }
+};
+
+/* ============================================================
+   📌 LIKE / UNLIKE POST + NOTIFICATION
+============================================================ */
+exports.like = async (req, res) => {
+  try {
+    const postId = req.params.id || req.params.postId;
+    const post = await Post.findById(postId);
+    const userId = req.userId;
+
     if (!post) return res.status(404).json({ error: "Post introuvable" });
 
-    res.json(post);
+    const alreadyLiked = post.likes.some(
+      (u) => String(u) === String(userId)
+    );
+
+    if (alreadyLiked) {
+      post.likes = post.likes.filter((u) => String(u) !== String(userId));
+    } else {
+      post.likes.push(userId);
+
+      if (String(post.user) !== String(userId)) {
+        await pushNotification(post.user, {
+          from: userId,
+          type: "like",
+          post: post._id,
+          text: "A aimé votre publication.",
+        });
+      }
+    }
+
+    await post.save();
+
+    res.json({ liked: !alreadyLiked });
   } catch (err) {
-    res.status(500).json({ error: "Erreur récupération post" });
+    res.status(500).json({ error: "Erreur Like" });
+  }
+};
+
+/* ============================================================
+   📌 RÉPONSE (texte + media) + NOTIFICATION
+============================================================ */
+exports.reply = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+
+    const rawText = req.body.text || "";
+    const text = rawText.trim();
+
+    let media = null;
+    if (req.file) {
+      media = {
+        url: "/uploads/" + req.file.filename,
+        type: req.file.mimetype.startsWith("image")
+          ? "image"
+          : req.file.mimetype.startsWith("video")
+          ? "video"
+          : "audio",
+      };
+    } else if (req.files && req.files[0]) {
+      const f = req.files[0];
+      media = {
+        url: "/uploads/" + f.filename,
+        type: f.mimetype.startsWith("image")
+          ? "image"
+          : f.mimetype.startsWith("video")
+          ? "video"
+          : "audio",
+      };
+    }
+
+    if (!text && !media) {
+      return res.status(400).json({ error: "Réponse vide" });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
+
+    const reply = {
+      user: req.userId,
+      text: text || "",
+      media: media || undefined,
+      likes: [],
+      reactions: [],
+    };
+
+    comment.replies.push(reply);
+    await post.save();
+
+    if (String(comment.user) !== String(req.userId)) {
+      await pushNotification(comment.user, {
+        from: req.userId,
+        post: post._id,
+        type: "reply",
+        text: "A répondu à votre commentaire.",
+      });
+    }
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("REPLY ERROR:", err);
+    res.status(500).json({ error: "Erreur ajout réponse" });
+  }
+};
+
+/* ============================================================
+   📌 LIKE / UNLIKE COMMENTAIRE
+   Route attendue : POST /posts/:postId/comment/:commentId/like
+============================================================ */
+exports.likeComment = async (req, res) => {
+  try {
+    const postId = req.params.postId || req.params.id;
+    const { commentId } = req.params;
+    const userId = req.userId;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
+
+    const alreadyLiked = (comment.likes || []).some(
+      (u) => String(u) === String(userId)
+    );
+
+    if (alreadyLiked) {
+      comment.likes = comment.likes.filter(
+        (u) => String(u) !== String(userId)
+      );
+    } else {
+      comment.likes = comment.likes || [];
+      comment.likes.push(userId);
+    }
+
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("LIKE COMMENT ERROR:", err);
+    res.status(500).json({ error: "Erreur like commentaire" });
+  }
+};
+
+/* ============================================================
+   📌 LIKE / UNLIKE RÉPONSE
+   Route : POST /posts/:postId/comment/:commentId/reply/:replyId/like
+============================================================ */
+exports.likeReply = async (req, res) => {
+  try {
+    const postId = req.params.postId || req.params.id;
+    const { commentId, replyId } = req.params;
+    const userId = req.userId;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
+
+    const reply = comment.replies.id(replyId);
+    if (!reply) return res.status(404).json({ error: "Réponse introuvable" });
+
+    const alreadyLiked = (reply.likes || []).some(
+      (u) => String(u) === String(userId)
+    );
+
+    if (alreadyLiked) {
+      reply.likes = reply.likes.filter(
+        (u) => String(u) !== String(userId)
+      );
+    } else {
+      reply.likes = reply.likes || [];
+      reply.likes.push(userId);
+    }
+
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("LIKE REPLY ERROR:", err);
+    res.status(500).json({ error: "Erreur like réponse" });
+  }
+};
+
+/* ============================================================
+   📌 RÉACTION SUR COMMENTAIRE (👍❤️😂😮😢😡)
+   Route : POST /posts/:postId/comment/:commentId/react
+   body: { type: "like" | "love" | ... }
+============================================================ */
+exports.reactToComment = async (req, res) => {
+  try {
+    const postId = req.params.postId || req.params.id;
+    const { commentId } = req.params;
+    const userId = req.userId;
+    const { type } = req.body;
+
+    if (!VALID_REACTIONS.includes(type)) {
+      return res.status(400).json({ error: "Type de réaction invalide" });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
+
+    comment.reactions = comment.reactions || [];
+
+    // retirer ancienne réaction du user (s'il y en a une)
+    comment.reactions = comment.reactions.filter(
+      (r) => String(r.user) !== String(userId)
+    );
+
+    // si on veut "enlever" la réaction : on ne remet rien
+    if (type) {
+      comment.reactions.push({ user: userId, type });
+    }
+
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("REACT COMMENT ERROR:", err);
+    res.status(500).json({ error: "Erreur réaction commentaire" });
+  }
+};
+
+/* ============================================================
+   📌 RÉACTION SUR RÉPONSE
+   Route : POST /posts/:postId/comment/:commentId/reply/:replyId/react
+============================================================ */
+exports.reactToReply = async (req, res) => {
+  try {
+    const postId = req.params.postId || req.params.id;
+    const { commentId, replyId } = req.params;
+    const userId = req.userId;
+    const { type } = req.body;
+
+    if (!VALID_REACTIONS.includes(type)) {
+      return res.status(400).json({ error: "Type de réaction invalide" });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
+
+    const reply = comment.replies.id(replyId);
+    if (!reply) return res.status(404).json({ error: "Réponse introuvable" });
+
+    reply.reactions = reply.reactions || [];
+
+    reply.reactions = reply.reactions.filter(
+      (r) => String(r.user) !== String(userId)
+    );
+
+    if (type) {
+      reply.reactions.push({ user: userId, type });
+    }
+
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("REACT REPLY ERROR:", err);
+    res.status(500).json({ error: "Erreur réaction réponse" });
+  }
+};
+
+/* ============================================================
+   📌 SUPPRIMER COMMENTAIRE
+============================================================ */
+exports.deleteComment = async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment)
+      return res.status(404).json({ error: "Commentaire introuvable" });
+
+    if (
+      String(comment.user) !== String(req.userId) &&
+      String(post.user) !== String(req.userId)
+    ) {
+      return res.status(403).json({ error: "Non autorisé" });
+    }
+
+    comment.deleteOne();
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur suppression commentaire" });
+  }
+};
+
+/* ============================================================
+   📌 SUPPRIMER RÉPONSE
+============================================================ */
+exports.deleteReply = async (req, res) => {
+  try {
+    const { postId, commentId, replyId } = req.params;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const comment = post.comments.id(commentId);
+    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
+
+    const reply = comment.replies.id(replyId);
+    if (!reply) return res.status(404).json({ error: "Réponse introuvable" });
+
+    if (
+      String(reply.user) !== String(req.userId) &&
+      String(post.user) !== String(req.userId)
+    ) {
+      return res.status(403).json({ error: "Non autorisé" });
+    }
+
+    reply.deleteOne();
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur suppression réponse" });
   }
 };
 
 /* ============================================================
    📌 SUPPRIMER UN POST
 ============================================================ */
-exports.remove = async (req, res) => {
+exports.deletePost = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const { id } = req.params;
 
+    const post = await Post.findById(id);
     if (!post) return res.status(404).json({ error: "Post introuvable" });
 
-    if (post.user.toString() !== req.user.id)
+    if (String(post.user) !== String(req.userId)) {
       return res.status(403).json({ error: "Non autorisé" });
+    }
 
-    if (post.image) {
-      fs.unlink(path.join(__dirname, "../", post.image), (err) => {
-        if (err) console.error("Erreur suppression image", err);
+    if (Array.isArray(post.media)) {
+      post.media.forEach((m) => {
+        const filePath = path.join(__dirname, "..", m.url);
+        fs.unlink(filePath, () => {});
       });
     }
 
-    await Post.findByIdAndDelete(req.params.id);
+    await Post.findByIdAndDelete(id);
 
     res.json({ success: true });
   } catch (err) {
@@ -153,159 +614,20 @@ exports.remove = async (req, res) => {
 };
 
 /* ============================================================
-   📌 LIKE / UNLIKE
+   📌 PUBLICATIONS D’UN UTILISATEUR
 ============================================================ */
-exports.toggleLike = async (req, res) => {
+exports.getPostsByUser = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const postId = req.params.id;
+    const userId = req.params.id;
 
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ error: "Post introuvable" });
+    const posts = await Post.find({ user: userId })
+      .populate("user", "name email avatar avatarColor")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor")
+      .sort({ createdAt: -1 });
 
-    const alreadyLiked = post.likes.includes(userId);
-
-    if (alreadyLiked) {
-      post.likes = post.likes.filter((id) => id.toString() !== userId);
-    } else {
-      post.likes.push(userId);
-
-      if (post.user.toString() !== userId) {
-        await pushNotification(post.user, {
-          from: userId,
-          type: "like",
-          text: "Quelqu'un a liké votre post",
-          post: post._id,
-        });
-      }
-    }
-
-    await post.save();
-
-    res.json({ likes: post.likes });
+    res.json(posts);
   } catch (err) {
-    res.status(500).json({ error: "Erreur like" });
-  }
-};
-
-/* ============================================================
-   📌 COMMENTER
-============================================================ */
-exports.comment = async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).json({ error: "Post introuvable" });
-
-    post.comments.push({
-      user: req.user.id,
-      text: req.body.text,
-    });
-
-    await post.save();
-
-    getIO().to(String(post.user)).emit("comment:new", {
-      postId: post._id,
-      comment: post.comments[post.comments.length - 1],
-    });
-
-    if (post.user.toString() !== req.user.id) {
-      await pushNotification(post.user, {
-        from: req.user.id,
-        type: "comment",
-        text: "Nouveau commentaire sur votre post",
-        post: post._id,
-      });
-    }
-
-    res.json(post);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur commentaire" });
-  }
-};
-
-/* ============================================================
-   📌 RÉPONDRE À UN COMMENTAIRE
-============================================================ */
-exports.reply = async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.postId);
-    if (!post) return res.status(404).json({ error: "Post introuvable" });
-
-    const comment = post.comments.id(req.params.commentId);
-    if (!comment) return res.status(404).json({ error: "Commentaire introuvable" });
-
-    comment.replies.push({
-      user: req.user.id,
-      text: req.body.text,
-    });
-
-    await post.save();
-
-    getIO().to(String(comment.user)).emit("reply:new", {
-      postId: post._id,
-      commentId: comment._id,
-      reply: comment.replies[comment.replies.length - 1],
-    });
-
-    if (comment.user.toString() !== req.user.id) {
-      await pushNotification(comment.user, {
-        from: req.user.id,
-        type: "reply",
-        text: "Vous avez reçu une réponse à votre commentaire",
-        post: post._id,
-      });
-    }
-
-    res.json(post);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur réponse" });
-  }
-};
-
-/* ============================================================
-   📌 RÉACTIONS
-============================================================ */
-exports.react = async (req, res) => {
-  try {
-    const { reaction } = req.body;
-    const userId = req.user.id;
-    const postId = req.params.id;
-
-    if (!VALID_REACTIONS.includes(reaction))
-      return res.status(400).json({ error: "Réaction invalide" });
-
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ error: "Post introuvable" });
-
-    const existingReaction = post.reactions.find(
-      (r) => r.user.toString() === userId
-    );
-
-    if (existingReaction) {
-      if (existingReaction.type === reaction) {
-        post.reactions = post.reactions.filter(
-          (r) => r.user.toString() !== userId
-        );
-      } else {
-        existingReaction.type = reaction;
-      }
-    } else {
-      post.reactions.push({ user: userId, type: reaction });
-
-      if (post.user.toString() !== userId) {
-        await pushNotification(post.user, {
-          from: userId,
-          type: "like",
-          text: "Une réaction a été ajoutée à votre post",
-          post: post._id,
-        });
-      }
-    }
-
-    await post.save();
-
-    res.json(post.reactions);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur réaction" });
+    res.status(500).json({ error: "Erreur chargement publications" });
   }
 };
