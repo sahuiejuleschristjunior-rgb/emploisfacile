@@ -54,6 +54,18 @@ export default function FacebookLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    const stored = localStorage.getItem("ef_recent_searches");
+    if (!stored) return [];
+
+    try {
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error("Erreur parse recent searches:", err);
+      return [];
+    }
+  });
 
   const [searchResults, setSearchResults] = useState({
     users: [],
@@ -191,8 +203,49 @@ export default function FacebookLayout() {
   }, [pushRealtimeMessage]);
 
   /* ============================================================
-     🔍 SEARCH 
+     🔍 SEARCH
   ============================================================ */
+  useEffect(() => {
+    try {
+      localStorage.setItem("ef_recent_searches", JSON.stringify(recentSearches));
+    } catch (err) {
+      console.error("Erreur save recent searches:", err);
+    }
+  }, [recentSearches]);
+
+  const addRecentSearch = useCallback((entry) => {
+    if (!entry?.id) return;
+
+    setRecentSearches((prev) => {
+      const filtered = prev.filter(
+        (item) => !(item.id === entry.id && item.type === entry.type)
+      );
+
+      return [entry, ...filtered].slice(0, 8);
+    });
+  }, []);
+
+  const handleRecentNavigation = useCallback(
+    (entry) => {
+      if (!entry?.link) return;
+
+      nav(entry.link);
+      setSearchOpen(false);
+      setShowMobileSearch(false);
+    },
+    [nav]
+  );
+
+  const handleSearchNavigation = useCallback(
+    (entry, path) => {
+      addRecentSearch({ ...entry, link: path });
+      nav(path);
+      setSearchOpen(false);
+      setShowMobileSearch(false);
+    },
+    [addRecentSearch, nav]
+  );
+
   const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
       setSearchResults({ users: [], posts: [], jobs: [] });
@@ -224,6 +277,10 @@ export default function FacebookLayout() {
   }, [searchTerm, API_URL]);
 
   useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults({ users: [], posts: [], jobs: [] });
+    }
+
     const t = setTimeout(() => {
       if (searchTerm.trim()) performSearch();
     }, 300);
@@ -312,84 +369,236 @@ export default function FacebookLayout() {
       searchResults.posts.length > 0 ||
       searchResults.jobs.length > 0;
 
-    if (!searchTerm.trim())
-      return (
-        <div className="fb-search-empty">
-          Commencez à taper pour rechercher
-        </div>
-      );
-
-    if (!hasResults)
-      return <div className="fb-search-empty">Aucun résultat</div>;
+    const showEmptyMessage = !searchTerm.trim();
 
     return (
-      <>
-        {searchResults.users.length > 0 && (
-          <div className="fb-search-section">
-            <div className="fb-search-title">Utilisateurs</div>
-            {searchResults.users.map((u) => (
-              <div
-                key={u._id}
-                className="fb-search-item"
-                onClick={() => {
-                  nav(`/profil/${u._id}`);
-                  setSearchOpen(false);
-                  setShowMobileSearch(false);
-                }}
-              >
-                <img
-                  src={u.avatar || "https://i.pravatar.cc/150"}
-                  alt="avatar"
-                />
-                <span>{u.name}</span>
-              </div>
-            ))}
+      <div className="fb-search-page">
+        <div className="fb-search-left">
+          <div className="fb-search-chips">
+            {["Tous", "Employeurs / Recruteurs", "Services", "Bloguer"].map(
+              (label) => (
+                <span key={label} className="fb-search-chip">
+                  {label}
+                </span>
+              )
+            )}
           </div>
-        )}
 
-        {searchResults.posts.length > 0 && (
-          <div className="fb-search-section">
-            <div className="fb-search-title">Publications</div>
-            {searchResults.posts.map((p) => (
-              <div
-                key={p._id}
-                className="fb-search-item"
-                onClick={() => {
-                  nav(`/fb/post/${p._id}`);
-                  setSearchOpen(false);
-                  setShowMobileSearch(false);
-                }}
-              >
-                <img
-                  src={p.author?.avatar || "https://i.pravatar.cc/150"}
-                  alt="avatar"
-                />
-                <span>{p.content?.slice(0, 70) || "(Sans contenu)"}</span>
-              </div>
-            ))}
-          </div>
-        )}
+          <div className="fb-search-section-card">
+            <div className="fb-search-section-header">
+              <div className="fb-search-title">Récentes</div>
+              <button className="fb-search-link">Voir tout</button>
+            </div>
 
-        {searchResults.jobs.length > 0 && (
-          <div className="fb-search-section">
-            <div className="fb-search-title">Emplois</div>
-            {searchResults.jobs.map((j) => (
-              <div
-                key={j._id}
-                className="fb-search-item"
-                onClick={() => {
-                  nav(`/emplois/${j._id}`);
-                  setSearchOpen(false);
-                  setShowMobileSearch(false);
-                }}
-              >
-                <img src={j.companyLogo || "https://i.pravatar.cc/150"} />
-                <span>{j.title}</span>
+            {recentSearches.length === 0 ? (
+              <div className="fb-search-empty-inline">
+                Aucune recherche récente.
               </div>
-            ))}
+            ) : (
+              recentSearches.map((item) => (
+                <div
+                  key={`${item.type}-${item.id}`}
+                  className="fb-search-item"
+                  onClick={() => handleRecentNavigation(item)}
+                >
+                  <div className="fb-search-avatar">
+                    {item.avatar ? (
+                      <img src={item.avatar} alt={item.title} />
+                    ) : (
+                      <FBIcon name="search" size={18} />
+                    )}
+                  </div>
+                  <div className="fb-search-item-text">
+                    <span className="fb-search-item-title">{item.title}</span>
+                    <span className="fb-search-item-sub">{item.subtitle}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        )}
-      </>
+
+          <div className="fb-search-section-card">
+            <div className="fb-search-section-header">
+              <div className="fb-search-title">Résultats</div>
+            </div>
+
+            {showEmptyMessage && (
+              <div className="fb-search-empty-inline">
+                Commencez à taper pour rechercher.
+              </div>
+            )}
+
+            {!showEmptyMessage && !hasResults && (
+              <div className="fb-search-empty-inline">Aucun résultat</div>
+            )}
+
+            {!showEmptyMessage && hasResults && (
+              <div className="fb-search-list">
+                {searchResults.users.map((u) => (
+                  <div
+                    key={u._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: u._id,
+                          type: "user",
+                          title: u.name,
+                          subtitle: "Profil",
+                          avatar: u.avatar,
+                        },
+                        `/profil/${u._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={u.avatar || "https://i.pravatar.cc/150"}
+                        alt={u.name}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">{u.name}</span>
+                      <span className="fb-search-item-sub">Profil</span>
+                    </div>
+                  </div>
+                ))}
+
+                {searchResults.jobs.map((j) => (
+                  <div
+                    key={j._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: j._id,
+                          type: "job",
+                          title: j.title,
+                          subtitle: j.company || "Emploi",
+                          avatar: j.companyLogo,
+                        },
+                        `/emplois/${j._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={j.companyLogo || "https://i.pravatar.cc/150"}
+                        alt={j.title}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">{j.title}</span>
+                      <span className="fb-search-item-sub">
+                        {j.company || "Emploi"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {searchResults.posts.map((p) => (
+                  <div
+                    key={p._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: p._id,
+                          type: "post",
+                          title: p.author?.name || "Publication",
+                          subtitle:
+                            p.content?.slice(0, 70) || "(Sans contenu)",
+                          avatar: p.author?.avatar,
+                        },
+                        `/fb/post/${p._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={p.author?.avatar || "https://i.pravatar.cc/150"}
+                        alt={p.author?.name || "Publication"}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">
+                        {p.author?.name || "Publication"}
+                      </span>
+                      <span className="fb-search-item-sub">
+                        {p.content?.slice(0, 70) || "(Sans contenu)"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="fb-search-right">
+          <div className="fb-search-title">Personnes que vous pourriez connaître</div>
+          <div className="fb-search-grid">
+            {(searchResults.users.length > 0 ? searchResults.users : [])
+              .slice(0, 4)
+              .map((u) => (
+                <div key={`suggest-${u._id}`} className="fb-search-card">
+                  <div className="fb-search-card-header">
+                    <img
+                      src={u.avatar || "https://i.pravatar.cc/150"}
+                      alt={u.name}
+                    />
+                    <div>
+                      <div className="fb-search-card-title">{u.name}</div>
+                      <div className="fb-search-card-sub">2 ami(e)s en commun</div>
+                    </div>
+                  </div>
+                  <div className="fb-search-card-actions">
+                    <button
+                      className="fb-search-primary"
+                      onClick={() =>
+                        handleSearchNavigation(
+                          {
+                            id: u._id,
+                            type: "user",
+                            title: u.name,
+                            subtitle: "Profil",
+                            avatar: u.avatar,
+                          },
+                          `/profil/${u._id}`
+                        )
+                      }
+                    >
+                      Ajouter ami
+                    </button>
+                    <button
+                      className="fb-search-secondary"
+                      onClick={() =>
+                        handleSearchNavigation(
+                          {
+                            id: u._id,
+                            type: "user",
+                            title: u.name,
+                            subtitle: "Profil",
+                            avatar: u.avatar,
+                          },
+                          `/profil/${u._id}`
+                        )
+                      }
+                    >
+                      Voir
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+            {searchResults.users.length === 0 && (
+              <div className="fb-search-empty-inline">
+                Tapez pour découvrir de nouvelles personnes.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     );
   };
 
