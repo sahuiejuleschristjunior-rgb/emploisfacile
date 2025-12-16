@@ -253,10 +253,18 @@ exports.getConversation = async (req, res) => {
     const myId = req.user.id;
     const otherId = req.params.userId;
 
+    const myObjectId = new mongoose.Types.ObjectId(myId);
+
     const messages = await Message.find({
-      $or: [
-        { sender: myId, receiver: otherId },
-        { sender: otherId, receiver: myId },
+      $and: [
+        {
+          $or: [
+            { sender: myId, receiver: otherId },
+            { sender: otherId, receiver: myId },
+          ],
+        },
+        { deletedForAll: { $ne: true } },
+        { deletedFor: { $ne: myObjectId } },
       ],
     })
       .sort({ createdAt: 1 })
@@ -285,6 +293,8 @@ exports.getInbox = async (req, res) => {
       {
         $match: {
           $or: [{ sender: myId }, { receiver: myId }],
+          deletedForAll: { $ne: true },
+          deletedFor: { $ne: myId },
         },
       },
       { $sort: { createdAt: -1 } },
@@ -525,45 +535,82 @@ exports.deleteMessage = async (req, res) => {
   try {
     const messageId = req.params.id;
     const userId = req.user.id;
+    const scope = ((req.query.scope || req.body?.scope || "me").toString() || "me")
+      .toLowerCase()
+      .trim();
 
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: "Message introuvable." });
     }
 
-    if (
-      message.sender.toString() !== userId &&
-      message.receiver.toString() !== userId
-    ) {
+    const isSender = message.sender.toString() === userId;
+    const isReceiver = message.receiver.toString() === userId;
+
+    if (!isSender && !isReceiver) {
       return res.status(403).json({ message: "Non autorisé." });
     }
 
-    const mediaPaths = [];
-    if (message.audioUrl) {
-      mediaPaths.push(path.join(__dirname, `..${message.audioUrl}`));
-    }
-    if (message.fileUrl) {
-      mediaPaths.push(path.join(__dirname, `..${message.fileUrl}`));
-    }
-
-    mediaPaths.forEach((p) => {
-      try {
-        if (fs.existsSync(p)) {
-          fs.unlinkSync(p);
-        }
-      } catch (err) {
-        console.error("Erreur suppression fichier message", err);
+    if (scope === "all") {
+      if (!isSender) {
+        return res
+          .status(403)
+          .json({ message: "Seul l'expéditeur peut supprimer pour tous." });
       }
-    });
 
-    await message.deleteOne();
+      if (!message.deletedForAll) {
+        message.deletedForAll = true;
+        message.deletedAt = new Date();
+        message.deletedFor = [message.sender, message.receiver];
+
+        const mediaPaths = [];
+        if (message.audioUrl) {
+          mediaPaths.push(path.join(__dirname, `..${message.audioUrl}`));
+        }
+        if (message.fileUrl) {
+          mediaPaths.push(path.join(__dirname, `..${message.fileUrl}`));
+        }
+
+        await message.save();
+
+        mediaPaths.forEach((p) => {
+          try {
+            if (fs.existsSync(p)) {
+              fs.unlinkSync(p);
+            }
+          } catch (err) {
+            console.error("Erreur suppression fichier message", err);
+          }
+        });
+      }
+
+      getIO()
+        .to(message.sender.toString())
+        .to(message.receiver.toString())
+        .emit("message_deleted", { messageId, scope: "all" });
+
+      return res.status(200).json({
+        success: true,
+        message: "Message supprimé pour tout le monde.",
+      });
+    }
+
+    const alreadyDeleted = (message.deletedFor || []).some(
+      (id) => id && id.toString() === userId
+    );
+
+    if (!alreadyDeleted) {
+      message.deletedFor = [...(message.deletedFor || []), userId];
+      await message.save();
+    }
 
     getIO()
-      .to(message.sender.toString())
-      .to(message.receiver.toString())
-      .emit("message_deleted", { messageId });
+      .to(userId.toString())
+      .emit("message_deleted", { messageId, scope: "me" });
 
-    return res.status(200).json({ success: true, message: "Message supprimé." });
+    return res
+      .status(200)
+      .json({ success: true, message: "Message supprimé pour vous." });
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors de la suppression du message.",

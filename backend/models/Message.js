@@ -102,6 +102,24 @@ const messageSchema = new mongoose.Schema(
       },
     ],
 
+    // Suppressions ciblées
+    deletedFor: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    deletedForAll: {
+      type: Boolean,
+      default: false,
+    },
+
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+
     // Lecture
     isRead: {
       type: Boolean,
