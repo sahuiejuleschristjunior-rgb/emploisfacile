@@ -1,3 +1,4 @@
+// frontend/src/pages/Messages.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
@@ -10,15 +11,6 @@ const token = localStorage.getItem("token");
 const me = JSON.parse(localStorage.getItem("user"));
 const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
-const BackIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
-    <path
-      fill="currentColor"
-      d="M14.7 5.3a1 1 0 0 1 0 1.4L10.4 11l4.3 4.3a1 1 0 0 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0Z"
-    />
-  </svg>
-);
-
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
     <path
@@ -28,11 +20,17 @@ const PlusIcon = () => (
   </svg>
 );
 
-const EmojiIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+const MicIcon = ({ pulse = false }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="20"
+    height="20"
+    className={pulse ? "pulse" : ""}
+    aria-hidden
+  >
     <path
       fill="currentColor"
-      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-3 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-6.83 7.25a1 1 0 0 1 1.41-.08A4.99 4.99 0 0 0 12 16c1.22 0 2.38-.45 3.28-1.26a1 1 0 1 1 1.34 1.48A7 7 0 0 1 12 18a6.99 6.99 0 0 1-4.62-1.78 1 1 0 0 1-.2-1Z"
+      d="M12 3a3 3 0 0 1 3 3v6a3 3 0 1 1-6 0V6a3 3 0 0 1 3-3Zm-1 17.93V20h2v.93a7.04 7.04 0 0 0 5.48-4.28 1 1 0 0 0-1.83-.78A5.03 5.03 0 0 1 7.35 15a1 1 0 0 0-1.83.79A7.04 7.04 0 0 0 11 20.93Z"
     />
   </svg>
 );
@@ -46,20 +44,20 @@ const SendIcon = () => (
   </svg>
 );
 
-const MicIcon = ({ pulse = false }) => (
-  <svg viewBox="0 0 24 24" width="20" height="20" className={pulse ? "pulse" : ""} aria-hidden>
+const EmojiIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
     <path
       fill="currentColor"
-      d="M12 3a3 3 0 0 1 3 3v6a3 3 0 1 1-6 0V6a3 3 0 0 1 3-3Zm-1 17.93V20h2v.93a7.04 7.04 0 0 0 5.48-4.28 1 1 0 0 0-1.83-.78A5.03 5.03 0 0 1 7.35 15a1 1 0 0 0-1.83.79A7.04 7.04 0 0 0 11 20.93Z"
+      d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-3 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm-6.83 7.25a1 1 0 0 1 1.41-.08A4.99 4.99 0 0 0 12 16c1.22 0 2.38-.45 3.28-1.26a1 1 0 1 1 1.34 1.48A7 7 0 0 1 12 18a6.99 6.99 0 0 1-4.62-1.78 1 1 0 0 1-.2-1Z"
     />
   </svg>
 );
 
-const CloseIcon = () => (
-  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+const BackIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
     <path
       fill="currentColor"
-      d="M5.3 5.3a1 1 0 0 1 1.4 0L12 10.59l5.3-5.3a1 1 0 1 1 1.4 1.42L13.41 12l5.3 5.3a1 1 0 0 1-1.42 1.4L12 13.41l-5.3 5.3a1 1 0 1 1-1.4-1.42L10.59 12 5.3 6.7a1 1 0 0 1 0-1.4Z"
+      d="M14.7 5.3a1 1 0 0 1 0 1.4L10.4 11l4.3 4.3a1 1 0 0 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0Z"
     />
   </svg>
 );
@@ -77,6 +75,9 @@ const PauseIcon = () => (
 );
 
 export default function Messages() {
+  /* =====================================================
+     STATE
+  ===================================================== */
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [errorFriends, setErrorFriends] = useState("");
@@ -85,69 +86,82 @@ export default function Messages() {
   const [messages, setMessages] = useState([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
 
-  const [search, setSearch] = useState("");
   const [input, setInput] = useState("");
-
+  const [search, setSearch] = useState("");
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [reactionPicker, setReactionPicker] = useState({ messageId: null, anchor: null });
-
-  const [typingState, setTypingState] = useState({});
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [reactionPicker, setReactionPicker] = useState({
+    messageId: null,
+    anchor: null,
+  });
 
   const [isRecording, setIsRecording] = useState(false);
-  const [recordLocked, setRecordLocked] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
+  const [recordLocked, setRecordLocked] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
-  const [recordLevel, setRecordLevel] = useState(0);
-  const [recordOffset, setRecordOffset] = useState(0);
-
-  const [audioStatus, setAudioStatus] = useState({});
-
-  const chatBodyRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const socketRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-
-  const mediaRecorderRef = useRef(null);
-  const recordingChunksRef = useRef([]);
   const recordStartRef = useRef(null);
   const recordTimerRef = useRef(null);
-  const activeStreamRef = useRef(null);
+  const [recordOffset, setRecordOffset] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const recordingChunksRef = useRef([]);
   const audioContextRef = useRef(null);
   const audioAnalyserRef = useRef(null);
   const audioGainRef = useRef(null);
   const recordVizFrame = useRef(null);
-  const recordCanceledRef = useRef(false);
+  const [recordLevel, setRecordLevel] = useState(0);
   const recordLevelBarRef = useRef(null);
-
-  const dragStartRef = useRef(null);
-
   const audioRefs = useRef({});
+  const [audioStatus, setAudioStatus] = useState({});
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
 
+  const messagesEndRef = useRef(null);
+  const chatBodyRef = useRef(null);
   const attachMenuRef = useRef(null);
-  const longPressTimer = useRef(null);
   const attachSwipeStart = useRef(null);
+  const longPressTimer = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const socketRef = useRef(null);
+  const [typingState, setTypingState] = useState({});
 
-  const isMobileView = () => window.matchMedia("(max-width: 900px)").matches;
-
+  /* =====================================================
+     HELPERS
+  ===================================================== */
   const normalizeFriend = (f) => {
-    const u = typeof f?.user === "object" ? f.user : f;
+    const userObj =
+      f && typeof f.user === "object" && f.user
+        ? f.user
+        : typeof f === "object" && f?._id && f?.name
+        ? f
+        : null;
+
+    const userId =
+      userObj?._id ||
+      (typeof f?.user === "string" ? f.user : null) ||
+      f?._id ||
+      null;
+
     return {
-      _id: u?._id || f?.user,
-      name: u?.name || "Utilisateur",
-      avatar: u?.avatar || "/default-avatar.png",
+      _id: userId,
+      name: userObj?.name || f?.name || "Utilisateur",
+      avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
     };
   };
 
-  const formatDuration = (ms) => {
-    const total = Math.max(0, Math.floor(ms / 1000));
-    const m = Math.floor(total / 60)
-      .toString()
-      .padStart(1, "0");
-    const s = (total % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
+  const scrollToBottom = (force = false) => {
+    const container = chatBodyRef.current;
+    if (container) {
+      const distance =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (force || distance < 120) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const resolveUrl = (url) => {
@@ -157,20 +171,19 @@ export default function Messages() {
     return `${API_HOST || ""}${url.startsWith("/") ? "" : "/"}${url}`;
   };
 
-  const scrollToBottom = (force = false) => {
-    const container = chatBodyRef.current;
-    if (!container) return;
-    const distance = container.scrollHeight - container.scrollTop - container.clientHeight;
-    if (force || distance < 140) {
-      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-    }
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const formatTime = (time) => {
+    if (!time && time !== 0) return "0:00";
+    const total = Math.floor(time);
+    const minutes = Math.floor(total / 60);
+    const seconds = total % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const isMessageInActiveChat = (msg) => {
-    if (!msg || !activeChat) return false;
+    if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
-    const receiverId = typeof msg.receiver === "object" ? msg.receiver?._id : msg.receiver;
+    const receiverId =
+      typeof msg.receiver === "object" ? msg.receiver?._id : msg.receiver;
     return (
       senderId === activeChat._id ||
       receiverId === activeChat._id ||
@@ -181,53 +194,104 @@ export default function Messages() {
   const upsertMessage = (incoming) => {
     if (!incoming) return;
     setMessages((prev) => {
-      const next = [...prev];
+      let next = [...prev];
+
+      // Supprimer un éventuel temporaire correspondant à l'ID client
       if (incoming.clientTempId) {
-        const existingTemp = next.findIndex((m) => m.clientTempId === incoming.clientTempId);
-        if (existingTemp >= 0) next.splice(existingTemp, 1);
+        next = next.filter((m) => m.clientTempId !== incoming.clientTempId);
       }
-      const idx = incoming._id ? next.findIndex((m) => m._id === incoming._id) : -1;
-      if (idx >= 0) {
-        next[idx] = { ...next[idx], ...incoming };
+
+      // Supprimer un éventuel temporaire équivalent (même contenu + participants)
+      const samePair = next.findIndex((m) => {
+        const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
+        const receiverId =
+          typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
+        const incomingSender =
+          typeof incoming.sender === "object"
+            ? incoming.sender?._id
+            : incoming.sender;
+        const incomingReceiver =
+          typeof incoming.receiver === "object"
+            ? incoming.receiver?._id
+            : incoming.receiver;
+
+        const sameUsers =
+          senderId === incomingSender && receiverId === incomingReceiver;
+        const isTemp = typeof m._id === "string" && m._id.startsWith("temp-");
+        const sameText =
+          incoming.type === "text" &&
+          (m.type === "text" || !m.type) &&
+          (m.content || "").trim() === (incoming.content || "").trim();
+        const sameAudio = incoming.type === "audio" && m.type === "audio";
+        return isTemp && sameUsers && (sameText || sameAudio);
+      });
+
+      if (samePair >= 0) {
+        next.splice(samePair, 1);
+      }
+
+      const existsIndex = next.findIndex((m) => m._id === incoming._id);
+      if (existsIndex >= 0) {
+        next[existsIndex] = { ...next[existsIndex], ...incoming };
       } else {
         next.push(incoming);
       }
-      next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      return next;
+
+      return next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     });
   };
 
+  /* =====================================================
+     LOAD FRIENDS
+  ===================================================== */
   useEffect(() => {
     const loadFriends = async () => {
       try {
         setLoadingFriends(true);
         setErrorFriends("");
+
         const data = await fetchFriends();
-        const list = (Array.isArray(data?.friends) ? data.friends : Array.isArray(data) ? data : [])
+        const raw = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.friends)
+          ? data.friends
+          : [];
+
+        const list = raw
           .map(normalizeFriend)
-          .filter((f) => f && f._id)
-          .reduce((acc, f) => {
-            if (!acc.some((u) => u._id === f._id)) acc.push(f);
+          .filter((u) => u && u._id)
+          .reduce((acc, user) => {
+            if (!acc.some((u) => u._id === user._id)) {
+              acc.push(user);
+            }
             return acc;
           }, []);
+
         setFriends(list);
       } catch (err) {
-        console.error(err);
+        console.error("Erreur chargement amis :", err);
         setErrorFriends("Erreur chargement amis");
         setFriends([]);
       } finally {
         setLoadingFriends(false);
       }
     };
+
     loadFriends();
   }, []);
 
+  /* =====================================================
+     FILTER
+  ===================================================== */
   const filteredFriends = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return friends;
     return friends.filter((f) => (f.name || "").toLowerCase().includes(q));
   }, [friends, search]);
 
+  /* =====================================================
+     SOCKET IO
+  ===================================================== */
   useEffect(() => {
     if (!token) return undefined;
     const socket = io(SOCKET_URL, {
@@ -235,18 +299,19 @@ export default function Messages() {
       auth: { token },
       transports: ["websocket", "polling"],
     });
+
     socketRef.current = socket;
 
     const handleMessage = (payload) => {
       const message = payload?.message || payload;
-      if (!isMessageInActiveChat(message)) return;
-      upsertMessage(message);
-      const senderId = typeof message.sender === "object" ? message.sender?._id : message.sender;
-      if (message?._id && senderId !== me?._id) {
-        fetch(`${API_URL}/messages/${message._id}/read`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
+      if (isMessageInActiveChat(message)) {
+        upsertMessage(message);
+        if (message?.sender !== me?._id) {
+          fetch(`${API_URL}/messages/${message._id}/read`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
       }
     };
 
@@ -260,10 +325,12 @@ export default function Messages() {
     });
 
     socket.on("message_read", ({ messageId, withUserId }) => {
+      if (!messageId && !withUserId) return;
       setMessages((prev) =>
         prev.map((m) => {
           const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
-          const receiverId = typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
+          const receiverId =
+            typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
           if (
             (messageId && m._id === messageId) ||
             (withUserId && senderId === me?._id && receiverId === withUserId)
@@ -277,7 +344,10 @@ export default function Messages() {
 
     socket.on("typing", ({ from, isTyping }) => {
       if (!from || !activeChat || from !== activeChat._id) return;
-      setTypingState((prev) => ({ ...prev, [from]: { isTyping: !!isTyping, at: Date.now() } }));
+      setTypingState((prev) => ({
+        ...prev,
+        [from]: { isTyping: isTyping !== false, at: Date.now() },
+      }));
     });
 
     return () => {
@@ -286,62 +356,64 @@ export default function Messages() {
     };
   }, [activeChat, token]);
 
-  useEffect(() => {
-    const cleanTyping = setInterval(() => {
-      const now = Date.now();
-      setTypingState((prev) => {
-        const next = { ...prev };
-        Object.entries(prev).forEach(([id, state]) => {
-          if (!state?.at || now - state.at > 2500) delete next[id];
-        });
-        return next;
-      });
-    }, 1200);
-    return () => clearInterval(cleanTyping);
-  }, []);
-
+  /* =====================================================
+     LOAD CONVERSATION
+  ===================================================== */
   const loadConversation = async (user) => {
     if (!user?._id) return;
+
     setActiveChat(user);
     setMessages([]);
+
     try {
       setLoadingConversation(true);
+
       const res = await fetch(`${API_URL}/messages/conversation/${user._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+
       const data = await res.json();
-      const list = Array.isArray(data) ? data : [];
-      list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      setMessages(list);
+      setMessages(Array.isArray(data) ? data : []);
+
       fetch(`${API_URL}/messages/read-all/${user._id}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
     } catch (err) {
-      console.error(err);
+      console.error("Erreur conversation", err);
       setMessages([]);
     } finally {
       setLoadingConversation(false);
-      setTimeout(() => scrollToBottom(true), 60);
+      setTimeout(() => scrollToBottom(true), 50);
     }
   };
 
+  /* =====================================================
+     SEND MESSAGE
+  ===================================================== */
   const sendMessage = async () => {
     if (!input.trim() || !activeChat) return;
+
     const content = input.trim();
     setInput("");
-    const clientTempId = `temp-${Date.now()}`;
-    const temp = {
+
+    const clientTempId = "temp-" + Date.now();
+    const tempMessage = {
       _id: clientTempId,
-      clientTempId,
       sender: me?._id,
       receiver: activeChat._id,
       content,
       type: "text",
-      createdAt: new Date().toISOString(),
+      clientTempId,
     };
-    setMessages((prev) => [...prev, temp]);
+
+    setMessages((prev) => [...prev, tempMessage]);
     setTimeout(() => scrollToBottom(true), 10);
+
     try {
       const res = await fetch(`${API_URL}/messages`, {
         method: "POST",
@@ -349,241 +421,224 @@ export default function Messages() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ receiver: activeChat._id, content, clientTempId }),
+        body: JSON.stringify({
+          receiver: activeChat._id,
+          content,
+          clientTempId,
+        }),
       });
+
       const data = await res.json();
-      if (res.ok && data?.data) upsertMessage(data.data);
+
+      if (res.ok && data?.data) {
+        setMessages((prev) => {
+          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
+          const exists = withoutTemp.some((m) => m._id === data.data._id);
+          return exists
+            ? withoutTemp.map((m) =>
+                m._id === data.data._id ? { ...m, ...data.data } : m
+              )
+            : [...withoutTemp, data.data];
+        });
+      }
     } catch (err) {
-      console.error("send message", err);
+      console.error("Erreur envoi message", err);
     }
   };
 
-  const stopRecordVisualization = () => {
-    if (recordVizFrame.current) {
-      cancelAnimationFrame(recordVizFrame.current);
-      recordVizFrame.current = null;
-    }
-  };
+ /* =====================================================
+     AUDIO
+  ===================================================== */
+const recordCanceledRef = useRef(false);
 
-  const cleanupAudioContext = () => {
-    if (activeStreamRef.current) {
-      activeStreamRef.current.getTracks().forEach((t) => t.stop());
-      activeStreamRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    audioAnalyserRef.current = null;
-    audioGainRef.current = null;
-  };
+const stopRecordVisualization = () => {
+  if (recordVizFrame.current) {
+    cancelAnimationFrame(recordVizFrame.current);
+    recordVizFrame.current = null;
+  }
+};
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-  };
+const startRecording = async (event) => {
+  if (!activeChat || isRecording) return;
 
-  const uploadAudio = async (blob) => {
-    if (!blob || !activeChat) return;
-    const clientTempId = `audio-${Date.now()}`;
-    const temp = {
-      _id: clientTempId,
-      clientTempId,
-      sender: me?._id,
-      receiver: activeChat._id,
-      type: "audio",
-      audioUrl: URL.createObjectURL(blob),
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, temp]);
-    setTimeout(() => scrollToBottom(true), 20);
+  clearInterval(recordTimerRef.current);
+  stopRecordVisualization();
 
-    const form = new FormData();
-    form.append("audio", blob);
-    form.append("receiver", activeChat._id);
-    form.append("clientTempId", clientTempId);
-    try {
-      const res = await fetch(`${API_URL}/messages/audio`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
-      const data = await res.json();
-      if (res.ok && data?.data) upsertMessage(data.data);
-    } catch (err) {
-      console.error("audio upload", err);
-    }
-  };
+  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
 
-  const startRecording = async (event) => {
-    if (!activeChat || isRecording) return;
-    clearInterval(recordTimerRef.current);
-    stopRecordVisualization();
+  recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
 
-    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+  setRecordTime(0);
+  setRecordOffset(0);
+  setRecordCanceled(false);
+  setRecordLocked(false);
+  setRecordLevel(0);
+  recordCanceledRef.current = false;
 
-    dragStartRef.current = { x: clientX, y: clientY };
-    recordStartRef.current = { at: Date.now() };
-    setRecordTime(0);
-    setRecordLocked(false);
-    setRecordCanceled(false);
-    setRecordOffset(0);
-    setRecordLevel(0);
-    recordCanceledRef.current = false;
+  recordTimerRef.current = setInterval(() => {
+    setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
+  }, 200);
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(stream);
+
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = 1.8;
+
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+
+    const destination = audioContext.createMediaStreamDestination();
+
+    // 🔗 connexions (UNE SEULE FOIS)
+    source.connect(gainNode);
+    gainNode.connect(analyser);
+    analyser.connect(destination);
+
+    const recorder = new MediaRecorder(destination.stream);
     recordingChunksRef.current = [];
 
-    recordTimerRef.current = setInterval(() => {
-      setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
-    }, 200);
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        recordingChunksRef.current.push(e.data);
+      }
+    };
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      activeStreamRef.current = stream;
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = 1.8;
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      const destination = audioContext.createMediaStreamDestination();
-      source.connect(gainNode);
-      gainNode.connect(analyser);
-      analyser.connect(destination);
+    recorder.onstop = () => {
+      const duration = Date.now() - (recordStartRef.current?.at || Date.now());
+      const canceled = recordCanceledRef.current || duration < 300;
 
-      const recorder = new MediaRecorder(destination.stream);
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) recordingChunksRef.current.push(e.data);
-      };
-      recorder.onstop = () => {
-        const duration = Date.now() - (recordStartRef.current?.at || Date.now());
-        const canceled = recordCanceledRef.current || duration < 300;
-        stopRecordVisualization();
-        clearInterval(recordTimerRef.current);
-        setIsRecording(false);
-        if (canceled || !recordingChunksRef.current.length) {
-          recordingChunksRef.current = [];
-          cleanupAudioContext();
-          setRecordLevel(0);
-          return;
-        }
-        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
-        recordingChunksRef.current = [];
-        cleanupAudioContext();
-        setRecordLevel(0);
-        if (blob.size > 0) uploadAudio(blob);
-      };
+      // stop micro
+      stream.getTracks().forEach((t) => t.stop());
 
-      const animateLevel = () => {
-        const analyserNode = audioAnalyserRef.current;
-        if (!analyserNode) return;
-        const buffer = new Uint8Array(analyserNode.frequencyBinCount);
-        analyserNode.getByteFrequencyData(buffer);
-        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
-        const level = Math.min(1, max * 1.4);
-        setRecordLevel(level);
-        if (recordLevelBarRef.current) {
-          recordLevelBarRef.current.style.setProperty("--record-level", level.toString());
-        }
-        recordVizFrame.current = requestAnimationFrame(animateLevel);
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      audioContextRef.current = audioContext;
-      audioAnalyserRef.current = analyser;
-      audioGainRef.current = gainNode;
-      setIsRecording(true);
-      animateLevel();
-    } catch (err) {
-      console.error("recording", err);
-      clearInterval(recordTimerRef.current);
       stopRecordVisualization();
-      cleanupAudioContext();
-      setIsRecording(false);
-    }
-  };
 
-  const handleRecordMove = (event) => {
-    if (!isRecording || !dragStartRef.current) return;
-    const x = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const y = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = x - dragStartRef.current.x;
-    const deltaY = y - dragStartRef.current.y;
-    setRecordOffset(deltaX);
+      // ferme audio context (protégé)
+      try {
+        audioContext.close();
+      } catch {}
 
-    if (deltaY < -70 && !recordLocked) {
-      setRecordLocked(true);
-      setRecordCanceled(false);
-    }
-    if (deltaX < -70) {
-      recordCanceledRef.current = true;
-      setRecordCanceled(true);
-      stopRecording();
-    }
-    if (deltaX > 70 && !recordLocked) {
-      recordCanceledRef.current = false;
-      setRecordCanceled(false);
-      stopRecording();
-    }
-  };
-
-  const handleRecordEnd = () => {
-    if (!isRecording) return;
-    if (recordLocked) return;
-    stopRecording();
-  };
-
-  const stopAllAudio = () => {
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
-      currentAudioRef.current = null;
-      currentAudioIdRef.current = null;
-    }
-    setAudioStatus({});
-  };
-
-  const bindAudioRef = (messageId, node) => {
-    if (!node) return;
-    audioRefs.current[messageId] = node;
-    node.onplay = () => {
-      if (currentAudioRef.current && currentAudioRef.current !== node) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.currentTime = 0;
+      if (canceled || !recordingChunksRef.current.length) {
+        recordingChunksRef.current = [];
+        setRecordLevel(0);
+        return;
       }
-      currentAudioRef.current = node;
-      currentAudioIdRef.current = messageId;
-      setAudioStatus((prev) => ({ ...prev, [messageId]: { playing: true } }));
+
+      const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
+      uploadAudio(blob);
     };
-    node.onpause = () => {
-      setAudioStatus((prev) => ({ ...prev, [messageId]: { playing: false } }));
-    };
-    node.onended = () => {
-      node.currentTime = 0;
-      if (currentAudioRef.current === node) {
-        currentAudioRef.current = null;
-        currentAudioIdRef.current = null;
+
+    const animateLevel = () => {
+      const buffer = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(buffer);
+
+      const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
+      const level = Math.min(1, max * 1.4);
+
+      setRecordLevel(level);
+
+      if (recordLevelBarRef.current) {
+        recordLevelBarRef.current.style.setProperty("--record-level", String(level));
       }
-      setAudioStatus((prev) => ({ ...prev, [messageId]: { playing: false, progress: 0 } }));
+
+      recordVizFrame.current = requestAnimationFrame(animateLevel);
     };
-  };
 
-  const toggleAudio = (messageId, url) => {
-    const audio = audioRefs.current[messageId];
-    if (!audio) return;
-    if (currentAudioIdRef.current && currentAudioIdRef.current !== messageId) {
-      stopAllAudio();
-    }
-    if (audio.paused) {
-      audio.play();
-    } else {
-      audio.pause();
-    }
-    setAudioStatus((prev) => ({ ...prev, [messageId]: { playing: !audio.paused } }));
-  };
+    animateLevel();
 
+    recorder.start();
+
+    mediaRecorderRef.current = recorder;
+    audioContextRef.current = audioContext;
+    audioAnalyserRef.current = analyser;
+    audioGainRef.current = gainNode;
+
+    setIsRecording(true);
+  } catch (err) {
+    console.error("Erreur accès micro", err);
+    clearInterval(recordTimerRef.current);
+    stopRecordVisualization();
+    setIsRecording(false);
+    recordStartRef.current = null;
+  }
+};
+
+const updateRecordingDrag = (event) => {
+  if (!isRecording || !recordStartRef.current) return;
+
+  const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
+  const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
+
+  const deltaX = clientX - (recordStartRef.current.x || clientX);
+  const deltaY = clientY - (recordStartRef.current.y || clientY);
+
+  // 🔒 verrouillage vers le haut
+  if (deltaY < -70) {
+    setRecordLocked(true);
+  }
+
+  // si verrouillé => on n'annule plus
+  if (recordLocked) {
+    setRecordCanceled(false);
+    recordCanceledRef.current = false;
+    setRecordOffset(0);
+    return;
+  }
+
+  setRecordOffset(deltaX);
+
+  // ➡️ annulation vers la droite
+  const canceled = deltaX > 80;
+  setRecordCanceled(canceled);
+  recordCanceledRef.current = canceled;
+};
+
+const stopRecording = (forceCancel = false) => {
+  if (!isRecording) return;
+
+  if (forceCancel) {
+    recordCanceledRef.current = true;
+    setRecordCanceled(true);
+    setRecordTime(0);
+    recordingChunksRef.current = [];
+  }
+
+  clearInterval(recordTimerRef.current);
+  setIsRecording(false);
+  setRecordLocked(false);
+  setRecordLevel(0);
+
+  stopRecordVisualization();
+
+  if (recordLevelBarRef.current) {
+    recordLevelBarRef.current.style.setProperty("--record-level", "0");
+  }
+
+  const recorder = mediaRecorderRef.current;
+  mediaRecorderRef.current = null;
+
+  if (recorder && recorder.state !== "inactive") {
+    recorder.stop(); // déclenche recorder.onstop
+  }
+
+  // audioContext est déjà fermé dans onstop, mais on protège
+  if (audioContextRef.current) {
+    try {
+      audioContextRef.current.close();
+    } catch {}
+    audioContextRef.current = null;
+  }
+
+  audioAnalyserRef.current = null;
+  audioGainRef.current = null;
+};
+  /* =====================================================
+     REACTIONS
+  ===================================================== */
   const sendReaction = async (messageId, emoji) => {
     try {
       const res = await fetch(`${API_URL}/messages/${messageId}/react`, {
@@ -595,11 +650,15 @@ export default function Messages() {
         body: JSON.stringify({ emoji }),
       });
       const data = await res.json();
-      if (res.ok && data?.data) upsertMessage(data.data);
+      if (res.ok && data?.data) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === messageId ? data.data : m))
+        );
+      }
     } catch (err) {
-      console.error("reaction", err);
+      console.error("Erreur réaction", err);
     } finally {
-      setReactionPicker({ messageId: null, anchor: null });
+      setReactionPicker({ messageId: null, x: 0, y: 0 });
     }
   };
 
@@ -607,7 +666,10 @@ export default function Messages() {
     event.preventDefault();
     clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      setReactionPicker({ messageId: msg._id, anchor: msg._id });
+      setReactionPicker({
+        messageId: msg._id,
+        anchor: msg._id,
+      });
     }, 450);
   };
 
@@ -617,14 +679,55 @@ export default function Messages() {
 
   useEffect(() => {
     const closePicker = (e) => {
-      if (reactionPicker.messageId && !e.target.closest?.(".reaction-picker")) {
-        setReactionPicker({ messageId: null, anchor: null });
+      if (
+        reactionPicker.messageId &&
+        !e.target.closest?.(".reaction-picker")
+      ) {
+        setReactionPicker({ messageId: null, x: 0, y: 0 });
       }
     };
     window.addEventListener("click", closePicker);
     return () => window.removeEventListener("click", closePicker);
   }, [reactionPicker.messageId]);
 
+  useEffect(() => {
+    setShowEmojiPicker(Boolean(reactionPicker.messageId));
+  }, [reactionPicker.messageId]);
+
+  useEffect(() => {
+    const closeAttach = (e) => {
+      if (
+        showAttachMenu &&
+        attachMenuRef.current &&
+        !attachMenuRef.current.contains(e.target) &&
+        !e.target.closest?.(".attach-sheet")
+      ) {
+        setShowAttachMenu(false);
+      }
+    };
+    window.addEventListener("click", closeAttach);
+    return () => window.removeEventListener("click", closeAttach);
+  }, [showAttachMenu]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTypingState((prev) => {
+        const now = Date.now();
+        const next = { ...prev };
+        Object.entries(prev).forEach(([userId, state]) => {
+          if (!state?.at || now - state.at > 2500) {
+            delete next[userId];
+          }
+        });
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* =====================================================
+     TYPING FLAG
+  ===================================================== */
   const sendTypingFlag = (flag) => {
     if (!activeChat) return;
     socketRef.current?.emit("typing", { to: activeChat._id, isTyping: flag });
@@ -645,24 +748,70 @@ export default function Messages() {
     typingTimeoutRef.current = setTimeout(() => sendTypingFlag(false), 1200);
   };
 
-  useEffect(() => {
-    scrollToBottom(false);
-  }, [messages]);
+  useEffect(() => scrollToBottom(false), [messages]);
 
-  useEffect(() => {
-    const closeAttach = (e) => {
-      if (
-        showAttachMenu &&
-        attachMenuRef.current &&
-        !attachMenuRef.current.contains(e.target) &&
-        !e.target.closest?.(".attach-sheet")
-      ) {
-        setShowAttachMenu(false);
-      }
-    };
-    window.addEventListener("click", closeAttach);
-    return () => window.removeEventListener("click", closeAttach);
-  }, [showAttachMenu]);
+  /* =====================================================
+     RENDER HELPERS
+  ===================================================== */
+  const renderReactions = (msg) => {
+    if (!Array.isArray(msg.reactions) || msg.reactions.length === 0) return null;
+    const grouped = msg.reactions.reduce((acc, r) => {
+      if (!r?.emoji) return acc;
+      acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+      return acc;
+    }, {});
+
+    return (
+      <div className="message-reactions">
+        {Object.entries(grouped).map(([emoji, count]) => (
+          <span key={emoji} className="reaction-pill">
+            {emoji}
+            {count > 1 && <span className="reaction-count">{count}</span>}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  const renderAudioBubble = (msg) => {
+    const status = audioStatus[msg._id] || {};
+    const progress = status.duration
+      ? Math.min((status.currentTime / status.duration) * 100, 100)
+      : 0;
+    const url = resolveUrl(msg.audioUrl);
+
+    return (
+      <div className="audio-bubble">
+        <button
+          className={`audio-play ${status.playing ? "playing" : ""}`}
+          onClick={() => togglePlay(msg._id)}
+        >
+          {status.playing ? <PauseIcon /> : <PlayIcon />}
+        </button>
+
+        <div className="audio-progress">
+          <div className="audio-progress-bar" style={{ width: `${progress}%` }} />
+        </div>
+
+        <div className="audio-duration">
+          {formatTime(status.currentTime)} / {formatTime(status.duration)}
+        </div>
+
+        <audio
+          ref={(node) => bindAudioRef(msg, node)}
+          src={url}
+          preload="metadata"
+        />
+      </div>
+    );
+  };
+
+  const renderMessageContent = (msg) => {
+    if (msg.type === "audio") {
+      return renderAudioBubble(msg);
+    }
+    return msg.content;
+  };
 
   const handleAttachTouchStart = (event) => {
     attachSwipeStart.current = event.touches?.[0]?.clientY || null;
@@ -670,245 +819,324 @@ export default function Messages() {
 
   const handleAttachTouchEnd = (event) => {
     const end = event.changedTouches?.[0]?.clientY;
-    if (attachSwipeStart.current !== null && end !== undefined && end - attachSwipeStart.current > 30) {
+    if (
+      attachSwipeStart.current !== null &&
+      end !== undefined &&
+      end - attachSwipeStart.current > 30
+    ) {
       setShowAttachMenu(false);
     }
     attachSwipeStart.current = null;
   };
 
-  const unreadBadge = (count) => (count > 0 ? <span className="conv-unread-badge">{count}</span> : null);
-
-  const messageStatus = (msg) => {
-    if (msg.isRead) return "Vu";
-    if (msg._id && !msg.clientTempId) return "Envoyé";
-    return "En cours";
-  };
-
-  const renderReactions = (msg) => {
-    if (!msg.reactions || !msg.reactions.length) return null;
-    const grouped = msg.reactions.reduce((acc, r) => {
-      if (!acc[r.emoji]) acc[r.emoji] = 0;
-      acc[r.emoji] += 1;
-      return acc;
-    }, {});
-    return (
-      <div className="message-reactions">
-        {Object.entries(grouped).map(([emoji, count]) => (
-          <span key={emoji} className="reaction-chip">
-            {emoji} {count}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
-  const renderMessage = (msg) => {
-    const mine = (typeof msg.sender === "object" ? msg.sender?._id : msg.sender) === me?._id;
-    const status = messageStatus(msg);
-    const isAudio = msg.type === "audio";
-    return (
-      <div
-        key={msg._id || msg.clientTempId}
-        className={`message-row ${mine ? "sent" : "received"}`}
-        onTouchStart={(e) => handleBubblePressStart(msg, e)}
-        onTouchEnd={handleBubblePressEnd}
-        onMouseDown={(e) => handleBubblePressStart(msg, e)}
-        onMouseUp={handleBubblePressEnd}
-      >
-        <div className="message-bubble">
-          {isAudio ? (
-            <div className="audio-message">
-              <button className="audio-play" onClick={() => toggleAudio(msg._id || msg.clientTempId, msg.audioUrl)}>
-                {audioStatus[msg._id || msg.clientTempId]?.playing ? <PauseIcon /> : <PlayIcon />}
-              </button>
-              <div className="audio-progress">
-                <div className="audio-bar" />
-              </div>
-              <span className="audio-duration">{formatDuration(msg.duration || 0)}</span>
-              <audio
-                ref={(node) => bindAudioRef(msg._id || msg.clientTempId, node)}
-                src={resolveUrl(msg.audioUrl)}
-                preload="metadata"
-              />
-            </div>
-          ) : (
-            <div className="message-text">{msg.content}</div>
-          )}
-          <div className="message-meta">
-            <span className="message-time">
-              {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
-            {mine && <span className="message-status">{status}</span>}
-          </div>
-          {renderReactions(msg)}
-          {reactionPicker.messageId === msg._id && (
-            <div className="reaction-picker" onMouseDown={(e) => e.preventDefault()} onTouchStart={(e) => e.preventDefault()}>
-              {REACTIONS.map((emoji) => (
-                <button key={emoji} onClick={() => sendReaction(msg._id, emoji)}>
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const typingLabel = activeChat && typingState[activeChat._id]?.isTyping ? "En train d'écrire..." : "En ligne";
-
-  const showChatPane = activeChat || !isMobileView();
-
+  /* =====================================================
+     UI
+  ===================================================== */
   return (
-    <div className="messages-page">
-      {!activeChat || !isMobileView() ? (
-        <div className="messages-sidebar">
-          <div className="messages-sidebar-header">Messages</div>
-          <div className="messages-search">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher"
-              aria-label="Recherche"
-            />
-          </div>
-          <div className="messages-list">
-            {loadingFriends && <div className="messages-empty">Chargement...</div>}
-            {errorFriends && <div className="messages-empty">{errorFriends}</div>}
-            {!loadingFriends && !filteredFriends.length && <div className="messages-empty">Aucun ami</div>}
-            {filteredFriends.map((f) => (
-              <div
-                key={f._id}
-                className={`conversation-item ${activeChat?._id === f._id ? "active" : ""}`}
-                onClick={() => loadConversation(f)}
-              >
-                <img src={resolveUrl(f.avatar)} alt="avatar" className="conversation-avatar" />
-                <div className="conversation-info">
-                  <div className="conversation-name">{f.name}</div>
-                  <div className="conversation-last-message">Cliquer pour discuter</div>
-                </div>
-                {unreadBadge(f.unreadCount)}
-              </div>
-            ))}
-          </div>
+    <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
+      {/* ================= LEFT — AMIS ================= */}
+      <aside className="messages-sidebar">
+        <div className="messages-sidebar-header">
+          <h2>Messages</h2>
         </div>
-      ) : null}
 
-      {showChatPane ? (
-        <div className="messages-content">
-          {activeChat ? (
-            <>
-              <header className="chat-header">
-                {isMobileView() && (
-                  <button className="back-btn" onClick={() => setActiveChat(null)} aria-label="Retour">
-                    <BackIcon />
-                  </button>
-                )}
-                <img src={resolveUrl(activeChat.avatar)} alt="avatar" className="chat-avatar" />
-                <div className="chat-user-info">
-                  <div className="chat-username">{activeChat.name}</div>
-                  <div className="chat-status">{typingLabel}</div>
+        <div className="messages-search">
+          <input
+            type="text"
+            placeholder="Rechercher un ami"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="messages-list">
+          {loadingFriends && (
+            <div className="messages-empty">Chargement…</div>
+          )}
+
+          {!loadingFriends && errorFriends && (
+            <div className="messages-empty">{errorFriends}</div>
+          )}
+
+          {!loadingFriends &&
+            !errorFriends &&
+            filteredFriends.length === 0 && (
+              <div className="messages-empty">
+                Aucun ami pour le moment
+              </div>
+            )}
+
+          {filteredFriends.map((friend) => (
+            <div
+              key={friend._id}
+              className={`conversation-item ${
+                activeChat?._id === friend._id ? "active" : ""
+              }`}
+              onClick={() => loadConversation(friend)}
+            >
+              <img
+                src={friend.avatar}
+                alt={friend.name}
+                className="conversation-avatar"
+              />
+
+              <div className="conversation-info">
+                <div className="conversation-name">
+                  {friend.name}
                 </div>
-              </header>
-
-              <div className="chat-body" ref={chatBodyRef}>
-                {loadingConversation && <div className="messages-empty">Chargement...</div>}
-                {!loadingConversation && !messages.length && <div className="messages-empty">Aucun message</div>}
-                {messages.map((msg) => renderMessage(msg))}
-                <div ref={messagesEndRef} />
+                <div className="conversation-last-message">
+                  Démarrer une conversation
+                </div>
               </div>
 
-              <div
-                className={`chat-footer ${isRecording ? "recording" : ""}`}
-                onTouchMove={handleRecordMove}
-                onMouseMove={handleRecordMove}
-              >
-                <div className="footer-left">
-                  <button className="attach-btn" onClick={() => setShowAttachMenu((v) => !v)} aria-label="Plus">
-                    <PlusIcon />
-                  </button>
-                  <button className="emoji-btn" aria-label="Emoji">
-                    <EmojiIcon />
-                  </button>
+              {friend.unreadCount > 0 && (
+                <div className="conv-unread-badge">
+                  {friend.unreadCount}
                 </div>
-                <div className="footer-input-wrap">
-                  <input
-                    value={input}
-                    onChange={(e) => handleInputChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                    placeholder={isRecording ? "Enregistrement..." : "Message"}
-                    disabled={isRecording}
-                  />
-                  {isRecording && (
-                    <div className="record-indicator">
-                      <span className="record-dot" />
-                      <span className="record-time">{formatDuration(recordTime)}</span>
-                      <div className="record-level" ref={recordLevelBarRef}>
-                        <div className="record-level-bar" style={{ width: `${Math.min(100, recordLevel * 100)}%` }} />
+              )}
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* ================= RIGHT — CHAT ================= */}
+      <main className="messages-content">
+        {!activeChat ? (
+          <div className="messages-placeholder">
+            <h3>Sélectionne un ami</h3>
+            <p>Clique sur un ami pour commencer une conversation.</p>
+          </div>
+        ) : (
+          <>
+            {/* HEADER */}
+            <div className="chat-header">
+              <button
+                className="chat-back-btn"
+                onClick={() => {
+                  setActiveChat(null);
+                  setMessages([]);
+                }}
+              >
+                <BackIcon />
+              </button>
+
+              <img
+                src={activeChat.avatar}
+                alt={activeChat.name}
+                className="chat-avatar"
+              />
+
+              <div className="chat-user-info">
+                <div className="chat-username">
+                  {activeChat.name}
+                </div>
+                <div className="chat-status">
+                  {typingState[activeChat._id]?.isTyping
+                    ? "En train d'écrire..."
+                    : "En ligne"}
+                </div>
+              </div>
+            </div>
+
+            {/* BODY */}
+            <div className="chat-body" ref={chatBodyRef}>
+              {loadingConversation && (
+                <div className="chat-empty">Chargement…</div>
+              )}
+
+              {!loadingConversation && messages.length === 0 && (
+                <div className="chat-empty">
+                  Aucun message pour le moment
+                  <br />
+                  Commence la conversation 👋
+                </div>
+              )}
+
+              {!loadingConversation &&
+                messages.map((msg) => {
+                  const senderId =
+                    typeof msg.sender === "object"
+                      ? msg.sender?._id
+                      : msg.sender;
+
+                  const isMe = senderId === me?._id;
+
+                  return (
+                    <div
+                      key={msg._id}
+                      className={`message-row ${isMe ? "me" : "other"}`}
+                    >
+                      <div
+                        className={`message-bubble message-${msg.type || "text"}`}
+                        onMouseDown={(e) => handleBubblePressStart(msg, e)}
+                        onMouseUp={handleBubblePressEnd}
+                        onMouseLeave={handleBubblePressEnd}
+                        onTouchStart={(e) => handleBubblePressStart(msg, e)}
+                        onTouchEnd={handleBubblePressEnd}
+                      >
+                        {renderMessageContent(msg)}
+                        {renderReactions(msg)}
                       </div>
                     </div>
+                  );
+                })}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* INPUT */}
+            <div
+              className="chat-input-bar"
+              onMouseMove={updateRecordingDrag}
+              onTouchMove={updateRecordingDrag}
+              onMouseUp={
+                isRecording && !recordLocked ? () => stopRecording(false) : undefined
+              }
+              onTouchEnd={
+                isRecording && !recordLocked ? () => stopRecording(false) : undefined
+              }
+            >
+              <div className="attach-wrapper" ref={attachMenuRef}>
+                <button
+                  className="chat-attach-btn"
+                  onClick={() => {
+                    setShowAttachMenu((p) => !p);
+                    setShowEmojiPicker(false);
+                  }}
+                  aria-label="Pièces jointes"
+                >
+                  <PlusIcon />
+                </button>
+              </div>
+
+              {isRecording ? (
+                <div
+                  className={`recording-banner ${recordCanceled ? "canceled" : ""}`}
+                >
+                  <button
+                    className="recording-cancel"
+                    type="button"
+                    onClick={() => {
+                      stopRecording(true);
+                    }}
+                    aria-label="Annuler"
+                  >
+                    <CloseIcon />
+                  </button>
+                  <div className="recording-icon">
+                    <MicIcon pulse={!recordCanceled} />
+                  </div>
+                  <div className="recording-info">
+                    <div className="recording-timer">
+                      {formatTime(Math.floor(recordTime / 1000))}
+                    </div>
+                    <div className="recording-hint">
+                      {recordCanceled
+                        ? "Annulé"
+                        : recordLocked
+                        ? "Verrouillé — appuie pour envoyer"
+                        : "Glisser vers la droite pour annuler / vers le haut pour verrouiller"}
+                    </div>
+                    <div className="recording-level">
+                      <div
+                        className="recording-level-bar"
+                        ref={recordLevelBarRef}
+                        style={{ "--record-level": recordLevel }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="recording-slider"
+                    style={{ transform: `translateX(${Math.max(0, recordOffset)}px)` }}
+                  />
+                  {recordLocked && (
+                    <button
+                      className="recording-send"
+                      type="button"
+                      onClick={() => stopRecording(false)}
+                      aria-label="Envoyer la note vocale"
+                    >
+                      <SendIcon />
+                    </button>
                   )}
                 </div>
-                <div className="footer-right">
-                  {input.trim() ? (
-                    <button className="send-btn" onClick={sendMessage} aria-label="Envoyer">
+              ) : (
+                <>
+                  <input
+                    className="chat-input"
+                    placeholder="Message..."
+                    value={input}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                  />
+
+                  <button
+                    className="emoji-btn"
+                    type="button"
+                    onClick={() => {
+                      if (!messages.length) return;
+                      const lastMessage = messages[messages.length - 1];
+                      setReactionPicker({ messageId: lastMessage._id, anchor: "input" });
+                    }}
+                    aria-label="Réagir"
+                  >
+                    <EmojiIcon />
+                  </button>
+
+                  {input.trim().length > 0 ? (
+                    <button className="chat-send-btn" onClick={sendMessage}>
                       <SendIcon />
                     </button>
                   ) : (
                     <button
-                      className={`mic-btn ${recordLocked ? "locked" : ""} ${recordCanceled ? "canceled" : ""}`}
+                      className={`chat-mic-btn ${isRecording ? "recording" : ""}`}
                       onMouseDown={startRecording}
-                      onMouseUp={handleRecordEnd}
-                      onMouseLeave={handleRecordEnd}
                       onTouchStart={startRecording}
-                      onTouchEnd={handleRecordEnd}
-                      aria-label="Enregistrer"
+                      aria-label="Maintenir pour enregistrer"
+                      type="button"
                     >
-                      <MicIcon pulse={isRecording} />
+                      <MicIcon />
                     </button>
                   )}
-                </div>
-
-                {isRecording && recordLocked && (
-                  <div className="record-locked">
-                    <span>Verrouillé</span>
-                    <button className="send-btn" onClick={stopRecording} aria-label="Envoyer audio">
-                      <SendIcon />
-                    </button>
-                  </div>
-                )}
-
-                {isRecording && recordCanceled && (
-                  <div className="record-canceled">
-                    <CloseIcon /> Annulé
-                  </div>
-                )}
-              </div>
-
-              {showAttachMenu && (
-                <div
-                  className="attach-sheet"
-                  ref={attachMenuRef}
-                  onTouchStart={handleAttachTouchStart}
-                  onTouchEnd={handleAttachTouchEnd}
-                >
-                  <div className="attach-handle" />
-                  <div className="attach-row">Pièces jointes à venir</div>
-                </div>
+                </>
               )}
-            </>
-          ) : (
-            <div className="messages-placeholder">Choisissez un ami pour commencer</div>
-          )}
-        </div>
-      ) : (
-        <div className="messages-placeholder">Choisissez un ami</div>
-      )}
+            </div>
+
+            {showAttachMenu && (
+              <div
+                className="attach-sheet"
+                role="dialog"
+                onTouchStart={handleAttachTouchStart}
+                onTouchEnd={handleAttachTouchEnd}
+              >
+                <div className="attach-sheet-handle" />
+                <div className="attach-options">
+                  <button className="attach-item">Fichier</button>
+                  <button className="attach-item">Image</button>
+                  <button className="attach-item">Caméra</button>
+                  <button className="attach-item">Localisation</button>
+                </div>
+              </div>
+            )}
+
+            {showEmojiPicker && reactionPicker.messageId && (
+              <div className="reaction-picker">
+                <div className="reaction-bar">
+                  {REACTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      className="reaction-btn"
+                      onClick={() => sendReaction(reactionPicker.messageId, emoji)}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </main>
     </div>
   );
-}
+} 
