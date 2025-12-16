@@ -158,6 +158,7 @@ export default function VideoCallOverlay({
   ============================================================ */
   const startPeerConnection = async (withOffer = false) => {
     if (!socket || !otherUser?._id) return;
+    if (pcRef.current) return;
 
     try {
       setStatus(mode === "caller" ? "calling" : "in-call");
