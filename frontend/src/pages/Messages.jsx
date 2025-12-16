@@ -204,6 +204,27 @@ export default function Messages() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const formatMessageTime = (date) => {
+    if (!date) return "";
+    const d = typeof date === "string" || typeof date === "number" ? new Date(date) : date;
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const buildReplyData = (target) => {
+    if (!target?._id) return { replyId: null, preview: null };
+
+    return {
+      replyId: target._id,
+      preview: {
+        messageId: target._id,
+        content:
+          target.content ||
+          (target.type === "audio" ? "Message vocal" : "Message"),
+        type: target.type || "text",
+      },
+    };
+  };
+
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
@@ -400,15 +421,7 @@ export default function Messages() {
     if (!input.trim() || !activeChat) return;
     const content = input.trim();
     setInput("");
-    const replyPreview = replyTo
-      ? {
-          messageId: replyTo._id,
-          content:
-            replyTo.content ||
-            (replyTo.type === "audio" ? "Message vocal" : "Message"),
-          type: replyTo.type || "text",
-        }
-      : null;
+    const { replyId, preview: replyPreview } = buildReplyData(replyTo);
 
     const clientTempId = `temp-${Date.now()}`;
     const tempMessage = {
@@ -418,7 +431,7 @@ export default function Messages() {
       content,
       type: "text",
       clientTempId,
-      replyTo: replyPreview?.messageId || replyTo?._id || null,
+      replyTo: replyId,
       replyPreview,
       createdAt: new Date().toISOString(),
     };
@@ -438,7 +451,7 @@ export default function Messages() {
           receiver: activeChat._id,
           content,
           clientTempId,
-          replyTo: replyPreview?.messageId || replyTo?._id,
+          replyTo: replyId,
         }),
       });
       const data = await res.json();
@@ -598,7 +611,7 @@ export default function Messages() {
         cleanupAudioContext();
         setRecordLevel(0);
         if (blob.size > 0) {
-          uploadAudio(blob);
+          uploadAudio(blob, replyTo);
         }
       };
 
@@ -686,9 +699,11 @@ export default function Messages() {
     }
   };
 
-  const uploadAudio = async (blob) => {
+  const uploadAudio = async (blob, replyTarget = null) => {
     if (!activeChat || !blob || blob.size === 0) return;
     const fileName = `voice-${Date.now()}.webm`;
+
+    const { replyId, preview: replyPreview } = buildReplyData(replyTarget);
 
     const tempUrl = URL.createObjectURL(blob);
     const clientTempId = `temp-${Date.now()}`;
@@ -700,6 +715,8 @@ export default function Messages() {
       audioUrl: tempUrl,
       content: "",
       clientTempId,
+      replyTo: replyId,
+      replyPreview,
       createdAt: new Date().toISOString(),
     };
 
@@ -709,6 +726,9 @@ export default function Messages() {
     formData.append("audio", blob, fileName);
     formData.append("receiver", activeChat._id);
     formData.append("clientTempId", clientTempId);
+    if (replyId) {
+      formData.append("replyTo", replyId);
+    }
 
     try {
       const res = await fetch(`${API_URL}/messages/audio`, {
@@ -724,6 +744,7 @@ export default function Messages() {
       console.error("Erreur upload audio", err);
     } finally {
       setTimeout(() => scrollToBottom(true), 30);
+      setReplyTo(null);
     }
   };
 
@@ -1028,6 +1049,9 @@ export default function Messages() {
           </div>
         )}
         <div className="message-body">{content}</div>
+        <div className="message-meta">
+          <span className="message-time">{formatMessageTime(msg.createdAt)}</span>
+        </div>
       </div>
     );
   };
