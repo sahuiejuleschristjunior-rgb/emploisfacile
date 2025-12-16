@@ -831,6 +831,14 @@
   border-radius: 999px;
 }
 
+.recording-slider.ready {
+  background: linear-gradient(90deg, #4cd964 0%, #2ecc71 100%);
+}
+
+.recording-slider.cancel {
+  background: linear-gradient(90deg, #ff6b6b 0%, #ff4757 100%);
+}
+
 .recording-send {
   height: 40px;
   width: 40px;

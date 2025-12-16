@@ -108,6 +108,7 @@ export default function Messages() {
   const [recordTime, setRecordTime] = useState(0);
   const [recordOffset, setRecordOffset] = useState(0);
   const [recordLevel, setRecordLevel] = useState(0);
+  const [recordSendReady, setRecordSendReady] = useState(false);
 
   const [audioStatus, setAudioStatus] = useState({});
 
@@ -122,6 +123,7 @@ export default function Messages() {
   const recordVizFrame = useRef(null);
   const recordLevelBarRef = useRef(null);
   const recordCanceledRef = useRef(false);
+  const lastRecordDurationRef = useRef(0);
   const activeStreamRef = useRef(null);
 
   const audioRefs = useRef({});
@@ -452,6 +454,7 @@ export default function Messages() {
     setRecordCanceled(false);
     setRecordLocked(false);
     setRecordLevel(0);
+    setRecordSendReady(false);
     recordCanceledRef.current = false;
     recordingChunksRef.current = [];
 
@@ -475,13 +478,23 @@ export default function Messages() {
       filterNode.type = "highpass";
       filterNode.frequency.value = 140;
       filterNode.Q.value = 0.7;
+
+      const echoFilterNode = audioContext.createBiquadFilter();
+      echoFilterNode.type = "notch";
+      echoFilterNode.frequency.value = 900;
+      echoFilterNode.Q.value = 1.2;
+      const compressorNode = audioContext.createDynamicsCompressor();
+      compressorNode.attack.value = 0.02;
+      compressorNode.release.value = 0.25;
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       const destination = audioContext.createMediaStreamDestination();
 
       source.connect(gainNode);
       gainNode.connect(filterNode);
-      filterNode.connect(analyser);
+      filterNode.connect(echoFilterNode);
+      echoFilterNode.connect(compressorNode);
+      compressorNode.connect(analyser);
       analyser.connect(destination);
 
       const recorder = new MediaRecorder(destination.stream);
@@ -497,6 +510,7 @@ export default function Messages() {
         stopRecordVisualization();
         clearInterval(recordTimerRef.current);
         setIsRecording(false);
+        lastRecordDurationRef.current = duration;
         if (canceled || !recordingChunksRef.current.length) {
           recordingChunksRef.current = [];
           cleanupAudioContext();
@@ -508,7 +522,7 @@ export default function Messages() {
         cleanupAudioContext();
         setRecordLevel(0);
         if (blob.size > 0) {
-          uploadAudio(blob);
+          uploadAudio(blob, duration);
         }
       };
 
@@ -531,7 +545,7 @@ export default function Messages() {
       audioContextRef.current = audioContext;
       audioAnalyserRef.current = analyser;
       audioGainRef.current = gainNode;
-      audioFilterRef.current = filterNode;
+      audioFilterRef.current = echoFilterNode;
       setIsRecording(true);
       animateLevel();
     } catch (err) {
@@ -563,9 +577,11 @@ export default function Messages() {
     }
 
     setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
+    const canceled = deltaX < -80;
+    const readyToSend = deltaX > 80;
+    setRecordSendReady(readyToSend);
+    setRecordCanceled(canceled && !readyToSend);
+    recordCanceledRef.current = canceled && !readyToSend;
   };
 
   const stopRecording = (forceCancel = false) => {
@@ -578,6 +594,7 @@ export default function Messages() {
     }
     clearInterval(recordTimerRef.current);
     setRecordLocked(false);
+    setRecordSendReady(false);
     setRecordLevel(0);
     stopRecordVisualization();
     if (recordLevelBarRef.current) {
@@ -594,9 +611,10 @@ export default function Messages() {
     }
   };
 
-  const uploadAudio = async (blob) => {
+  const uploadAudio = async (blob, durationMs = 0) => {
     if (!activeChat || !blob || blob.size === 0) return;
     const fileName = `voice-${Date.now()}.webm`;
+    const totalDurationSec = Math.max(1, Math.round(durationMs / 1000));
 
     const tempUrl = URL.createObjectURL(blob);
     const clientTempId = `temp-${Date.now()}`;
@@ -608,6 +626,7 @@ export default function Messages() {
       audioUrl: tempUrl,
       content: "",
       clientTempId,
+      duration: totalDurationSec,
       createdAt: new Date().toISOString(),
     };
 
@@ -617,6 +636,7 @@ export default function Messages() {
     formData.append("audio", blob, fileName);
     formData.append("receiver", activeChat._id);
     formData.append("clientTempId", clientTempId);
+    formData.append("duration", totalDurationSec.toString());
 
     try {
       const res = await fetch(`${API_URL}/messages/audio`, {
@@ -845,8 +865,9 @@ export default function Messages() {
 
   const renderAudioBubble = (msg) => {
     const status = audioStatus[msg._id] || {};
-    const progress = status.duration
-      ? Math.min((status.currentTime / status.duration) * 100, 100)
+    const totalDuration = status.duration || msg.duration || 0;
+    const progress = totalDuration
+      ? Math.min((status.currentTime / totalDuration) * 100, 100)
       : 0;
     const url = resolveUrl(msg.audioUrl);
 
@@ -864,7 +885,7 @@ export default function Messages() {
         </div>
 
         <div className="audio-duration">
-          {formatTime(status.currentTime)} / {formatTime(status.duration)}
+          {formatTime(status.currentTime)} / {formatTime(totalDuration)}
         </div>
 
         <audio ref={(node) => bindAudioRef(msg, node)} src={url} preload="metadata" />
@@ -1008,10 +1029,14 @@ export default function Messages() {
               onMouseMove={updateRecordingDrag}
               onTouchMove={updateRecordingDrag}
               onMouseUp={
-                isRecording && !recordLocked ? () => stopRecording(false) : undefined
+                isRecording && !recordLocked
+                  ? () => stopRecording(!recordSendReady)
+                  : undefined
               }
               onTouchEnd={
-                isRecording && !recordLocked ? () => stopRecording(false) : undefined
+                isRecording && !recordLocked
+                  ? () => stopRecording(!recordSendReady)
+                  : undefined
               }
             >
               <div className="attach-wrapper" ref={attachMenuRef}>
@@ -1040,7 +1065,7 @@ export default function Messages() {
                         ? "Annulé"
                         : recordLocked
                         ? "Verrouillé — appuie pour envoyer"
-                        : "Glisser vers la droite pour annuler / vers le haut pour verrouiller"}
+                        : "Glisse vers la gauche pour annuler, droite pour envoyer, haut pour verrouiller"}
                     </div>
                     <div className="recording-level">
                       <div
@@ -1051,7 +1076,9 @@ export default function Messages() {
                     </div>
                   </div>
                   <div
-                    className="recording-slider"
+                    className={`recording-slider ${
+                      recordSendReady ? "ready" : recordCanceled ? "cancel" : ""
+                    }`}
                     style={{ transform: `translateX(${Math.max(0, recordOffset)}px)` }}
                   />
                   {recordLocked && (
