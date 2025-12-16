@@ -53,6 +53,7 @@ export default function FacebookLayout() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const [searchResults, setSearchResults] = useState({
     users: [],
@@ -302,6 +303,96 @@ export default function FacebookLayout() {
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
 
+  const renderSearchContent = () => {
+    if (loadingSearch)
+      return <div className="fb-search-loader">Recherche...</div>;
+
+    const hasResults =
+      searchResults.users.length > 0 ||
+      searchResults.posts.length > 0 ||
+      searchResults.jobs.length > 0;
+
+    if (!searchTerm.trim())
+      return (
+        <div className="fb-search-empty">
+          Commencez à taper pour rechercher
+        </div>
+      );
+
+    if (!hasResults)
+      return <div className="fb-search-empty">Aucun résultat</div>;
+
+    return (
+      <>
+        {searchResults.users.length > 0 && (
+          <div className="fb-search-section">
+            <div className="fb-search-title">Utilisateurs</div>
+            {searchResults.users.map((u) => (
+              <div
+                key={u._id}
+                className="fb-search-item"
+                onClick={() => {
+                  nav(`/profil/${u._id}`);
+                  setSearchOpen(false);
+                  setShowMobileSearch(false);
+                }}
+              >
+                <img
+                  src={u.avatar || "https://i.pravatar.cc/150"}
+                  alt="avatar"
+                />
+                <span>{u.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {searchResults.posts.length > 0 && (
+          <div className="fb-search-section">
+            <div className="fb-search-title">Publications</div>
+            {searchResults.posts.map((p) => (
+              <div
+                key={p._id}
+                className="fb-search-item"
+                onClick={() => {
+                  nav(`/fb/post/${p._id}`);
+                  setSearchOpen(false);
+                  setShowMobileSearch(false);
+                }}
+              >
+                <img
+                  src={p.author?.avatar || "https://i.pravatar.cc/150"}
+                  alt="avatar"
+                />
+                <span>{p.content?.slice(0, 70) || "(Sans contenu)"}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {searchResults.jobs.length > 0 && (
+          <div className="fb-search-section">
+            <div className="fb-search-title">Emplois</div>
+            {searchResults.jobs.map((j) => (
+              <div
+                key={j._id}
+                className="fb-search-item"
+                onClick={() => {
+                  nav(`/emplois/${j._id}`);
+                  setSearchOpen(false);
+                  setShowMobileSearch(false);
+                }}
+              >
+                <img src={j.companyLogo || "https://i.pravatar.cc/150"} />
+                <span>{j.title}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  };
+
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
@@ -334,57 +425,7 @@ export default function FacebookLayout() {
 
             {searchOpen && (
               <div className="fb-search-dropdown">
-                {loadingSearch ? (
-                  <div className="fb-search-loader">Recherche...</div>
-                ) : (
-                  <>
-                    {searchResults.users.length > 0 && (
-                      <div className="fb-search-section">
-                        <div className="fb-search-title">Utilisateurs</div>
-                        {searchResults.users.map((u) => (
-                          <div
-                            key={u._id}
-                            className="fb-search-item"
-                            onClick={() => nav(`/profil/${u._id}`)}
-                          >
-                            <img src={u.avatar || "/default-avatar.png"} />
-                            <span>{u.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {searchResults.posts.length > 0 && (
-                      <div className="fb-search-section">
-                        <div className="fb-search-title">Publications</div>
-                        {searchResults.posts.map((p) => (
-                          <div
-                            key={p._id}
-                            className="fb-search-item"
-                            onClick={() => nav(`/fb/post/${p._id}`)}
-                          >
-                            <span>{(p.content || p.text)?.slice(0, 60)}...</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {searchResults.jobs.length > 0 && (
-                      <div className="fb-search-section">
-                        <div className="fb-search-title">Emplois</div>
-                        {searchResults.jobs.map((j) => (
-                          <div
-                            key={j._id}
-                            className="fb-search-item"
-                            onClick={() => nav(`/job/${j._id}`)}
-                          >
-                            <span>{j.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+                {renderSearchContent()}
               </div>
             )}
           </div>
@@ -571,6 +612,17 @@ export default function FacebookLayout() {
             <div>Emplois</div>
           </div>
 
+          <div
+            className="fb-bottom-nav-item"
+            onClick={() => {
+              setShowMobileSearch(true);
+              setSearchOpen(true);
+            }}
+          >
+            <FBIcon name="search" size={22} />
+            <div>Recherche</div>
+          </div>
+
           <div className="fb-bottom-nav-item" onClick={() => nav("/fb/relations")}>
             <FBIcon name="friends" size={22} />
             <div>Relations</div>
@@ -626,6 +678,45 @@ export default function FacebookLayout() {
               <FBIcon name="logout" size={22} />
               <span>Déconnexion</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showMobileSearch && (
+        <div
+          className="fb-mobile-search-modal"
+          onClick={() => {
+            setShowMobileSearch(false);
+            setSearchOpen(false);
+          }}
+        >
+          <div
+            className="fb-mobile-search-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="fb-mobile-search-header">
+              <FBIcon name="search" size={20} />
+              <input
+                value={searchTerm}
+                placeholder="Rechercher..."
+                onFocus={() => setSearchOpen(true)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSearchOpen(true);
+                }}
+              />
+              <button
+                className="fb-mobile-search-close"
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  setSearchOpen(false);
+                }}
+              >
+                ✖
+              </button>
+            </div>
+
+            <div className="fb-mobile-search-results">{renderSearchContent()}</div>
           </div>
         </div>
       )}
