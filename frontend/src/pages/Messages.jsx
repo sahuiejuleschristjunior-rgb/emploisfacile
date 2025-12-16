@@ -1,4 +1,3 @@
-// frontend/src/pages/Messages.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
@@ -74,6 +73,15 @@ const PauseIcon = () => (
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M5.3 5.3a1 1 0 0 1 1.4 0L12 10.59l5.3-5.3a1 1 0 1 1 1.4 1.42L13.41 12l5.3 5.3a1 1 0 0 1-1.42 1.4L12 13.41l-5.3 5.3a1 1 0 1 1-1.4-1.42L10.59 12 5.3 6.7a1 1 0 0 1 0-1.4Z"
+    />
+  </svg>
+);
+
 export default function Messages() {
   /* =====================================================
      STATE
@@ -89,7 +97,6 @@ export default function Messages() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [reactionPicker, setReactionPicker] = useState({
     messageId: null,
     anchor: null,
@@ -99,19 +106,24 @@ export default function Messages() {
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
+  const [recordOffset, setRecordOffset] = useState(0);
+  const [recordLevel, setRecordLevel] = useState(0);
+
+  const [audioStatus, setAudioStatus] = useState({});
+
   const recordStartRef = useRef(null);
   const recordTimerRef = useRef(null);
-  const [recordOffset, setRecordOffset] = useState(0);
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
   const audioContextRef = useRef(null);
   const audioAnalyserRef = useRef(null);
   const audioGainRef = useRef(null);
   const recordVizFrame = useRef(null);
-  const [recordLevel, setRecordLevel] = useState(0);
   const recordLevelBarRef = useRef(null);
+  const recordCanceledRef = useRef(false);
+  const activeStreamRef = useRef(null);
+
   const audioRefs = useRef({});
-  const [audioStatus, setAudioStatus] = useState({});
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
 
@@ -194,50 +206,24 @@ export default function Messages() {
   const upsertMessage = (incoming) => {
     if (!incoming) return;
     setMessages((prev) => {
-      let next = [...prev];
+      const next = [...prev];
 
-      // Supprimer un éventuel temporaire correspondant à l'ID client
       if (incoming.clientTempId) {
-        next = next.filter((m) => m.clientTempId !== incoming.clientTempId);
+        const idx = next.findIndex((m) => m.clientTempId === incoming.clientTempId);
+        if (idx >= 0) {
+          next.splice(idx, 1);
+        }
       }
 
-      // Supprimer un éventuel temporaire équivalent (même contenu + participants)
-      const samePair = next.findIndex((m) => {
-        const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
-        const receiverId =
-          typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
-        const incomingSender =
-          typeof incoming.sender === "object"
-            ? incoming.sender?._id
-            : incoming.sender;
-        const incomingReceiver =
-          typeof incoming.receiver === "object"
-            ? incoming.receiver?._id
-            : incoming.receiver;
-
-        const sameUsers =
-          senderId === incomingSender && receiverId === incomingReceiver;
-        const isTemp = typeof m._id === "string" && m._id.startsWith("temp-");
-        const sameText =
-          incoming.type === "text" &&
-          (m.type === "text" || !m.type) &&
-          (m.content || "").trim() === (incoming.content || "").trim();
-        const sameAudio = incoming.type === "audio" && m.type === "audio";
-        return isTemp && sameUsers && (sameText || sameAudio);
-      });
-
-      if (samePair >= 0) {
-        next.splice(samePair, 1);
-      }
-
-      const existsIndex = next.findIndex((m) => m._id === incoming._id);
-      if (existsIndex >= 0) {
-        next[existsIndex] = { ...next[existsIndex], ...incoming };
+      const sameIdIdx = next.findIndex((m) => m._id === incoming._id);
+      if (sameIdIdx >= 0) {
+        next[sameIdIdx] = { ...next[sameIdIdx], ...incoming };
       } else {
         next.push(incoming);
       }
 
-      return next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      next.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      return next;
     });
   };
 
@@ -304,14 +290,14 @@ export default function Messages() {
 
     const handleMessage = (payload) => {
       const message = payload?.message || payload;
-      if (isMessageInActiveChat(message)) {
-        upsertMessage(message);
-        if (message?.sender !== me?._id) {
-          fetch(`${API_URL}/messages/${message._id}/read`, {
-            method: "PATCH",
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => {});
-        }
+      if (!isMessageInActiveChat(message)) return;
+      upsertMessage(message);
+      const senderId = typeof message.sender === "object" ? message.sender?._id : message.sender;
+      if (message?._id && senderId !== me?._id) {
+        fetch(`${API_URL}/messages/${message._id}/read`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
       }
     };
 
@@ -329,8 +315,7 @@ export default function Messages() {
       setMessages((prev) =>
         prev.map((m) => {
           const senderId = typeof m.sender === "object" ? m.sender?._id : m.sender;
-          const receiverId =
-            typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
+          const receiverId = typeof m.receiver === "object" ? m.receiver?._id : m.receiver;
           if (
             (messageId && m._id === messageId) ||
             (withUserId && senderId === me?._id && receiverId === withUserId)
@@ -367,22 +352,18 @@ export default function Messages() {
 
     try {
       setLoadingConversation(true);
-
       const res = await fetch(`${API_URL}/messages/conversation/${user._id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
-      setMessages(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      setMessages(list);
 
       fetch(`${API_URL}/messages/read-all/${user._id}`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
     } catch (err) {
       console.error("Erreur conversation", err);
       setMessages([]);
@@ -397,11 +378,10 @@ export default function Messages() {
   ===================================================== */
   const sendMessage = async () => {
     if (!input.trim() || !activeChat) return;
-
     const content = input.trim();
     setInput("");
 
-    const clientTempId = "temp-" + Date.now();
+    const clientTempId = `temp-${Date.now()}`;
     const tempMessage = {
       _id: clientTempId,
       sender: me?._id,
@@ -409,6 +389,7 @@ export default function Messages() {
       content,
       type: "text",
       clientTempId,
+      createdAt: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, tempMessage]);
@@ -421,25 +402,11 @@ export default function Messages() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          receiver: activeChat._id,
-          content,
-          clientTempId,
-        }),
+        body: JSON.stringify({ receiver: activeChat._id, content, clientTempId }),
       });
-
       const data = await res.json();
-
       if (res.ok && data?.data) {
-        setMessages((prev) => {
-          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
-          const exists = withoutTemp.some((m) => m._id === data.data._id);
-          return exists
-            ? withoutTemp.map((m) =>
-                m._id === data.data._id ? { ...m, ...data.data } : m
-              )
-            : [...withoutTemp, data.data];
-        });
+        upsertMessage(data.data);
       }
     } catch (err) {
       console.error("Erreur envoi message", err);
@@ -449,8 +416,6 @@ export default function Messages() {
   /* =====================================================
      AUDIO
   ===================================================== */
-  const recordCanceledRef = useRef(false);
-
   const stopRecordVisualization = () => {
     if (recordVizFrame.current) {
       cancelAnimationFrame(recordVizFrame.current);
@@ -458,29 +423,43 @@ export default function Messages() {
     }
   };
 
+  const cleanupAudioContext = () => {
+    if (activeStreamRef.current) {
+      activeStreamRef.current.getTracks().forEach((t) => t.stop());
+      activeStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    audioAnalyserRef.current = null;
+    audioGainRef.current = null;
+  };
+
   const startRecording = async (event) => {
     if (!activeChat || isRecording) return;
     clearInterval(recordTimerRef.current);
     stopRecordVisualization();
+
     const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
     const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = 0;
 
     recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
     setRecordTime(0);
-    setRecordOffset(deltaX);
+    setRecordOffset(0);
     setRecordCanceled(false);
     setRecordLocked(false);
     setRecordLevel(0);
     recordCanceledRef.current = false;
+    recordingChunksRef.current = [];
 
     recordTimerRef.current = setInterval(() => {
       setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
     }, 200);
 
-    // Guard the entire async recording setup in a single try/catch block
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      activeStreamRef.current = stream;
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const gainNode = audioContext.createGain();
@@ -494,40 +473,46 @@ export default function Messages() {
       analyser.connect(destination);
 
       const recorder = new MediaRecorder(destination.stream);
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordingChunksRef.current.push(e.data);
+        }
+      };
 
       recorder.onstop = () => {
         const duration = Date.now() - (recordStartRef.current?.at || Date.now());
         const canceled = recordCanceledRef.current || duration < 300;
-        stream.getTracks().forEach((t) => t.stop());
         stopRecordVisualization();
-        audioContext.close();
+        clearInterval(recordTimerRef.current);
+        setIsRecording(false);
         if (canceled || !recordingChunksRef.current.length) {
           recordingChunksRef.current = [];
+          cleanupAudioContext();
           setRecordLevel(0);
           return;
         }
-        if (!recordCanceledRef.current) {
-          const blob = new Blob(recordingChunksRef.current, {
-            type: "audio/webm",
-          });
+        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
+        recordingChunksRef.current = [];
+        cleanupAudioContext();
+        setRecordLevel(0);
+        if (blob.size > 0) {
           uploadAudio(blob);
         }
       };
 
       const animateLevel = () => {
-        const buffer = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(buffer);
+        const analyserNode = audioAnalyserRef.current;
+        if (!analyserNode) return;
+        const buffer = new Uint8Array(analyserNode.frequencyBinCount);
+        analyserNode.getByteFrequencyData(buffer);
         const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
         const level = Math.min(1, max * 1.4);
+        setRecordLevel(level);
         if (recordLevelBarRef.current) {
-          recordLevelBarRef.current.style.setProperty(
-            "--record-level",
-            level.toString()
-          );
+          recordLevelBarRef.current.style.setProperty("--record-level", level.toString());
         }
         recordVizFrame.current = requestAnimationFrame(animateLevel);
       };
-      animateLevel();
 
       recorder.start();
       mediaRecorderRef.current = recorder;
@@ -535,18 +520,16 @@ export default function Messages() {
       audioAnalyserRef.current = analyser;
       audioGainRef.current = gainNode;
       setIsRecording(true);
+      animateLevel();
     } catch (err) {
       console.error("Erreur accès micro", err);
       clearInterval(recordTimerRef.current);
       stopRecordVisualization();
+      cleanupAudioContext();
       setIsRecording(false);
+      setRecordLevel(0);
       recordStartRef.current = null;
     }
-
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
   };
 
   const updateRecordingDrag = (event) => {
@@ -581,7 +564,6 @@ export default function Messages() {
       recordingChunksRef.current = [];
     }
     clearInterval(recordTimerRef.current);
-    setIsRecording(false);
     setRecordLocked(false);
     setRecordLevel(0);
     stopRecordVisualization();
@@ -593,20 +575,18 @@ export default function Messages() {
     if (recorder && recorder.state !== "inactive") {
       recorder.stop();
     }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
+    if (!recorder) {
+      cleanupAudioContext();
+      setIsRecording(false);
     }
-    audioAnalyserRef.current = null;
-    audioGainRef.current = null;
   };
 
   const uploadAudio = async (blob) => {
-    if (!activeChat) return;
+    if (!activeChat || !blob || blob.size === 0) return;
     const fileName = `voice-${Date.now()}.webm`;
 
     const tempUrl = URL.createObjectURL(blob);
-    const clientTempId = "temp-" + Date.now();
+    const clientTempId = `temp-${Date.now()}`;
     const tempMessage = {
       _id: clientTempId,
       sender: me?._id,
@@ -615,6 +595,7 @@ export default function Messages() {
       audioUrl: tempUrl,
       content: "",
       clientTempId,
+      createdAt: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, tempMessage]);
@@ -627,23 +608,12 @@ export default function Messages() {
     try {
       const res = await fetch(`${API_URL}/messages/audio`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
       const data = await res.json();
       if (res.ok && data?.data) {
-        setMessages((prev) => {
-          const withoutTemp = prev.filter((m) => m._id !== tempMessage._id);
-          const exists = withoutTemp.some((m) => m._id === data.data._id);
-          return exists
-            ? withoutTemp.map((m) =>
-                m._id === data.data._id ? { ...m, ...data.data } : m
-              )
-            : [...withoutTemp, data.data];
-        });
+        upsertMessage(data.data);
       }
     } catch (err) {
       console.error("Erreur upload audio", err);
@@ -652,6 +622,9 @@ export default function Messages() {
     }
   };
 
+  /* =====================================================
+     AUDIO PLAYER
+  ===================================================== */
   const togglePlay = (messageId) => {
     const audio = audioRefs.current[messageId];
     if (!audio) return;
@@ -730,14 +703,12 @@ export default function Messages() {
       });
       const data = await res.json();
       if (res.ok && data?.data) {
-        setMessages((prev) =>
-          prev.map((m) => (m._id === messageId ? data.data : m))
-        );
+        upsertMessage(data.data);
       }
     } catch (err) {
       console.error("Erreur réaction", err);
     } finally {
-      setReactionPicker({ messageId: null, x: 0, y: 0 });
+      setReactionPicker({ messageId: null, anchor: null });
     }
   };
 
@@ -745,10 +716,7 @@ export default function Messages() {
     event.preventDefault();
     clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      setReactionPicker({
-        messageId: msg._id,
-        anchor: msg._id,
-      });
+      setReactionPicker({ messageId: msg._id, anchor: msg._id });
     }, 450);
   };
 
@@ -758,20 +726,28 @@ export default function Messages() {
 
   useEffect(() => {
     const closePicker = (e) => {
-      if (
-        reactionPicker.messageId &&
-        !e.target.closest?.(".reaction-picker")
-      ) {
-        setReactionPicker({ messageId: null, x: 0, y: 0 });
+      if (reactionPicker.messageId && !e.target.closest?.(".reaction-picker")) {
+        setReactionPicker({ messageId: null, anchor: null });
       }
     };
     window.addEventListener("click", closePicker);
     return () => window.removeEventListener("click", closePicker);
   }, [reactionPicker.messageId]);
 
-  useEffect(() => {
-    setShowEmojiPicker(Boolean(reactionPicker.messageId));
-  }, [reactionPicker.messageId]);
+  /* =====================================================
+     ATTACH MENU
+  ===================================================== */
+  const handleAttachTouchStart = (event) => {
+    attachSwipeStart.current = event.touches?.[0]?.clientY || null;
+  };
+
+  const handleAttachTouchEnd = (event) => {
+    const end = event.changedTouches?.[0]?.clientY;
+    if (attachSwipeStart.current !== null && end !== undefined && end - attachSwipeStart.current > 30) {
+      setShowAttachMenu(false);
+    }
+    attachSwipeStart.current = null;
+  };
 
   useEffect(() => {
     const closeAttach = (e) => {
@@ -787,22 +763,6 @@ export default function Messages() {
     window.addEventListener("click", closeAttach);
     return () => window.removeEventListener("click", closeAttach);
   }, [showAttachMenu]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTypingState((prev) => {
-        const now = Date.now();
-        const next = { ...prev };
-        Object.entries(prev).forEach(([userId, state]) => {
-          if (!state?.at || now - state.at > 2500) {
-            delete next[userId];
-          }
-        });
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   /* =====================================================
      TYPING FLAG
@@ -827,7 +787,25 @@ export default function Messages() {
     typingTimeoutRef.current = setTimeout(() => sendTypingFlag(false), 1200);
   };
 
-  useEffect(() => scrollToBottom(false), [messages]);
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [messages]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTypingState((prev) => {
+        const now = Date.now();
+        const next = { ...prev };
+        Object.entries(prev).forEach(([userId, state]) => {
+          if (!state?.at || now - state.at > 2500) {
+            delete next[userId];
+          }
+        });
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   /* =====================================================
      RENDER HELPERS
@@ -876,11 +854,7 @@ export default function Messages() {
           {formatTime(status.currentTime)} / {formatTime(status.duration)}
         </div>
 
-        <audio
-          ref={(node) => bindAudioRef(msg, node)}
-          src={url}
-          preload="metadata"
-        />
+        <audio ref={(node) => bindAudioRef(msg, node)} src={url} preload="metadata" />
       </div>
     );
   };
@@ -890,22 +864,6 @@ export default function Messages() {
       return renderAudioBubble(msg);
     }
     return msg.content;
-  };
-
-  const handleAttachTouchStart = (event) => {
-    attachSwipeStart.current = event.touches?.[0]?.clientY || null;
-  };
-
-  const handleAttachTouchEnd = (event) => {
-    const end = event.changedTouches?.[0]?.clientY;
-    if (
-      attachSwipeStart.current !== null &&
-      end !== undefined &&
-      end - attachSwipeStart.current > 30
-    ) {
-      setShowAttachMenu(false);
-    }
-    attachSwipeStart.current = null;
   };
 
   /* =====================================================
@@ -929,21 +887,15 @@ export default function Messages() {
         </div>
 
         <div className="messages-list">
-          {loadingFriends && (
-            <div className="messages-empty">Chargement…</div>
-          )}
+          {loadingFriends && <div className="messages-empty">Chargement…</div>}
 
           {!loadingFriends && errorFriends && (
             <div className="messages-empty">{errorFriends}</div>
           )}
 
-          {!loadingFriends &&
-            !errorFriends &&
-            filteredFriends.length === 0 && (
-              <div className="messages-empty">
-                Aucun ami pour le moment
-              </div>
-            )}
+          {!loadingFriends && !errorFriends && filteredFriends.length === 0 && (
+            <div className="messages-empty">Aucun ami pour le moment</div>
+          )}
 
           {filteredFriends.map((friend) => (
             <div
@@ -953,25 +905,15 @@ export default function Messages() {
               }`}
               onClick={() => loadConversation(friend)}
             >
-              <img
-                src={friend.avatar}
-                alt={friend.name}
-                className="conversation-avatar"
-              />
+              <img src={friend.avatar} alt={friend.name} className="conversation-avatar" />
 
               <div className="conversation-info">
-                <div className="conversation-name">
-                  {friend.name}
-                </div>
-                <div className="conversation-last-message">
-                  Démarrer une conversation
-                </div>
+                <div className="conversation-name">{friend.name}</div>
+                <div className="conversation-last-message">Démarrer une conversation</div>
               </div>
 
               {friend.unreadCount > 0 && (
-                <div className="conv-unread-badge">
-                  {friend.unreadCount}
-                </div>
+                <div className="conv-unread-badge">{friend.unreadCount}</div>
               )}
             </div>
           ))}
@@ -999,29 +941,19 @@ export default function Messages() {
                 <BackIcon />
               </button>
 
-              <img
-                src={activeChat.avatar}
-                alt={activeChat.name}
-                className="chat-avatar"
-              />
+              <img src={activeChat.avatar} alt={activeChat.name} className="chat-avatar" />
 
               <div className="chat-user-info">
-                <div className="chat-username">
-                  {activeChat.name}
-                </div>
+                <div className="chat-username">{activeChat.name}</div>
                 <div className="chat-status">
-                  {typingState[activeChat._id]?.isTyping
-                    ? "En train d'écrire..."
-                    : "En ligne"}
+                  {typingState[activeChat._id]?.isTyping ? "En train d'écrire..." : "En ligne"}
                 </div>
               </div>
             </div>
 
             {/* BODY */}
             <div className="chat-body" ref={chatBodyRef}>
-              {loadingConversation && (
-                <div className="chat-empty">Chargement…</div>
-              )}
+              {loadingConversation && <div className="chat-empty">Chargement…</div>}
 
               {!loadingConversation && messages.length === 0 && (
                 <div className="chat-empty">
@@ -1034,17 +966,11 @@ export default function Messages() {
               {!loadingConversation &&
                 messages.map((msg) => {
                   const senderId =
-                    typeof msg.sender === "object"
-                      ? msg.sender?._id
-                      : msg.sender;
-
+                    typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
                   const isMe = senderId === me?._id;
 
                   return (
-                    <div
-                      key={msg._id}
-                      className={`message-row ${isMe ? "me" : "other"}`}
-                    >
+                    <div key={msg._id} className={`message-row ${isMe ? "me" : "other"}`}>
                       <div
                         className={`message-bubble message-${msg.type || "text"}`}
                         onMouseDown={(e) => handleBubblePressStart(msg, e)}
@@ -1080,7 +1006,6 @@ export default function Messages() {
                   className="chat-attach-btn"
                   onClick={() => {
                     setShowAttachMenu((p) => !p);
-                    setShowEmojiPicker(false);
                   }}
                   aria-label="Pièces jointes"
                 >
@@ -1089,9 +1014,7 @@ export default function Messages() {
               </div>
 
               {isRecording ? (
-                <div
-                  className={`recording-banner ${recordCanceled ? "canceled" : ""}`}
-                >
+                <div className={`recording-banner ${recordCanceled ? "canceled" : ""}`}>
                   <button
                     className="recording-cancel"
                     type="button"
@@ -1198,7 +1121,7 @@ export default function Messages() {
               </div>
             )}
 
-            {showEmojiPicker && reactionPicker.messageId && (
+            {reactionPicker.messageId && (
               <div className="reaction-picker">
                 <div className="reaction-bar">
                   {REACTIONS.map((emoji) => (
