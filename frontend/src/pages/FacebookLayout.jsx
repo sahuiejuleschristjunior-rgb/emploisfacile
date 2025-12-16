@@ -623,11 +623,6 @@ export default function FacebookLayout() {
             <div>Recherche</div>
           </div>
 
-          <div className="fb-bottom-nav-item" onClick={() => nav("/fb/relations")}>
-            <FBIcon name="friends" size={22} />
-            <div>Relations</div>
-          </div>
-
           <div className="fb-bottom-nav-item" onClick={() => nav("/messages")}>
             <FBIcon name="messages" size={22} />
             <div>Messages</div>
