@@ -464,24 +464,41 @@ export default function Messages() {
         audio: {
           noiseSuppression: true,
           echoCancellation: true,
+          autoGainControl: true,
         },
       });
       activeStreamRef.current = stream;
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const gainNode = audioContext.createGain();
-      gainNode.gain.value = 2.4;
-      const filterNode = audioContext.createBiquadFilter();
-      filterNode.type = "highpass";
-      filterNode.frequency.value = 140;
-      filterNode.Q.value = 0.7;
+      gainNode.gain.value = 3.2;
+
+      const highPassFilter = audioContext.createBiquadFilter();
+      highPassFilter.type = "highpass";
+      highPassFilter.frequency.value = 140;
+      highPassFilter.Q.value = 0.7;
+
+      const noiseCutFilter = audioContext.createBiquadFilter();
+      noiseCutFilter.type = "lowpass";
+      noiseCutFilter.frequency.value = 7200;
+      noiseCutFilter.Q.value = 0.9;
+
+      const echoReducer = audioContext.createDynamicsCompressor();
+      echoReducer.threshold.setValueAtTime(-48, audioContext.currentTime);
+      echoReducer.knee.setValueAtTime(20, audioContext.currentTime);
+      echoReducer.ratio.setValueAtTime(8, audioContext.currentTime);
+      echoReducer.attack.setValueAtTime(0.002, audioContext.currentTime);
+      echoReducer.release.setValueAtTime(0.25, audioContext.currentTime);
+
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       const destination = audioContext.createMediaStreamDestination();
 
       source.connect(gainNode);
-      gainNode.connect(filterNode);
-      filterNode.connect(analyser);
+      gainNode.connect(highPassFilter);
+      highPassFilter.connect(noiseCutFilter);
+      noiseCutFilter.connect(echoReducer);
+      echoReducer.connect(analyser);
       analyser.connect(destination);
 
       const recorder = new MediaRecorder(destination.stream);
@@ -531,7 +548,7 @@ export default function Messages() {
       audioContextRef.current = audioContext;
       audioAnalyserRef.current = analyser;
       audioGainRef.current = gainNode;
-      audioFilterRef.current = filterNode;
+      audioFilterRef.current = highPassFilter;
       setIsRecording(true);
       animateLevel();
     } catch (err) {
@@ -1052,25 +1069,27 @@ export default function Messages() {
                       />
                     </div>
                   </div>
-                  <div
-                    className="recording-slider"
-                    style={{
-                      transform: `translateX(${Math.max(
-                        -140,
-                        Math.min(140, recordOffset)
-                      )}px)`,
-                    }}
-                  />
-                  {recordLocked && (
-                    <button
-                      className="recording-send"
-                      type="button"
-                      onClick={() => stopRecording(false)}
-                      aria-label="Envoyer la note vocale"
-                    >
-                      <SendIcon />
-                    </button>
-                  )}
+                  <div className="recording-actions">
+                    <div
+                      className="recording-slider"
+                      style={{
+                        transform: `translateX(${Math.max(
+                          -140,
+                          Math.min(140, recordOffset)
+                        )}px)`,
+                      }}
+                    />
+                    {recordLocked && (
+                      <button
+                        className="recording-send"
+                        type="button"
+                        onClick={() => stopRecording(false)}
+                        aria-label="Envoyer la note vocale"
+                      >
+                        <SendIcon />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <>

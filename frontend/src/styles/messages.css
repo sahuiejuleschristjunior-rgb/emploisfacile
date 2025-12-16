@@ -824,11 +824,21 @@
   font-size: 12px;
 }
 
+.recording-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-left: 6px;
+}
+
 .recording-slider {
-  width: 36px;
-  height: 4px;
+  width: 54px;
+  height: 6px;
   background: #ff4d8d;
   border-radius: 999px;
+  box-shadow: 0 0 0 2px #1f1f1f;
 }
 
 .recording-send {
@@ -836,7 +846,7 @@
   width: 40px;
   border-radius: 14px;
   border: none;
-  background: #1877f2;
+  background: #ff4d8d;
   color: #fff;
   display: inline-flex;
   align-items: center;
