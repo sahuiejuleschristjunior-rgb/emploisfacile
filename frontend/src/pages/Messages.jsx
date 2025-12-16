@@ -562,8 +562,10 @@ export default function Messages() {
       return;
     }
 
-    setRecordOffset(deltaX);
-    const canceled = deltaX > 80;
+    const boundedOffset = Math.max(-140, Math.min(140, deltaX));
+
+    setRecordOffset(boundedOffset);
+    const canceled = deltaX < -80;
     setRecordCanceled(canceled);
     recordCanceledRef.current = canceled;
   };
@@ -1040,7 +1042,7 @@ export default function Messages() {
                         ? "Annulé"
                         : recordLocked
                         ? "Verrouillé — appuie pour envoyer"
-                        : "Glisser vers la droite pour annuler / vers le haut pour verrouiller"}
+                        : "Glisser vers la gauche pour annuler / vers la droite pour envoyer / vers le haut pour verrouiller"}
                     </div>
                     <div className="recording-level">
                       <div
@@ -1052,7 +1054,12 @@ export default function Messages() {
                   </div>
                   <div
                     className="recording-slider"
-                    style={{ transform: `translateX(${Math.max(0, recordOffset)}px)` }}
+                    style={{
+                      transform: `translateX(${Math.max(
+                        -140,
+                        Math.min(140, recordOffset)
+                      )}px)`,
+                    }}
                   />
                   {recordLocked && (
                     <button
