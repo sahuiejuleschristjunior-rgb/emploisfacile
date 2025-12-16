@@ -639,6 +639,13 @@ export default function FacebookLayout() {
             )}
           </div>
 
+          {searchOpen && !showMobileSearch && (
+            <div
+              className="fb-search-overlay"
+              onClick={() => setSearchOpen(false)}
+            />
+          )}
+
           {/* RIGHT ACTIONS */}
           <div className="fb-header-right">
 
