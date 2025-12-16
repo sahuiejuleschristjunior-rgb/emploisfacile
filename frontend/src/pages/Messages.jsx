@@ -103,6 +103,7 @@ export default function Messages() {
   });
 
   const [replyTo, setReplyTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
   const [messageActions, setMessageActions] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -281,6 +282,26 @@ export default function Messages() {
     };
   };
 
+  const isPinnedByMe = (msg) => {
+    const pinnedList = msg?.pinnedBy || [];
+    return pinnedList.some((id) => {
+      if (!id) return false;
+      if (typeof id === "object") return id?._id === me?._id;
+      return id === me?._id;
+    });
+  };
+
+  const canEditMessage = (msg) => {
+    if (!msg) return false;
+    const createdAt = new Date(msg.createdAt || Date.now()).getTime();
+    const twelveHours = 12 * 60 * 60 * 1000;
+    return (
+      isMessageFromMe(msg) &&
+      msg.type === "text" &&
+      Date.now() - createdAt <= twelveHours
+    );
+  };
+
   const isMessageInActiveChat = (msg) => {
     if (!activeChat || !msg) return false;
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
@@ -370,6 +391,15 @@ export default function Messages() {
     return friends.filter((f) => (f.name || "").toLowerCase().includes(q));
   }, [friends, search]);
 
+  const pinnedMessages = useMemo(() => {
+    const list = messages.filter((m) => isPinnedByMe(m));
+    return list.sort(
+      (a, b) =>
+        new Date(b.lastPinnedAt || b.createdAt) -
+        new Date(a.lastPinnedAt || a.createdAt)
+    );
+  }, [messages]);
+
   /* =====================================================
      SOCKET IO
   ===================================================== */
@@ -402,6 +432,20 @@ export default function Messages() {
     socket.on("reaction_update", (payload) => {
       if (payload?.message && isMessageInActiveChat(payload.message)) {
         upsertMessage(payload.message);
+      }
+    });
+
+    socket.on("message_updated", (payload) => {
+      const message = payload?.message || payload;
+      if (isMessageInActiveChat(message)) {
+        upsertMessage(message);
+      }
+    });
+
+    socket.on("message_pinned", (payload) => {
+      const message = payload?.message || payload;
+      if (isMessageInActiveChat(message)) {
+        upsertMessage(message);
       }
     });
 
@@ -451,6 +495,9 @@ export default function Messages() {
 
     setActiveChat(user);
     setMessages([]);
+    setReplyTo(null);
+    setEditingMessage(null);
+    setInput("");
 
     try {
       setLoadingConversation(true);
@@ -476,11 +523,11 @@ export default function Messages() {
   };
 
   /* =====================================================
-     SEND MESSAGE
+     SEND / EDIT MESSAGE
   ===================================================== */
-  const sendMessage = async () => {
-    if (!input.trim() || !activeChat) return;
-    const content = input.trim();
+  const sendMessage = async (contentOverride = null) => {
+    const content = (contentOverride ?? input).trim();
+    if (!content || !activeChat) return;
     setInput("");
     const { replyId, preview: replyPreview } = buildReplyData(replyTo);
 
@@ -524,12 +571,56 @@ export default function Messages() {
     }
   };
 
+  const saveEditedMessage = async () => {
+    if (!editingMessage || !input.trim()) return;
+    const content = input.trim();
+
+    try {
+      const res = await fetch(`${API_URL}/messages/${editingMessage._id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.data) {
+        upsertMessage(data.data);
+        setEditingMessage(null);
+        setReplyTo(null);
+        setInput("");
+      } else if (data?.message) {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("Erreur modification message", err);
+    }
+  };
+
+  const submitMessage = async () => {
+    if (editingMessage) {
+      await saveEditedMessage();
+    } else {
+      await sendMessage();
+    }
+  };
+
   /* =====================================================
      MESSAGE ACTIONS
   ===================================================== */
   const startReply = (msg) => {
     setReplyTo(msg);
     setMessageActions(null);
+    setTimeout(() => inputRef.current?.focus(), 20);
+  };
+
+  const startEdit = (msg) => {
+    if (!canEditMessage(msg)) return;
+    setEditingMessage(msg);
+    setReplyTo(null);
+    setMessageActions(null);
+    setInput(msg.content || "");
     setTimeout(() => inputRef.current?.focus(), 20);
   };
 
@@ -558,6 +649,28 @@ export default function Messages() {
       });
     } catch (err) {
       console.error("Erreur suppression message", err);
+    }
+  };
+
+  const togglePin = async (msg) => {
+    if (!msg?._id) return;
+    const nextState = !isPinnedByMe(msg);
+    setMessageActions(null);
+    try {
+      const res = await fetch(`${API_URL}/messages/${msg._id}/pin`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ pinned: nextState }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.data) {
+        upsertMessage(data.data);
+      }
+    } catch (err) {
+      console.error("Erreur épinglage message", err);
     }
   };
 
@@ -1055,6 +1168,11 @@ export default function Messages() {
     typingTimeoutRef.current = setTimeout(() => sendTypingFlag(false), 1200);
   };
 
+  const cancelEdit = () => {
+    setEditingMessage(null);
+    setInput("");
+  };
+
   useEffect(() => {
     scrollToBottom(false);
   }, [messages]);
@@ -1181,10 +1299,13 @@ export default function Messages() {
         <div className="message-body">{content}</div>
         <div className="message-meta">
           <span className="message-time">{formatMessageTime(msg.createdAt)}</span>
+          {msg.editedAt && <span className="message-edited">Modifié</span>}
         </div>
       </div>
     );
   };
+
+  const topPinnedMessage = pinnedMessages[0] || null;
 
   /* =====================================================
      UI
@@ -1273,6 +1394,54 @@ export default function Messages() {
 
             {/* BODY */}
             <div className="chat-body" ref={chatBodyRef}>
+              {topPinnedMessage && (
+                <div className="pinned-banner">
+                  <div className="pinned-label">Message épinglé</div>
+                  <div className="pinned-main">
+                    <div
+                      className="pinned-preview"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => scrollToMessage(topPinnedMessage._id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          scrollToMessage(topPinnedMessage._id);
+                        }
+                      }}
+                    >
+                      <div className="pinned-author">
+                        {isMessageFromMe(topPinnedMessage)
+                          ? "Vous"
+                          : activeChat?.name || "Contact"}
+                      </div>
+                      <div className="pinned-text">
+                        {topPinnedMessage.type === "audio"
+                          ? getAudioPreviewText(topPinnedMessage)
+                          : topPinnedMessage.content || "Message"}
+                      </div>
+                    </div>
+
+                    <div className="pinned-actions">
+                      <button
+                        type="button"
+                        className="pinned-btn"
+                        onClick={() => scrollToMessage(topPinnedMessage._id)}
+                      >
+                        Voir
+                      </button>
+                      <button
+                        type="button"
+                        className="pinned-btn"
+                        onClick={() => togglePin(topPinnedMessage)}
+                      >
+                        Désépingler
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {loadingConversation && <div className="chat-empty">Chargement…</div>}
 
               {!loadingConversation && messages.length === 0 && (
@@ -1321,6 +1490,26 @@ export default function Messages() {
             </div>
 
             {/* INPUT */}
+            {editingMessage && (
+              <div className="edit-banner">
+                <div className="edit-banner-text">
+                  <div className="edit-banner-title">Modification du message</div>
+                  <div className="edit-banner-preview">
+                    {editingMessage.type === "audio"
+                      ? getAudioPreviewText(editingMessage)
+                      : editingMessage.content || "Message"}
+                  </div>
+                </div>
+                <button
+                  className="edit-banner-close"
+                  onClick={cancelEdit}
+                  aria-label="Annuler la modification"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            )}
+
             {replyTo && (
               <div className="reply-banner">
                 <div className="reply-banner-text">
@@ -1411,11 +1600,11 @@ export default function Messages() {
                 <>
                   <input
                     className="chat-input"
-                    placeholder="Message..."
+                    placeholder={editingMessage ? "Modifier le message" : "Message..."}
                     ref={inputRef}
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                    onKeyDown={(e) => e.key === "Enter" && submitMessage()}
                   />
 
                   <button
@@ -1432,7 +1621,7 @@ export default function Messages() {
                   </button>
 
                   {input.trim().length > 0 ? (
-                    <button className="chat-send-btn" onClick={sendMessage}>
+                    <button className="chat-send-btn" onClick={submitMessage}>
                       <SendIcon />
                     </button>
                   ) : (
@@ -1510,6 +1699,14 @@ export default function Messages() {
                   </div>
                 )}
                 <div className="message-actions-buttons">
+                  <button onClick={() => togglePin(messageActions)}>
+                    {isPinnedByMe(messageActions) ? "Désépingler" : "Épingler"}
+                  </button>
+                  {canEditMessage(messageActions) && (
+                    <button onClick={() => startEdit(messageActions)}>
+                      Modifier
+                    </button>
+                  )}
                   <button onClick={() => copyMessage(messageActions)}>Copier</button>
                   <button onClick={() => shareMessage(messageActions)}>Partager</button>
                   <button onClick={() => startReply(messageActions)}>Répondre</button>

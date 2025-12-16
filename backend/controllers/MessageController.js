@@ -10,6 +10,23 @@ const { promisify } = require("util");
 
 const typingState = new Map();
 const execFileAsync = promisify(execFile);
+const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+
+function isUserParticipant(message, userId) {
+  if (!message || !userId) return false;
+  return (
+    message.sender.toString() === userId || message.receiver.toString() === userId
+  );
+}
+
+function populateMessage(message) {
+  if (!message) return message;
+  return message.populate([
+    { path: "sender", select: "name avatar role" },
+    { path: "receiver", select: "name avatar role" },
+    { path: "replyTo", select: "content type sender receiver" },
+  ]);
+}
 
 /* ============================================================
 🔥 UTILITAIRE : PUSH NOTIF + SOCKET
@@ -113,6 +130,63 @@ exports.sendMessage = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors de l'envoi du message.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+PATCH /api/messages/:id
+➤ Modifier un message texte (limité à 12h)
+============================================================ */
+exports.updateMessage = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const { content } = req.body;
+    const userId = req.user.id;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: "Contenu requis." });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message introuvable." });
+    }
+
+    if (!isUserParticipant(message, userId)) {
+      return res.status(403).json({ message: "Non autorisé." });
+    }
+
+    if (message.type !== "text") {
+      return res.status(400).json({ message: "Seuls les messages textes sont modifiables." });
+    }
+
+    const createdAt = new Date(message.createdAt).getTime();
+    if (Date.now() - createdAt > TWELVE_HOURS_MS) {
+      return res.status(400).json({
+        message: "Le message ne peut plus être modifié (délai de 12h dépassé).",
+      });
+    }
+
+    message.content = content.trim();
+    message.editedAt = new Date();
+    await message.save();
+
+    const populated = await populateMessage(message);
+
+    getIO()
+      .to(message.sender.toString())
+      .to(message.receiver.toString())
+      .emit("message_updated", { message: populated });
+
+    return res.status(200).json({
+      success: true,
+      data: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de la modification du message.",
       details: error.message,
     });
   }
@@ -522,6 +596,63 @@ exports.getMessageReactions = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors du chargement des réactions.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+PATCH /api/messages/:id/pin
+➤ Épingler / désépingler un message
+============================================================ */
+exports.togglePin = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.user.id;
+    const desiredState =
+      typeof req.body?.pinned === "boolean" ? req.body.pinned : null;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message introuvable." });
+    }
+
+    if (!isUserParticipant(message, userId)) {
+      return res.status(403).json({ message: "Non autorisé." });
+    }
+
+    const pinnedList = message.pinnedBy || [];
+    message.pinnedBy = pinnedList;
+    const alreadyPinned = pinnedList.some((id) => id.toString() === userId);
+    const shouldPin = desiredState === null ? !alreadyPinned : desiredState;
+
+    if (shouldPin && !alreadyPinned) {
+      pinnedList.push(userId);
+      message.lastPinnedAt = new Date();
+    }
+
+    if (!shouldPin && alreadyPinned) {
+      message.pinnedBy = pinnedList.filter((id) => id.toString() !== userId);
+      if (!message.pinnedBy.length) {
+        message.lastPinnedAt = null;
+      }
+    }
+
+    await message.save();
+    const populated = await populateMessage(message);
+
+    getIO()
+      .to(message.sender.toString())
+      .to(message.receiver.toString())
+      .emit("message_pinned", { message: populated });
+
+    return res.status(200).json({
+      success: true,
+      data: populated,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de la mise à jour de l'épingle.",
       details: error.message,
     });
   }

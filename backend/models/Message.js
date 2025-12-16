@@ -130,6 +130,25 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // Historique de modification (texte uniquement)
+    editedAt: {
+      type: Date,
+      default: null,
+    },
+
+    // Épinglage par utilisateur (type WhatsApp)
+    pinnedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    lastPinnedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
