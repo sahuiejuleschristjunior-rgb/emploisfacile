@@ -232,6 +232,8 @@
   line-height: 1.35;
   word-break: break-word;
   white-space: pre-wrap;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .message-row.me .message-bubble {
@@ -367,6 +369,8 @@
   border-radius: 14px;
   word-break: break-word;
   white-space: pre-wrap;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ✅ ENVOYEUR : AUCUN BLEU */
@@ -433,6 +437,67 @@
 
 .reply-preview-text {
   color: #ffffff;
+}
+
+.message-edited {
+  margin-left: 6px;
+  font-size: 11px;
+  color: #cfd2d7;
+  opacity: 0.8;
+}
+
+.pinned-banner {
+  background: #1f1f1f;
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 8px 8px 12px;
+}
+
+.pinned-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #ffb7d5;
+  margin-bottom: 6px;
+}
+
+.pinned-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pinned-preview {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pinned-author {
+  font-weight: 700;
+  font-size: 12px;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.pinned-text {
+  color: #d7d7d7;
+  font-size: 13px;
+}
+
+.pinned-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pinned-btn {
+  background: #2f2f2f;
+  color: #ffffff;
+  border: 1px solid #3b3b3b;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
 }
 
 /* Option: si tu as encore un trait/border bleu quelque part */
@@ -935,6 +1000,41 @@
 .reply-banner-preview {
   color: #d7d7d7;
   font-size: 13px;
+}
+
+.edit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #1d1d1d;
+  border: 1px solid #2c2c2c;
+  border-left: 3px solid #4dabff;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin: 8px 8px 0;
+}
+
+.edit-banner-title {
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.edit-banner-preview {
+  color: #d7d7d7;
+  font-size: 13px;
+}
+
+.edit-banner-close {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
 }
 
 .reply-banner-close {
