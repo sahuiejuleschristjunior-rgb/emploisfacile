@@ -61,6 +61,24 @@ const BackIcon = () => (
   </svg>
 );
 
+const PhoneIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M6.2 4.6A2.2 2.2 0 0 1 8.4 2.5h1.2c.9 0 1.7.6 2 1.5l.7 2.3c.2.7 0 1.4-.5 1.9l-1 1c1.2 2.2 2.9 3.9 5.1 5.1l1-1c.5-.5 1.2-.7 1.9-.5l2.3.7c.9.3 1.5 1.1 1.5 2v1.2c0 1.2-1 2.2-2.2 2.2H18C11.4 19.9 6.1 14.6 6.2 8V6.7c0-.8.3-1.6.9-2.1Z"
+    />
+  </svg>
+);
+
+const VideoIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M4 5.5A2.5 2.5 0 0 1 6.5 3h6A2.5 2.5 0 0 1 15 5.5v1.9l3.3-2.4a1 1 0 0 1 1.6.8v12.4a1 1 0 0 1-1.6.8L15 16.6v1.9A2.5 2.5 0 0 1 12.5 21h-6A2.5 2.5 0 0 1 4 18.5v-13Z"
+    />
+  </svg>
+);
+
 const PlayIcon = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
     <path fill="currentColor" d="M7 5.5v13l11-6.5-11-6.5Z" />
@@ -171,6 +189,7 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [callStatus, setCallStatus] = useState({ type: null, startedAt: null });
 
   const recordStartRef = useRef(null);
   const recordTimerRef = useRef(null);
@@ -1228,9 +1247,28 @@ export default function Messages() {
     setInput("");
   };
 
+  const startCall = (type) => {
+    if (!activeChat) return;
+    setCallStatus({ type, startedAt: Date.now(), contact: activeChat.name });
+  };
+
+  const endCall = () => {
+    setCallStatus({ type: null, startedAt: null, contact: null });
+  };
+
+  const getCallLabel = () => {
+    if (!callStatus.type) return "";
+    const contact = callStatus.contact || activeChat?.name || "Contact";
+    return `${callStatus.type === "video" ? "Appel vidéo" : "Appel audio"} avec ${contact}`;
+  };
+
   useEffect(() => {
     scrollToBottom(false);
   }, [messages]);
+
+  useEffect(() => {
+    setCallStatus({ type: null, startedAt: null, contact: null });
+  }, [activeChat?._id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1432,6 +1470,7 @@ export default function Messages() {
                 onClick={() => {
                   setActiveChat(null);
                   setMessages([]);
+                  setCallStatus({ type: null, startedAt: null, contact: null });
                 }}
               >
                 <BackIcon />
@@ -1445,7 +1484,36 @@ export default function Messages() {
                   {typingState[activeChat._id]?.isTyping ? "En train d'écrire..." : "En ligne"}
                 </div>
               </div>
+
+              <div className="chat-actions">
+                <button
+                  type="button"
+                  className="chat-action-btn"
+                  title="Appel audio"
+                  onClick={() => startCall("audio")}
+                >
+                  <PhoneIcon />
+                </button>
+
+                <button
+                  type="button"
+                  className="chat-action-btn"
+                  title="Appel vidéo"
+                  onClick={() => startCall("video")}
+                >
+                  <VideoIcon />
+                </button>
+              </div>
             </div>
+
+            {callStatus.type && (
+              <div className="call-status-bar">
+                <div className="call-status-label">{getCallLabel()}</div>
+                <button type="button" className="call-end-btn" onClick={endCall}>
+                  Raccrocher
+                </button>
+              </div>
+            )}
 
             {/* BODY */}
             <div className="chat-body" ref={chatBodyRef}>
