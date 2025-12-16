@@ -1,177 +1,198 @@
-// src/pages/Messages.jsx
-import { useEffect, useState, useRef } from "react";
-import { fetchFriends } from "../api/socialApi";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { io } from "socket.io-client";
 import "../styles/messages.css";
+import { fetchFriends } from "../api/socialApi";
 
+/* =====================================================
+   CONFIG
+===================================================== */
 const API_URL = import.meta.env.VITE_API_URL;
+const API_HOST = API_URL?.replace(/\/?api$/, "");
+const SOCKET_URL = API_HOST || window.location.origin;
+
 const token = localStorage.getItem("token");
-const me = JSON.parse(localStorage.getItem("user"));
+const me = JSON.parse(localStorage.getItem("user") || "{}");
 
+const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+
+/* =====================================================
+   ICONS
+===================================================== */
+const PlusIcon = () => <span>＋</span>;
+const MicIcon = () => <span>🎤</span>;
+const SendIcon = () => <span>➤</span>;
+const EmojiIcon = () => <span>😊</span>;
+const BackIcon = () => <span>←</span>;
+
+/* =====================================================
+   COMPONENT
+===================================================== */
 export default function Messages() {
-  /* ================= STATE ================= */
+  /* ===================== STATE ===================== */
   const [friends, setFriends] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+  const [errorFriends, setErrorFriends] = useState("");
+
   const [activeChat, setActiveChat] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]); // volontairement vide
+
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
 
-  const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
 
-  /* ================= HELPERS ================= */
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  /* ===================== HELPERS ===================== */
+  const normalizeFriend = (f) => {
+    const u = f?.user || f;
+    return {
+      _id: u?._id,
+      name: u?.name || "Utilisateur",
+      avatar: u?.avatar || "/default-avatar.png",
+      unreadCount: f?.unreadCount || 0,
+    };
   };
 
-  /* ================= LOAD FRIENDS ================= */
+  /* ===================== LOAD FRIENDS ===================== */
   useEffect(() => {
-    const load = async () => {
+    const loadFriends = async () => {
       try {
+        setLoadingFriends(true);
         const data = await fetchFriends();
-        setFriends(data?.friends || []);
-      } catch (err) {
-        console.error("Erreur amis", err);
+        const list = (data?.friends || data || [])
+          .map(normalizeFriend)
+          .filter((u) => u?._id);
+        setFriends(list);
+      } catch (e) {
+        setErrorFriends("Erreur chargement amis");
+      } finally {
+        setLoadingFriends(false);
       }
     };
-    load();
+    loadFriends();
   }, []);
 
-  /* ================= LOAD CONVERSATION ================= */
-  const loadConversation = async (user) => {
+  /* ===================== FILTER ===================== */
+  const filteredFriends = useMemo(() => {
+    const q = search.toLowerCase();
+    return friends.filter((f) =>
+      (f.name || "").toLowerCase().includes(q)
+    );
+  }, [friends, search]);
+
+  /* ===================== SOCKET (NEUTRE) ===================== */
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io(SOCKET_URL, {
+      path: "/socket.io/",
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    socketRef.current = socket;
+
+    // ⚠️ volontairement neutre
+    socket.on("new_message", () => {});
+    socket.on("audio_message", () => {});
+
+    return () => socket.disconnect();
+  }, []);
+
+  /* ===================== CONVERSATION (DÉSACTIVÉE) ===================== */
+  const loadConversation = (user) => {
     setActiveChat(user);
-    setMessages([]);
-    setLoading(true);
-
-    try {
-      const res = await fetch(
-        `${API_URL}/messages/conversation/${user._id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const data = await res.json();
-      setMessages(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Erreur conversation", err);
-    } finally {
-      setLoading(false);
-      setTimeout(scrollToBottom, 50);
-    }
+    setMessages([]); // volontairement vide
   };
 
-  /* ================= SEND MESSAGE ================= */
-  const sendMessage = async () => {
-    if (!input.trim() || !activeChat) return;
-
-    const content = input.trim();
-    setInput("");
-
-    const temp = {
-      _id: "temp-" + Date.now(),
-      sender: me?._id,
-      receiver: activeChat._id,
-      content,
-      type: "text",
-    };
-
-    setMessages((prev) => [...prev, temp]);
-    scrollToBottom();
-
-    try {
-      const res = await fetch(`${API_URL}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          receiver: activeChat._id,
-          content,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data?.data) {
-        setMessages((prev) =>
-          prev.map((m) => (m._id === temp._id ? data.data : m))
-        );
-      }
-    } catch (err) {
-      console.error("Erreur envoi", err);
-    }
-  };
-
-  useEffect(scrollToBottom, [messages]);
-
-  /* ================= UI ================= */
+  /* ===================== UI ===================== */
   return (
-    <div className="messages-page">
-      {/* ===== SIDEBAR ===== */}
+    <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
+      {/* ============ SIDEBAR ============ */}
       <aside className="messages-sidebar">
-        <h3>Messages</h3>
+        <div className="messages-sidebar-header">
+          <h2>Messages</h2>
+        </div>
 
-        {friends.map((f) => (
-          <div
-            key={f._id}
-            className={`conversation-item ${
-              activeChat?._id === f._id ? "active" : ""
-            }`}
-            onClick={() => loadConversation(f)}
-          >
-            <img
-              src={f.avatar || "/default-avatar.png"}
-              alt={f.name}
-              className="conversation-avatar"
-            />
-            <span>{f.name}</span>
-          </div>
-        ))}
+        <input
+          className="messages-search"
+          placeholder="Rechercher"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div className="messages-list">
+          {loadingFriends && <div>Chargement…</div>}
+          {errorFriends && <div>{errorFriends}</div>}
+
+          {!loadingFriends &&
+            filteredFriends.map((friend) => (
+              <div
+                key={friend._id}
+                className={`conversation-item ${
+                  activeChat?._id === friend._id ? "active" : ""
+                }`}
+                onClick={() => loadConversation(friend)}
+              >
+                <img
+                  src={friend.avatar}
+                  alt={friend.name}
+                  className="conversation-avatar"
+                />
+                <div className="conversation-info">
+                  <div className="conversation-name">{friend.name}</div>
+                  <div className="conversation-last-message">
+                    Conversation désactivée
+                  </div>
+                </div>
+              </div>
+            ))}
+        </div>
       </aside>
 
-      {/* ===== CHAT ===== */}
+      {/* ============ CHAT ============ */}
       <main className="messages-content">
         {!activeChat ? (
           <div className="messages-placeholder">
-            Sélectionne un ami
+            <h3>Sélectionne un ami</h3>
+            <p>Base stable prête</p>
           </div>
         ) : (
           <>
+            {/* HEADER */}
             <div className="chat-header">
+              <button onClick={() => setActiveChat(null)}>
+                <BackIcon />
+              </button>
+              <img
+                src={activeChat.avatar}
+                alt={activeChat.name}
+                className="chat-avatar"
+              />
               <strong>{activeChat.name}</strong>
             </div>
 
+            {/* BODY */}
             <div className="chat-body">
-              {loading && <div>Chargement…</div>}
-
-              {messages.map((msg) => {
-                const isMe =
-                  (typeof msg.sender === "object"
-                    ? msg.sender?._id
-                    : msg.sender) === me?._id;
-
-                return (
-                  <div
-                    key={msg._id}
-                    className={`message-row ${isMe ? "me" : "other"}`}
-                  >
-                    <div className="message-bubble">
-                      {msg.content}
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
+              <div className="chat-empty">
+                💡 Conversation temporairement désactivée<br />
+                UI + Audio + Réactions OK
+              </div>
             </div>
 
+            {/* INPUT */}
             <div className="chat-input-bar">
               <input
-                placeholder="Message..."
+                placeholder="Message…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                disabled
               />
-              <button onClick={sendMessage}>Envoyer</button>
+              <button disabled>
+                <SendIcon />
+              </button>
+              <button disabled>
+                <MicIcon />
+              </button>
             </div>
           </>
         )}
