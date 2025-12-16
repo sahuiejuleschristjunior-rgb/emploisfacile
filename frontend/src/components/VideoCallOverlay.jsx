@@ -15,15 +15,18 @@ export default function VideoCallOverlay({
   me,
   otherUser,
   incomingOffer,
+  callType = "video", // "video" | "audio"
   onClose,
 }) {
   /* ============================================================
      HOOKS
   ============================================================ */
+  const isVideoCall = callType !== "audio";
+
   const [status, setStatus] = useState("idle");          // "idle" | "calling" | "in-call"
   const [accepted, setAccepted] = useState(mode === "caller");
   const [isMicOn, setIsMicOn] = useState(true);
-  const [isCamOn, setIsCamOn] = useState(true);
+  const [isCamOn, setIsCamOn] = useState(isVideoCall);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -118,12 +121,14 @@ export default function VideoCallOverlay({
       setStatus(mode === "caller" ? "calling" : "in-call");
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: isVideoCall,
         audio: true,
       });
 
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      if (isVideoCall && localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
 
       const pc = new RTCPeerConnection(RTC_CONFIG);
       pcRef.current = pc;
@@ -151,6 +156,7 @@ export default function VideoCallOverlay({
         socket.emit("call_offer", {
           to: otherUser._id,
           offer,
+          callType,
         });
       }
     } catch (err) {
@@ -221,6 +227,8 @@ export default function VideoCallOverlay({
   };
 
   const toggleCamera = () => {
+    if (!isVideoCall) return;
+
     const enabled = !isCamOn;
     setIsCamOn(enabled);
 
@@ -238,21 +246,34 @@ export default function VideoCallOverlay({
 
   const title =
     mode === "caller"
-      ? `Appel vidéo avec ${otherUser.name}`
+      ? `${callType === "audio" ? "Appel audio" : "Appel vidéo"} avec ${
+          otherUser.name
+        }`
       : !accepted
       ? `${otherUser.name} vous appelle…`
-      : `Appel vidéo avec ${otherUser.name}`;
+      : `${callType === "audio" ? "Appel audio" : "Appel vidéo"} avec ${
+          otherUser.name
+        }`;
 
   return (
     <div className="vc-overlay">
       <div className="vc-call">
         {/* Vidéo distante en fond plein écran */}
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="vc-video-remote"
-        />
+        {isVideoCall ? (
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="vc-video-remote"
+          />
+        ) : (
+          <audio
+            ref={remoteVideoRef}
+            autoPlay
+            className="vc-audio-remote"
+            controls={false}
+          />
+        )}
 
         {/* Barre haute */}
         <div className="vc-top-bar">
@@ -270,13 +291,17 @@ export default function VideoCallOverlay({
 
         {/* Votre vidéo en petit carré */}
         <div className="vc-local-wrapper">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className="vc-video-local"
-          />
+          {isVideoCall ? (
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="vc-video-local"
+            />
+          ) : (
+            <div className="vc-audio-local">🎧 Vous</div>
+          )}
           <div className="vc-local-label">Vous</div>
         </div>
 
@@ -288,12 +313,14 @@ export default function VideoCallOverlay({
           >
             {isMicOn ? "🎙️" : "🔇"}
           </button>
-          <button
-            className={`vc-round-btn ${isCamOn ? "" : "vc-btn-off"}`}
-            onClick={toggleCamera}
-          >
-            {isCamOn ? "📷" : "🚫"}
-          </button>
+          {isVideoCall && (
+            <button
+              className={`vc-round-btn ${isCamOn ? "" : "vc-btn-off"}`}
+              onClick={toggleCamera}
+            >
+              {isCamOn ? "📷" : "🚫"}
+            </button>
+          )}
 
           {mode === "callee" && !accepted && (
             <button className="vc-round-btn vc-btn-accept" onClick={handleAccept}>

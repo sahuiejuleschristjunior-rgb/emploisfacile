@@ -210,14 +210,15 @@ function initSocket(server) {
     /* ============================================================
        SIGNAUX WEBRTC
     ============================================================ */
-    socket.on("call_offer", ({ to, offer }) => {
+    socket.on("call_offer", ({ to, offer, callType }) => {
       if (!to) return;
-      io.to(String(to)).emit("call_offer", { from: userId, offer });
+      const type = callType || "video";
+      io.to(String(to)).emit("call_offer", { from: userId, offer, callType: type });
 
       sendNotification(to, {
         type: "call",
         from: userId,
-        text: "Appel entrant",
+        text: type === "audio" ? "Appel audio entrant" : "Appel entrant",
       });
     });
 

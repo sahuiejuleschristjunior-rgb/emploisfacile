@@ -486,6 +486,20 @@
 /* Décaler le contenu sous le header */
 .fb-app-body { margin-top: 65px; }
 
+@media (max-width: 768px) {
+  .fb-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 11000;
+  }
+
+  .fb-app-body {
+    margin-top: 72px;
+  }
+}
+
 /* Harmonisation du menu gauche/droite */
 .fb-left-column, .fb-right-column { background: #18191a !important; }
 body { background: #18191a !important; }
