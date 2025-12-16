@@ -190,7 +190,6 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
-  const [callStatus, setCallStatus] = useState({ type: null, startedAt: null });
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
     mode: "caller",
@@ -532,11 +531,6 @@ export default function Messages() {
         otherUser: caller,
       });
 
-      setCallStatus({
-        type: callType || "video",
-        startedAt: Date.now(),
-        contact: caller.name,
-      });
     });
 
     socket.on("message_updated", (payload) => {
@@ -599,7 +593,6 @@ export default function Messages() {
           otherUser: null,
         };
       });
-      setCallStatus({ type: null, startedAt: null, contact: null });
     });
 
     return () => {
@@ -1315,11 +1308,6 @@ export default function Messages() {
       otherUser: activeChat,
     });
 
-    setCallStatus({
-      type: type || "video",
-      startedAt: Date.now(),
-      contact: activeChat.name,
-    });
   };
 
   const endCall = () => {
@@ -1327,13 +1315,6 @@ export default function Messages() {
       socketRef.current.emit("call_hangup", { to: callOverlay.otherUser._id });
     }
     resetCallOverlay();
-    setCallStatus({ type: null, startedAt: null, contact: null });
-  };
-
-  const getCallLabel = () => {
-    if (!callStatus.type) return "";
-    const contact = callStatus.contact || activeChat?.name || "Contact";
-    return `${callStatus.type === "video" ? "Appel vidéo" : "Appel audio"} avec ${contact}`;
   };
 
   useEffect(() => {
@@ -1342,7 +1323,6 @@ export default function Messages() {
 
   useEffect(() => {
     resetCallOverlay();
-    setCallStatus({ type: null, startedAt: null, contact: null });
   }, [activeChat?._id]);
 
   useEffect(() => {
@@ -1581,15 +1561,6 @@ export default function Messages() {
                 </button>
               </div>
             </div>
-
-            {callStatus.type && (
-              <div className="call-status-bar">
-                <div className="call-status-label">{getCallLabel()}</div>
-                <button type="button" className="call-end-btn" onClick={endCall}>
-                  Raccrocher
-                </button>
-              </div>
-            )}
 
             {/* BODY */}
             <div className="chat-body" ref={chatBodyRef}>
