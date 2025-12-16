@@ -118,6 +118,7 @@ export default function Messages() {
   const audioContextRef = useRef(null);
   const audioAnalyserRef = useRef(null);
   const audioGainRef = useRef(null);
+  const audioFilterRef = useRef(null);
   const recordVizFrame = useRef(null);
   const recordLevelBarRef = useRef(null);
   const recordCanceledRef = useRef(false);
@@ -434,6 +435,7 @@ export default function Messages() {
     }
     audioAnalyserRef.current = null;
     audioGainRef.current = null;
+    audioFilterRef.current = null;
   };
 
   const startRecording = async (event) => {
@@ -458,18 +460,28 @@ export default function Messages() {
     }, 200);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+        },
+      });
       activeStreamRef.current = stream;
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const gainNode = audioContext.createGain();
-      gainNode.gain.value = 1.8;
+      gainNode.gain.value = 2.4;
+      const filterNode = audioContext.createBiquadFilter();
+      filterNode.type = "highpass";
+      filterNode.frequency.value = 140;
+      filterNode.Q.value = 0.7;
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       const destination = audioContext.createMediaStreamDestination();
 
       source.connect(gainNode);
-      gainNode.connect(analyser);
+      gainNode.connect(filterNode);
+      filterNode.connect(analyser);
       analyser.connect(destination);
 
       const recorder = new MediaRecorder(destination.stream);
@@ -519,6 +531,7 @@ export default function Messages() {
       audioContextRef.current = audioContext;
       audioAnalyserRef.current = analyser;
       audioGainRef.current = gainNode;
+      audioFilterRef.current = filterNode;
       setIsRecording(true);
       animateLevel();
     } catch (err) {
@@ -1015,16 +1028,6 @@ export default function Messages() {
 
               {isRecording ? (
                 <div className={`recording-banner ${recordCanceled ? "canceled" : ""}`}>
-                  <button
-                    className="recording-cancel"
-                    type="button"
-                    onClick={() => {
-                      stopRecording(true);
-                    }}
-                    aria-label="Annuler"
-                  >
-                    <CloseIcon />
-                  </button>
                   <div className="recording-icon">
                     <MicIcon pulse={!recordCanceled} />
                   </div>

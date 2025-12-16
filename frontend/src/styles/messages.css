@@ -790,18 +790,6 @@
   border-radius: 12px;
 }
 
-.recording-cancel {
-  height: 34px;
-  width: 34px;
-  border-radius: 12px;
-  border: none;
-  background: #2f3031;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .recording-info {
   flex: 1;
   display: flex;
