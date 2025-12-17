@@ -11,10 +11,12 @@ import {
   blockUser,
   unblockUser,
 } from "../api/socialApi.js"; // ✅ EXTENSION OBLIGATOIRE POUR VITE PROD
+import { useNotifications } from "../context/NotificationContext";
 
 export default function useRelation(targetId) {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { socket, notifications } = useNotifications() || {};
 
   /* ======================================================
      🔄 Charger le statut de relation
@@ -44,6 +46,46 @@ export default function useRelation(targetId) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  /* ======================================================
+     🔔 Mise à jour automatique via notifications / socket
+  ====================================================== */
+  useEffect(() => {
+    if (!targetId || !socket) return;
+
+    const onFriendUpdate = ({ friend }) => {
+      if (String(friend) === String(targetId)) {
+        refresh();
+      }
+    };
+
+    socket.on("friend:update", onFriendUpdate);
+
+    return () => {
+      socket.off("friend:update", onFriendUpdate);
+    };
+  }, [socket, targetId, refresh]);
+
+  useEffect(() => {
+    if (!Array.isArray(notifications) || !targetId) return;
+
+    const relevantTypes = new Set([
+      "friend_request",
+      "friend_accept",
+      "friend_reject",
+      "friend_remove",
+    ]);
+
+    const hasRelatedNotification = notifications.some((n) => {
+      if (!n?.type || !relevantTypes.has(n.type)) return false;
+      const fromId = n.from?._id || n.from;
+      return String(fromId) === String(targetId);
+    });
+
+    if (hasRelatedNotification) {
+      refresh();
+    }
+  }, [notifications, targetId, refresh]);
 
   /* ======================================================
      🔥 Exécuteur d’actions sécurisé

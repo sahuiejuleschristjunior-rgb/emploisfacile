@@ -93,15 +93,11 @@ exports.acceptFriendRequest = async (req, res) => {
     await userMe.save();
     await userOther.save();
 
-    await Notification.updateMany(
-      {
-        user: me,
-        from: other,
-        type: "friend_request",
-        read: false,
-      },
-      { $set: { read: true } }
-    );
+    await Notification.deleteMany({
+      user: me,
+      from: other,
+      type: "friend_request",
+    });
 
     await pushNotification(other, {
       from: me,
@@ -139,15 +135,11 @@ exports.rejectFriendRequest = async (req, res) => {
     await userMe.save();
     await userOther.save();
 
-    await Notification.updateMany(
-      {
-        user: me,
-        from: other,
-        type: "friend_request",
-        read: false,
-      },
-      { $set: { read: true } }
-    );
+    await Notification.deleteMany({
+      user: me,
+      from: other,
+      type: "friend_request",
+    });
 
     await pushNotification(other, {
       from: me,
