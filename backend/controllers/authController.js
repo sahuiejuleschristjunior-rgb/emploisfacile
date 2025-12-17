@@ -477,6 +477,10 @@ async function uploadProfilePicture(req, res) {
   try {
     const userId = req.user?.id || req.user?._id;
 
+    if (!userId) {
+      return res.status(401).json({ error: "Utilisateur non authentifié." });
+    }
+
     if (!req.file) {
       return res.status(400).json({ error: "Aucun fichier d'avatar fourni." });
     }
@@ -508,6 +512,10 @@ async function uploadProfilePicture(req, res) {
 async function uploadCoverPhoto(req, res) {
   try {
     const userId = req.user?.id || req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Utilisateur non authentifié." });
+    }
 
     if (!req.file) {
       return res.status(400).json({ error: "Aucun fichier de couverture fourni." });
