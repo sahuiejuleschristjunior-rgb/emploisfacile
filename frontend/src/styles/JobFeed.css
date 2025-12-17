@@ -1,6 +1,53 @@
 /* ----------------------------------
+   Layout JobFeed
+----------------------------------- */
+.jobfeed-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px;
+}
+
+.jobfeed-left {
+    display: none;
+}
+
+.jobfeed-main {
+    flex: 1;
+}
+
+@media (min-width: 950px) {
+    .jobfeed-page {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 24px;
+        padding: 24px 20px 32px;
+        box-sizing: border-box;
+    }
+
+    .jobfeed-left {
+        display: block;
+        width: 260px;
+        position: sticky;
+        top: 90px;
+        height: calc(100vh - 120px);
+        overflow-y: auto;
+    }
+
+    .jobfeed-main {
+        display: flex;
+        justify-content: center;
+    }
+
+    .job-feed {
+        margin: 0;
+    }
+}
+
+/* ----------------------------------
    Job Feed Hero
----------------------------------- */
+----------------------------------- */
 .job-feed {
     max-width: 760px;
     margin: 0 auto;
