@@ -443,10 +443,14 @@
   }
 
   .change-cover-btn {
-    width: calc(100% - 20px);
-    left: 10px;
-    right: 10px;
-    text-align: center;
+    width: auto;
+    min-width: 0;
+    left: auto;
+    right: 12px;
+    top: 12px;
+    bottom: auto;
+    padding: 10px 12px;
+    font-size: 14px;
   }
 
   .profil-hero {
