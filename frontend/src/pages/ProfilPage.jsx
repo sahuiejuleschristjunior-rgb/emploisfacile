@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useId } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import "../styles/profil.css";
@@ -25,9 +25,6 @@ export default function ProfilPage() {
 
   const { id: routeId } = useParams(); // 👈 ID DU PROFIL VISITÉ
 
-  const avatarInputRef = useRef(null);
-  const coverInputRef = useRef(null);
-
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +45,8 @@ export default function ProfilPage() {
      INIT LOAD
   ================================================ */
   const profileId = routeId || currentUser?._id;
+  const avatarInputId = useId();
+  const coverInputId = useId();
 
   useEffect(() => {
     if (!token) return nav("/login");
@@ -64,11 +63,6 @@ export default function ProfilPage() {
   /* ================================================
      UPLOAD HANDLERS
   ================================================ */
-  const triggerFileUpload = (type) => {
-    if (type === "avatar") avatarInputRef.current.click();
-    else coverInputRef.current.click();
-  };
-
   const handleUpload = async (file, endpoint, formField, stateField) => {
     if (!file || isUploading) return;
 
@@ -233,16 +227,16 @@ export default function ProfilPage() {
       {isOwner && (
         <>
           <input
-            ref={coverInputRef}
+            id={coverInputId}
             type="file"
-            style={{ display: "none" }}
+            className="profil-file-input"
             accept="image/*"
             onChange={handleCoverChange}
           />
           <input
-            ref={avatarInputRef}
+            id={avatarInputId}
             type="file"
-            style={{ display: "none" }}
+            className="profil-file-input"
             accept="image/*"
             onChange={handleAvatarChange}
           />
@@ -253,12 +247,9 @@ export default function ProfilPage() {
       <div className="profil-cover">
         <img src={coverURL} alt="cover" />
         {isOwner && (
-          <button
-            className="change-cover-btn"
-            onClick={() => triggerFileUpload("cover")}
-          >
+          <label className="change-cover-btn" htmlFor={coverInputId}>
             Changer la couverture
-          </button>
+          </label>
         )}
       </div>
 
@@ -270,12 +261,9 @@ export default function ProfilPage() {
             style={{ backgroundImage: `url(${avatarURL})` }}
           >
             {isOwner && (
-              <button
-                className="change-avatar-btn"
-                onClick={() => triggerFileUpload("avatar")}
-              >
+              <label className="change-avatar-btn" htmlFor={avatarInputId}>
                 📷
-              </button>
+              </label>
             )}
           </div>
 
