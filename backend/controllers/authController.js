@@ -137,7 +137,8 @@ async function verifyRegisterOtp(req, res) {
     user.verified = true;
     user.otp = null;
     user.otpExpires = null;
-    await user.save();
+    // Validate only the modified fields to avoid unrelated validation errors
+    await user.save({ validateModifiedOnly: true });
 
     await mailer.sendTemplateEmail(
       "welcome_email.html",
@@ -168,7 +169,8 @@ async function resendRegisterOtp(req, res) {
     const otp = generateOTP();
     user.otp = otp;
     user.otpExpires = Date.now() + 10 * 60 * 1000;
-    await user.save();
+    // Validate only the modified fields to avoid unrelated validation errors
+    await user.save({ validateModifiedOnly: true });
 
     await mailer.sendTemplateEmail(
       "otp_email.html",
@@ -249,7 +251,8 @@ async function forgotPassword(req, res) {
     const otp = generateOTP();
     user.otp = otp;
     user.otpExpires = Date.now() + 10 * 60 * 1000;
-    await user.save();
+    // Validate only the modified fields to avoid unrelated validation errors
+    await user.save({ validateModifiedOnly: true });
 
     await mailer.sendTemplateEmail(
       "otp_email.html",
@@ -298,7 +301,8 @@ async function resendResetOtp(req, res) {
     const otp = generateOTP();
     user.otp = otp;
     user.otpExpires = Date.now() + 10 * 60 * 1000;
-    await user.save();
+    // Validate only the modified fields to avoid unrelated validation errors
+    await user.save({ validateModifiedOnly: true });
 
     await mailer.sendTemplateEmail(
       "otp_email.html",
@@ -336,7 +340,8 @@ async function resetPassword(req, res) {
     user.verified = true;
     user.otp = null;
     user.otpExpires = null;
-    await user.save();
+    // Validate only the modified fields to avoid unrelated validation errors
+    await user.save({ validateModifiedOnly: true });
 
     await mailer.sendTemplateEmail(
       "password_reset_success.html",
@@ -396,7 +401,8 @@ async function updateProfile(req, res) {
       if (candidateProfile) user.candidateProfile = candidateProfile;
     }
 
-    await user.save();
+    // Validate only the modified fields to avoid unrelated validation errors
+    await user.save({ validateModifiedOnly: true });
 
     const safeUser = await User.findById(userId).select("-password -otp -otpExpires -__v");
 
