@@ -35,6 +35,34 @@
   padding: 16px;
   font-size: 22px;
   font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.messages-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #2d2f31;
+  border: 1px solid #3a3c3f;
+  color: #e4e6eb;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.messages-home-btn:hover {
+  background: #34363a;
+  border-color: #4b4d50;
+  transform: translateY(-1px);
+}
+
+.messages-home-btn:active {
+  transform: translateY(0);
 }
 
 .messages-search {
