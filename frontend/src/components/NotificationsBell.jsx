@@ -1,73 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./notifications.css";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
-  const [list, setList] = useState([]);
-  const [unread, setUnread] = useState(0);
-
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  /* ===========================
-     CHARGEMENT INITIAL
-  =========================== */
-  useEffect(() => {
-    if (!token) return;
-    fetchUnreadCount();
-    fetchNotifications();
-  }, [token]);
-
-  /* ===========================
-     1) BADGE ROUGE (non lues)
-  =========================== */
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await fetch(`${API_URL}/notifications/unread/count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setUnread(data.count || 0);
-    } catch (e) {
-      console.error("UNREAD ERROR", e);
-    }
-  };
-
-  /* ===========================
-     2) LISTE DES NOTIFS
-  =========================== */
-  const fetchNotifications = async () => {
-    try {
-      const res = await fetch(`${API_URL}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (res.ok && Array.isArray(data)) {
-        setList(data);
-      }
-    } catch (e) {
-      console.error("LOAD ERROR", e);
-    }
-  };
-
-  /* ===========================
-     3) MARQUER COMME LUES
-  =========================== */
-  const markAllAsRead = async () => {
-    try {
-      await fetch(`${API_URL}/notifications/read-all`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUnread(0);
-      setList((prev) => prev.map((n) => ({ ...n, read: true })));
-    } catch (e) {
-      console.error("READ ALL ERROR", e);
-    }
-  };
+  const { notifications = [], unreadCount = 0, markAllAsRead } =
+    useNotifications() || {};
 
   /* ===========================
      4) OUVERTURE MENU
@@ -76,8 +16,8 @@ export default function NotificationsBell() {
     const willOpen = !open;
     setOpen(willOpen);
 
-    if (willOpen && unread > 0) {
-      await markAllAsRead();
+    if (willOpen && unreadCount > 0) {
+      await markAllAsRead?.();
     }
   };
 
@@ -129,7 +69,7 @@ export default function NotificationsBell() {
       {/* 🔔 CLOCHE */}
       <button className="notif-btn" onClick={toggleMenu}>
         <span className="material-icons">notifications</span>
-        {unread > 0 && <span className="notif-badge">{unread}</span>}
+        {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
       </button>
 
       {/* POPUP */}
@@ -137,10 +77,10 @@ export default function NotificationsBell() {
         <div className="notif-popup">
           <h4>Notifications</h4>
 
-          {list.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="notif-empty">Aucune notification</div>
           ) : (
-            list.map((n) => (
+            notifications.map((n) => (
               <div
                 key={n._id}
                 className={`notif-item ${n.read ? "read" : "unread"}`}

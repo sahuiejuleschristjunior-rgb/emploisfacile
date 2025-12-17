@@ -6,6 +6,17 @@ const { getIO } = require("../socket");
    🔥 ENVOYER NOTIFICATION + SOCKET
 ============================================================ */
 async function pushNotification(userId, data) {
+  if (data.type === "friend_request") {
+    const exists = await Notification.findOne({
+      user: userId,
+      from: data.from,
+      type: "friend_request",
+      read: false,
+    });
+
+    if (exists) return exists;
+  }
+
   const notif = await Notification.create({
     user: userId,
     from: data.from,
@@ -38,10 +49,23 @@ exports.sendFriendRequest = async (req, res) => {
     if (!userOther)
       return res.status(404).json({ error: "Utilisateur introuvable" });
 
+    if (userMe.blockedUsers.some((id) => id.toString() === other)) {
+      return res.status(400).json({ error: "Utilisateur bloqué." });
+    }
+
+    if (userOther.blockedUsers.some((id) => id.toString() === me)) {
+      return res
+        .status(400)
+        .json({ error: "Vous avez été bloqué par cet utilisateur." });
+    }
+
     if (userMe.friends.some((f) => f.user.toString() === other))
       return res.status(400).json({ error: "Vous êtes déjà amis." });
 
-    if (userOther.friendRequestsReceived.includes(me))
+    if (userOther.friendRequestsReceived.some((id) => id.toString() === me))
+      return res.status(400).json({ error: "Demande déjà envoyée." });
+
+    if (userMe.friendRequestsSent.some((id) => id.toString() === other))
       return res.status(400).json({ error: "Demande déjà envoyée." });
 
     userMe.friendRequestsSent.push(other);
@@ -77,7 +101,7 @@ exports.acceptFriendRequest = async (req, res) => {
     if (!userOther)
       return res.status(404).json({ error: "Utilisateur introuvable" });
 
-    if (!userMe.friendRequestsReceived.includes(other))
+    if (!userMe.friendRequestsReceived.some((id) => id.toString() === other))
       return res.status(400).json({ error: "Aucune demande trouvée." });
 
     userMe.friendRequestsReceived = userMe.friendRequestsReceived.filter(
@@ -94,9 +118,11 @@ exports.acceptFriendRequest = async (req, res) => {
     await userOther.save();
 
     await Notification.deleteMany({
-      user: me,
-      from: other,
       type: "friend_request",
+      $or: [
+        { user: me, from: other },
+        { user: other, from: me },
+      ],
     });
 
     await pushNotification(other, {
@@ -136,9 +162,11 @@ exports.rejectFriendRequest = async (req, res) => {
     await userOther.save();
 
     await Notification.deleteMany({
-      user: me,
-      from: other,
       type: "friend_request",
+      $or: [
+        { user: me, from: other },
+        { user: other, from: me },
+      ],
     });
 
     await pushNotification(other, {
@@ -175,6 +203,12 @@ exports.cancelFriendRequest = async (req, res) => {
 
     await userMe.save();
     await userOther.save();
+
+    await Notification.deleteMany({
+      type: "friend_request",
+      user: other,
+      from: me,
+    });
 
     res.json({ success: true, message: "Demande annulée." });
   } catch (err) {
@@ -268,14 +302,26 @@ exports.getRelationStatus = async (req, res) => {
     (f) => f.user.toString() === other
   );
 
+  const requestSent = me.friendRequestsSent.some(
+    (id) => id.toString() === other
+  );
+
+  const requestReceived = me.friendRequestsReceived.some(
+    (id) => id.toString() === other
+  );
+
+  const isFollowing = me.following.some((id) => id.toString() === other);
+
+  const isBlocked = me.blockedUsers.some((id) => id.toString() === other);
+
   res.json({
     success: true,
     status: {
       isFriend,
-      requestSent: me.friendRequestsSent.includes(other),
-      requestReceived: me.friendRequestsReceived.includes(other),
-      isFollowing: me.following.includes(other),
-      isBlocked: me.blockedUsers.includes(other),
+      requestSent,
+      requestReceived,
+      isFollowing,
+      isBlocked,
     },
   });
 };

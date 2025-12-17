@@ -6,6 +6,11 @@ import { getAvatarStyle } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
 import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
+import {
+  fetchRelationStatus,
+  sendFriendRequest,
+  cancelFriendRequest,
+} from "../api/socialApi";
 
 export default function FacebookLayout() {
   const location = useLocation();
@@ -72,6 +77,8 @@ export default function FacebookLayout() {
     posts: [],
     jobs: [],
   });
+
+  const [relationStatuses, setRelationStatuses] = useState({});
 
   const searchBoxRef = useRef(null);
 
@@ -287,6 +294,141 @@ export default function FacebookLayout() {
     return () => clearTimeout(t);
   }, [searchTerm, performSearch]);
 
+  useEffect(() => {
+    const loadStatuses = async () => {
+      if (!searchResults.users || searchResults.users.length === 0) return;
+
+      try {
+        const statuses = await Promise.all(
+          searchResults.users.map(async (u) => {
+            try {
+              const res = await fetchRelationStatus(u._id);
+              return { id: u._id, status: res.status };
+            } catch (e) {
+              console.error("STATUS ERROR", e);
+              return { id: u._id, status: null };
+            }
+          })
+        );
+
+        setRelationStatuses((prev) => {
+          const next = { ...prev };
+          statuses.forEach(({ id, status }) => {
+            if (status) next[id] = status;
+          });
+          return next;
+        });
+      } catch (e) {
+        console.error("LOAD STATUS ERROR", e);
+      }
+    };
+
+    loadStatuses();
+  }, [searchResults.users]);
+
+  const getRelationFor = useCallback(
+    (userId) => relationStatuses[userId] || {},
+    [relationStatuses]
+  );
+
+  const handleSendFriendRequest = useCallback(
+    async (userId) => {
+      try {
+        await sendFriendRequest(userId);
+        setRelationStatuses((prev) => ({
+          ...prev,
+          [userId]: {
+            ...(prev[userId] || {}),
+            requestSent: true,
+            requestReceived: false,
+            isFriend: false,
+          },
+        }));
+      } catch (e) {
+        console.error("SEND REQUEST ERROR", e);
+      }
+    },
+    []
+  );
+
+  const handleCancelFriendRequest = useCallback(
+    async (userId) => {
+      try {
+        await cancelFriendRequest(userId);
+        setRelationStatuses((prev) => ({
+          ...prev,
+          [userId]: {
+            ...(prev[userId] || {}),
+            requestSent: false,
+          },
+        }));
+      } catch (e) {
+        console.error("CANCEL REQUEST ERROR", e);
+      }
+    },
+    []
+  );
+
+  const renderFriendButton = (user) => {
+    const status = getRelationFor(user._id);
+
+    if (status.isBlocked) {
+      return (
+        <button className="fb-search-secondary" disabled>
+          Bloqué
+        </button>
+      );
+    }
+
+    if (status.isFriend) {
+      return (
+        <button className="fb-search-secondary" disabled>
+          Amis
+        </button>
+      );
+    }
+
+    if (status.requestReceived) {
+      return (
+        <button
+          className="fb-search-primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            nav("/fb/relations");
+          }}
+        >
+          Répondre
+        </button>
+      );
+    }
+
+    if (status.requestSent) {
+      return (
+        <button
+          className="fb-search-secondary"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCancelFriendRequest(user._id);
+          }}
+        >
+          Demande envoyée
+        </button>
+      );
+    }
+
+    return (
+      <button
+        className="fb-search-primary"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSendFriendRequest(user._id);
+        }}
+      >
+        Ajouter ami
+      </button>
+    );
+  };
+
   /* ============================================================
      🔥 LOAD NOTIFICATIONS
   ============================================================ */
@@ -461,6 +603,9 @@ export default function FacebookLayout() {
                       <span className="fb-search-item-title">{u.name}</span>
                       <span className="fb-search-item-sub">Profil</span>
                     </div>
+                    <div className="fb-search-item-actions">
+                      {renderFriendButton(u)}
+                    </div>
                   </div>
                 ))}
 
@@ -553,23 +698,7 @@ export default function FacebookLayout() {
                     </div>
                   </div>
                   <div className="fb-search-card-actions">
-                    <button
-                      className="fb-search-primary"
-                      onClick={() =>
-                        handleSearchNavigation(
-                          {
-                            id: u._id,
-                            type: "user",
-                            title: u.name,
-                            subtitle: "Profil",
-                            avatar: u.avatar,
-                          },
-                          `/profil/${u._id}`
-                        )
-                      }
-                    >
-                      Ajouter ami
-                    </button>
+                    {renderFriendButton(u)}
                     <button
                       className="fb-search-secondary"
                       onClick={() =>
