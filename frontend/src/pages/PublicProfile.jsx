@@ -84,70 +84,99 @@ export default function PublicProfile() {
       RENDER
   ============================================================ */
   return (
-    <div className="profil-wrapper">
-      {/* COVER */}
-      <div className="profil-cover">
-        <img src={user.coverPhoto} alt="Cover" />
-      </div>
-
-      {/* HEADER */}
-      <div className="profil-header">
-        <div className="profil-header-content">
+    <div className="profil-page">
+      <div className="profil-shell">
+        {/* COUVERTURE + AVATAR */}
+        <div className="profil-cover-wrapper">
+          <img src={user.coverPhoto} alt="Cover" className="profil-cover" />
+          <div className="profil-cover-scrim" />
           <div
-            className="profil-avatar"
+            className="profil-avatar-large"
             style={{ backgroundImage: `url(${user.avatar})` }}
           />
+        </div>
 
-          <div className="profil-info-area">
-            <h2>{user.name}</h2>
-            <div className="profil-email">{user.email}</div>
-
-            <div className="profil-stats">
+        {/* ENTÊTE */}
+        <div className="profil-header">
+          <div className="profil-title-block">
+            <h1>{user.name}</h1>
+            <div className="profil-subline">
               <span>{user.friends?.length || 0} amis</span>
+              <span className="dot">•</span>
               <span>{user.followers?.length || 0} abonnés</span>
             </div>
+            <div className="profil-meta">{user.email}</div>
+          </div>
 
-            {/* ====================================================
-                ACTIONS
-            ==================================================== */}
-            {!isMe && (
-              <div className="profil-actions">
-                {/* MESSAGE */}
-                <button
-                  className="profil-btn primary"
-                  onClick={() =>
-                    (window.location.href = `/messages/${user._id}`)
-                  }
-                >
-                  Message
-                </button>
+          {!isMe && (
+            <div className="profil-action-row">
+              <button
+                className="profil-btn primary"
+                onClick={() =>
+                  (window.location.href = `/messages/${user._id}`)
+                }
+              >
+                Message
+              </button>
+              <RelationButton targetId={user._id} />
+            </div>
+          )}
+        </div>
 
-                {/* 🔥 RELATION BUTTON (SYSTÈME UNIQUE) */}
-                <RelationButton targetId={user._id} />
-              </div>
-            )}
+        {/* TABS */}
+        <div className="profil-tabs-row">
+          <div className="profil-tabs">
+            <button className="active">Publications</button>
+            <button disabled>À propos</button>
+            <button disabled>Photos</button>
+          </div>
+          <div className="profil-tab-actions">
+            <button className="profil-btn ghost" disabled>
+              ···
+            </button>
           </div>
         </div>
       </div>
 
-      {/* TABS */}
-      <div className="profil-tabs">
-        <button className="active">Publications</button>
-        <button disabled>À propos</button>
-        <button disabled>Photos</button>
-      </div>
-
-      {/* POSTS */}
-      <div className="profil-content">
-        {posts.length === 0 ? (
-          <div className="profil-empty">Aucune publication.</div>
-        ) : (
-          <div className="profil-posts">
-            {posts.map((p) => (
-              <Post key={p._id} post={p} currentUser={viewer} />
-            ))}
+      <div className="profil-body">
+        <div className="profil-left">
+          <div className="profil-card intro-card">
+            <h3>Intro</h3>
+            <p className="profil-intro-text">
+              {user.bio || "Aucune bio renseignée pour le moment."}
+            </p>
+            <div className="profil-info-line">
+              <span role="img" aria-label="mail">
+                📧
+              </span>
+              <span>{user.email}</span>
+            </div>
+            <div className="profil-info-line">
+              <span role="img" aria-label="friends">
+                👥
+              </span>
+              <span>{user.friends?.length || 0} amis</span>
+            </div>
+            <div className="profil-info-line">
+              <span role="img" aria-label="followers">
+                🌟
+              </span>
+              <span>{user.followers?.length || 0} abonnés</span>
+            </div>
           </div>
-        )}
+        </div>
+
+        <div className="profil-right">
+          {posts.length === 0 ? (
+            <div className="profil-card profil-empty">Aucune publication.</div>
+          ) : (
+            <div className="profil-posts">
+              {posts.map((p) => (
+                <Post key={p._id} post={p} currentUser={viewer} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
