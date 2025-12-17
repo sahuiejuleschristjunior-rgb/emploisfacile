@@ -234,6 +234,24 @@ export default function ProfilPage() {
   const coverURL = user.coverPhoto || "/default-cover.jpg";
   const avatarURL = user.avatar || "/default-avatar.png";
   const bioText = user.bio?.trim() || "Aucune bio renseignée pour le moment.";
+  const friendsCount = user.friends?.length ?? 0;
+  const followersCount = user.followers?.length ?? 0;
+  const photoItems = posts
+    .flatMap((p) =>
+      (p.media || [])
+        .filter((m) => {
+          if (!m?.url) return false;
+          if (m.type) return m.type.startsWith("image");
+          return /(png|jpe?g|webp|gif)$/i.test(m.url);
+        })
+        .map((m, idx) => ({ ...m, key: `${p._id || idx}-${idx}`, fromPost: p?._id }))
+    )
+    .slice(0, 30);
+
+  const formatCount = (value) => {
+    if (value > 999) return `${(value / 1000).toFixed(1)}k`;
+    return value;
+  };
 
   /* ================================================
      RENDER
@@ -262,84 +280,180 @@ export default function ProfilPage() {
         </>
       )}
 
-      {/* COVER */}
-      <div className="profil-cover">
-        <img key={`${coverURL}-${coverKey}`} src={coverURL} alt="cover" />
-        {isOwner && (
-          <label className="change-cover-btn" htmlFor={coverInputId}>
-            Changer la couverture
-          </label>
-        )}
-      </div>
+      <div className="profil-hero">
+        {/* COVER */}
+        <div className="profil-cover">
+          <img key={`${coverURL}-${coverKey}`} src={coverURL} alt="cover" />
+          {isOwner && (
+            <label className="change-cover-btn" htmlFor={coverInputId}>
+              Changer la couverture
+            </label>
+          )}
+        </div>
 
-      {/* HEADER */}
-      <div className="profil-header">
-        <div className="profil-header-content">
-          <div
-            key={`${avatarURL}-${avatarKey}`}
-            className="profil-avatar"
-            style={{ backgroundImage: `url(${avatarURL})` }}
-          >
-            {isOwner && (
-              <label className="change-avatar-btn" htmlFor={avatarInputId}>
-                📷
-              </label>
-            )}
+        {/* HEADER */}
+        <div className="profil-hero-row">
+          <div className="profil-hero-main">
+            <div
+              key={`${avatarURL}-${avatarKey}`}
+              className="profil-avatar"
+              style={{ backgroundImage: `url(${avatarURL})` }}
+            >
+              {isOwner && (
+                <label className="change-avatar-btn" htmlFor={avatarInputId}>
+                  📷
+                </label>
+              )}
+            </div>
+
+            <div className="profil-title-block">
+              <h1>{user.name}</h1>
+              <p className="profil-stats">
+                {formatCount(friendsCount)} amis · {formatCount(followersCount)} abonnés
+              </p>
+
+              {photoItems.length > 0 && (
+                <div className="profil-mini-photos">
+                  {photoItems.slice(0, 7).map((m) => (
+                    <div
+                      key={m.key}
+                      className="profil-mini-photo"
+                      style={{ backgroundImage: `url(${m.url})` }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="profil-info-area">
-            <h2>{user.name}</h2>
-            <div className="profil-email">{user.email}</div>
-            <p className="profil-bio-inline">{bioText}</p>
-
-            {isOwner && (
-              <button
-                className="profil-btn"
-                onClick={() => nav("/fb/settings")}
-              >
-                Modifier mon profil
-              </button>
+          <div className="profil-hero-actions">
+            {isOwner ? (
+              <>
+                <button className="profil-btn primary" onClick={() => nav("/fb/settings")}>
+                  Modifier le profil
+                </button>
+                <label className="profil-btn ghost" htmlFor={coverInputId}>
+                  Mettre à jour la couverture
+                </label>
+                <button className="profil-btn" onClick={() => setActiveTab("about")}>
+                  Modifier la bio
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="profil-btn primary" onClick={() => nav(`/messages/${profileId}`)}>
+                  Message
+                </button>
+                <button className="profil-btn ghost">Suivre</button>
+                <button className="profil-btn">…</button>
+              </>
             )}
           </div>
         </div>
-      </div>
 
-      {/* TABS */}
-      <div className="profil-tabs">
-        <button
-          className={activeTab === "posts" ? "active" : ""}
-          onClick={() => setActiveTab("posts")}
-        >
-          Publications
-        </button>
+        {/* TABS */}
+        <div className="profil-tabs-bar">
+          <div className="profil-tabs">
+            <button
+              className={activeTab === "posts" ? "active" : ""}
+              onClick={() => setActiveTab("posts")}
+            >
+              Publications
+            </button>
 
-        <button
-          className={activeTab === "about" ? "active" : ""}
-          onClick={() => setActiveTab("about")}
-        >
-          À propos
-        </button>
+            <button
+              className={activeTab === "about" ? "active" : ""}
+              onClick={() => setActiveTab("about")}
+            >
+              À propos
+            </button>
 
-        <button
-          className={activeTab === "photos" ? "active" : ""}
-          onClick={() => setActiveTab("photos")}
-        >
-          Photos
-        </button>
+            <button
+              className={activeTab === "photos" ? "active" : ""}
+              onClick={() => setActiveTab("photos")}
+            >
+              Photos
+            </button>
+          </div>
+
+          <div className="profil-tabs-actions">
+            <button className="profil-btn ghost">…</button>
+          </div>
+        </div>
       </div>
 
       {/* CONTENT */}
       <div className="profil-content">
         {/* POSTS */}
         {activeTab === "posts" && (
-          <div className="profil-posts">
-            {posts.length === 0 ? (
-              <div className="profil-empty">Aucune publication.</div>
-            ) : (
-              posts.map((p) => (
-                <Post key={p._id} post={p} currentUser={currentUser} />
-              ))
-            )}
+          <div className="profil-grid">
+            <div className="profil-col">
+              <div className="profil-card intro-card">
+                <h3>Intro</h3>
+                <p className="profil-intro-text">{bioText}</p>
+                {isOwner && (
+                  <button className="profil-btn" onClick={() => setActiveTab("about")}>
+                    Modifier les détails
+                  </button>
+                )}
+              </div>
+
+              <div className="profil-card profil-info-card">
+                <h3>Informations</h3>
+                <div className="profil-info-line">
+                  <span role="img" aria-label="mail">
+                    📧
+                  </span>
+                  <span>{user.email}</span>
+                </div>
+                <div className="profil-info-line">
+                  <span role="img" aria-label="friends">
+                    👥
+                  </span>
+                  <span>{formatCount(friendsCount)} amis</span>
+                </div>
+                <div className="profil-info-line">
+                  <span role="img" aria-label="followers">
+                    🌟
+                  </span>
+                  <span>{formatCount(followersCount)} abonnés</span>
+                </div>
+              </div>
+
+              <div className="profil-card photos-card">
+                <div className="profil-card-header">
+                  <h3>Photos</h3>
+                  {photoItems.length > 0 && (
+                    <button className="profil-link" onClick={() => setActiveTab("photos")}>Afficher tout</button>
+                  )}
+                </div>
+                {photoItems.length === 0 ? (
+                  <p className="profil-empty">Aucune photo pour le moment.</p>
+                ) : (
+                  <div className="profil-photo-grid">
+                    {photoItems.slice(0, 9).map((m) => (
+                      <button
+                        key={m.key}
+                        className="profil-photo-thumb"
+                        style={{ backgroundImage: `url(${m.url})` }}
+                        onClick={() => setActiveTab("photos")}
+                        aria-label="Ouvrir la photo"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="profil-col">
+              <div className="profil-posts">
+                {posts.length === 0 ? (
+                  <div className="profil-empty">Aucune publication.</div>
+                ) : (
+                  posts.map((p) => <Post key={p._id} post={p} currentUser={currentUser} />)
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -347,7 +461,10 @@ export default function ProfilPage() {
         {activeTab === "about" && (
           <div className="profil-about-grid">
             <div className="profil-card">
-              <h3>Biographie</h3>
+              <div className="profil-card-header">
+                <h3>Biographie</h3>
+                {!isOwner && <span className="profil-subtle">Présentation</span>}
+              </div>
               {isOwner ? (
                 <form className="profil-bio-form" onSubmit={handleBioSave}>
                   <textarea
@@ -361,11 +478,7 @@ export default function ProfilPage() {
                     <span className="profil-bio-hint">
                       {bioDraft?.trim().length || 0}/500 caractères
                     </span>
-                    <button
-                      className="profil-btn primary"
-                      type="submit"
-                      disabled={savingBio}
-                    >
+                    <button className="profil-btn primary" type="submit" disabled={savingBio}>
                       {savingBio ? "Enregistrement..." : "Mettre à jour"}
                     </button>
                   </div>
@@ -387,13 +500,13 @@ export default function ProfilPage() {
                 <span role="img" aria-label="friends">
                   👥
                 </span>
-                <span>{user.friends?.length || 0} amis</span>
+                <span>{formatCount(friendsCount)} amis</span>
               </div>
               <div className="profil-info-line">
                 <span role="img" aria-label="followers">
                   🌟
                 </span>
-                <span>{user.followers?.length || 0} abonnés</span>
+                <span>{formatCount(followersCount)} abonnés</span>
               </div>
             </div>
           </div>
@@ -402,8 +515,23 @@ export default function ProfilPage() {
         {/* PHOTOS */}
         {activeTab === "photos" && (
           <div className="profil-photos">
-            <h3>Photos</h3>
-            <p>Aucune photo.</p>
+            <div className="profil-card">
+              <div className="profil-card-header">
+                <h3>Photos</h3>
+                <span className="profil-subtle">{photoItems.length} photos</span>
+              </div>
+              {photoItems.length === 0 ? (
+                <p className="profil-empty">Aucune photo publiée pour le moment.</p>
+              ) : (
+                <div className="profil-photo-grid large">
+                  {photoItems.map((m) => (
+                    <div key={m.key} className="profil-photo-cell">
+                      <img src={m.url} alt="Publication" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
