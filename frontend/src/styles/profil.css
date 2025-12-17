@@ -35,6 +35,10 @@
   position: absolute;
   right: 12px;
   bottom: 12px;
+  /* Desktop: la carte profil chevauchait visuellement ce bouton (margin-top négatif),
+     ce qui bloquait le clic. Mobile garde moins de recouvrement, d'où le fonctionnement.
+     On force donc ce bouton au-dessus pour rouvrir le file picker. */
+  z-index: 2;
   background: rgba(0, 0, 0, 0.65);
   color: #fff;
   border: 1px solid var(--fb-border);
@@ -86,6 +90,8 @@
   position: absolute;
   right: 8px;
   bottom: 8px;
+  /* Même cause que la couverture : on garde le bouton en priorité pour le clic desktop */
+  z-index: 2;
   border: none;
   background: rgba(0, 0, 0, 0.65);
   color: #fff;
