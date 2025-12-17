@@ -232,17 +232,19 @@ export default function ProfilPage() {
       {/* Hidden Upload Inputs */}
       {isOwner && (
         <>
+          {/* Sur desktop, Chrome ignore le click() d'un input file totalement display:none. */}
+          {/* On le rend donc invisible mais mesurable pour que le click programmatique soit autorisé (mobile inchangé). */}
           <input
             ref={coverInputRef}
             type="file"
-            style={{ display: "none" }}
+            className="profil-hidden-input"
             accept="image/*"
             onChange={handleCoverChange}
           />
           <input
             ref={avatarInputRef}
             type="file"
-            style={{ display: "none" }}
+            className="profil-hidden-input"
             accept="image/*"
             onChange={handleAvatarChange}
           />

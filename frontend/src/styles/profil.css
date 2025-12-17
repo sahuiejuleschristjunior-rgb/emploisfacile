@@ -14,6 +14,15 @@
   color: var(--fb-text);
 }
 
+.profil-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .profil-cover {
   position: relative;
   background: var(--fb-card);
