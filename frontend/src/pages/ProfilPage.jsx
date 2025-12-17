@@ -23,7 +23,7 @@ export default function ProfilPage() {
   const nav = useNavigate();
   const token = localStorage.getItem("token");
 
-  const { id } = useParams(); // 👈 ID DU PROFIL VISITÉ
+  const { id: routeId } = useParams(); // 👈 ID DU PROFIL VISITÉ
 
   const avatarInputRef = useRef(null);
   const coverInputRef = useRef(null);
@@ -47,12 +47,15 @@ export default function ProfilPage() {
   /* ================================================
      INIT LOAD
   ================================================ */
+  const profileId = routeId || currentUser?._id;
+
   useEffect(() => {
     if (!token) return nav("/login");
+    if (!profileId) return;
 
-    loadProfile();
-    loadUserPosts();
-  }, [id]); // 👈 recharge lors d'un changement d'URL
+    loadProfile(profileId);
+    loadUserPosts(profileId);
+  }, [profileId]); // 👈 recharge lors d'un changement d'URL
 
   useEffect(() => {
     setBioDraft(user?.bio || "");
@@ -151,9 +154,10 @@ export default function ProfilPage() {
   /* ================================================
      LOAD PROFILE (CORRECT ENDPOINT)
   ================================================ */
-  const loadProfile = async () => {
+  const loadProfile = async (targetId) => {
+    if (!targetId) return;
     try {
-      const res = await fetch(`${API_URL}/auth/user/${id}`, {
+      const res = await fetch(`${API_URL}/auth/user/${targetId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -176,7 +180,8 @@ export default function ProfilPage() {
   /* ================================================
      LOAD POSTS (CORRIGÉ)
   ================================================ */
-  const loadUserPosts = async () => {
+  const loadUserPosts = async (targetId) => {
+    if (!targetId) return;
     try {
       const res = await fetch(`${API_URL}/posts`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -186,7 +191,7 @@ export default function ProfilPage() {
 
       if (res.ok && Array.isArray(list)) {
         const filtered = list
-          .filter((p) => p.user?._id === id) // 👈 posts de CE profil
+          .filter((p) => p.user?._id === targetId) // 👈 posts de CE profil
           .map((p) => ({
             ...p,
             media: p.media?.map((m) => ({
@@ -211,7 +216,7 @@ export default function ProfilPage() {
     return <div className="profil-loading">Chargement du profil…</div>;
   }
 
-  const isOwner = currentUser?._id === id;
+  const isOwner = currentUser?._id === profileId;
 
   const coverURL = user.coverPhoto || "/default-cover.jpg";
   const avatarURL = user.avatar || "/default-avatar.png";
@@ -278,7 +283,10 @@ export default function ProfilPage() {
             <p className="profil-bio-inline">{bioText}</p>
 
             {isOwner && (
-              <button className="profil-btn" onClick={() => nav("/settings")}>
+              <button
+                className="profil-btn"
+                onClick={() => nav("/fb/settings")}
+              >
                 Modifier mon profil
               </button>
             )}

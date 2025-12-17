@@ -917,7 +917,13 @@ export default function FacebookLayout() {
 
                 {showSettings && (
                   <div className="fb-sidebar-submenu">
-                    <div className="fb-sidebar-subitem" onClick={() => nav("/settings")}>
+                    <div
+                      className="fb-sidebar-subitem"
+                      onClick={() => {
+                        nav("/fb/settings");
+                        setShowSettings(false);
+                      }}
+                    >
                       <FBIcon name="settings" size={18} />
                       <span>Général</span>
                     </div>
