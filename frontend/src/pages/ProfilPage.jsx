@@ -33,6 +33,8 @@ export default function ProfilPage() {
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
+  const [bioDraft, setBioDraft] = useState("");
+  const [savingBio, setSavingBio] = useState(false);
 
   const currentUser = (() => {
     try {
@@ -51,6 +53,10 @@ export default function ProfilPage() {
     loadProfile();
     loadUserPosts();
   }, [id]); // 👈 recharge lors d'un changement d'URL
+
+  useEffect(() => {
+    setBioDraft(user?.bio || "");
+  }, [user]);
 
   /* ================================================
      UPLOAD HANDLERS
@@ -103,6 +109,45 @@ export default function ProfilPage() {
     if (f) handleUpload(f, "/profile/cover", "coverPhoto");
   };
 
+  const handleBioSave = async (e) => {
+    e.preventDefault();
+    if (!isOwner || savingBio) return;
+
+    setSavingBio(true);
+
+    try {
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ bio: bioDraft }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Impossible de mettre à jour la bio.");
+        return;
+      }
+
+      if (data.user) {
+        setUser((prev) => ({
+          ...prev,
+          ...data.user,
+          avatar: fixUrl(data.user.avatar),
+          coverPhoto: fixUrl(data.user.coverPhoto),
+        }));
+      }
+    } catch (err) {
+      console.error("BIO UPDATE ERROR", err);
+      alert("Erreur serveur lors de la mise à jour de la bio.");
+    } finally {
+      setSavingBio(false);
+    }
+  };
+
   /* ================================================
      LOAD PROFILE (CORRECT ENDPOINT)
   ================================================ */
@@ -114,11 +159,13 @@ export default function ProfilPage() {
 
       const data = await res.json();
 
-      if (res.ok && data.user) {
+      const payload = data?.user || data; // L'API renvoie soit { user }, soit directement l'utilisateur
+
+      if (res.ok && payload) {
         setUser({
-          ...data.user,
-          avatar: fixUrl(data.user.avatar),
-          coverPhoto: fixUrl(data.user.coverPhoto),
+          ...payload,
+          avatar: fixUrl(payload.avatar),
+          coverPhoto: fixUrl(payload.coverPhoto),
         });
       }
     } catch (err) {
@@ -168,6 +215,7 @@ export default function ProfilPage() {
 
   const coverURL = user.coverPhoto || "/default-cover.jpg";
   const avatarURL = user.avatar || "/default-avatar.png";
+  const bioText = user.bio?.trim() || "Aucune bio renseignée pour le moment.";
 
   /* ================================================
      RENDER
@@ -227,6 +275,7 @@ export default function ProfilPage() {
           <div className="profil-info-area">
             <h2>{user.name}</h2>
             <div className="profil-email">{user.email}</div>
+            <p className="profil-bio-inline">{bioText}</p>
 
             {isOwner && (
               <button className="profil-btn" onClick={() => nav("/settings")}>
@@ -278,9 +327,57 @@ export default function ProfilPage() {
 
         {/* ABOUT */}
         {activeTab === "about" && (
-          <div className="profil-about">
-            <h3>À propos</h3>
-            <p>Aucune information.</p>
+          <div className="profil-about-grid">
+            <div className="profil-card">
+              <h3>Biographie</h3>
+              {isOwner ? (
+                <form className="profil-bio-form" onSubmit={handleBioSave}>
+                  <textarea
+                    value={bioDraft}
+                    onChange={(e) => setBioDraft(e.target.value)}
+                    placeholder="Parlez un peu de vous..."
+                    rows={5}
+                    maxLength={500}
+                  />
+                  <div className="profil-bio-actions">
+                    <span className="profil-bio-hint">
+                      {bioDraft?.trim().length || 0}/500 caractères
+                    </span>
+                    <button
+                      className="profil-btn primary"
+                      type="submit"
+                      disabled={savingBio}
+                    >
+                      {savingBio ? "Enregistrement..." : "Mettre à jour"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <p className="profil-intro-text">{bioText}</p>
+              )}
+            </div>
+
+            <div className="profil-card profil-info-card">
+              <h3>Informations</h3>
+              <div className="profil-info-line">
+                <span role="img" aria-label="mail">
+                  📧
+                </span>
+                <span>{user.email}</span>
+              </div>
+              <div className="profil-info-line">
+                <span role="img" aria-label="friends">
+                  👥
+                </span>
+                <span>{user.friends?.length || 0} amis</span>
+              </div>
+              <div className="profil-info-line">
+                <span role="img" aria-label="followers">
+                  🌟
+                </span>
+                <span>{user.followers?.length || 0} abonnés</span>
+              </div>
+            </div>
           </div>
         )}
 

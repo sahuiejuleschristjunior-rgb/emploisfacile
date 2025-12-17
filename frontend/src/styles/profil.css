@@ -98,6 +98,13 @@
   font-size: 15px;
 }
 
+.profil-bio-inline {
+  margin: 8px 0 12px;
+  color: var(--fb-subtext);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 .profil-action-row {
   display: flex;
   gap: 10px;
@@ -238,6 +245,41 @@
   font-size: 15px;
 }
 
+.profil-about-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.profil-bio-form textarea {
+  width: 100%;
+  background: #1f2021;
+  border: 1px solid var(--fb-border);
+  border-radius: 10px;
+  color: var(--fb-text);
+  padding: 12px;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+.profil-bio-actions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profil-bio-hint {
+  color: var(--fb-subtext);
+  font-size: 13px;
+}
+
+.profil-info-card .profil-info-line {
+  border-color: #343537;
+}
+
 @media (max-width: 960px) {
   .profil-header {
     flex-direction: column;
@@ -251,6 +293,10 @@
   }
 
   .profil-body {
+    grid-template-columns: 1fr;
+  }
+
+  .profil-about-grid {
     grid-template-columns: 1fr;
   }
 

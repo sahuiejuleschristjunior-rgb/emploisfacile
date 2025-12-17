@@ -42,6 +42,13 @@ const UserSchema = new mongoose.Schema(
       default: "/default-cover.jpg",
     },
 
+    bio: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 500,
+    },
+
     /* =====================
        PROFILS
     ===================== */
