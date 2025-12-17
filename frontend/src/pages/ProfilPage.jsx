@@ -69,11 +69,11 @@ export default function ProfilPage() {
     else coverInputRef.current.click();
   };
 
-  const handleUpload = async (file, endpoint, field) => {
+  const handleUpload = async (file, endpoint, formField, stateField) => {
     if (!file || isUploading) return;
 
     const formData = new FormData();
-    formData.append(field, file);
+    formData.append(formField, file);
 
     setIsUploading(true);
 
@@ -87,9 +87,11 @@ export default function ProfilPage() {
       const data = await res.json();
 
       if (res.ok) {
+        const nextValue = data[stateField] ?? data[formField];
+
         setUser((prev) => ({
           ...prev,
-          [field]: fixUrl(data[field]),
+          [stateField]: nextValue ? fixUrl(nextValue) : prev?.[stateField],
         }));
       } else {
         alert(data.error || "Erreur upload.");
@@ -104,12 +106,12 @@ export default function ProfilPage() {
 
   const handleAvatarChange = (e) => {
     const f = e.target.files[0];
-    if (f) handleUpload(f, "/profile/avatar", "avatar");
+    if (f) handleUpload(f, "/profile/avatar", "avatar", "avatar");
   };
 
   const handleCoverChange = (e) => {
     const f = e.target.files[0];
-    if (f) handleUpload(f, "/profile/cover", "coverPhoto");
+    if (f) handleUpload(f, "/profile/cover", "cover", "coverPhoto");
   };
 
   const handleBioSave = async (e) => {
