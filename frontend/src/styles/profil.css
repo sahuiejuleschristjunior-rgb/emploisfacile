@@ -24,7 +24,8 @@
   position: relative;
   height: 360px;
   border-radius: 12px 12px 0 0;
-  overflow: hidden;
+  /* Allow the avatar to overlap the cover instead of being clipped */
+  overflow: visible;
   background: var(--fb-card);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
@@ -34,11 +35,13 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 12px 12px 0 0;
 }
 
 .profil-cover-scrim {
   position: absolute;
   inset: 0;
+  border-radius: 12px 12px 0 0;
   background: linear-gradient(180deg, transparent 60%, rgba(0, 0, 0, 0.55));
 }
 
