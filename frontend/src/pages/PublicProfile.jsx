@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
 import "../styles/profil.css";
@@ -17,6 +17,7 @@ const fixUrl = (path) => {
 
 export default function PublicProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
   const [user, setUser] = useState(null);     // Profil visité
@@ -112,9 +113,7 @@ export default function PublicProfile() {
             <div className="profil-action-row">
               <button
                 className="profil-btn primary"
-                onClick={() =>
-                  (window.location.href = `/messages/${user._id}`)
-                }
+                onClick={() => navigate(`/messages?userId=${user._id}`)}
               >
                 Message
               </button>
