@@ -8,19 +8,11 @@
 }
 
 .profil-wrapper {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
+  max-width: 1180px;
+  margin: 0 auto 48px;
+  padding: 16px 16px 0;
   color: var(--fb-text);
-}
-
-.profil-cover {
-  position: relative;
-  background: var(--fb-card);
-  border: 1px solid var(--fb-border);
-  border-radius: 12px;
-  overflow: hidden;
-  min-height: 240px;
+  width: 100%;
 }
 
 .profil-file-input {
@@ -36,77 +28,95 @@
   pointer-events: none;
 }
 
+.profil-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profil-cover {
+  position: relative;
+  background: var(--fb-card);
+  border: 1px solid var(--fb-border);
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 320px;
+}
+
+.profil-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.55) 100%);
+}
+
 .profil-cover img {
   width: 100%;
   height: 100%;
-  min-height: 240px;
+  min-height: 320px;
   object-fit: cover;
   display: block;
 }
 
 .change-cover-btn {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
-  /* Desktop: la carte profil chevauchait visuellement ce bouton (margin-top négatif),
-     ce qui bloquait le clic. Mobile garde moins de recouvrement, d'où le fonctionnement.
-     On force donc ce bouton au-dessus pour rouvrir le file picker. */
+  right: 16px;
+  bottom: 16px;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  border: 1px solid var(--fb-border);
-  padding: 10px 14px;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 12px 16px;
+  border-radius: 10px;
   cursor: pointer;
   backdrop-filter: blur(2px);
-  transition: transform 0.1s, filter 0.15s;
+  transition: transform 0.1s, filter 0.15s, background 0.15s;
 }
 
 .change-cover-btn:hover {
   transform: translateY(-1px);
-  filter: brightness(1.05);
+  filter: brightness(1.1);
+  background: rgba(0, 0, 0, 0.85);
 }
 
-.profil-header {
+.profil-hero-row {
   background: var(--fb-card);
   border: 1px solid var(--fb-border);
   border-radius: 12px;
-  padding: 18px;
-  margin-top: -60px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  padding: 18px 20px;
+  margin-top: -86px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
 }
 
-.profil-header-content {
+.profil-hero-main {
   display: flex;
-  gap: 16px;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 14px;
 }
 
 .profil-avatar {
-  width: 132px;
-  height: 132px;
+  width: 168px;
+  height: 168px;
   border-radius: 50%;
   background-size: cover;
   background-position: center;
   position: relative;
   border: 4px solid var(--fb-bg);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
   flex-shrink: 0;
-  margin-top: -40px;
+  margin-top: -96px;
 }
 
 .change-avatar-btn {
   position: absolute;
   right: 8px;
   bottom: 8px;
-  /* Même cause que la couverture : on garde le bouton en priorité pour le clic desktop */
   z-index: 2;
-  border: none;
-  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.7);
   color: #fff;
   width: 36px;
   height: 36px;
@@ -116,39 +126,61 @@
   place-items: center;
 }
 
-.profil-info-area {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 220px;
-}
-
-.profil-info-area h2 {
+.profil-title-block h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 28px;
 }
 
-.profil-email {
+.profil-stats {
+  margin: 6px 0 10px;
   color: var(--fb-subtext);
-  font-size: 14px;
+  font-size: 15px;
 }
 
-.profil-bio-inline {
-  margin: 4px 0 8px;
-  color: var(--fb-subtext);
-  line-height: 1.4;
+.profil-mini-photos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profil-mini-photo {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid var(--fb-bg);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.profil-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profil-hero-actions .profil-btn {
+  justify-content: center;
 }
 
 .profil-btn {
-  background: none;
+  background: #2f3031;
   border: 1px solid var(--fb-border);
   color: var(--fb-text);
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 11px 14px;
+  border-radius: 10px;
   font-size: 15px;
   cursor: pointer;
-  transition: transform 0.1s, background 0.15s, border 0.15s;
-  align-self: flex-start;
+  transition: transform 0.1s, background 0.15s, border 0.15s, filter 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profil-btn.ghost {
+  background: transparent;
 }
 
 .profil-btn.primary {
@@ -162,12 +194,20 @@
   filter: brightness(1.05);
 }
 
+.profil-tabs-bar {
+  background: var(--fb-card);
+  border: 1px solid var(--fb-border);
+  border-radius: 12px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .profil-tabs {
   display: flex;
   gap: 8px;
-  margin-top: 12px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--fb-border);
   flex-wrap: wrap;
 }
 
@@ -176,8 +216,8 @@
   border: none;
   color: var(--fb-subtext);
   font-size: 15px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 12px 10px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -193,6 +233,11 @@
   border-radius: 0;
 }
 
+.profil-tabs-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .profil-content {
   margin-top: 16px;
   display: flex;
@@ -206,6 +251,19 @@
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.profil-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.profil-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .profil-posts {
@@ -238,6 +296,61 @@
   color: var(--fb-subtext);
   text-align: center;
   font-size: 15px;
+}
+
+.profil-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profil-link {
+  background: none;
+  border: none;
+  color: var(--fb-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.photos-card .profil-empty {
+  margin: 8px 0 0;
+}
+
+.profil-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.profil-photo-grid.large {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.profil-photo-thumb,
+.profil-photo-cell {
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 110px;
+  border: 1px solid var(--fb-border);
+}
+
+.profil-photo-thumb {
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.profil-photo-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .profil-about-grid {
@@ -275,17 +388,41 @@
   border-color: #343537;
 }
 
+.profil-subtle {
+  color: var(--fb-subtext);
+  font-size: 14px;
+}
+
 @media (max-width: 960px) {
   .profil-wrapper {
     padding: 12px;
   }
 
   .profil-cover {
-    min-height: 210px;
+    min-height: 260px;
   }
 
-  .profil-header {
-    margin-top: -46px;
+  .profil-hero-row {
+    margin-top: -70px;
+    grid-template-columns: 1fr;
+  }
+
+  .profil-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .profil-hero-actions .profil-btn {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .profil-avatar {
+    width: 140px;
+    height: 140px;
+    margin-top: -70px;
+  }
+
+  .profil-grid {
+    grid-template-columns: 1fr;
   }
 
   .profil-about-grid {
@@ -295,12 +432,14 @@
 
 @media (max-width: 640px) {
   .profil-wrapper {
-    padding: 10px;
+    padding: 0;
+    max-width: none;
+    margin: 0 0 32px;
   }
 
   .profil-cover {
-    border-radius: 10px;
-    min-height: 180px;
+    border-radius: 0;
+    min-height: 190px;
   }
 
   .change-cover-btn {
@@ -310,35 +449,100 @@
     text-align: center;
   }
 
-  .profil-header {
-    margin-top: -36px;
-    padding: 14px;
+  .profil-hero {
+    gap: 8px;
   }
 
-  .profil-header-content {
+  .profil-hero-row {
+    margin: -60px 8px 0;
+    padding: 14px 12px;
+  }
+
+  .profil-hero-main {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
   }
 
   .profil-avatar {
-    width: 110px;
-    height: 110px;
-    margin-top: -24px;
+    width: 108px;
+    height: 108px;
+    margin-top: -48px;
+    border: 3px solid var(--fb-bg);
   }
 
-  .profil-info-area h2 {
+  .profil-title-block h1 {
     font-size: 22px;
+  }
+
+  .profil-stats {
+    font-size: 14px;
+  }
+
+  .profil-mini-photos {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .profil-mini-photo {
+    width: 34px;
+    height: 34px;
   }
 
   .profil-tabs {
     gap: 4px;
+    width: 100%;
   }
 
   .profil-card {
-    border-radius: 10px;
+    border-radius: 0;
+    padding: 14px 12px;
   }
 
   .profil-posts {
     gap: 12px;
+  }
+
+  .profil-tabs-bar {
+    border-radius: 0;
+    padding: 6px 8px;
+  }
+
+  .profil-tabs button {
+    flex: 1 1 auto;
+    text-align: center;
+    padding: 10px 6px;
+  }
+
+  .profil-content {
+    gap: 12px;
+  }
+
+  .profil-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .profil-col.posts-col {
+    order: 1;
+  }
+
+  .profil-col.sidebar-col {
+    order: 2;
+  }
+
+  .profil-hero-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .profil-hero-actions .profil-btn {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .profil-hero-actions .profil-btn:last-child {
+    flex-basis: 100%;
   }
 }
