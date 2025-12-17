@@ -115,6 +115,9 @@ body, html {
   width: 260px;
   padding-left: 20px;
   padding-right: 15px;
+  position: sticky;
+  top: 110px;
+  height: calc(100vh - 110px);
 }
 
 .left-box {
