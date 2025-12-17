@@ -7,6 +7,7 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
 } from "../api/socialApi";
+import { useNotifications } from "../context/NotificationContext";
 
 moment.locale("fr");
 
@@ -14,6 +15,7 @@ const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
 
 export default function NotificationItem({ notif, onHandled }) {
   const navigate = useNavigate();
+  const { removeNotifications } = useNotifications() || {};
 
   const isFriendRequest = notif.type === "friend_request";
 
@@ -77,12 +79,22 @@ export default function NotificationItem({ notif, onHandled }) {
   const handleAccept = async (e) => {
     e.stopPropagation();
     await acceptFriendRequest(notif.from._id);
+    removeNotifications?.(
+      (n) =>
+        n.type === "friend_request" &&
+        String(n.from?._id || n.from) === String(notif.from._id)
+    );
     onHandled?.(notif._id, { handled: true }); // ✔ Empêche la notif de revenir
   };
 
   const handleReject = async (e) => {
     e.stopPropagation();
     await rejectFriendRequest(notif.from._id);
+    removeNotifications?.(
+      (n) =>
+        n.type === "friend_request" &&
+        String(n.from?._id || n.from) === String(notif.from._id)
+    );
     onHandled?.(notif._id, { handled: true }); // ✔ Empêche la notif de revenir
   };
 

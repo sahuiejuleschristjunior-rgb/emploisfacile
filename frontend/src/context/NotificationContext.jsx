@@ -13,6 +13,23 @@ export function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const computeUnread = (items) =>
+    items.reduce((sum, n) => sum + (n.read ? 0 : 1), 0);
+
+  const setNotificationsAndUnread = (updater) => {
+    setNotifications((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      setUnreadCount(computeUnread(next));
+      return next;
+    });
+  };
+
+  const removeNotifications = (predicate) => {
+    setNotificationsAndUnread((prev) =>
+      prev.filter((n) => !predicate(n))
+    );
+  };
+
   /* ============================================================
      INIT SOCKET + FETCH NOTIFICATIONS 
   ============================================================ */
@@ -56,7 +73,7 @@ export function NotificationProvider({ children }) {
         if (res.ok && Array.isArray(data)) {
           // Trier desc
           data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          setNotifications(data);
+          setNotificationsAndUnread(data);
         }
       } catch (e) {
         console.error("NOTIF LIST ERROR:", e);
@@ -69,8 +86,20 @@ export function NotificationProvider({ children }) {
     fetchList();
 
     // 4) Écouter notifications en temps réel
-    s.on("notification:new", (notif) => {
-      setNotifications((prev) => {
+    const handleIncoming = (notif) => {
+      if (!notif) return;
+
+      const fromId = notif.from?._id || notif.from;
+
+      if (notif.type === "friend_accept" || notif.type === "friend_reject") {
+        removeNotifications(
+          (n) =>
+            n.type === "friend_request" &&
+            String(n.from?._id || n.from) === String(fromId)
+        );
+      }
+
+      setNotificationsAndUnread((prev) => {
         const exists = prev.some((n) => n._id === notif._id);
         if (exists) return prev;
 
@@ -78,12 +107,12 @@ export function NotificationProvider({ children }) {
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
       });
+    };
 
-      setUnreadCount((prev) => prev + 1);
-    });
+    s.on("notification:new", handleIncoming);
 
     return () => {
-      s.off("notification:new");
+      s.off("notification:new", handleIncoming);
       s.disconnect(); // 🔥 Correction
     };
   }, []);
@@ -102,8 +131,7 @@ export function NotificationProvider({ children }) {
       });
 
       if (res.ok) {
-        setUnreadCount(0);
-        setNotifications((prev) =>
+        setNotificationsAndUnread((prev) =>
           prev.map((n) => ({ ...n, read: true }))
         );
       }
@@ -118,6 +146,7 @@ export function NotificationProvider({ children }) {
     unreadCount,
     loading,
     markAllAsRead,
+    removeNotifications,
   };
 
   return (
