@@ -257,7 +257,7 @@ export default function ProfilPage() {
 
       {/* COVER */}
       <div className="profil-cover">
-        <img src={coverURL} alt="cover" />
+        <img key={coverURL} src={coverURL} alt="cover" />
         {isOwner && (
           <label className="change-cover-btn" htmlFor={coverInputId}>
             Changer la couverture
@@ -269,6 +269,7 @@ export default function ProfilPage() {
       <div className="profil-header">
         <div className="profil-header-content">
           <div
+            key={avatarURL}
             className="profil-avatar"
             style={{ backgroundImage: `url(${avatarURL})` }}
           >
