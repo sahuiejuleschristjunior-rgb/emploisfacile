@@ -102,8 +102,16 @@ export default function NotifsPage() {
                 )}
                 
                 {notifications.map(notif => (
-                    // L'Item est un lien cliquable, on ne passe pas de gestionnaire ici
-                    <NotificationItem key={notif._id} notif={notif} />
+                    <NotificationItem
+                        key={notif._id}
+                        notif={notif}
+                        onHandled={(id, extra) => {
+                            if (extra?.handled) {
+                                setNotifications(prev => prev.filter(n => n._id !== id));
+                                setUnread(count => Math.max(0, count - 1));
+                            }
+                        }}
+                    />
                 ))}
 
                 {loading && (
