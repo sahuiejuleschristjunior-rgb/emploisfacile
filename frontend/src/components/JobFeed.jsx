@@ -7,9 +7,19 @@ export default function JobFeed() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState("");
   const [applyingJobId, setApplyingJobId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
+
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch (err) {
+      console.warn("USER PARSE ERROR", err);
+      return {};
+    }
+  })();
 
   /* ======================================================
      UTILITAIRES D'AFFICHAGE
@@ -205,45 +215,132 @@ export default function JobFeed() {
   /* ======================================================
      RENDU GLOBAL
   ====================================================== */
+  const filteredJobs = jobs.filter((job) => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return [job.title, job.description, job.location, job.contractType]
+      .filter(Boolean)
+      .some((field) => field.toLowerCase().includes(q));
+  });
+
+  const featuredJobs = filteredJobs.slice(0, 3);
+
   return (
-    <div className="job-feed">
-      <header className="job-feed-hero">
-        <div>
-          <p className="job-feed-kicker">Offres d'emploi</p>
-          <h2>Un fil d'emplois inspiré des réseaux</h2>
-          <p className="job-feed-subtitle">
-            Explorez les dernières opportunités publiées par nos recruteurs et
-            postulez en un clic.
-          </p>
-        </div>
-        <div className="job-feed-search">
-          <span role="img" aria-hidden>
-            🔍
-          </span>
-          <input placeholder="Rechercher un poste, une ville..." />
-        </div>
-      </header>
+    <div className="job-feed-screen">
+      <div className="jobfeed-grid">
+        <aside className="jobfeed-sidebar">
+          <div className="sidebar-card profile-card">
+            <div className="profile-avatar" aria-hidden>
+              {getInitials(currentUser.name || "Vous")}
+            </div>
+            <div>
+              <p className="profile-name">{currentUser.name || "Mon profil"}</p>
+              <p className="profile-sub">Accédez rapidement à vos actions</p>
+            </div>
+          </div>
 
-      {message && (
-        <div
-          className={`job-alert ${message.startsWith("✅") ? "success" : "error"}`}
-        >
-          {message}
-        </div>
-      )}
+          <div className="sidebar-card links-card">
+            <button className="link-row">📄 Mes CV & candidatures</button>
+            <button className="link-row">📌 Favoris</button>
+            <button className="link-row">🛠️ Paramètres</button>
+            <button className="link-row">💬 Messages</button>
+          </div>
 
-      {loading && <div className="loader">Chargement des offres...</div>}
+          <div className="sidebar-card tip-card">
+            <p className="tip-title">Conseil</p>
+            <p className="tip-text">
+              Complétez votre profil pour remonter dans les recommandations des
+              recruteurs.
+            </p>
+          </div>
+        </aside>
 
-      {error && <div className="error-message">{error}</div>}
+        <main className="jobfeed-center">
+          <header className="job-feed-hero">
+            <div>
+              <p className="job-feed-kicker">Offres d'emploi</p>
+              <h2>Un fil d'emplois inspiré des réseaux</h2>
+              <p className="job-feed-subtitle">
+                Explorez les dernières opportunités publiées par nos
+                recruteurs et postulez en un clic.
+              </p>
+            </div>
+            <div className="job-feed-search">
+              <span role="img" aria-hidden>
+                🔍
+              </span>
+              <input
+                placeholder="Rechercher un poste, une ville..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </header>
 
-      {!loading && jobs.length === 0 && !error && (
-        <div className="empty-state">
-          Aucune offre d'emploi disponible pour le moment.
-        </div>
-      )}
+          {message && (
+            <div
+              className={`job-alert ${
+                message.startsWith("✅") ? "success" : "error"
+              }`}
+            >
+              {message}
+            </div>
+          )}
 
-      <div className="job-list">
-        {jobs.map(renderJobCard)}
+          {loading && <div className="loader">Chargement des offres...</div>}
+
+          {error && <div className="error-message">{error}</div>}
+
+          {!loading && filteredJobs.length === 0 && !error && (
+            <div className="empty-state">
+              Aucune offre ne correspond à votre recherche pour le moment.
+            </div>
+          )}
+
+          <div className="job-list">{filteredJobs.map(renderJobCard)}</div>
+        </main>
+
+        <aside className="jobfeed-sidebar right">
+          <div className="sidebar-card info-card">
+            <p className="info-title">JobFeed en direct</p>
+            <p className="info-text">
+              Retrouvez les dernières offres et revenez plus tard pour de
+              nouvelles opportunités.
+            </p>
+          </div>
+
+          <div className="sidebar-card featured-card">
+            <div className="featured-header">
+              <span role="img" aria-hidden>
+                🧭
+              </span>
+              <div>
+                <p className="featured-kicker">À découvrir</p>
+                <p className="featured-title">Tendances du jour</p>
+              </div>
+            </div>
+
+            {featuredJobs.map((job) => (
+              <div key={job._id} className="featured-item">
+                <p className="featured-role">{job.title}</p>
+                <p className="featured-meta">
+                  {getLocation(job)} • {getContract(job)}
+                </p>
+                <button
+                  className="featured-cta"
+                  onClick={() => handleApply(job._id, job.title)}
+                  disabled={applyingJobId === job._id || job.hasApplied}
+                >
+                  {job.hasApplied
+                    ? "Déjà postulé"
+                    : applyingJobId === job._id
+                    ? "Envoi..."
+                    : "Postuler"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
     </div>
   );
