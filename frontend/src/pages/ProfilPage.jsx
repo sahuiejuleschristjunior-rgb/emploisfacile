@@ -312,17 +312,6 @@ export default function ProfilPage() {
                 {formatCount(friendsCount)} amis · {formatCount(followersCount)} abonnés
               </p>
 
-              {photoItems.length > 0 && (
-                <div className="profil-mini-photos">
-                  {photoItems.slice(0, 7).map((m) => (
-                    <div
-                      key={m.key}
-                      className="profil-mini-photo"
-                      style={{ backgroundImage: `url(${m.url})` }}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
