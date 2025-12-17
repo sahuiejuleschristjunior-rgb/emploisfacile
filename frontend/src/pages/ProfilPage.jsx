@@ -8,6 +8,12 @@ const API_URL = import.meta.env.VITE_API_URL;
 /* ================================================
    FIX DES URL IMAGES / UPLOAD
 ================================================ */
+const withCacheBuster = (url) => {
+  if (!url) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}cb=${Date.now()}`;
+};
+
 const fixUrl = (path) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
@@ -85,7 +91,13 @@ export default function ProfilPage() {
 
         setUser((prev) => ({
           ...prev,
-          [stateField]: nextValue ? fixUrl(nextValue) : prev?.[stateField],
+          [stateField]: (() => {
+            const resolvedUrl = nextValue
+              ? fixUrl(nextValue)
+              : prev?.[stateField];
+            const cacheSafeUrl = resolvedUrl ? withCacheBuster(resolvedUrl) : resolvedUrl;
+            return cacheSafeUrl || prev?.[stateField];
+          })(),
         }));
       } else {
         alert(data.error || "Erreur upload.");
@@ -164,8 +176,8 @@ export default function ProfilPage() {
       if (res.ok && payload) {
         setUser({
           ...payload,
-          avatar: fixUrl(payload.avatar),
-          coverPhoto: fixUrl(payload.coverPhoto),
+          avatar: withCacheBuster(fixUrl(payload.avatar)),
+          coverPhoto: withCacheBuster(fixUrl(payload.coverPhoto)),
         });
       }
     } catch (err) {
