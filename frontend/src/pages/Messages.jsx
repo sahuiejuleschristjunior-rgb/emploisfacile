@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -59,6 +59,15 @@ const BackIcon = () => (
     <path
       fill="currentColor"
       d="M14.7 5.3a1 1 0 0 1 0 1.4L10.4 11l4.3 4.3a1 1 0 0 1-1.4 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.4 0Z"
+    />
+  </svg>
+);
+
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+    <path
+      fill="currentColor"
+      d="M12 3.2a1 1 0 0 0-.65.24l-8 7a1 1 0 0 0 1.3 1.52l.35-.3V19a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4h2v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.34l.35.3a1 1 0 0 0 1.3-1.52l-8-7A1 1 0 0 0 12 3.2Z"
     />
   </svg>
 );
@@ -170,6 +179,7 @@ export default function Messages() {
   /* =====================================================
      STATE
   ===================================================== */
+  const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [errorFriends, setErrorFriends] = useState("");
@@ -1522,6 +1532,10 @@ export default function Messages() {
       {/* ================= LEFT — AMIS ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
+          <button className="messages-home-btn" onClick={() => navigate("/fb")}>
+            <HomeIcon />
+            <span>Accueil</span>
+          </button>
           <h2>Messages</h2>
         </div>
 
