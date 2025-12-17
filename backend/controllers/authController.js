@@ -485,15 +485,17 @@ async function uploadProfilePicture(req, res) {
       return res.status(400).json({ error: "Aucun fichier d'avatar fourni." });
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "Utilisateur introuvable." });
-    }
-
     const newAvatarUrl = "/uploads/" + req.file.filename;
 
-    user.avatar = newAvatarUrl;
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { avatar: newAvatarUrl },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Utilisateur introuvable." });
+    }
 
     res.json({
       success: true,
@@ -521,15 +523,17 @@ async function uploadCoverPhoto(req, res) {
       return res.status(400).json({ error: "Aucun fichier de couverture fourni." });
     }
 
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "Utilisateur introuvable." });
-    }
-
     const newCoverUrl = "/uploads/" + req.file.filename;
 
-    user.coverPhoto = newCoverUrl;
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { coverPhoto: newCoverUrl },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Utilisateur introuvable." });
+    }
 
     res.json({
       success: true,
