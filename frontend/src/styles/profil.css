@@ -260,17 +260,61 @@
 }
 
 @media (max-width: 640px) {
+  .profil-page {
+    padding-bottom: 0;
+  }
+
+  .profil-shell {
+    max-width: none;
+    padding: 0;
+  }
+
   .profil-cover-wrapper {
     height: 260px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .profil-cover,
+  .profil-cover-scrim {
+    border-radius: 0;
   }
 
   .profil-avatar-large {
     width: 128px;
     height: 128px;
     bottom: -60px;
+    left: 16px;
   }
 
   .profil-header {
-    padding-top: 70px;
+    padding: 86px 16px 16px;
+    border-radius: 0;
+    margin-top: 0;
+  }
+
+  .profil-tabs-row {
+    border-radius: 0;
+  }
+
+  .profil-body {
+    grid-template-columns: 1fr;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  .profil-left {
+    display: none;
+  }
+
+  .profil-right .profil-card,
+  .profil-posts,
+  .profil-posts > * {
+    border-radius: 0;
+  }
+
+  .profil-posts {
+    gap: 10px;
   }
 }
