@@ -38,6 +38,8 @@ export default function ProfilPage() {
   const [activeTab, setActiveTab] = useState("posts");
   const [bioDraft, setBioDraft] = useState("");
   const [savingBio, setSavingBio] = useState(false);
+  const [avatarKey, setAvatarKey] = useState(0);
+  const [coverKey, setCoverKey] = useState(0);
 
   const currentUser = (() => {
     try {
@@ -99,6 +101,9 @@ export default function ProfilPage() {
             return cacheSafeUrl || prev?.[stateField];
           })(),
         }));
+
+        if (stateField === "avatar") setAvatarKey(Date.now());
+        if (stateField === "coverPhoto") setCoverKey(Date.now());
       } else {
         alert(data.error || "Erreur upload.");
       }
@@ -244,6 +249,7 @@ export default function ProfilPage() {
             className="profil-file-input"
             accept="image/*"
             onChange={handleCoverChange}
+            style={{ opacity: 0, pointerEvents: "none" }}
           />
           <input
             id={avatarInputId}
@@ -251,13 +257,14 @@ export default function ProfilPage() {
             className="profil-file-input"
             accept="image/*"
             onChange={handleAvatarChange}
+            style={{ opacity: 0, pointerEvents: "none" }}
           />
         </>
       )}
 
       {/* COVER */}
       <div className="profil-cover">
-        <img key={coverURL} src={coverURL} alt="cover" />
+        <img key={`${coverURL}-${coverKey}`} src={coverURL} alt="cover" />
         {isOwner && (
           <label className="change-cover-btn" htmlFor={coverInputId}>
             Changer la couverture
@@ -269,7 +276,7 @@ export default function ProfilPage() {
       <div className="profil-header">
         <div className="profil-header-content">
           <div
-            key={avatarURL}
+            key={`${avatarURL}-${avatarKey}`}
             className="profil-avatar"
             style={{ backgroundImage: `url(${avatarURL})` }}
           >
