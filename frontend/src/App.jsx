@@ -107,6 +107,7 @@ export default function App() {
                 <Route path="relations" element={<RelationsPage />} />
                 <Route path="emplois" element={<EmploisPage />} />
                 <Route path="notifications" element={<NotifsPage />} />
+                <Route path="settings" element={<SettingsPage />} />
               </Route>
 
               {/* Profil perso */}
@@ -142,11 +143,7 @@ export default function App() {
               {/* Settings */}
               <Route
                 path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <SettingsPage />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/fb/settings" replace />}
               />
 
               {/* Post hors layout */}
