@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -190,6 +191,8 @@ export default function Messages() {
   const [messageActions, setMessageActions] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -223,6 +226,7 @@ export default function Messages() {
   const audioRefs = useRef({});
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
+  const [cameFromProfile, setCameFromProfile] = useState(false);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -648,6 +652,54 @@ export default function Messages() {
       setTimeout(() => scrollToBottom(true), 50);
     }
   };
+
+  /* =====================================================
+     PRESELECT CHAT FROM URL
+  ===================================================== */
+  useEffect(() => {
+    const targetId = searchParams.get("userId");
+    if (searchParams.get("from") === "profile") {
+      setCameFromProfile(true);
+    }
+    if (!targetId || !token) return;
+
+    const existing = friends.find((f) => f._id === targetId);
+
+    const openFromParam = async () => {
+      let targetUser = existing;
+
+      if (!targetUser) {
+        try {
+          const res = await fetch(`${API_URL}/auth/user/${targetId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await res.json();
+          if (res.ok && data?._id) {
+            targetUser = normalizeFriend(data);
+            setFriends((prev) =>
+              prev.some((u) => u._id === targetUser._id)
+                ? prev
+                : [...prev, targetUser]
+            );
+          }
+        } catch (err) {
+          console.error("Erreur chargement utilisateur cible :", err);
+        }
+      }
+
+      if (targetUser) {
+        await loadConversation(targetUser);
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("userId");
+          next.delete("from");
+          return next;
+        });
+      }
+    };
+
+    openFromParam();
+  }, [friends, searchParams, token]);
 
   /* =====================================================
      SEND / EDIT MESSAGE
@@ -1477,6 +1529,15 @@ export default function Messages() {
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
           <h2>Messages</h2>
+          {cameFromProfile && (
+            <button
+              type="button"
+              className="messages-home-btn"
+              onClick={() => navigate("/")}
+            >
+              Accueil
+            </button>
+          )}
         </div>
 
         <div className="messages-search">
