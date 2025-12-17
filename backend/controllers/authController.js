@@ -221,6 +221,7 @@ async function login(req, res) {
       role: user.role,
       avatar: user.avatar,
       coverPhoto: user.coverPhoto,
+      bio: user.bio,
       verified: user.verified,
       createdAt: user.createdAt,
       companyName: user.companyName,
@@ -377,12 +378,16 @@ async function getProfile(req, res) {
 async function updateProfile(req, res) {
   try {
     const userId = req.user?.id || req.user?._id;
-    const { name, companyName, companyInfo, candidateProfile } = req.body;
+    const { name, companyName, companyInfo, candidateProfile, bio } = req.body;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
 
     if (name) user.name = name;
+
+    if (typeof bio === "string") {
+      user.bio = bio.trim();
+    }
 
     if (user.role === "recruiter") {
       if (companyName) user.companyName = companyName;
@@ -402,6 +407,7 @@ async function updateProfile(req, res) {
       role: safeUser.role,
       avatar: safeUser.avatar,
       coverPhoto: safeUser.coverPhoto,
+      bio: safeUser.bio,
       verified: safeUser.verified,
       createdAt: safeUser.createdAt,
       companyName: safeUser.companyName,
@@ -454,7 +460,7 @@ async function changePassword(req, res) {
 async function me(req, res) {
   try {
     const user = await User.findById(req.user.id).select(
-      "_id email role name avatar coverPhoto companyName companyInfo candidateProfile"
+      "_id email role name avatar coverPhoto bio companyName companyInfo candidateProfile"
     );
 
     res.json({ success: true, user });
