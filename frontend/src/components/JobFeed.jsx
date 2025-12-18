@@ -8,6 +8,9 @@ export default function JobFeed() {
   const [message, setMessage] = useState("");
   const [applyingJobId, setApplyingJobId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("jobfeed-dark-mode") === "true";
+  });
 
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
@@ -60,6 +63,10 @@ export default function JobFeed() {
   useEffect(() => {
     loadJobs();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("jobfeed-dark-mode", darkMode);
+  }, [darkMode]);
 
   const loadJobs = async () => {
     setLoading(true);
@@ -226,7 +233,7 @@ export default function JobFeed() {
   const featuredJobs = filteredJobs.slice(0, 3);
 
   return (
-    <div className="job-feed-screen">
+    <div className={`job-feed-screen ${darkMode ? "dark-mode" : ""}`}>
       <div className="jobfeed-grid">
         <aside className="jobfeed-sidebar">
           <div className="sidebar-card profile-card">
@@ -265,15 +272,28 @@ export default function JobFeed() {
                 recruteurs et postulez en un clic.
               </p>
             </div>
-            <div className="job-feed-search">
-              <span role="img" aria-hidden>
-                🔍
-              </span>
-              <input
-                placeholder="Rechercher un poste, une ville..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="job-feed-actions">
+              <div className="job-feed-search">
+                <span role="img" aria-hidden>
+                  🔍
+                </span>
+                <input
+                  placeholder="Rechercher un poste, une ville..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="theme-toggle"
+                onClick={() => setDarkMode((prev) => !prev)}
+                aria-pressed={darkMode}
+              >
+                <span className="theme-label">{darkMode ? "Mode sombre" : "Mode clair"}</span>
+                <span className={`toggle-switch ${darkMode ? "on" : ""}`}>
+                  <span className="toggle-handle" />
+                </span>
+              </button>
             </div>
           </header>
 

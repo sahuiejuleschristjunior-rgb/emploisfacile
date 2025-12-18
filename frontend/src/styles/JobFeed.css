@@ -212,6 +212,12 @@
     box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.3);
 }
 
+.job-feed-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .job-feed-hero h2 {
     margin: 4px 0;
     font-size: 24px;
@@ -250,6 +256,56 @@
     width: 100%;
     font-size: 14px;
     background: transparent;
+}
+
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 999px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 700;
+    color: #111827;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+    background: #f3f4f6;
+}
+
+.theme-label {
+    font-size: 13px;
+}
+
+.toggle-switch {
+    width: 46px;
+    height: 24px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    position: relative;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px;
+}
+
+.toggle-switch.on {
+    background: #2563eb;
+}
+
+.toggle-handle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.2s ease;
+}
+
+.toggle-switch.on .toggle-handle {
+    transform: translateX(22px);
 }
 
 /* ----------------------------------
@@ -506,10 +562,192 @@
     border: 1px dashed #e5e7eb;
 }
 
+/* ----------------------------------
+   Dark mode
+---------------------------------- */
+.job-feed-screen.dark-mode {
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+.job-feed-screen.dark-mode .job-feed-hero {
+    background: linear-gradient(135deg, #111827, #0b1220);
+    border-color: #1f2937;
+    box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+}
+
+.job-feed-screen.dark-mode .job-feed-hero h2,
+.job-feed-screen.dark-mode .job-feed-kicker,
+.job-feed-screen.dark-mode .job-feed-subtitle {
+    color: #e5e7eb;
+}
+
+.job-feed-screen.dark-mode .job-feed-actions {
+    background: transparent;
+}
+
+.job-feed-screen.dark-mode .job-feed-search,
+.job-feed-screen.dark-mode .theme-toggle,
+.job-feed-screen.dark-mode .job-post-card,
+.job-feed-screen.dark-mode .sidebar-card,
+.job-feed-screen.dark-mode .featured-item,
+.job-feed-screen.dark-mode .job-cta-body {
+    background: #0b1220;
+    border-color: #1f2937;
+    color: #e5e7eb;
+}
+
+.job-feed-screen.dark-mode .link-row {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+.job-feed-screen.dark-mode .link-row:hover {
+    background: #1f2937;
+}
+
+.job-feed-screen.dark-mode .tip-card {
+    background: #111827;
+    border-color: #1f2937;
+}
+
+.job-feed-screen.dark-mode .job-feed-search input {
+    color: #e5e7eb;
+}
+
+.job-feed-screen.dark-mode .theme-toggle {
+    color: #e5e7eb;
+    border-color: #1f2937;
+}
+
+.job-feed-screen.dark-mode .theme-toggle:hover {
+    background: #111827;
+}
+
+.job-feed-screen.dark-mode .toggle-switch {
+    background: #1f2937;
+}
+
+.job-feed-screen.dark-mode .job-post-header,
+.job-feed-screen.dark-mode .job-cta-card,
+.job-feed-screen.dark-mode .job-post-footer,
+.job-feed-screen.dark-mode .job-actions-row {
+    border-color: #1f2937;
+    background: #0f172a;
+}
+
+.job-feed-screen.dark-mode .job-company,
+.job-feed-screen.dark-mode .job-role,
+.job-feed-screen.dark-mode .featured-title {
+    color: #f3f4f6;
+}
+
+.job-feed-screen.dark-mode .job-meta-line,
+.job-feed-screen.dark-mode .job-extra,
+.job-feed-screen.dark-mode .job-date,
+.job-feed-screen.dark-mode .job-location,
+.job-feed-screen.dark-mode .featured-meta,
+.job-feed-screen.dark-mode .job-stats,
+.job-feed-screen.dark-mode .job-feed-subtitle {
+    color: #cbd5e1;
+}
+
+.job-feed-screen.dark-mode .job-alert.success {
+    background: #0f172a;
+    border-color: #14532d;
+    color: #bbf7d0;
+}
+
+.job-feed-screen.dark-mode .job-alert.error {
+    background: #1f1717;
+    border-color: #7f1d1d;
+    color: #fecdd3;
+}
+
+.job-feed-screen.dark-mode .loader,
+.job-feed-screen.dark-mode .empty-state,
+.job-feed-screen.dark-mode .tip-text,
+.job-feed-screen.dark-mode .profile-sub,
+.job-feed-screen.dark-mode .featured-kicker,
+.job-feed-screen.dark-mode .job-meta-line,
+.job-feed-screen.dark-mode .job-stats span,
+.job-feed-screen.dark-mode .job-post-text,
+.job-feed-screen.dark-mode .profile-name,
+.job-feed-screen.dark-mode .featured-role,
+.job-feed-screen.dark-mode .job-extra,
+.job-feed-screen.dark-mode .job-date,
+.job-feed-screen.dark-mode .job-location,
+.job-feed-screen.dark-mode .job-feed-kicker {
+    color: #e2e8f0;
+}
+
+.job-feed-screen.dark-mode .job-cta-card {
+    background: #0b1220;
+}
+
+.job-feed-screen.dark-mode .cta-button {
+    background: #1f2937;
+    color: #e5e7eb;
+    border-color: #334155;
+}
+
+.job-feed-screen.dark-mode .cta-button:hover {
+    background: #111827;
+}
+
+.job-feed-screen.dark-mode .cta-button.applied {
+    background: #111827;
+    color: #9ca3af;
+}
+
+.job-feed-screen.dark-mode .info-card {
+    background: #0b1220;
+    color: #e5e7eb;
+}
+
+.job-feed-screen.dark-mode .featured-cta {
+    background: #2563eb;
+    color: white;
+}
+
+.job-feed-screen.dark-mode .action-btn:hover {
+    background: #111827;
+}
+
 @media (max-width: 768px) {
     .job-feed-hero {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .job-feed-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .theme-toggle {
+        padding: 6px 10px;
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .theme-label {
+        font-size: 12px;
+    }
+
+    .toggle-switch {
+        width: 40px;
+        height: 20px;
+        padding: 2px;
+    }
+
+    .toggle-handle {
+        width: 16px;
+        height: 16px;
+    }
+
+    .toggle-switch.on .toggle-handle {
+        transform: translateX(18px);
     }
 
     .job-cta-card {
