@@ -99,11 +99,13 @@ export default function PublicProfile() {
 
         {/* ENTÊTE */}
         <div className="profil-hero-row">
-          <div className="profil-hero-main">
+          <div className="profil-avatar-wrapper">
             <div
               className="profil-avatar profil-avatar-large"
               style={{ backgroundImage: `url(${user.avatar})` }}
             />
+          </div>
+          <div className="profil-hero-main">
             <div className="profil-title-block">
               <h1>{user.name}</h1>
               <div className="profil-stats">
