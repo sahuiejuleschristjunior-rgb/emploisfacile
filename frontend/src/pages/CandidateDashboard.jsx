@@ -194,81 +194,97 @@ export default function CandidateDashboard() {
     });
   };
 
-  /* ===========================================
-     RENDER CANDIDATURE (MODIFIÉ)
-  ============================================*/
-  const renderApplicationCard = (app) => {
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const statusConfig = {
+    pending: { label: "Envoyée", color: "blue" },
+    reviewing: { label: "En revue", color: "amber" },
+    interview: { label: "Entretien", color: "indigo" },
+    accepted: { label: "Offre reçue", color: "emerald" },
+    rejected: { label: "Refusée", color: "rose" },
+  };
+
+  const profileCompletion = Math.min(
+    Math.max(Number(user?.profileCompletion || user?.completion || 0), 0),
+    100,
+  );
+
+  const profileViews = user?.profileViews || 0;
+  const messagesCount = user?.unreadMessages || 0;
+
+  const recentApplications = useMemo(() => {
+    return [...applications]
+      .sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 5);
+  }, [applications]);
+
+  const upcomingAgenda = useMemo(() => {
+    return groupedApps.interview.slice(0, 3).map((app) => ({
+      title: app.job?.title || "Entretien prévu",
+      company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
+      when: app.interviewDate || app.updatedAt || app.createdAt,
+      recruiter: app.job?.recruiter,
+    }));
+  }, [groupedApps.interview]);
+
+  const renderStatusPill = (status) => {
+    const key = (status || "pending").toLowerCase();
+    const cfg = statusConfig[key] || statusConfig.pending;
+
+    return <span className={`status-pill status-${cfg.color}`}>{cfg.label}</span>;
+  };
+
+  const renderRecentRow = (app) => {
     const job = app.job || {};
     const recruiter = job.recruiter || {};
-
     const company = recruiter.companyName || recruiter.name || "Entreprise";
-
-    const raw = (app.status || "Pending").toLowerCase();
-    const labels = {
-      pending: "Envoyée",
-      reviewing: "En revue",
-      interview: "Entretien",
-      accepted: "Offre reçue",
-      rejected: "Refusée",
-    };
-
-    const key =
-      raw === "reviewing"
-        ? "inReview"
-        : raw === "interview"
-        ? "interview"
-        : raw === "accepted"
-        ? "offer"
-        : raw === "rejected"
-        ? "rejected"
-        : "applied";
+    const status = (app.status || "pending").toLowerCase();
 
     return (
-      <div key={app._id} className="cand-card">
-        <div className="cand-card-header" onClick={() => goToJob(job._id)}>
-          <h4>{job.title || "Poste inconnu"}</h4>
-          <span className="cand-pill">{company}</span>
-        </div>
-
-        <div className="cand-meta" onClick={() => goToJob(job._id)}>
-          <span>{job.location || "Localisation inconnue"}</span>
-          {app.createdAt && (
-            <span>
-              Candidature le :{" "}
-              {new Date(app.createdAt).toLocaleDateString()}
-            </span>
-          )}
-        </div>
-
-        <div className={`cand-status-badge status-${key}`}>
-          {labels[raw] || raw}
-        </div>
-
-        {/* ======================================= */}
-        {/* BOUTONS : Contacter / Appel vidéo */}
-        {/* ======================================= */}
-        <div className="cand-actions">
+      <tr key={app._id} className="recent-row" onClick={() => goToJob(job._id)}>
+        <td className="recent-company">
+          <div className="recent-company-name">{company}</div>
+          <div className="recent-job-title">{job.title || "Poste"}</div>
+        </td>
+        <td>{renderStatusPill(status)}</td>
+        <td className="recent-date">
+          {app.updatedAt || app.createdAt
+            ? new Date(app.updatedAt || app.createdAt).toLocaleDateString()
+            : "-"}
+        </td>
+        <td className="recent-actions">
           <button
-            className="cand-btn contact-btn"
-            onClick={() => contactRecruiter(recruiter)}
+            className="ghost-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              contactRecruiter(recruiter);
+            }}
           >
-            💬 Contacter
+            Contacter
           </button>
-
           <button
-            className="cand-btn call-btn"
-            onClick={() => callRecruiter(recruiter)}
+            className="ghost-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              callRecruiter(recruiter);
+            }}
           >
-            📹 Appel vidéo
+            Appel vidéo
           </button>
-        </div>
-      </div>
+        </td>
+      </tr>
     );
   };
 
-  /* ===========================================
-     MINI CARTE — FAVORIS / RECO
-  ============================================*/
   const renderJobMiniCard = (job) => {
     if (!job) return null;
     const recruiterName =
@@ -277,270 +293,188 @@ export default function CandidateDashboard() {
     const isFav = savedJobs.some((s) => s.job?._id === job._id);
 
     return (
-      <div key={job._id} className="cand-mini-job">
-        <div className="mini-job-header">
+      <div key={job._id} className="mini-card" onClick={() => goToJob(job._id)}>
+        <div className="mini-card-top">
+          <div>
+            <p className="mini-title">{job.title}</p>
+            <p className="mini-sub">{recruiterName}</p>
+          </div>
           <button
-            className="fav-btn"
+            className={`fav-toggle ${isFav ? "fav-active" : ""}`}
             onClick={(e) => {
               e.stopPropagation();
               isFav ? unsaveJob(job._id) : saveJob(job._id);
             }}
           >
-            {isFav ? "❤️" : "🤍"}
+            {isFav ? "♥" : "♡"}
           </button>
         </div>
-
-        <div onClick={() => goToJob(job._id)}>
-          <div className="title-row">
-            <h4>{job.title}</h4>
-          </div>
-          <div className="meta-row">
-            <span>{recruiterName}</span>
-            <span>{job.location || "Localisation"}</span>
-          </div>
-        </div>
+        <p className="mini-meta">{job.location || "Localisation"}</p>
       </div>
     );
   };
 
-  /* ===========================================
-     RENDER GLOBAL
-  ============================================*/
   return (
     <div className="candidate-dashboard">
-      {/* HEADER */}
-      <header className="cd-header">
-        <div className="cd-header-left">
-          <button
-            className="cd-burger"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            ☰
-          </button>
+      <aside className={`cd-side ${sidebarOpen ? "cd-side-open" : ""}`}>
+        <div className="side-brand">JobConnect</div>
+        <nav className="side-nav">
+          <button className="side-link active">Dashboard</button>
+          <button className="side-link" onClick={() => scrollToSection("recent")}>Mes Candidatures</button>
+          <button className="side-link" onClick={() => nav("/messages")}>Messages</button>
+          <button className="side-link" onClick={() => scrollToSection("favoris")}>Favoris</button>
+          <button className="side-link" onClick={() => nav("/profil")}>Mon Profil</button>
+        </nav>
+        <div className="side-footer">© 2025 JobConnect Inc.</div>
+      </aside>
 
-          <div className="cd-brand">
-            <div className="cd-logo">EF</div>
-            <div className="cd-brand-text">
-              <div className="cd-brand-title">EmploisFacile · Candidat</div>
-              <div className="cd-brand-sub">
-                Bonjour, {user?.name || "Candidat"}
+      <main className="cd-main">
+        <header className="topbar">
+          <div>
+            <h2>Bienvenue, {user?.name || "Candidat"} 👋</h2>
+            <p className="topbar-sub">Gérez vos candidatures et suivez vos prochaines étapes.</p>
+          </div>
+          <div className="topbar-actions">
+            <button className="notif-btn mobile-only" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              ☰
+            </button>
+            <button className="notif-btn" onClick={() => nav("/notifications")}>🔔</button>
+            <div className="avatar">
+              {user?.name?.charAt(0)?.toUpperCase() || "C"}
+            </div>
+          </div>
+        </header>
+
+        <div className="content">
+          <section className="stats-grid">
+            <div className="stat-card">
+              <p className="stat-label">Candidatures envoyées</p>
+              <p className="stat-value text-indigo">{totalApplications}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Entretiens prévus</p>
+              <p className="stat-value text-orange">{upcomingInterviews}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Vues du profil</p>
+              <p className="stat-value text-emerald">{profileViews}</p>
+            </div>
+            <div className="stat-card">
+              <p className="stat-label">Messages reçus</p>
+              <p className="stat-value text-purple">{messagesCount}</p>
+            </div>
+          </section>
+
+          <div className="main-grid">
+            <section className="card" id="recent">
+              <div className="card-header">
+                <h3>Candidatures récentes</h3>
+                <button className="ghost-link" onClick={() => nav("/candidatures")}>Voir tout</button>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="cd-header-right">
-          <button
-            className="cd-btn-primary"
-            onClick={() => nav("/emplois")}
-          >
-            Trouver un emploi
-          </button>
-        </div>
-      </header>
+              {loadingApps && <div className="loader">Chargement de vos candidatures…</div>}
+              {error && <div className="error-message">{error}</div>}
+              {!loadingApps && recentApplications.length === 0 && !error && (
+                <div className="empty-state">Aucune candidature pour le moment.</div>
+              )}
 
-      {/* SHELL */}
-      <div className="cd-shell">
-        {/* SIDEBAR */}
-        <aside
-          className={`cd-sidebar ${sidebarOpen ? "cd-sidebar--open" : ""}`}
-        >
-          <div className="cd-sidebar-section">
-            <div className="cd-sidebar-title">Navigation</div>
-
-            <div
-              className="cd-menu-item cd-menu-item--active"
-              onClick={() => scrollToSection("cd-top")}
-            >
-              🧭 Tableau de bord
-            </div>
-
-            <div
-              className="cd-menu-item"
-              onClick={() => scrollToSection("cd-pipeline-section")}
-            >
-              📄 Mes candidatures
-            </div>
-
-            <div
-              className="cd-menu-item"
-              onClick={() => scrollToSection("cd-fav-section")}
-            >
-              ⭐ Favoris
-            </div>
-
-            <div
-              className="cd-menu-item"
-              onClick={() => nav("/profil")}
-            >
-              👤 Mon profil
-            </div>
-
-            <div
-              className="cd-menu-item"
-              onClick={() => nav("/settings")}
-            >
-              ⚙ Paramètres
-            </div>
-          </div>
-
-          <div className="cd-sidebar-section cd-sidebar-section-bottom">
-            <div className="cd-sidebar-title">Compte</div>
-            <div className="cd-menu-item" onClick={logout}>
-              🔓 Déconnexion
-            </div>
-          </div>
-        </aside>
-
-        {/* MAIN */}
-        <main className="cd-main">
-          <div className="cd-container" id="cd-top">
-            {/* GAUCHE */}
-            <div className="cd-left">
-              {/* KPI */}
-              <section className="cd-card cd-kpi-card">
-                <div className="cd-kpi-grid">
-                  <div className="cd-kpi">
-                    <div className="num">{totalApplications}</div>
-                    <div className="label">Candidatures envoyées</div>
-                  </div>
-
-                  <div className="cd-kpi">
-                    <div className="num">{upcomingInterviews}</div>
-                    <div className="label">Entretiens prévus</div>
-                  </div>
-
-                  <div className="cd-kpi">
-                    <div className="num">{offersCount}</div>
-                    <div className="label">Offres reçues</div>
-                  </div>
+              {recentApplications.length > 0 && (
+                <div className="table-wrapper">
+                  <table className="recent-table">
+                    <thead>
+                      <tr>
+                        <th>Entreprise</th>
+                        <th>Statut</th>
+                        <th>Dernière mise à jour</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>{recentApplications.map(renderRecentRow)}</tbody>
+                  </table>
                 </div>
-              </section>
+              )}
+            </section>
 
-              {/* PIPELINE */}
-              <section
-                className="cd-card cd-pipeline"
-                id="cd-pipeline-section"
-              >
-                <div className="cd-card-header">
-                  <h3>Suivi de vos candidatures</h3>
-                  <span className="cd-chip">Mode pipeline</span>
-                </div>
-
-                {loadingApps && (
-                  <div className="loader">
-                    Chargement de vos candidatures…
-                  </div>
+            <section className="card agenda-card">
+              <h3>Agenda à venir</h3>
+              <div className="agenda-list">
+                {upcomingAgenda.length === 0 && (
+                  <p className="empty-state small">Aucun entretien programmé pour le moment.</p>
                 )}
 
-                {!loadingApps &&
-                  applications.length === 0 &&
-                  !error && (
-                    <div className="empty-state">
-                      Vous n’avez pas encore postulé.
+                {upcomingAgenda.map((event, idx) => (
+                  <div key={`${event.title}-${idx}`} className="agenda-item">
+                    <div>
+                      <p className="agenda-title">{event.title}</p>
+                      {event.company && <p className="agenda-sub">{event.company}</p>}
+                      {event.when && (
+                        <p className="agenda-date">
+                          {new Date(event.when).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="agenda-actions">
                       <button
-                        className="cd-btn-link"
-                        onClick={() => nav("/emplois")}
+                        className="ghost-btn"
+                        onClick={() => contactRecruiter(event.recruiter || {})}
                       >
-                        Commencer →
+                        Contacter
+                      </button>
+                      <button
+                        className="ghost-btn"
+                        onClick={() => callRecruiter(event.recruiter || {})}
+                      >
+                        Appel vidéo
                       </button>
                     </div>
-                  )}
-
-                {error && <div className="error-message">{error}</div>}
-
-                <div className="cd-pipeline-grid">
-                  <div className="cd-pipe-column">
-                    <div className="cd-pipe-title">Envoyée</div>
-                    <div className="cd-pipe-list">
-                      {groupedApps.applied.map(renderApplicationCard)}
-                    </div>
                   </div>
+                ))}
+              </div>
 
-                  <div className="cd-pipe-column">
-                    <div className="cd-pipe-title">En revue</div>
-                    <div className="cd-pipe-list">
-                      {groupedApps.inReview.map(renderApplicationCard)}
-                    </div>
-                  </div>
-
-                  <div className="cd-pipe-column">
-                    <div className="cd-pipe-title">Entretien</div>
-                    <div className="cd-pipe-list">
-                      {groupedApps.interview.map(renderApplicationCard)}
-                    </div>
-                  </div>
-
-                  <div className="cd-pipe-column">
-                    <div className="cd-pipe-title">Offre</div>
-                    <div className="cd-pipe-list">
-                      {groupedApps.offer.map(renderApplicationCard)}
-                    </div>
-                  </div>
-
-                  <div className="cd-pipe-column">
-                    <div className="cd-pipe-title">Refusée</div>
-                    <div className="cd-pipe-list">
-                      {groupedApps.rejected.map(renderApplicationCard)}
-                    </div>
-                  </div>
+              <div className="progress-block">
+                <div className="progress-header">
+                  <span>Profil complété à {profileCompletion}%</span>
+                  <span className="progress-tip">Ajoutez votre portfolio pour atteindre 100% !</span>
                 </div>
-              </section>
-            </div>
-
-            {/* DROITE */}
-            <div className="cd-right">
-              {/* FAVORIS */}
-              <section
-                className="cd-card cd-side-block"
-                id="cd-fav-section"
-              >
-                <div className="cd-card-header">
-                  <h3>Vos emplois favoris</h3>
+                <div className="progress-bar">
+                  <div
+                    className="progress-fill"
+                    style={{ width: `${profileCompletion}%` }}
+                  ></div>
                 </div>
+              </div>
 
+              <div className="mini-section" id="favoris">
+                <div className="mini-section-header">
+                  <h4>Vos favoris</h4>
+                  <span className="mini-count">{savedJobs.length}</span>
+                </div>
                 {loadingSaved && <div className="loader">Chargement…</div>}
-
                 {!loadingSaved && savedJobs.length === 0 && (
-                  <div className="empty-state small">
-                    Aucun favori pour le moment.
-                  </div>
+                  <div className="empty-state small">Aucun favori pour le moment.</div>
                 )}
-
-                <div className="cd-mini-jobs">
-                  {savedJobs.map((fav) => renderJobMiniCard(fav.job))}
+                <div className="mini-grid">
+                  {savedJobs.slice(0, 4).map((fav) => renderJobMiniCard(fav.job))}
                 </div>
-              </section>
+              </div>
 
-              {/* RECOMMANDATIONS */}
-              <section className="cd-card cd-side-block">
-                <div className="cd-card-header">
-                  <h3>Recommandé pour vous</h3>
-                  <span className="cd-chip cd-chip-soft">
-                    Basé sur les offres récentes
-                  </span>
+              <div className="mini-section">
+                <div className="mini-section-header">
+                  <h4>Recommandé pour vous</h4>
+                  <span className="mini-count">{recommendedJobs.length}</span>
                 </div>
-
-                {loadingReco && (
-                  <div className="loader">
-                    Chargement des recommandations…
-                  </div>
-                )}
-
+                {loadingReco && <div className="loader">Chargement des recommandations…</div>}
                 {!loadingReco && recommendedJobs.length === 0 && (
-                  <div className="empty-state small">
-                    Aucune recommandation pour le moment.
-                  </div>
+                  <div className="empty-state small">Aucune recommandation pour le moment.</div>
                 )}
-
-                <div className="cd-mini-jobs">
-                  {recommendedJobs.map(renderJobMiniCard)}
+                <div className="mini-grid">
+                  {recommendedJobs.slice(0, 4).map(renderJobMiniCard)}
                 </div>
-              </section>
-            </div>
+              </div>
+            </section>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
