@@ -465,6 +465,10 @@
     align-items: flex-start;
   }
 
+  .profil-hero-row {
+    margin-top: 0;
+  }
+
   .profil-avatar {
     width: 120px;
     height: 120px;
