@@ -11,9 +11,12 @@
 
 .profil-wrapper {
   max-width: 1180px;
+  width: 100%;
   margin: 0 auto 48px;
   padding: 16px 16px 0;
   color: var(--fb-text);
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .profil-file-input {
@@ -284,6 +287,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .profil-card {
@@ -299,18 +305,28 @@
   grid-template-columns: 360px 1fr;
   gap: 16px;
   align-items: start;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 12px;
+  box-sizing: border-box;
 }
 
 .profil-col {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
 .profil-posts {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 0 4px 12px;
+  box-sizing: border-box;
 }
 
 .profil-intro-text {
@@ -451,6 +467,7 @@
 
   .profil-grid {
     grid-template-columns: 1fr;
+    padding: 0 8px;
   }
 
   .profil-about-grid {
@@ -538,5 +555,7 @@
 
   .profil-posts {
     gap: 12px;
+    width: 100%;
+    padding: 0 0 10px;
   }
 }
