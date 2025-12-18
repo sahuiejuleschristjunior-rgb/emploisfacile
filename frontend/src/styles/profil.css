@@ -444,39 +444,80 @@
 
 @media (max-width: 640px) {
   .profil-wrapper {
-    padding: 10px;
+    padding: 8px;
+  }
+
+  .profil-hero {
+    gap: 8px;
   }
 
   .profil-cover {
-    border-radius: 10px;
+    border-radius: 12px;
   }
 
+  .profil-cover-meta,
   .change-cover-btn {
-    width: auto;
-    left: auto;
-    right: 12px;
-    bottom: 12px;
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-
-  .profil-hero-main {
-    flex-direction: column;
-    align-items: flex-start;
+    display: none;
   }
 
   .profil-hero-row {
-    margin-top: 0;
+    margin-top: -30px;
+    padding: 10px 12px;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
   }
 
-  .profil-avatar {
-    width: 120px;
-    height: 120px;
-    margin-top: -40px;
+  .profil-hero-main {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .profil-avatar,
+  .profil-avatar-large {
+    width: 62px;
+    height: 62px;
+    margin-top: 0;
+    border-width: 3px;
+  }
+
+  .profil-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .profil-title-block h1 {
+    font-size: 15px;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .profil-stats {
+    margin: 0;
+    font-size: 13px;
+    color: #f5f5f5;
+  }
+
+  .profil-hero-actions {
+    display: none;
+  }
+
+  .profil-tabs-bar {
+    padding: 6px 8px;
+    border-radius: 12px;
   }
 
   .profil-tabs {
     gap: 4px;
+  }
+
+  .profil-tabs button {
+    padding: 10px 8px;
+    font-size: 14px;
   }
 
   .profil-card {
