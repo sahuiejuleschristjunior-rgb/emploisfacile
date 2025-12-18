@@ -540,12 +540,7 @@ export default function FeedPage() {
         </button>
       </div>
 
-      <MobileMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        user={currentUser}
-        role={currentUser?.role}
-      />
+      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* DESKTOP HEADER */}
       <div className="desktop-header">
