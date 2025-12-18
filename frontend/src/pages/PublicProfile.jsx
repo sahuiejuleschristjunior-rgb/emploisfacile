@@ -85,32 +85,37 @@ export default function PublicProfile() {
       RENDER
   ============================================================ */
   return (
-    <div className="profil-page">
-      <div className="profil-shell">
-        {/* COUVERTURE + AVATAR */}
-        <div className="profil-cover-wrapper">
-          <img src={user.coverPhoto} alt="Cover" className="profil-cover" />
-          <div className="profil-cover-scrim" />
-          <div
-            className="profil-avatar-large"
-            style={{ backgroundImage: `url(${user.avatar})` }}
+    <div className="profil-wrapper">
+      <div className="profil-hero">
+        {/* COUVERTURE */}
+        <div className="profil-cover">
+          <img
+            src={user.coverPhoto}
+            alt="Couverture du profil"
+            className="profil-cover-media"
           />
+          <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
         </div>
 
         {/* ENTÊTE */}
-        <div className="profil-header">
-          <div className="profil-title-block">
-            <h1>{user.name}</h1>
-            <div className="profil-subline">
-              <span>{user.friends?.length || 0} amis</span>
-              <span className="dot">•</span>
-              <span>{user.followers?.length || 0} abonnés</span>
+        <div className="profil-hero-row">
+          <div className="profil-hero-main">
+            <div
+              className="profil-avatar profil-avatar-large"
+              style={{ backgroundImage: `url(${user.avatar})` }}
+            />
+            <div className="profil-title-block">
+              <h1>{user.name}</h1>
+              <div className="profil-stats">
+                <span>{user.friends?.length || 0} amis</span> ·
+                <span> {user.followers?.length || 0} abonnés</span>
+              </div>
+              <div className="profil-subtle">{user.email}</div>
             </div>
-            <div className="profil-meta">{user.email}</div>
           </div>
 
           {!isMe && (
-            <div className="profil-action-row">
+            <div className="profil-hero-actions">
               <button
                 className="profil-btn primary"
                 onClick={() => navigate(`/messages?userId=${user._id}`)}
@@ -123,13 +128,13 @@ export default function PublicProfile() {
         </div>
 
         {/* TABS */}
-        <div className="profil-tabs-row">
+        <div className="profil-tabs-bar">
           <div className="profil-tabs">
             <button className="active">Publications</button>
             <button disabled>À propos</button>
             <button disabled>Photos</button>
           </div>
-          <div className="profil-tab-actions">
+          <div className="profil-tabs-actions">
             <button className="profil-btn ghost" disabled>
               ···
             </button>
@@ -137,44 +142,46 @@ export default function PublicProfile() {
         </div>
       </div>
 
-      <div className="profil-body">
-        <div className="profil-left">
-          <div className="profil-card intro-card">
-            <h3>Intro</h3>
-            <p className="profil-intro-text">
-              {user.bio || "Aucune bio renseignée pour le moment."}
-            </p>
-            <div className="profil-info-line">
-              <span role="img" aria-label="mail">
-                📧
-              </span>
-              <span>{user.email}</span>
-            </div>
-            <div className="profil-info-line">
-              <span role="img" aria-label="friends">
-                👥
-              </span>
-              <span>{user.friends?.length || 0} amis</span>
-            </div>
-            <div className="profil-info-line">
-              <span role="img" aria-label="followers">
-                🌟
-              </span>
-              <span>{user.followers?.length || 0} abonnés</span>
+      <div className="profil-content">
+        <div className="profil-grid">
+          <div className="profil-col">
+            <div className="profil-card intro-card">
+              <h3>Intro</h3>
+              <p className="profil-intro-text">
+                {user.bio || "Aucune bio renseignée pour le moment."}
+              </p>
+              <div className="profil-info-line">
+                <span role="img" aria-label="mail">
+                  📧
+                </span>
+                <span>{user.email}</span>
+              </div>
+              <div className="profil-info-line">
+                <span role="img" aria-label="friends">
+                  👥
+                </span>
+                <span>{user.friends?.length || 0} amis</span>
+              </div>
+              <div className="profil-info-line">
+                <span role="img" aria-label="followers">
+                  🌟
+                </span>
+                <span>{user.followers?.length || 0} abonnés</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="profil-right">
-          {posts.length === 0 ? (
-            <div className="profil-card profil-empty">Aucune publication.</div>
-          ) : (
-            <div className="profil-posts">
-              {posts.map((p) => (
-                <Post key={p._id} post={p} currentUser={viewer} />
-              ))}
-            </div>
-          )}
+          <div className="profil-col">
+            {posts.length === 0 ? (
+              <div className="profil-card profil-empty">Aucune publication.</div>
+            ) : (
+              <div className="profil-posts">
+                {posts.map((p) => (
+                  <Post key={p._id} post={p} currentUser={viewer} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

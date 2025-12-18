@@ -283,7 +283,13 @@ export default function ProfilPage() {
       <div className="profil-hero">
         {/* COVER */}
         <div className="profil-cover">
-          <img key={`${coverURL}-${coverKey}`} src={coverURL} alt="cover" />
+          <img
+            key={`${coverURL}-${coverKey}`}
+            src={coverURL}
+            alt="Couverture du profil"
+            className="profil-cover-media"
+          />
+          <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
           {isOwner && (
             <label className="change-cover-btn" htmlFor={coverInputId}>
               Changer la couverture
