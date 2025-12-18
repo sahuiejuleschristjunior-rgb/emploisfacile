@@ -502,6 +502,15 @@
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
   }
 
+  .profil-avatar-wrapper {
+    position: static;
+    top: auto;
+    left: auto;
+    width: var(--profil-avatar-size);
+    height: var(--profil-avatar-size);
+    margin-top: calc(-1 * var(--profil-avatar-overlap));
+  }
+
   .profil-hero-main {
     flex-direction: row;
     align-items: center;
