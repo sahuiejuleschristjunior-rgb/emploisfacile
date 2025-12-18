@@ -297,20 +297,24 @@ export default function ProfilPage() {
           )}
         </div>
 
+        <div className="profil-avatar-shell">
+          <div
+            key={`${avatarURL}-${avatarKey}`}
+            className="profil-avatar"
+            style={{ backgroundImage: `url(${avatarURL})` }}
+          >
+            {isOwner && (
+              <label className="change-avatar-btn" htmlFor={avatarInputId}>
+                📷
+              </label>
+            )}
+          </div>
+        </div>
+
         {/* HEADER */}
         <div className="profil-hero-row">
           <div className="profil-hero-main">
-            <div
-              key={`${avatarURL}-${avatarKey}`}
-              className="profil-avatar"
-              style={{ backgroundImage: `url(${avatarURL})` }}
-            >
-              {isOwner && (
-                <label className="change-avatar-btn" htmlFor={avatarInputId}>
-                  📷
-                </label>
-              )}
-            </div>
+            <div className="profil-avatar-spacer" aria-hidden="true" />
 
             <div className="profil-title-block">
               <h1>{user.name}</h1>

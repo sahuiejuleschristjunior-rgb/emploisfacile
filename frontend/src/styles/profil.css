@@ -5,6 +5,9 @@
   --fb-text: #e4e6eb;
   --fb-subtext: #b0b3b8;
   --fb-primary: #2d88ff;
+  --profil-avatar-size: clamp(120px, 18vw, 172px);
+  --profil-avatar-overlap: calc(var(--profil-avatar-size) / 2);
+  --profil-avatar-border: 4px;
 }
 
 .profil-wrapper {
@@ -31,6 +34,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
 }
 
 .profil-cover {
@@ -60,6 +64,17 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.profil-avatar-shell {
+  position: absolute;
+  left: clamp(16px, 4vw, 28px);
+  bottom: calc(var(--profil-avatar-overlap) * -1);
+  width: var(--profil-avatar-size);
+  height: var(--profil-avatar-size);
+  display: grid;
+  place-items: center;
+  z-index: 3;
 }
 
 .profil-cover-meta {
@@ -103,8 +118,8 @@
   background: var(--fb-card);
   border: 1px solid var(--fb-border);
   border-radius: 12px;
-  padding: 18px 20px;
-  margin-top: clamp(-72px, -8vw, -48px);
+  padding: 22px 16px 16px;
+  margin-top: calc(var(--profil-avatar-overlap) + 12px);
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
@@ -117,25 +132,23 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  padding-left: calc(var(--profil-avatar-size) + 10px);
 }
 
 .profil-avatar {
-  width: clamp(132px, 18vw, 180px);
-  aspect-ratio: 1 / 1;
-  max-width: 400px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background-size: cover;
   background-position: center;
   position: relative;
-  border: 4px solid var(--fb-bg);
+  border: var(--profil-avatar-border) solid var(--fb-bg);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
-  flex-shrink: 0;
-  margin-top: clamp(-110px, -12vw, -78px);
 }
 
 .profil-avatar-large {
-  width: clamp(140px, 20vw, 200px);
-  max-width: 400px;
+  width: 100%;
+  height: 100%;
 }
 
 .change-avatar-btn {
@@ -187,6 +200,11 @@
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.profil-avatar-spacer {
+  width: var(--profil-avatar-size);
+  flex-shrink: 0;
 }
 
 .profil-btn {
@@ -423,14 +441,13 @@
   }
 
   .profil-hero-row {
-    margin-top: -70px;
+    margin-top: calc(var(--profil-avatar-overlap) + 10px);
     grid-template-columns: 1fr;
+    padding: 20px 14px 14px;
   }
 
   .profil-avatar {
-    width: 140px;
-    height: 140px;
-    margin-top: -70px;
+    border-width: 3px;
   }
 
   .profil-grid {
@@ -443,6 +460,12 @@
 }
 
 @media (max-width: 640px) {
+  :root {
+    --profil-avatar-size: clamp(86px, 26vw, 122px);
+    --profil-avatar-overlap: calc(var(--profil-avatar-size) / 2);
+    --profil-avatar-border: 3px;
+  }
+
   .profil-wrapper {
     padding: 8px;
   }
@@ -460,28 +483,25 @@
     display: none;
   }
 
+  .profil-avatar-shell {
+    left: clamp(12px, 6vw, 18px);
+  }
+
   .profil-hero-row {
-    margin-top: -30px;
-    padding: 10px 12px;
+    padding: 12px;
     grid-template-columns: auto 1fr;
     align-items: center;
     gap: 10px;
     border-radius: 14px;
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    margin-top: calc(var(--profil-avatar-overlap) + 10px);
   }
 
   .profil-hero-main {
     flex-direction: row;
     align-items: center;
     gap: 10px;
-  }
-
-  .profil-avatar,
-  .profil-avatar-large {
-    width: 62px;
-    height: 62px;
-    margin-top: 0;
-    border-width: 3px;
+    padding-left: calc(var(--profil-avatar-size) + 6px);
   }
 
   .profil-title-block {

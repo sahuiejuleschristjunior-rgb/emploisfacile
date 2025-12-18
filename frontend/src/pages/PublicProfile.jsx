@@ -97,13 +97,17 @@ export default function PublicProfile() {
           <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
         </div>
 
+        <div className="profil-avatar-shell">
+          <div
+            className="profil-avatar profil-avatar-large"
+            style={{ backgroundImage: `url(${user.avatar})` }}
+          />
+        </div>
+
         {/* ENTÊTE */}
         <div className="profil-hero-row">
           <div className="profil-hero-main">
-            <div
-              className="profil-avatar profil-avatar-large"
-              style={{ backgroundImage: `url(${user.avatar})` }}
-            />
+            <div className="profil-avatar-spacer" aria-hidden="true" />
             <div className="profil-title-block">
               <h1>{user.name}</h1>
               <div className="profil-stats">
