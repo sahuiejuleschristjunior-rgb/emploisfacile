@@ -107,7 +107,7 @@ export default function PublicProfile() {
             <div className="profil-title-block">
               <h1>{user.name}</h1>
               <div className="profil-stats">
-                <span>{user.friends?.length || 0} amis</span> ·
+                <span>{user.friends?.length || 0} amis</span> |
                 <span> {user.followers?.length || 0} abonnés</span>
               </div>
             </div>

@@ -315,7 +315,7 @@ export default function ProfilPage() {
             <div className="profil-title-block">
               <h1>{user.name}</h1>
               <p className="profil-stats">
-                {formatCount(friendsCount)} amis · {formatCount(followersCount)} abonnés
+                {formatCount(friendsCount)} amis | {formatCount(followersCount)} abonnés
               </p>
 
             </div>
