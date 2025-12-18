@@ -920,6 +920,17 @@ export default function FacebookLayout() {
                     <div
                       className="fb-sidebar-subitem"
                       onClick={() => {
+                        nav("/fb/dashboard");
+                        setShowSettings(false);
+                      }}
+                    >
+                      <FBIcon name="home" size={18} />
+                      <span>Tableau de bord</span>
+                    </div>
+
+                    <div
+                      className="fb-sidebar-subitem"
+                      onClick={() => {
                         nav("/fb/settings");
                         setShowSettings(false);
                       }}
@@ -1000,22 +1011,57 @@ export default function FacebookLayout() {
           </div>
 
           <div className="fs-menu-grid">
-            <div className="fs-item" onClick={() => nav("/emplois")}>
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/emplois");
+                setShowMobileMenu(false);
+              }}
+            >
               <FBIcon name="jobs" size={22} />
               <span>Emplois</span>
             </div>
 
-            <div className="fs-item" onClick={() => nav("/fb")}>
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/fb");
+                setShowMobileMenu(false);
+              }}
+            >
               <FBIcon name="home" size={22} />
               <span>Acceuil</span>
             </div>
 
-            <div className="fs-item" onClick={() => nav("/fb/relations")}>
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/fb/relations");
+                setShowMobileMenu(false);
+              }}
+            >
               <FBIcon name="friends" size={22} />
               <span>Relation</span>
             </div>
 
-            <div className="fs-item" onClick={() => nav("/settings")}>
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/fb/dashboard");
+                setShowMobileMenu(false);
+              }}
+            >
+              <FBIcon name="home" size={22} />
+              <span>Tableau de bord</span>
+            </div>
+
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/settings");
+                setShowMobileMenu(false);
+              }}
+            >
               <FBIcon name="settings" size={22} />
               <span>Paramètres</span>
             </div>
