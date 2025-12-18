@@ -567,4 +567,17 @@
     width: 100%;
     padding: 0 0 10px;
   }
+
+  /* Align intro / info column with feed on narrow screens */
+  .profil-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .profil-col,
+  .profil-card {
+    width: 100%;
+  }
 }
