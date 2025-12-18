@@ -894,7 +894,7 @@ export default function FacebookLayout() {
 
                 <div className="fb-sidebar-item" onClick={() => nav("/emplois")}>
                   <FBIcon name="jobs" size={20} />
-                  <div className="fb-sidebar-item-label">Tableau de bord</div>
+                  <div className="fb-sidebar-item-label">Emplois</div>
                 </div>
 
                 <div className="fb-sidebar-item" onClick={() => nav("/notifications")}>
@@ -1002,17 +1002,17 @@ export default function FacebookLayout() {
           <div className="fs-menu-grid">
             <div className="fs-item" onClick={() => nav("/emplois")}>
               <FBIcon name="jobs" size={22} />
-              <span>Tableau de bord</span>
+              <span>Emplois</span>
             </div>
 
             <div className="fs-item" onClick={() => nav("/fb")}>
               <FBIcon name="home" size={22} />
-              <span>Fils</span>
+              <span>Acceuil</span>
             </div>
 
             <div className="fs-item" onClick={() => nav("/fb/relations")}>
               <FBIcon name="friends" size={22} />
-              <span>Découvrir</span>
+              <span>Relation</span>
             </div>
 
             <div className="fs-item" onClick={() => nav("/settings")}>
