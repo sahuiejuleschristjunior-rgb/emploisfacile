@@ -559,3 +559,28 @@
     padding: 0 0 10px;
   }
 }
+/* ==============================
+   FIX MOBILE : NOM DERRIÈRE AVATAR
+   (correction minimale)
+============================== */
+@media (max-width: 640px) {
+
+  .profil-header-content {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  /* 🔥 CLÉ DU FIX */
+  .profil-info-area {
+    flex: 1;
+    min-width: 0; /* ← empêche le texte de passer sous l’avatar */
+  }
+
+  .profil-info-area h2 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
