@@ -396,12 +396,6 @@ export default function ProfilPage() {
               <div className="profil-card profil-info-card">
                 <h3>Informations</h3>
                 <div className="profil-info-line">
-                  <span role="img" aria-label="mail">
-                    📧
-                  </span>
-                  <span>{user.email}</span>
-                </div>
-                <div className="profil-info-line">
                   <span role="img" aria-label="friends">
                     👥
                   </span>
@@ -485,12 +479,6 @@ export default function ProfilPage() {
 
             <div className="profil-card profil-info-card">
               <h3>Informations</h3>
-              <div className="profil-info-line">
-                <span role="img" aria-label="mail">
-                  📧
-                </span>
-                <span>{user.email}</span>
-              </div>
               <div className="profil-info-line">
                 <span role="img" aria-label="friends">
                   👥

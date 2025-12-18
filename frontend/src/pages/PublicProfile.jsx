@@ -110,7 +110,6 @@ export default function PublicProfile() {
                 <span>{user.friends?.length || 0} amis</span> ·
                 <span> {user.followers?.length || 0} abonnés</span>
               </div>
-              <div className="profil-subtle">{user.email}</div>
             </div>
           </div>
 
@@ -150,12 +149,6 @@ export default function PublicProfile() {
               <p className="profil-intro-text">
                 {user.bio || "Aucune bio renseignée pour le moment."}
               </p>
-              <div className="profil-info-line">
-                <span role="img" aria-label="mail">
-                  📧
-                </span>
-                <span>{user.email}</span>
-              </div>
               <div className="profil-info-line">
                 <span role="img" aria-label="friends">
                   👥
