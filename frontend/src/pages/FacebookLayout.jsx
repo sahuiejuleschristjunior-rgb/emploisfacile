@@ -920,6 +920,17 @@ export default function FacebookLayout() {
                     <div
                       className="fb-sidebar-subitem"
                       onClick={() => {
+                        nav("/fb/dashboard");
+                        setShowSettings(false);
+                      }}
+                    >
+                      <FBIcon name="home" size={18} />
+                      <span>Tableau de bord</span>
+                    </div>
+
+                    <div
+                      className="fb-sidebar-subitem"
+                      onClick={() => {
                         nav("/fb/settings");
                         setShowSettings(false);
                       }}
