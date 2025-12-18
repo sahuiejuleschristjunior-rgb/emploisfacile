@@ -720,6 +720,36 @@
         align-items: flex-start;
     }
 
+    .job-feed-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .theme-toggle {
+        padding: 6px 10px;
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .theme-label {
+        font-size: 12px;
+    }
+
+    .toggle-switch {
+        width: 40px;
+        height: 20px;
+        padding: 2px;
+    }
+
+    .toggle-handle {
+        width: 16px;
+        height: 16px;
+    }
+
+    .toggle-switch.on .toggle-handle {
+        transform: translateX(18px);
+    }
+
     .job-cta-card {
         grid-template-columns: 1fr;
     }
