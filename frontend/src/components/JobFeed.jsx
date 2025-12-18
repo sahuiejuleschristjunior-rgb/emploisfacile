@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/JobFeed.css";
 
 export default function JobFeed() {
@@ -14,6 +15,7 @@ export default function JobFeed() {
 
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
+  const navigate = useNavigate();
 
   const currentUser = (() => {
     try {
@@ -232,6 +234,21 @@ export default function JobFeed() {
 
   const featuredJobs = filteredJobs.slice(0, 3);
 
+  const handleDashboardNavigation = () => {
+    const role = (currentUser.role || "").toLowerCase();
+    if (role === "recruiter" || role === "recruteur") {
+      navigate("/recruiter/dashboard");
+      return;
+    }
+
+    if (role === "candidate" || role === "candidat") {
+      navigate("/candidate/dashboard");
+      return;
+    }
+
+    navigate("/fb/dashboard");
+  };
+
   return (
     <div className={`job-feed-screen ${darkMode ? "dark-mode" : ""}`}>
       <div className="jobfeed-grid">
@@ -247,6 +264,9 @@ export default function JobFeed() {
           </div>
 
           <div className="sidebar-card links-card">
+            <button className="link-row" onClick={handleDashboardNavigation}>
+              📊 Tableau de bord
+            </button>
             <button className="link-row">📄 Mes CV & candidatures</button>
             <button className="link-row">📌 Favoris</button>
             <button className="link-row">🛠️ Paramètres</button>
