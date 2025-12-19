@@ -32,6 +32,7 @@ const { initSocket } = require("./socket");
 // Express
 const app = express();
 const server = http.createServer(app);
+const PORT = process.env.PORT || 4000;
 
 /* ============================================================
    CORS
@@ -105,11 +106,22 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 initSocket(server);
 
 /* ============================================================
+   SERVER EVENTS
+============================================================ */
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`❌ Port ${PORT} already in use. Set PORT env to use a different port.`);
+    process.exit(1);
+  }
+
+  throw err;
+});
+
+/* ============================================================
    START SERVER
 ============================================================ */
 db.connect()
   .then(() => {
-    const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => console.log("✔ Backend ON PORT", PORT));
   })
   .catch((err) => {
