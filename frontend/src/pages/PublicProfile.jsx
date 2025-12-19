@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
+import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import "../styles/profil.css";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
@@ -24,6 +25,8 @@ export default function PublicProfile() {
   const [viewer, setViewer] = useState(null); // Utilisateur connecté
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   /* ============================================================
       LOAD CONNECTED USER
@@ -100,6 +103,13 @@ export default function PublicProfile() {
         .map((m, idx) => ({ ...m, url: fixUrl(m.url), key: `${p._id || idx}-${idx}`, fromPost: p?._id }))
     )
     .slice(0, 30);
+
+  const openViewer = (idx = 0) => {
+    if (!photoItems.length) return;
+    const safeIndex = Math.max(0, Math.min(idx, photoItems.length - 1));
+    setViewerIndex(safeIndex);
+    setViewerOpen(true);
+  };
 
   /* ============================================================
       RENDER
@@ -189,7 +199,7 @@ export default function PublicProfile() {
               <div className="profil-card-header">
                 <h3>Photos</h3>
                 {photoItems.length > 0 && (
-                  <button className="profil-link" disabled>
+                  <button className="profil-link" onClick={() => openViewer(0)}>
                     Afficher tout
                   </button>
                 )}
@@ -198,12 +208,13 @@ export default function PublicProfile() {
                 <p className="profil-empty">Aucune photo pour le moment.</p>
               ) : (
                 <div className="profil-photo-grid">
-                  {photoItems.slice(0, 9).map((m) => (
-                    <div
+                  {photoItems.slice(0, 9).map((m, idx) => (
+                    <button
                       key={m.key}
                       className="profil-photo-thumb"
                       style={{ backgroundImage: `url(${m.url})` }}
                       aria-label="Photo de la galerie"
+                      onClick={() => openViewer(idx)}
                     />
                   ))}
                 </div>
@@ -224,6 +235,15 @@ export default function PublicProfile() {
           </div>
         </div>
       </div>
+
+      {viewerOpen && (
+        <ProfilePhotoViewer
+          items={photoItems}
+          index={viewerIndex}
+          onChangeIndex={setViewerIndex}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </div>
   );
 }
