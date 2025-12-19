@@ -1,5 +1,5 @@
 // src/api/socialApi.js
-const API_URL = (import.meta.env.VITE_API_URL || "https://emploisfacile.org/api").replace(/\/$/, "");
+import { API_URL } from "./config";
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
