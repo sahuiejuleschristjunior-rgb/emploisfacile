@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPage } from "../api/pagesApi";
+import "../styles/page.css";
 
 export default function PageCreate() {
   const [form, setForm] = useState({ name: "", category: "", bio: "" });

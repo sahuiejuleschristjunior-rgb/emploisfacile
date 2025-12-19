@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMyPages } from "../api/pagesApi";
 import { getImageUrl } from "../utils/imageUtils";
+import "../styles/page.css";
 
 export default function MyPages() {
   const [pages, setPages] = useState([]);

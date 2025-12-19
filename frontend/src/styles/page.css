@@ -1,0 +1,414 @@
+/* Styles dédiés aux Pages (création, profil, liste) */
+
+:root {
+  --page-max-width: 1160px;
+}
+
+/* --------- Layout global des pages --------- */
+.page-shell {
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin: 0 auto 18px;
+  padding: 16px;
+  background: var(--fb-card, #242526);
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 14px;
+  color: var(--fb-text, #e4e6eb);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
+}
+
+.page-shell h1 {
+  margin: 0 0 6px;
+  font-size: clamp(20px, 3vw, 26px);
+  color: var(--fb-text, #e4e6eb);
+}
+
+.page-shell p {
+  margin: 0 0 12px;
+  color: var(--fb-subtext, #b0b3b8);
+}
+
+.page-shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+/* --------- Formulaire de création --------- */
+.page-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 540px;
+  margin: 10px auto 0;
+  background: var(--fb-bg, #18191a);
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.page-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--fb-text, #e4e6eb);
+}
+
+.page-form input,
+.page-form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 10px;
+  background: #0f1113;
+  color: var(--fb-text, #e4e6eb);
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.page-form input:focus,
+.page-form textarea:focus {
+  outline: none;
+  border-color: var(--fb-primary, #2d88ff);
+  box-shadow: 0 0 0 2px rgba(45, 136, 255, 0.25);
+}
+
+.page-form textarea {
+  resize: vertical;
+  min-height: 110px;
+  line-height: 1.45;
+}
+
+.error-text {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.page-shell .btn-primary {
+  align-self: flex-start;
+  padding: 10px 16px;
+  background: var(--fb-primary, #2d88ff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
+}
+
+.page-shell .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.page-shell .btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* --------- Profil de page --------- */
+.page-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 6;
+  min-height: 170px;
+  background: linear-gradient(135deg, #1e1f23, #16181c);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.page-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--fb-card, #242526);
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+}
+
+.page-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.page-avatar {
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  background-size: cover;
+  background-position: center;
+  background-color: #0f1113;
+  border: 3px solid var(--fb-border, #3a3b3c);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+  flex-shrink: 0;
+}
+
+.page-header h1 {
+  margin: 2px 0 6px;
+  font-size: clamp(18px, 3vw, 24px);
+}
+
+.page-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fb-subtext, #b0b3b8);
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.page-bio {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: #0f1113;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  color: var(--fb-text, #e4e6eb);
+  line-height: 1.5;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.page-header-actions .btn-primary {
+  min-width: 150px;
+}
+
+/* --------- Bloc publication en tant que page --------- */
+.page-post-creator {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 14px;
+  background: var(--fb-card, #242526);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.page-post-creator h3 {
+  margin: 0;
+  color: var(--fb-text, #e4e6eb);
+  font-size: 16px;
+}
+
+.page-post-creator textarea {
+  width: 100%;
+  min-height: 90px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  background: #0f1113;
+  color: var(--fb-text, #e4e6eb);
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+/* --------- Liste des publications --------- */
+.page-posts {
+  margin-top: 16px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 14px;
+  background: var(--fb-card, #242526);
+  padding: 12px;
+}
+
+.page-posts h3 {
+  margin: 0 0 12px;
+  color: var(--fb-text, #e4e6eb);
+}
+
+.page-posts .empty {
+  color: var(--fb-subtext, #b0b3b8);
+}
+
+.page-post-item {
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  background: #0f1113;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.page-post-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.page-post-header .page-avatar {
+  width: 52px;
+  height: 52px;
+  border-width: 2px;
+}
+
+.page-post-header::after {
+  content: "Publié par la Page";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 8px;
+  background: rgba(45, 136, 255, 0.12);
+  color: var(--fb-primary, #2d88ff);
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid rgba(45, 136, 255, 0.32);
+}
+
+.page-post-author {
+  font-weight: 700;
+  color: var(--fb-text, #e4e6eb);
+}
+
+.page-post-text {
+  margin: 6px 0 10px;
+  color: var(--fb-text, #e4e6eb);
+  line-height: 1.45;
+}
+
+.page-post-media {
+  display: grid;
+  gap: 8px;
+}
+
+.page-post-media img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  object-fit: cover;
+}
+
+/* --------- Liste "Mes pages" --------- */
+.page-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.page-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--fb-text, #e4e6eb);
+  background: #0f1113;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.15s ease;
+}
+
+.page-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--fb-primary);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.page-card .page-avatar {
+  width: 68px;
+  height: 68px;
+}
+
+.page-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.page-card-title {
+  font-weight: 700;
+  color: var(--fb-text, #e4e6eb);
+}
+
+.page-card-sub,
+.page-card-followers {
+  color: var(--fb-subtext, #b0b3b8);
+  font-size: 14px;
+}
+
+.page-card-followers {
+  font-weight: 600;
+}
+
+/* --------- Responsiveness --------- */
+@media (min-width: 640px) {
+  .page-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .page-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .page-cover {
+    aspect-ratio: 16 / 7.5;
+    min-height: 140px;
+  }
+
+  .page-header {
+    padding: 12px;
+  }
+
+  .page-header-left {
+    gap: 10px;
+  }
+
+  .page-post-header::after {
+    position: static;
+    transform: none;
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .page-header-actions .btn-primary {
+    width: 100%;
+    text-align: center;
+  }
+
+  .page-card {
+    padding: 12px 10px;
+  }
+}
