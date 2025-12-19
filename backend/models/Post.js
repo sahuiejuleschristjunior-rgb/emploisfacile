@@ -52,6 +52,10 @@ const PostSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
+    page: { type: mongoose.Schema.Types.ObjectId, ref: "Page", default: null },
+
+    authorType: { type: String, enum: ["user", "page"], default: "user" },
+
     text: { type: String, default: "" },
 
     media: [mediaSubSchema],

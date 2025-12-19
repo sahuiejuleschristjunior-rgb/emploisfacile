@@ -17,6 +17,8 @@ const storyRoutes = require("./routes/story");
 const notificationRoutes = require("./routes/notifications");
 const savedJobRoutes = require("./routes/SavedJobRoutes");
 const messageRoutes = require("./routes/MessageRoutes");
+const pagesRoutes = require("./routes/pages");
+const pagePostsRoutes = require("./routes/pagePosts");
 
 // ⭐ SEARCH
 const searchRoutes = require("./routes/SearchRoutes");
@@ -89,6 +91,10 @@ app.use("/api/search", searchRoutes);
 
 // ⭐ SOCIAL SYSTEM (amis + follow)
 app.use("/api/social", socialRoutes);
+
+// Pages
+app.use("/api/pages", pagesRoutes);
+app.use("/api/page-posts", pagePostsRoutes);
 
 /* Simple Health Check */
 app.get("/api/health", (req, res) => res.json({ ok: true }));

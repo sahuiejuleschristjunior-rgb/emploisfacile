@@ -54,6 +54,7 @@ const NotificationSchema = new mongoose.Schema(
         "read_receipt",
         "typing",
         "story_new",
+        "page_follow",
       ],
     },
 
@@ -68,6 +69,13 @@ const NotificationSchema = new mongoose.Schema(
     story: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Story",
+      default: null,
+    },
+
+    // Page liée (follow / posts)
+    page: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Page",
       default: null,
     },
 

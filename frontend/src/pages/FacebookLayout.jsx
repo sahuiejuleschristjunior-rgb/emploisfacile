@@ -911,6 +911,11 @@ export default function FacebookLayout({ headerOnly = false }) {
                   <div className="fb-sidebar-item-label">Emplois</div>
                 </div>
 
+                <div className="fb-sidebar-item" onClick={() => nav("/pages/me")}>
+                  <FBIcon name="profile" size={20} />
+                  <div className="fb-sidebar-item-label">Pages</div>
+                </div>
+
                 <div className="fb-sidebar-item" onClick={() => nav("/notifications")}>
                   <FBIcon name="notif" size={20} />
                   <div className="fb-sidebar-item-label">Notifications</div>
@@ -1037,6 +1042,17 @@ export default function FacebookLayout({ headerOnly = false }) {
             >
               <FBIcon name="jobs" size={22} />
               <span>Emplois</span>
+            </div>
+
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/pages/me");
+                setShowMobileMenu(false);
+              }}
+            >
+              <FBIcon name="profile" size={22} />
+              <span>Pages</span>
             </div>
 
             <div

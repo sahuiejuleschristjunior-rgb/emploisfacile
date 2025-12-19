@@ -326,7 +326,11 @@ export default function FacebookFeed() {
       {/* POSTS */}
       {!loadingInitial &&
         posts.map((post) => {
-          const postAvatarStyle = getAvatarStyle(post.user?.avatar);
+          const isPagePost = post.authorType === "page";
+          const postAvatarStyle = getAvatarStyle(
+            isPagePost ? post.page?.avatar : post.user?.avatar
+          );
+          const displayName = isPagePost ? post.page?.name : post.user?.name;
           const likes = post.likes?.length || 0;
           const commentsCount = post.comments?.length || 0;
 
@@ -340,7 +344,7 @@ export default function FacebookFeed() {
                   style={postAvatarStyle}
                 />
                 <div className="fb-post-user">
-                  <div className="fb-post-author">{post.user?.name}</div>
+                  <div className="fb-post-author">{displayName}</div>
                   <div className="fb-post-meta">
                     {new Date(post.createdAt).toLocaleString()}
                   </div>
