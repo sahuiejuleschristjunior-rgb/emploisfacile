@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const http = require("http");
-const net = require("net");
 
 // DB
 const db = require("./config/db");
@@ -33,25 +32,9 @@ const { initSocket } = require("./socket");
 // Express
 const app = express();
 const server = http.createServer(app);
-const DESIRED_PORT = Number(process.env.PORT) || 4000;
 
-const findAvailablePort = async (port) =>
-  new Promise((resolve, reject) => {
-    const tester = net
-      .createServer()
-      .once("error", (err) => {
-        if (err.code === "EADDRINUSE") {
-          resolve(findAvailablePort(port + 1));
-          return;
-        }
-
-        reject(err);
-      })
-      .once("listening", () => {
-        tester.close(() => resolve(port));
-      })
-      .listen(port);
-  });
+// 🔒 PORT FIXE (PRODUCTION SAFE)
+const PORT = Number(process.env.PORT) || 3000;
 
 /* ============================================================
    CORS
@@ -116,8 +99,12 @@ app.use("/api/social", socialRoutes);
 app.use("/api/pages", pagesRoutes);
 app.use("/api/page-posts", pagePostsRoutes);
 
-/* Simple Health Check */
-app.get("/api/health", (req, res) => res.json({ ok: true }));
+/* ============================================================
+   HEALTH CHECK
+============================================================ */
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true });
+});
 
 /* ============================================================
    SOCKET.IO
@@ -125,31 +112,13 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 initSocket(server);
 
 /* ============================================================
-   SERVER EVENTS
-============================================================ */
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`❌ Port ${DESIRED_PORT} already in use. Set PORT env to use a different port.`);
-    process.exit(1);
-  }
-
-  throw err;
-});
-
-/* ============================================================
    START SERVER
 ============================================================ */
 db.connect()
-  .then(async () => {
-    const port = await findAvailablePort(DESIRED_PORT);
-
-    if (port !== DESIRED_PORT) {
-      console.warn(
-        `⚠️  Port ${DESIRED_PORT} unavailable. Using available port ${port} instead. Set PORT to a free port to silence this warning.`
-      );
-    }
-
-    server.listen(port, () => console.log("✔ Backend ON PORT", port));
+  .then(() => {
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log("✔ Backend running on port", PORT);
+    });
   })
   .catch((err) => {
     console.error("❌ DB ERROR :", err);
