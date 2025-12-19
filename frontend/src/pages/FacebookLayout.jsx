@@ -18,6 +18,9 @@ export default function FacebookLayout({ headerOnly = false }) {
   const API_URL = import.meta.env.VITE_API_URL;
   const { token: authToken, user: authUser, logout } = useAuth();
 
+  const isFullLayout = location.pathname.startsWith("/fb");
+  const isCompactLayout = headerOnly || !isFullLayout;
+
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -737,7 +740,7 @@ export default function FacebookLayout({ headerOnly = false }) {
   return (
     <div
       className={`fb-app ${
-        headerOnly ? "fb-app--header-only" : "fb-app--with-bottom-nav"
+        isCompactLayout ? "fb-app--header-only" : "fb-app--with-bottom-nav"
       }`}
     >
       {/* HEADER */}
@@ -870,8 +873,8 @@ export default function FacebookLayout({ headerOnly = false }) {
       </header>
 
       {/* APP BODY */}
-      <main className={`fb-app-body ${headerOnly ? "fb-app-body--solo" : ""}`}>
-        {headerOnly ? (
+      <main className={`fb-app-body ${isCompactLayout ? "fb-app-body--solo" : ""}`}>
+        {isCompactLayout ? (
           <div className="fb-layout fb-layout--header-only">
             <section className="fb-center-column">
               <Outlet />
@@ -969,12 +972,11 @@ export default function FacebookLayout({ headerOnly = false }) {
 
             <aside className="fb-right-column"></aside>
           </div>
-        </div>
         )}
       </main>
 
       {/* BOTTOM NAV */}
-      {!headerOnly && (
+      {!isCompactLayout && (
         <nav className="fb-bottom-nav">
           <div className="fb-bottom-nav-inner">
 

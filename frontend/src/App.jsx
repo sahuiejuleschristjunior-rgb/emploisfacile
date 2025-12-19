@@ -1,7 +1,7 @@
 // ================================
 // IMPORTS — TOUJOURS EN PREMIER
 // ================================
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 import ChangePassword from "./pages/ChangePassword";
 import LandingPage from "./pages/LandingPage";
@@ -83,88 +83,65 @@ export default function App() {
               {/* Profil Public */}
               <Route path="/profil/:id" element={<PublicProfile />} />
 
-              {/* ================= FACEBOOK LAYOUT ================= */}
+              {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
               <Route
-                path="/fb"
                 element={
                   <ProtectedRoute>
                     <FacebookLayout />
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<FacebookFeed />} />
-                <Route path="post/:id" element={<PostPage />} />
+                {/* Groupe /fb avec colonnes latérales sur desktop */}
+                <Route path="/fb" element={<Outlet />}>
+                  <Route index element={<FacebookFeed />} />
+                  <Route path="post/:id" element={<PostPage />} />
 
-                <Route
-                  path="dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardRouter />
-                    </ProtectedRoute>
-                  }
-                />
+                  <Route
+                    path="dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardRouter />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                <Route path="relations" element={<RelationsPage />} />
-                <Route path="emplois" element={<EmploisPage />} />
-                <Route path="notifications" element={<NotifsPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-              </Route>
+                  <Route path="relations" element={<RelationsPage />} />
+                  <Route path="emplois" element={<EmploisPage />} />
+                  <Route path="notifications" element={<NotifsPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
 
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <FacebookLayout headerOnly />
-                  </ProtectedRoute>
-                }
-              >
-                {/* Profil perso */}
+                {/* Pages compactes mais avec le header présent */}
                 <Route path="/profil" element={<ProfilPage />} />
-
-                {/* Messages */}
                 <Route path="/messages" element={<Messages />} />
-
-                {/* Chat privé */}
                 <Route path="/messages/:id" element={<ChatPage />} />
-
-                {/* Settings */}
                 <Route
                   path="/settings"
                   element={<Navigate to="/fb/settings" replace />}
                 />
-
-                {/* Post hors layout */}
                 <Route path="/post/:id" element={<PostPage />} />
-
-                {/* Jobs hors layout */}
                 <Route path="/emplois" element={<EmploisPage />} />
-
                 <Route path="/emplois/:id" element={<JobDetailPage />} />
 
-                {/* Recruiter */}
                 <Route
                   path="/recruiter/dashboard"
                   element={<RecruiterDashboard />}
                 />
-
                 <Route
                   path="/recruiter/candidatures"
                   element={<RecruiterAllApplications />}
                 />
-
                 <Route
                   path="/recruiter/job/:jobId"
                   element={<RecruiterJobApplications />}
                 />
 
-                {/* Candidate */}
                 <Route
                   path="/candidate/dashboard"
                   element={<CandidateDashboard />}
                 />
 
-                {/* Photo Viewer */}
                 <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />
-
                 <Route path="/photo/:postId" element={<PhotoViewerPage />} />
               </Route>
             </Routes>
