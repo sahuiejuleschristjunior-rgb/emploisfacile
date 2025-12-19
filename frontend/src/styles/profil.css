@@ -558,7 +558,12 @@
 
 @media (max-width: 640px) {
   .profil-wrapper {
-    padding: 8px;
+    padding: 0;
+  }
+
+  /* Public profile view: also stretch content edge-to-edge on mobile */
+  .public-profile-view {
+    padding: 0;
   }
 
   .profil-hero {
@@ -643,15 +648,38 @@
     border-radius: 10px;
   }
 
+  .profil-content {
+    align-items: stretch;
+  }
+
   .profil-posts {
-    padding: 12px 8px 80px;
-    max-width: 600px;
+    padding: 0 0 80px;
+    max-width: none;
+    margin: 0;
+    width: 100%;
   }
 
   .profil-posts .fb-post-card {
-    padding: 10px 10px 8px;
-    margin-bottom: 3px;
+    padding: 12px 12px 10px;
+    margin: 0 0 3px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+    border-radius: 0;
+  }
+
+  .public-profile-view .profil-grid {
+    padding: 0;
+  }
+
+  .public-profile-view .profil-posts {
+    padding: 0 0 80px;
+    max-width: none;
+    margin: 0;
+    width: 100%;
+  }
+
+  .public-profile-view .profil-posts .fb-post-card {
+    margin: 0 0 3px;
+    border-radius: 0;
   }
 
   /* Align intro / info column with feed on narrow screens */

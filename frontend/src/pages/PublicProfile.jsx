@@ -122,7 +122,7 @@ export default function PublicProfile() {
       RENDER
   ============================================================ */
   return (
-    <div className="profil-wrapper">
+    <div className="profil-wrapper public-profile-view">
       <div className="profil-hero">
         {/* COUVERTURE */}
         <div className="profil-cover">
