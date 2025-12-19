@@ -1,7 +1,8 @@
-// API calls should go through the main domain to avoid certificate mismatch
-// errors when the API subdomain certificate is not aligned with the site
-// certificate.
-const DEFAULT_API = "https://emploisfacile.org/api";
+// API calls should target the dedicated API host by default to avoid hitting
+// the public site (which would return HTML like "Cannot POST /api/pages").
+// If you need a different host, set VITE_API_URL accordingly (e.g.
+// http://localhost:4000 or https://example.com/api).
+const DEFAULT_API = "https://api.emploisfacile.org/api";
 
 function normalizeApiUrl(raw) {
   if (!raw) return DEFAULT_API;
@@ -9,11 +10,15 @@ function normalizeApiUrl(raw) {
   try {
     const parsed = new URL(raw);
     const hostname = parsed.hostname.replace(/^www\./, "");
-    const normalizedPath = parsed.pathname.replace(/\/$/, "") || "/api";
-    const isPrimaryDomain = hostname === "emploisfacile.org";
+    const hasCustomPath = parsed.pathname && parsed.pathname !== "/";
+    const normalizedPath = hasCustomPath
+      ? parsed.pathname.replace(/\/$/, "")
+      : "/api";
 
-    if (isPrimaryDomain) {
-      return `https://emploisfacile.org${normalizedPath}`;
+    // If someone sets the main domain without a path, redirect to the API
+    // subdomain to avoid sending requests to the public site.
+    if (hostname === "emploisfacile.org" && !hasCustomPath) {
+      return DEFAULT_API;
     }
 
     return `${parsed.origin}${normalizedPath}`;
