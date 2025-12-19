@@ -969,7 +969,6 @@ export default function FacebookLayout({ headerOnly = false }) {
 
             <aside className="fb-right-column"></aside>
           </div>
-        </div>
         )}
       </main>
 
