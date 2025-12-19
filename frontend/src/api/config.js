@@ -1,3 +1,6 @@
+// Default to the dedicated API subdomain; normalize common hostnames so we
+// always hit the backend instead of the public site (which returns HTML like
+// "Cannot POST /api/pages").
 const DEFAULT_API = "https://api.emploisfacile.org/api";
 
 function normalizeApiUrl(raw) {
