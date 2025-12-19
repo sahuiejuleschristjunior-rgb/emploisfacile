@@ -40,6 +40,8 @@ export default function ProfilPage() {
   const [savingBio, setSavingBio] = useState(false);
   const [avatarKey, setAvatarKey] = useState(0);
   const [coverKey, setCoverKey] = useState(0);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [photoStartIndex, setPhotoStartIndex] = useState(0);
 
   const currentUser = (() => {
     try {
@@ -245,13 +247,51 @@ export default function ProfilPage() {
           return /(png|jpe?g|webp|gif)$/i.test(m.url);
         })
         .map((m, idx) => ({ ...m, key: `${p._id || idx}-${idx}`, fromPost: p?._id }))
-    )
-    .slice(0, 30);
+    );
 
   const formatCount = (value) => {
     if (value > 999) return `${(value / 1000).toFixed(1)}k`;
     return value;
   };
+
+  const openPhotoModal = (startIndex = 0) => {
+    if (!photoItems.length) return;
+    setPhotoStartIndex(startIndex);
+    setPhotoModalOpen(true);
+  };
+
+  const closePhotoModal = () => setPhotoModalOpen(false);
+
+  const goPrevPhoto = () => {
+    setPhotoStartIndex((idx) => (idx - 1 + photoItems.length) % photoItems.length);
+  };
+
+  const goNextPhoto = () => {
+    setPhotoStartIndex((idx) => (idx + 1) % photoItems.length);
+  };
+
+  useEffect(() => {
+    if (!photoModalOpen) return undefined;
+
+    const onKey = (e) => {
+      if (e.key === "Escape") return closePhotoModal();
+      if (e.key === "ArrowLeft") return goPrevPhoto();
+      if (e.key === "ArrowRight") return goNextPhoto();
+      return undefined;
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [photoModalOpen, photoItems.length]);
+
+  useEffect(() => {
+    if (!photoItems.length) {
+      setPhotoModalOpen(false);
+      return;
+    }
+
+    setPhotoStartIndex((idx) => Math.min(idx, Math.max(photoItems.length - 1, 0)));
+  }, [photoItems.length]);
 
   /* ================================================
      RENDER
@@ -413,19 +453,21 @@ export default function ProfilPage() {
                 <div className="profil-card-header">
                   <h3>Photos</h3>
                   {photoItems.length > 0 && (
-                    <button className="profil-link" onClick={() => setActiveTab("photos")}>Afficher tout</button>
+                    <button className="profil-link" onClick={() => openPhotoModal(0)}>
+                      Afficher tout
+                    </button>
                   )}
                 </div>
                 {photoItems.length === 0 ? (
                   <p className="profil-empty">Aucune photo pour le moment.</p>
                 ) : (
                   <div className="profil-photo-grid">
-                    {photoItems.slice(0, 9).map((m) => (
+                    {photoItems.slice(0, 9).map((m, idx) => (
                       <button
                         key={m.key}
                         className="profil-photo-thumb"
                         style={{ backgroundImage: `url(${m.url})` }}
-                        onClick={() => setActiveTab("photos")}
+                        onClick={() => openPhotoModal(idx)}
                         aria-label="Ouvrir la photo"
                       />
                     ))}
@@ -507,10 +549,14 @@ export default function ProfilPage() {
                 <p className="profil-empty">Aucune photo publiée pour le moment.</p>
               ) : (
                 <div className="profil-photo-grid large">
-                  {photoItems.map((m) => (
-                    <div key={m.key} className="profil-photo-cell">
+                  {photoItems.map((m, idx) => (
+                    <button
+                      key={m.key}
+                      className="profil-photo-cell"
+                      onClick={() => openPhotoModal(idx)}
+                    >
                       <img src={m.url} alt="Publication" />
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -518,6 +564,47 @@ export default function ProfilPage() {
           </div>
         )}
       </div>
+
+      {photoModalOpen && photoItems.length > 0 && (
+        <div className="profil-photo-modal" role="dialog" aria-modal="true">
+          <button className="profil-photo-close" onClick={closePhotoModal} aria-label="Fermer">✕</button>
+          <div className="profil-photo-viewer">
+            {photoItems.length > 1 && (
+              <button className="profil-photo-nav prev" onClick={goPrevPhoto} aria-label="Précédent">
+                ‹
+              </button>
+            )}
+
+            <div className="profil-photo-stage">
+              <img src={photoItems[photoStartIndex].url} alt="Aperçu" />
+              <div className="profil-photo-counter">
+                {photoStartIndex + 1} / {photoItems.length}
+              </div>
+            </div>
+
+            {photoItems.length > 1 && (
+              <button className="profil-photo-nav next" onClick={goNextPhoto} aria-label="Suivant">
+                ›
+              </button>
+            )}
+          </div>
+
+          {photoItems.length > 1 && (
+            <div className="profil-photo-thumbs">
+              {photoItems.map((m, idx) => (
+                <button
+                  key={m.key}
+                  className={`profil-photo-thumb-btn ${idx === photoStartIndex ? "active" : ""}`}
+                  onClick={() => setPhotoStartIndex(idx)}
+                  aria-label={`Voir la photo ${idx + 1}`}
+                >
+                  <img src={m.url} alt="Miniature" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
