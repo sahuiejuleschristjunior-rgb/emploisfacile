@@ -1,8 +1,9 @@
 .settings-page {
-  padding: 24px;
+  padding: 32px 24px 24px;
   color: #e8ecf1;
-  min-height: 100vh;
+  min-height: calc(100vh - 72px);
   background: #0f172a;
+  margin-top: 12px;
 }
 
 .settings-header {
@@ -131,7 +132,7 @@
 
 @media (max-width: 768px) {
   .settings-page {
-    padding: 18px;
+    padding: 24px 18px 18px;
   }
 
   .settings-header {

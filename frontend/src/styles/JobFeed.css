@@ -3,9 +3,10 @@
 ----------------------------------- */
 .job-feed-screen {
     background: #f0f2f5;
-    min-height: calc(100vh - 70px);
-    padding: 16px 12px 28px;
+    min-height: calc(100vh - 72px);
+    padding: 24px 12px 28px;
     box-sizing: border-box;
+    margin-top: 12px;
 }
 
 .jobfeed-grid {
