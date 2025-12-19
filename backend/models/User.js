@@ -112,12 +112,17 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
-    followers: [
+  followers: [
       { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ],
 
-    following: [
+  following: [
       { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    ],
+
+    // Follow pages
+    followingPages: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Page" },
     ],
   },
   { timestamps: true }

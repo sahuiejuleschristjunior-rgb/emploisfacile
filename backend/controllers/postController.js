@@ -41,6 +41,7 @@ exports.listPaginated = async (req, res) => {
 
     const posts = await Post.find()
       .populate("user", "name email avatar")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor")
       .sort({ createdAt: -1 })
@@ -66,6 +67,7 @@ exports.list = async (req, res) => {
   try {
     const posts = await Post.find()
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor")
       .sort({ createdAt: -1 });
@@ -109,12 +111,14 @@ exports.create = async (req, res) => {
 
     const created = await Post.create({
       user: req.userId,
+      authorType: "user",
       text,
       media,
     });
 
     const post = await Post.findById(created._id)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -189,6 +193,7 @@ exports.comment = async (req, res) => {
 
     const updated = await Post.findById(post._id)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -303,6 +308,7 @@ exports.reply = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -348,6 +354,7 @@ exports.likeComment = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -396,6 +403,7 @@ exports.likeReply = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -446,6 +454,7 @@ exports.reactToComment = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -496,6 +505,7 @@ exports.reactToReply = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -534,6 +544,7 @@ exports.deleteComment = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -573,6 +584,7 @@ exports.deleteReply = async (req, res) => {
 
     const updated = await Post.findById(postId)
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor");
 
@@ -622,6 +634,7 @@ exports.getPostsByUser = async (req, res) => {
 
     const posts = await Post.find({ user: userId })
       .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
       .populate("comments.user", "name email avatar avatarColor")
       .populate("comments.replies.user", "name email avatar avatarColor")
       .sort({ createdAt: -1 });
