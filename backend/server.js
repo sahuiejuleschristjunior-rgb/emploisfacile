@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const http = require("http");
+const net = require("net");
 
 // DB
 const db = require("./config/db");
@@ -32,7 +33,25 @@ const { initSocket } = require("./socket");
 // Express
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 4000;
+const DESIRED_PORT = Number(process.env.PORT) || 4000;
+
+const findAvailablePort = async (port) =>
+  new Promise((resolve, reject) => {
+    const tester = net
+      .createServer()
+      .once("error", (err) => {
+        if (err.code === "EADDRINUSE") {
+          resolve(findAvailablePort(port + 1));
+          return;
+        }
+
+        reject(err);
+      })
+      .once("listening", () => {
+        tester.close(() => resolve(port));
+      })
+      .listen(port);
+  });
 
 /* ============================================================
    CORS
@@ -110,7 +129,7 @@ initSocket(server);
 ============================================================ */
 server.on("error", (err) => {
   if (err.code === "EADDRINUSE") {
-    console.error(`❌ Port ${PORT} already in use. Set PORT env to use a different port.`);
+    console.error(`❌ Port ${DESIRED_PORT} already in use. Set PORT env to use a different port.`);
     process.exit(1);
   }
 
@@ -121,8 +140,16 @@ server.on("error", (err) => {
    START SERVER
 ============================================================ */
 db.connect()
-  .then(() => {
-    server.listen(PORT, () => console.log("✔ Backend ON PORT", PORT));
+  .then(async () => {
+    const port = await findAvailablePort(DESIRED_PORT);
+
+    if (port !== DESIRED_PORT) {
+      console.warn(
+        `⚠️  Port ${DESIRED_PORT} unavailable. Using available port ${port} instead. Set PORT to a free port to silence this warning.`
+      );
+    }
+
+    server.listen(port, () => console.log("✔ Backend ON PORT", port));
   })
   .catch((err) => {
     console.error("❌ DB ERROR :", err);
