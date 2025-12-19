@@ -85,17 +85,30 @@ async function pushPageFollowNotification(targetUserId, fromUserId, pageId) {
 
 exports.createPage = async (req, res) => {
   try {
-    const { name, category, bio = "", website = "", phone = "", whatsapp = "", location = "" } = req.body;
+    const {
+      name,
+      category,
+      bio = "",
+      website = "",
+      phone = "",
+      whatsapp = "",
+      location = "",
+    } = req.body;
 
     if (!name || !category) {
       return res.status(400).json({ error: "Nom et catégorie requis" });
     }
 
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      return res.status(401).json({ error: "Utilisateur non authentifié" });
+    }
+
     const slug = await generateUniqueSlug(name);
 
-    const page = await Page.create({
-      owner: req.userId,
-      admins: [req.userId],
+    await Page.create({
+      owner: ownerId,
+      admins: [ownerId],
       name,
       slug,
       category,
@@ -106,7 +119,7 @@ exports.createPage = async (req, res) => {
       location,
     });
 
-    res.status(201).json(page);
+    res.status(201).json({ slug });
   } catch (err) {
     res.status(500).json({ error: "Erreur création page" });
   }
