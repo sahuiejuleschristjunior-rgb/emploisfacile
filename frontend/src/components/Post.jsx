@@ -24,6 +24,7 @@ export default function Post({
   onDeletePost,
   onDeleteComment,
   onDeleteReply,
+  onMediaClick,
 }) {
 
   if (!post) return null;
@@ -51,6 +52,19 @@ export default function Post({
         backgroundPosition: "center",
       }
     : {};
+
+  const imageItems = (post.media || [])
+    .map((m, originIndex) => ({ ...m, originIndex, url: fixUrl(m.url) }))
+    .filter((m) => {
+      if (!m.url) return false;
+      if (m.type) return m.type.startsWith("image");
+      return /(png|jpe?g|webp|gif)$/i.test(m.url);
+    });
+
+  const imageIndexMap = new Map();
+  imageItems.forEach((item, idx) => {
+    imageIndexMap.set(item.originIndex, idx);
+  });
 
   return (
     <>
@@ -122,15 +136,26 @@ export default function Post({
           <div className="fb-post-media">
             {post.media.map((m, index) => {
               const mediaUrl = fixUrl(m.url);
+              const isImage = m.type
+                ? m.type.startsWith("image")
+                : /(png|jpe?g|webp|gif)$/i.test(m.url || "");
 
-              if (m.type === "image") {
+              if (isImage) {
+                const imageIndex = imageIndexMap.get(index) ?? 0;
                 return (
-                  <img
+                  <button
+                    type="button"
                     key={index}
-                    src={mediaUrl}
-                    className="fb-post-image"
-                    alt="media"
-                  />
+                    className="fb-post-image-btn"
+                    onClick={() => onMediaClick?.(imageItems, imageIndex)}
+                    aria-label="Afficher les photos de la publication"
+                  >
+                    <img
+                      src={mediaUrl}
+                      className="fb-post-image"
+                      alt="media"
+                    />
+                  </button>
                 );
               }
 

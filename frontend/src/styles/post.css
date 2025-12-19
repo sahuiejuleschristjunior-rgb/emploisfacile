@@ -106,6 +106,37 @@
   color: #e4e6eb;
 }
 
+.fb-post-media {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.fb-post-image-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.fb-post-image-btn:focus-visible {
+  outline: 2px solid var(--fb-primary, #2d88ff);
+  outline-offset: 4px;
+}
+
+.fb-post-image {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #000;
+}
+
 /* STATS */
 .fb-post-stats {
   display: flex;

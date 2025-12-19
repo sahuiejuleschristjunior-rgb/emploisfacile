@@ -27,6 +27,7 @@ export default function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerItems, setViewerItems] = useState([]);
 
   /* ============================================================
       LOAD CONNECTED USER
@@ -104,9 +105,15 @@ export default function PublicProfile() {
     )
     .slice(0, 30);
 
-  const openViewer = (idx = 0) => {
-    if (!photoItems.length) return;
-    const safeIndex = Math.max(0, Math.min(idx, photoItems.length - 1));
+  useEffect(() => {
+    setViewerItems(photoItems);
+  }, [photoItems]);
+
+  const openViewer = (items = photoItems, idx = 0) => {
+    const sourceItems = items?.length ? items : photoItems;
+    if (!sourceItems.length) return;
+    const safeIndex = Math.max(0, Math.min(idx, sourceItems.length - 1));
+    setViewerItems(sourceItems);
     setViewerIndex(safeIndex);
     setViewerOpen(true);
   };
@@ -199,7 +206,7 @@ export default function PublicProfile() {
               <div className="profil-card-header">
                 <h3>Photos</h3>
                 {photoItems.length > 0 && (
-                  <button className="profil-link" onClick={() => openViewer(0)}>
+                  <button className="profil-link" onClick={() => openViewer(photoItems, 0)}>
                     Afficher tout
                   </button>
                 )}
@@ -214,7 +221,7 @@ export default function PublicProfile() {
                       className="profil-photo-thumb"
                       style={{ backgroundImage: `url(${m.url})` }}
                       aria-label="Photo de la galerie"
-                      onClick={() => openViewer(idx)}
+                      onClick={() => openViewer(photoItems, idx)}
                     />
                   ))}
                 </div>
@@ -228,7 +235,12 @@ export default function PublicProfile() {
             ) : (
               <div className="profil-posts">
                 {posts.map((p) => (
-                  <Post key={p._id} post={p} currentUser={viewer} />
+                  <Post
+                    key={p._id}
+                    post={p}
+                    currentUser={viewer}
+                    onMediaClick={(items, start) => openViewer(items, start)}
+                  />
                 ))}
               </div>
             )}
@@ -238,7 +250,7 @@ export default function PublicProfile() {
 
       {viewerOpen && (
         <ProfilePhotoViewer
-          items={photoItems}
+          items={viewerItems}
           index={viewerIndex}
           onChangeIndex={setViewerIndex}
           onClose={() => setViewerOpen(false)}
