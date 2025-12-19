@@ -365,3 +365,219 @@ exports.getFriends = async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 };
+
+/* ============================================================
+   🔥 FOLLOW USER
+============================================================ */
+exports.followUser = async (req, res) => {
+  try {
+    const me = req.user.id;
+    const other = req.params.id;
+
+    if (me === other) {
+      return res
+        .status(400)
+        .json({ error: "Vous ne pouvez pas vous suivre vous-même." });
+    }
+
+    const [userMe, userOther] = await Promise.all([
+      User.findById(me),
+      User.findById(other),
+    ]);
+
+    if (!userOther) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    if (userMe.blockedUsers.some((id) => id.toString() === other)) {
+      return res.status(400).json({ error: "Utilisateur bloqué." });
+    }
+
+    if (userOther.blockedUsers.some((id) => id.toString() === me)) {
+      return res
+        .status(400)
+        .json({ error: "Vous avez été bloqué par cet utilisateur." });
+    }
+
+    const alreadyFollowing = userMe.following.some(
+      (id) => id.toString() === other
+    );
+
+    if (alreadyFollowing) {
+      return res.json({ success: true, message: "Déjà en train de suivre." });
+    }
+
+    userMe.following.push(other);
+    userOther.followers.push(me);
+
+    await Promise.all([userMe.save(), userOther.save()]);
+
+    await pushNotification(other, {
+      from: me,
+      type: "follow",
+      text: "Vous avez un nouveau follower.",
+    });
+
+    res.json({ success: true, message: "Vous suivez cet utilisateur." });
+  } catch (err) {
+    console.error("followUser:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+/* ============================================================
+   🔥 UNFOLLOW USER
+============================================================ */
+exports.unfollowUser = async (req, res) => {
+  try {
+    const me = req.user.id;
+    const other = req.params.id;
+
+    const [userMe, userOther] = await Promise.all([
+      User.findById(me),
+      User.findById(other),
+    ]);
+
+    if (!userOther) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    userMe.following = userMe.following.filter(
+      (id) => id.toString() !== other
+    );
+    userOther.followers = userOther.followers.filter(
+      (id) => id.toString() !== me
+    );
+
+    await Promise.all([userMe.save(), userOther.save()]);
+
+    res.json({ success: true, message: "Vous ne suivez plus cet utilisateur." });
+  } catch (err) {
+    console.error("unfollowUser:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+/* ============================================================
+   🔥 BLOCK USER
+============================================================ */
+exports.blockUser = async (req, res) => {
+  try {
+    const me = req.user.id;
+    const other = req.params.id;
+
+    if (me === other) {
+      return res.status(400).json({ error: "Action impossible sur vous-même." });
+    }
+
+    const [userMe, userOther] = await Promise.all([
+      User.findById(me),
+      User.findById(other),
+    ]);
+
+    if (!userOther) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    if (!userMe.blockedUsers.some((id) => id.toString() === other)) {
+      userMe.blockedUsers.push(other);
+    }
+
+    // Clean relations
+    userMe.friends = userMe.friends.filter((f) => f.user.toString() !== other);
+    userOther.friends = userOther.friends.filter((f) => f.user.toString() !== me);
+
+    userMe.following = userMe.following.filter((id) => id.toString() !== other);
+    userOther.followers = userOther.followers.filter((id) => id.toString() !== me);
+
+    userOther.following = userOther.following.filter((id) => id.toString() !== me);
+    userMe.followers = userMe.followers
+      ? userMe.followers.filter((id) => id.toString() !== other)
+      : userMe.followers;
+
+    userMe.friendRequestsSent = userMe.friendRequestsSent.filter(
+      (id) => id.toString() !== other
+    );
+    userMe.friendRequestsReceived = userMe.friendRequestsReceived.filter(
+      (id) => id.toString() !== other
+    );
+    userOther.friendRequestsSent = userOther.friendRequestsSent.filter(
+      (id) => id.toString() !== me
+    );
+    userOther.friendRequestsReceived = userOther.friendRequestsReceived.filter(
+      (id) => id.toString() !== me
+    );
+
+    await Promise.all([userMe.save(), userOther.save()]);
+
+    res.json({ success: true, message: "Utilisateur bloqué." });
+  } catch (err) {
+    console.error("blockUser:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+/* ============================================================
+   🔥 UNBLOCK USER
+============================================================ */
+exports.unblockUser = async (req, res) => {
+  try {
+    const me = req.user.id;
+    const other = req.params.id;
+
+    const userMe = await User.findById(me);
+
+    userMe.blockedUsers = userMe.blockedUsers.filter(
+      (id) => id.toString() !== other
+    );
+
+    await userMe.save();
+
+    res.json({ success: true, message: "Utilisateur débloqué." });
+  } catch (err) {
+    console.error("unblockUser:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+/* ============================================================
+   🔥 SOCIAL PROFILE
+============================================================ */
+exports.getSocialProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const me = req.user.id;
+
+    const user = await User.findById(userId).select(
+      "name avatar bio role isCreator creatorCategory followers following friends blockedUsers"
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    const isBlocked = user.blockedUsers.some((id) => id.toString() === me);
+
+    res.json({
+      success: true,
+      profile: {
+        id: user._id,
+        name: user.name,
+        avatar: user.avatar,
+        bio: user.bio,
+        role: user.role,
+        isCreator: user.isCreator,
+        creatorCategory: user.creatorCategory,
+        counts: {
+          followers: user.followers.length,
+          following: user.following.length,
+          friends: user.friends.length,
+        },
+        isBlocked,
+      },
+    });
+  } catch (err) {
+    console.error("getSocialProfile:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+};
