@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
+import PostFullscreenModal from "../components/PostFullscreenModal";
 import "../styles/profil.css";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
@@ -27,6 +28,7 @@ export default function PublicProfile() {
   const [loading, setLoading] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [fullscreenPost, setFullscreenPost] = useState(null);
 
   /* ============================================================
       LOAD CONNECTED USER
@@ -110,6 +112,9 @@ export default function PublicProfile() {
     setViewerIndex(safeIndex);
     setViewerOpen(true);
   };
+
+  const openPostFullscreen = (post) => setFullscreenPost(post);
+  const closePostFullscreen = () => setFullscreenPost(null);
 
   /* ============================================================
       RENDER
@@ -228,7 +233,12 @@ export default function PublicProfile() {
             ) : (
               <div className="profil-posts">
                 {posts.map((p) => (
-                  <Post key={p._id} post={p} currentUser={viewer} />
+                  <Post
+                    key={p._id}
+                    post={p}
+                    currentUser={viewer}
+                    onOpenFullScreen={openPostFullscreen}
+                  />
                 ))}
               </div>
             )}
@@ -242,6 +252,14 @@ export default function PublicProfile() {
           index={viewerIndex}
           onChangeIndex={setViewerIndex}
           onClose={() => setViewerOpen(false)}
+        />
+      )}
+
+      {fullscreenPost && (
+        <PostFullscreenModal
+          post={fullscreenPost}
+          currentUser={viewer}
+          onClose={closePostFullscreen}
         />
       )}
     </div>
