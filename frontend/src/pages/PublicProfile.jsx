@@ -67,7 +67,15 @@ export default function PublicProfile() {
       .then((res) => res.json())
       .then((list) => {
         const filtered = Array.isArray(list)
-          ? list.filter((p) => String(p.user?._id) === String(id))
+          ? list
+              .filter((p) => String(p.user?._id) === String(id))
+              .map((p) => ({
+                ...p,
+                media: p.media?.map((m) => ({
+                  ...m,
+                  url: fixUrl(m.url),
+                })),
+              }))
           : [];
         setPosts(filtered);
         setLoading(false);
@@ -80,6 +88,18 @@ export default function PublicProfile() {
   }
 
   const isMe = String(viewer._id) === String(user._id);
+
+  const photoItems = posts
+    .flatMap((p) =>
+      (p.media || [])
+        .filter((m) => {
+          if (!m?.url) return false;
+          if (m.type) return m.type.startsWith("image");
+          return /(png|jpe?g|webp|gif)$/i.test(m.url);
+        })
+        .map((m, idx) => ({ ...m, url: fixUrl(m.url), key: `${p._id || idx}-${idx}`, fromPost: p?._id }))
+    )
+    .slice(0, 30);
 
   /* ============================================================
       RENDER
@@ -163,6 +183,31 @@ export default function PublicProfile() {
                 </span>
                 <span>{user.followers?.length || 0} abonnés</span>
               </div>
+            </div>
+
+            <div className="profil-card photos-card">
+              <div className="profil-card-header">
+                <h3>Photos</h3>
+                {photoItems.length > 0 && (
+                  <button className="profil-link" disabled>
+                    Afficher tout
+                  </button>
+                )}
+              </div>
+              {photoItems.length === 0 ? (
+                <p className="profil-empty">Aucune photo pour le moment.</p>
+              ) : (
+                <div className="profil-photo-grid">
+                  {photoItems.slice(0, 9).map((m) => (
+                    <div
+                      key={m.key}
+                      className="profil-photo-thumb"
+                      style={{ backgroundImage: `url(${m.url})` }}
+                      aria-label="Photo de la galerie"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
