@@ -18,12 +18,13 @@ const fixUrl = (path) => {
 export default function Post({
   post,
   currentUser,
-  onLike,
-  onComment,
-  onReply,
-  onDeletePost,
-  onDeleteComment,
-  onDeleteReply,
+  onLike = () => {},
+  onComment = () => {},
+  onReply = () => {},
+  onDeletePost = () => {},
+  onDeleteComment = () => {},
+  onDeleteReply = () => {},
+  onOpenFullScreen,
 }) {
 
   if (!post) return null;
@@ -52,6 +53,12 @@ export default function Post({
       }
     : {};
 
+  const handleOpenFullScreen = () => {
+    if (typeof onOpenFullScreen === "function") {
+      onOpenFullScreen(post);
+    }
+  };
+
   return (
     <>
       <article className="fb-post-card">
@@ -63,6 +70,17 @@ export default function Post({
             <div className="fb-post-author">{post.user?.name}</div>
             <div className="fb-post-meta">{formatDate(post.createdAt)}</div>
           </div>
+
+          {onOpenFullScreen && (
+            <button
+              className="fb-post-fullscreen-btn"
+              onClick={handleOpenFullScreen}
+              title="Afficher en plein écran"
+              aria-label="Afficher la publication en plein écran"
+            >
+              ⛶
+            </button>
+          )}
 
           {/* MENU (…) */}
           <div className="fb-post-menu-container">

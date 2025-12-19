@@ -24,6 +24,25 @@
   gap: 12px;
 }
 
+.fb-post-fullscreen-btn {
+  background: #3a3b3c;
+  color: #e4e6eb;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.fb-post-fullscreen-btn:hover {
+  background: #4e4f50;
+}
+
+.fb-post-fullscreen-btn:active {
+  transform: translateY(1px);
+}
+
 .fb-post-avatar {
   width: 45px;
   height: 45px;
@@ -195,6 +214,54 @@
     color: #b0b3b8;
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ========================================= */
+/* 💡 MODALE PLEIN ÉCRAN DE PUBLICATION     */
+/* ========================================= */
+
+.post-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.post-fullscreen-dialog {
+  background: transparent;
+  max-width: 900px;
+  width: 100%;
+  max-height: 95vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.post-fullscreen-close {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: #3a3b3c;
+  color: #e4e6eb;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.post-fullscreen-close:hover {
+  background: #4e4f50;
+}
+
+.post-fullscreen-body {
+  display: flex;
+  justify-content: center;
 }
 
 /* ========================================= */

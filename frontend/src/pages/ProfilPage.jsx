@@ -2,6 +2,7 @@ import { useEffect, useState, useId } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
+import PostFullscreenModal from "../components/PostFullscreenModal";
 import "../styles/profil.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -43,6 +44,7 @@ export default function ProfilPage() {
   const [coverKey, setCoverKey] = useState(0);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [activePost, setActivePost] = useState(null);
 
   const currentUser = (() => {
     try {
@@ -263,6 +265,9 @@ export default function ProfilPage() {
     setShowPhotoViewer(true);
   };
 
+  const openPostFullscreen = (post) => setActivePost(post);
+  const closePostFullscreen = () => setActivePost(null);
+
   /* ================================================
      RENDER
   ================================================ */
@@ -451,7 +456,14 @@ export default function ProfilPage() {
                 {posts.length === 0 ? (
                   <div className="profil-empty">Aucune publication.</div>
                 ) : (
-                  posts.map((p) => <Post key={p._id} post={p} currentUser={currentUser} />)
+                  posts.map((p) => (
+                    <Post
+                      key={p._id}
+                      post={p}
+                      currentUser={currentUser}
+                      onOpenFullScreen={openPostFullscreen}
+                    />
+                  ))
                 )}
               </div>
             </div>
@@ -542,6 +554,14 @@ export default function ProfilPage() {
           index={activePhotoIndex}
           onChangeIndex={setActivePhotoIndex}
           onClose={() => setShowPhotoViewer(false)}
+        />
+      )}
+
+      {activePost && (
+        <PostFullscreenModal
+          post={activePost}
+          currentUser={currentUser}
+          onClose={closePostFullscreen}
         />
       )}
     </div>
