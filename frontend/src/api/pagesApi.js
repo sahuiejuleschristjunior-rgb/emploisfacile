@@ -8,12 +8,32 @@ function authHeaders(isJson = true) {
 }
 
 export async function createPage(payload) {
-  const res = await fetch(`${API_URL}/pages`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_URL}/pages`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    const raw = await res.text();
+    let data = null;
+
+    if (raw) {
+      try {
+        data = JSON.parse(raw);
+      } catch (parseErr) {
+        data = null;
+      }
+    }
+
+    if (res.ok) {
+      return data || (raw ? { message: raw } : {});
+    }
+
+    return { error: data?.error || raw || "Impossible de créer la page" };
+  } catch (err) {
+    return { error: "Impossible de contacter le serveur" };
+  }
 }
 
 export async function getMyPages() {
