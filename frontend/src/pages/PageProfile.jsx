@@ -7,6 +7,7 @@ import {
   getPagePosts,
 } from "../api/pagesApi";
 import { getImageUrl } from "../utils/imageUtils";
+import "../styles/page.css";
 
 export default function PageProfile() {
   const { slug } = useParams();
