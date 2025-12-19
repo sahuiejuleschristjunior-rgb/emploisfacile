@@ -87,12 +87,6 @@ export default function PublicProfile() {
       .catch(console.error);
   }, [id, token]);
 
-  if (loading || !user || !viewer) {
-    return <div className="profil-loading">Chargement…</div>;
-  }
-
-  const isMe = String(viewer._id) === String(user._id);
-
   const photoItems = posts
     .flatMap((p) =>
       (p.media || [])
@@ -108,6 +102,12 @@ export default function PublicProfile() {
   useEffect(() => {
     setViewerItems(photoItems);
   }, [photoItems]);
+
+  if (loading || !user || !viewer) {
+    return <div className="profil-loading">Chargement…</div>;
+  }
+
+  const isMe = String(viewer._id) === String(user._id);
 
   const openViewer = (items = photoItems, idx = 0) => {
     const sourceItems = items?.length ? items : photoItems;

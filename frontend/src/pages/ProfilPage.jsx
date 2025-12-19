@@ -226,20 +226,6 @@ export default function ProfilPage() {
     setLoading(false);
   };
 
-  /* ================================================
-     LOADING
-  ================================================ */
-  if (!user || loading) {
-    return <div className="profil-loading">Chargement du profil…</div>;
-  }
-
-  const isOwner = currentUser?._id === profileId;
-
-  const coverURL = user.coverPhoto || "/default-cover.jpg";
-  const avatarURL = user.avatar || "/default-avatar.png";
-  const bioText = user.bio?.trim() || "Aucune bio renseignée pour le moment.";
-  const friendsCount = user.friends?.length ?? 0;
-  const followersCount = user.followers?.length ?? 0;
   const photoItems = posts
     .flatMap((p) =>
       (p.media || [])
@@ -255,6 +241,21 @@ export default function ProfilPage() {
   useEffect(() => {
     setViewerItems(photoItems);
   }, [photoItems]);
+
+  /* ================================================
+     LOADING
+  ================================================ */
+  if (!user || loading) {
+    return <div className="profil-loading">Chargement du profil…</div>;
+  }
+
+  const isOwner = currentUser?._id === profileId;
+
+  const coverURL = user.coverPhoto || "/default-cover.jpg";
+  const avatarURL = user.avatar || "/default-avatar.png";
+  const bioText = user.bio?.trim() || "Aucune bio renseignée pour le moment.";
+  const friendsCount = user.friends?.length ?? 0;
+  const followersCount = user.followers?.length ?? 0;
 
   const formatCount = (value) => {
     if (value > 999) return `${(value / 1000).toFixed(1)}k`;
