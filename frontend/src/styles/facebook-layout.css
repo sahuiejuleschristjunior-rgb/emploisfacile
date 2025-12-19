@@ -14,6 +14,20 @@
     sans-serif;
 }
 
+.fb-app--header-only .fb-layout {
+  padding: 20px 16px 0;
+}
+
+.fb-app-body--solo {
+  margin-top: 65px;
+}
+
+.fb-layout--header-only {
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .fb-app-body {
   flex: 1;
   display: flex;

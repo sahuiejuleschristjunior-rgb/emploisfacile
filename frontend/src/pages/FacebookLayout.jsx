@@ -12,7 +12,7 @@ import {
   cancelFriendRequest,
 } from "../api/socialApi";
 
-export default function FacebookLayout() {
+export default function FacebookLayout({ headerOnly = false }) {
   const location = useLocation();
   const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
@@ -735,7 +735,11 @@ export default function FacebookLayout() {
      🚀 RENDER UI
   ============================================================ */
   return (
-    <div className="fb-app fb-app--with-bottom-nav">
+    <div
+      className={`fb-app ${
+        headerOnly ? "fb-app--header-only" : "fb-app--with-bottom-nav"
+      }`}
+    >
       {/* HEADER */}
       <header className="fb-header">
         <div className="fb-header-inner">
@@ -866,9 +870,16 @@ export default function FacebookLayout() {
       </header>
 
       {/* APP BODY */}
-      <main className="fb-app-body">
-        <div className="fb-layout">
-          <aside className="fb-left-column">
+      <main className={`fb-app-body ${headerOnly ? "fb-app-body--solo" : ""}`}>
+        {headerOnly ? (
+          <div className="fb-layout fb-layout--header-only">
+            <section className="fb-center-column">
+              <Outlet />
+            </section>
+          </div>
+        ) : (
+          <div className="fb-layout">
+            <aside className="fb-left-column">
             <div className="fb-left-section">
               <div className="fb-sidebar-group">
                 <div
@@ -958,11 +969,13 @@ export default function FacebookLayout() {
 
           <aside className="fb-right-column"></aside>
         </div>
+        )}
       </main>
 
       {/* BOTTOM NAV */}
-      <nav className="fb-bottom-nav">
-        <div className="fb-bottom-nav-inner">
+      {!headerOnly && (
+        <nav className="fb-bottom-nav">
+          <div className="fb-bottom-nav-inner">
 
           <div className="fb-bottom-nav-item" onClick={() => nav("/fb")}>
             <FBIcon name="home" size={22} />
@@ -996,6 +1009,7 @@ export default function FacebookLayout() {
           </div>
         </div>
       </nav>
+      )}
 
       {/* FULLSCREEN MENU */}
       {showMobileMenu && (

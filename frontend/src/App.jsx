@@ -110,127 +110,63 @@ export default function App() {
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
 
-              {/* Profil perso */}
               <Route
-                path="/profil"
                 element={
                   <ProtectedRoute>
-                    <ProfilPage />
+                    <FacebookLayout headerOnly />
                   </ProtectedRoute>
                 }
-              />
+              >
+                {/* Profil perso */}
+                <Route path="/profil" element={<ProfilPage />} />
 
-              {/* Messages */}
-              <Route
-                path="/messages"
-                element={
-                  <ProtectedRoute>
-                    <Messages />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Messages */}
+                <Route path="/messages" element={<Messages />} />
 
-              {/* Chat privé */}
-              <Route
-                path="/messages/:id"
-                element={
-                  <ProtectedRoute>
-                    <ChatPage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Chat privé */}
+                <Route path="/messages/:id" element={<ChatPage />} />
 
-              {/* Settings */}
-              <Route
-                path="/settings"
-                element={<Navigate to="/fb/settings" replace />}
-              />
+                {/* Settings */}
+                <Route
+                  path="/settings"
+                  element={<Navigate to="/fb/settings" replace />}
+                />
 
-              {/* Post hors layout */}
-              <Route
-                path="/post/:id"
-                element={
-                  <ProtectedRoute>
-                    <PostPage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Post hors layout */}
+                <Route path="/post/:id" element={<PostPage />} />
 
-              {/* Jobs hors layout */}
-              <Route
-                path="/emplois"
-                element={
-                  <ProtectedRoute>
-                    <EmploisPage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Jobs hors layout */}
+                <Route path="/emplois" element={<EmploisPage />} />
 
-              <Route
-                path="/emplois/:id"
-                element={
-                  <ProtectedRoute>
-                    <JobDetailPage />
-                  </ProtectedRoute>
-                }
-              />
+                <Route path="/emplois/:id" element={<JobDetailPage />} />
 
-              {/* Recruiter */}
-              <Route
-                path="/recruiter/dashboard"
-                element={
-                  <ProtectedRoute roles={["recruiter"]}>
-                    <RecruiterDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Recruiter */}
+                <Route
+                  path="/recruiter/dashboard"
+                  element={<RecruiterDashboard />}
+                />
 
-              <Route
-                path="/recruiter/candidatures"
-                element={
-                  <ProtectedRoute roles={["recruiter"]}>
-                    <RecruiterAllApplications />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/recruiter/candidatures"
+                  element={<RecruiterAllApplications />}
+                />
 
-              <Route
-                path="/recruiter/job/:jobId"
-                element={
-                  <ProtectedRoute roles={["recruiter"]}>
-                    <RecruiterJobApplications />
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/recruiter/job/:jobId"
+                  element={<RecruiterJobApplications />}
+                />
 
-              {/* Candidate */}
-              <Route
-                path="/candidate/dashboard"
-                element={
-                  <ProtectedRoute roles={["candidate"]}>
-                    <CandidateDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Candidate */}
+                <Route
+                  path="/candidate/dashboard"
+                  element={<CandidateDashboard />}
+                />
 
-              {/* Photo Viewer */}
-              <Route
-                path="/photo/:postId/:index"
-                element={
-                  <ProtectedRoute>
-                    <PhotoViewerPage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Photo Viewer */}
+                <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />
 
-              <Route
-                path="/photo/:postId"
-                element={
-                  <ProtectedRoute>
-                    <PhotoViewerPage />
-                  </ProtectedRoute>
-                }
-              />
+                <Route path="/photo/:postId" element={<PhotoViewerPage />} />
+              </Route>
             </Routes>
           </BrowserRouter>
         </NotificationProvider>
