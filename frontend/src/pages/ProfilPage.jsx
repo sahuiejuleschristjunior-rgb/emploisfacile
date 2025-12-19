@@ -43,6 +43,7 @@ export default function ProfilPage() {
   const [coverKey, setCoverKey] = useState(0);
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [viewerItems, setViewerItems] = useState([]);
 
   const currentUser = (() => {
     try {
@@ -251,14 +252,20 @@ export default function ProfilPage() {
     )
     .slice(0, 30);
 
+  useEffect(() => {
+    setViewerItems(photoItems);
+  }, [photoItems]);
+
   const formatCount = (value) => {
     if (value > 999) return `${(value / 1000).toFixed(1)}k`;
     return value;
   };
 
-  const openPhotoViewer = (startIdx = 0) => {
-    if (!photoItems.length) return;
-    const safeIndex = Math.max(0, Math.min(startIdx, photoItems.length - 1));
+  const openPhotoViewer = (items = photoItems, startIdx = 0) => {
+    const sourceItems = items?.length ? items : photoItems;
+    if (!sourceItems.length) return;
+    const safeIndex = Math.max(0, Math.min(startIdx, sourceItems.length - 1));
+    setViewerItems(sourceItems);
     setActivePhotoIndex(safeIndex);
     setShowPhotoViewer(true);
   };
@@ -423,7 +430,7 @@ export default function ProfilPage() {
                 <div className="profil-card-header">
                   <h3>Photos</h3>
                   {photoItems.length > 0 && (
-                    <button className="profil-link" onClick={() => openPhotoViewer(0)}>
+                    <button className="profil-link" onClick={() => openPhotoViewer(photoItems, 0)}>
                       Afficher tout
                     </button>
                   )}
@@ -437,7 +444,7 @@ export default function ProfilPage() {
                         key={m.key}
                         className="profil-photo-thumb"
                         style={{ backgroundImage: `url(${m.url})` }}
-                        onClick={() => openPhotoViewer(idx)}
+                        onClick={() => openPhotoViewer(photoItems, idx)}
                         aria-label="Ouvrir la photo"
                       />
                     ))}
@@ -451,7 +458,14 @@ export default function ProfilPage() {
                 {posts.length === 0 ? (
                   <div className="profil-empty">Aucune publication.</div>
                 ) : (
-                  posts.map((p) => <Post key={p._id} post={p} currentUser={currentUser} />)
+                  posts.map((p) => (
+                    <Post
+                      key={p._id}
+                      post={p}
+                      currentUser={currentUser}
+                      onMediaClick={(items, start) => openPhotoViewer(items, start)}
+                    />
+                  ))
                 )}
               </div>
             </div>
@@ -523,7 +537,7 @@ export default function ProfilPage() {
                     <button
                       key={m.key}
                       className="profil-photo-cell"
-                      onClick={() => openPhotoViewer(idx)}
+                      onClick={() => openPhotoViewer(photoItems, idx)}
                       aria-label={`Ouvrir la photo ${idx + 1}`}
                     >
                       <img src={m.url} alt="Publication" />
@@ -538,7 +552,7 @@ export default function ProfilPage() {
 
       {showPhotoViewer && (
         <ProfilePhotoViewer
-          items={photoItems}
+          items={viewerItems}
           index={activePhotoIndex}
           onChangeIndex={setActivePhotoIndex}
           onClose={() => setShowPhotoViewer(false)}
