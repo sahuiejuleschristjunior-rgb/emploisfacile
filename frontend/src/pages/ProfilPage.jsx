@@ -1,6 +1,7 @@
 import { useEffect, useState, useId } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
+import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import "../styles/profil.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -40,6 +41,8 @@ export default function ProfilPage() {
   const [savingBio, setSavingBio] = useState(false);
   const [avatarKey, setAvatarKey] = useState(0);
   const [coverKey, setCoverKey] = useState(0);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
   const currentUser = (() => {
     try {
@@ -253,6 +256,13 @@ export default function ProfilPage() {
     return value;
   };
 
+  const openPhotoViewer = (startIdx = 0) => {
+    if (!photoItems.length) return;
+    const safeIndex = Math.max(0, Math.min(startIdx, photoItems.length - 1));
+    setActivePhotoIndex(safeIndex);
+    setShowPhotoViewer(true);
+  };
+
   /* ================================================
      RENDER
   ================================================ */
@@ -413,19 +423,21 @@ export default function ProfilPage() {
                 <div className="profil-card-header">
                   <h3>Photos</h3>
                   {photoItems.length > 0 && (
-                    <button className="profil-link" onClick={() => setActiveTab("photos")}>Afficher tout</button>
+                    <button className="profil-link" onClick={() => openPhotoViewer(0)}>
+                      Afficher tout
+                    </button>
                   )}
                 </div>
                 {photoItems.length === 0 ? (
                   <p className="profil-empty">Aucune photo pour le moment.</p>
                 ) : (
                   <div className="profil-photo-grid">
-                    {photoItems.slice(0, 9).map((m) => (
+                    {photoItems.slice(0, 9).map((m, idx) => (
                       <button
                         key={m.key}
                         className="profil-photo-thumb"
                         style={{ backgroundImage: `url(${m.url})` }}
-                        onClick={() => setActiveTab("photos")}
+                        onClick={() => openPhotoViewer(idx)}
                         aria-label="Ouvrir la photo"
                       />
                     ))}
@@ -507,10 +519,15 @@ export default function ProfilPage() {
                 <p className="profil-empty">Aucune photo publiée pour le moment.</p>
               ) : (
                 <div className="profil-photo-grid large">
-                  {photoItems.map((m) => (
-                    <div key={m.key} className="profil-photo-cell">
+                  {photoItems.map((m, idx) => (
+                    <button
+                      key={m.key}
+                      className="profil-photo-cell"
+                      onClick={() => openPhotoViewer(idx)}
+                      aria-label={`Ouvrir la photo ${idx + 1}`}
+                    >
                       <img src={m.url} alt="Publication" />
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -518,6 +535,15 @@ export default function ProfilPage() {
           </div>
         )}
       </div>
+
+      {showPhotoViewer && (
+        <ProfilePhotoViewer
+          items={photoItems}
+          index={activePhotoIndex}
+          onChangeIndex={setActivePhotoIndex}
+          onClose={() => setShowPhotoViewer(false)}
+        />
+      )}
     </div>
   );
 }
