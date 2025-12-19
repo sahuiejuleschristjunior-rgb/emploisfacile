@@ -1,4 +1,7 @@
-const DEFAULT_API = "https://api.emploisfacile.org/api";
+// API calls should go through the main domain to avoid certificate mismatch
+// errors when the API subdomain certificate is not aligned with the site
+// certificate.
+const DEFAULT_API = "https://emploisfacile.org/api";
 
 function normalizeApiUrl(raw) {
   if (!raw) return DEFAULT_API;
@@ -7,11 +10,10 @@ function normalizeApiUrl(raw) {
     const parsed = new URL(raw);
     const hostname = parsed.hostname.replace(/^www\./, "");
     const normalizedPath = parsed.pathname.replace(/\/$/, "") || "/api";
-    const isApiSubdomain = hostname === "api.emploisfacile.org";
     const isPrimaryDomain = hostname === "emploisfacile.org";
 
-    if (isPrimaryDomain && !isApiSubdomain) {
-      return `https://api.emploisfacile.org${normalizedPath}`;
+    if (isPrimaryDomain) {
+      return `https://emploisfacile.org${normalizedPath}`;
     }
 
     return `${parsed.origin}${normalizedPath}`;
