@@ -26,11 +26,10 @@ export default function Post({
   onDeleteReply,
   onMediaClick,
 }) {
-
-  if (!post) return null;
-
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  if (!post) return null;
 
   const id = post._id;
   const isAuthor = String(post.user?._id) === String(currentUser?._id);

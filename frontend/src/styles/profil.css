@@ -568,16 +568,15 @@
   .profil-posts {
     gap: 12px;
     width: 100%;
-    padding: 0 0 10px;
+    padding: 0 12px 10px;
   }
 
   .profil-posts .fb-post-card {
     border-radius: 0;
     max-width: none;
-    width: 100vw;
-    margin: 0;
-    margin-left: 50%;
-    transform: translateX(-50%);
+    width: 100%;
+    margin: 0 auto;
+    transform: none;
     border: none;
     box-shadow: none;
     padding: 16px 14px;
