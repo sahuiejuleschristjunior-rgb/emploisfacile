@@ -32,6 +32,10 @@ const { initSocket } = require("./socket");
 // Express
 const app = express();
 const server = http.createServer(app);
+const DEFAULT_PORT = 4000;
+const envPort = Number(process.env.PORT);
+const definedPort = Number.isFinite(envPort) && envPort > 0 ? envPort : null;
+let currentPort = definedPort || DEFAULT_PORT;
 
 /* ============================================================
    CORS
@@ -105,14 +109,34 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 initSocket(server);
 
 /* ============================================================
+   SERVER EVENTS
+============================================================ */
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    if (!definedPort) {
+      const fallbackPort = currentPort + 1;
+      console.warn(`⚠️ Port ${currentPort} already in use. Retrying on ${fallbackPort}...`);
+      currentPort = fallbackPort;
+      server.listen(currentPort, () => console.log("✔ Backend ON PORT", currentPort));
+      return;
+    }
+
+    console.error(`❌ Port ${currentPort} already in use. Set PORT env to use a different port.`);
+    process.exit(1);
+  }
+
+  throw err;
+});
+
+/* ============================================================
    START SERVER
 ============================================================ */
 db.connect()
   .then(() => {
-    const PORT = process.env.PORT || 3000;
-    server.listen(PORT, () => console.log("✔ Backend ON PORT", PORT));
+    server.listen(currentPort, () => console.log("✔ Backend ON PORT", currentPort));
   })
   .catch((err) => {
     console.error("❌ DB ERROR :", err);
     process.exit(1);
   });
+
