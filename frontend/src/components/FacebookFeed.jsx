@@ -3,6 +3,7 @@ import StoriesFB from "../components/StoriesFB";
 import CreatePostFB from "./CreatePostFB";
 import SkeletonPost from "./SkeletonPost";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/facebook-feed.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
@@ -55,6 +56,17 @@ export default function FacebookFeed() {
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const API_URL = import.meta.env.VITE_API_URL;
+  const nav = useNavigate();
+
+  const textButtonStyle = {
+    background: "none",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    color: "inherit",
+    font: "inherit",
+    cursor: "pointer",
+  };
 
   /* EXTRACTION USER ID */
   let userId = null;
@@ -407,22 +419,27 @@ export default function FacebookFeed() {
                       <span className="fb-reactions-bubble">
                         <FBIcon name="like" size={14} />
                       </span>
-                      <span className="fb-post-stats-text">
+                      <button
+                        type="button"
+                        className="fb-post-stats-text"
+                        style={textButtonStyle}
+                        onClick={() => nav(`/likes/${post._id}`)}
+                      >
                         {likes} j’aime
-                      </span>
+                      </button>
                     </>
                   )}
                 </div>
 
                 <div className="fb-post-stats-right">
-                  {commentsCount > 0 && (
-                    <span
-                      className="fb-post-stats-text fb-comments-link"
-                      onClick={() => openCommentsModal(post)}
-                    >
-                      {commentsCount} commentaires
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    className="fb-post-stats-text fb-comments-link"
+                    style={textButtonStyle}
+                    onClick={() => openCommentsModal(post)}
+                  >
+                    {commentsCount} commentaires
+                  </button>
                 </div>
               </div>
 
