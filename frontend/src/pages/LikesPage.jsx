@@ -43,8 +43,17 @@ export default function LikesPage() {
 
         const users = Array.isArray(data.likes)
           ? data.likes
-              .map((like) => like?.user)
-              .filter((user) => Boolean(user && user._id))
+              .map((like) => {
+                const user = like?.user;
+
+                if (!user || !user._id) return null;
+
+                return {
+                  ...user,
+                  avatar: user.avatar || user.profile?.avatar,
+                };
+              })
+              .filter(Boolean)
           : [];
 
         const total =
