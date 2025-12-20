@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   getPageBySlug,
@@ -15,7 +15,10 @@ export default function PageProfile() {
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
   const [postText, setPostText] = useState("");
+  const [mediaItems, setMediaItems] = useState([]);
+  const [createLoading, setCreateLoading] = useState(false);
   const [posts, setPosts] = useState([]);
+  const fileInputRef = useRef(null);
 
   const loadPage = async () => {
     try {
@@ -40,6 +43,12 @@ export default function PageProfile() {
     loadPosts();
   }, [slug]);
 
+  useEffect(() => {
+    return () => {
+      mediaItems.forEach((item) => item.preview && URL.revokeObjectURL(item.preview));
+    };
+  }, [mediaItems]);
+
   const handleFollow = async () => {
     if (!pageData) return;
     setFollowLoading(true);
@@ -63,16 +72,63 @@ export default function PageProfile() {
     }
   };
 
+  const resetMedia = () => {
+    setMediaItems((prev) => {
+      prev.forEach((item) => item.preview && URL.revokeObjectURL(item.preview));
+      return [];
+    });
+  };
+
+  const handleFileChange = (e) => {
+    const incoming = Array.from(e.target.files || []);
+    if (!incoming.length) return;
+
+    const allowed = incoming.filter((file) =>
+      ["image/", "video/"].some((t) => file.type.startsWith(t))
+    );
+
+    if (allowed.length === 0) return;
+
+    const MAX_MEDIA = 10;
+    const available = MAX_MEDIA - mediaItems.length;
+    const toAdd = allowed.slice(0, Math.max(0, available));
+
+    const mapped = toAdd.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    setMediaItems((prev) => [...prev, ...mapped]);
+    e.target.value = "";
+  };
+
+  const handleRemoveMedia = (index) => {
+    setMediaItems((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(index, 1);
+      if (removed?.preview) URL.revokeObjectURL(removed.preview);
+      return next;
+    });
+  };
+
   const handleCreatePost = async () => {
-    if (!postText.trim()) return;
+    if (!postText.trim() && mediaItems.length === 0) return;
     try {
-      const res = await createPagePost(slug, { text: postText });
+      setCreateLoading(true);
+      const res = await createPagePost(
+        slug,
+        { text: postText },
+        mediaItems.map((m) => m.file)
+      );
       if (res?._id) {
         setPosts((prev) => [res, ...(prev || [])]);
         setPostText("");
+        resetMedia();
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -210,10 +266,59 @@ export default function PageProfile() {
                 placeholder="Exprimez-vous..."
               />
               <div className="creator-actions">
-                <button className="btn-primary" onClick={handleCreatePost}>
-                  Publier
+                <div className="creator-media-actions">
+                  <button
+                    type="button"
+                    className="creator-attach-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    📷 Ajouter photo / vidéo
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={handleFileChange}
+                    style={{ display: "none" }}
+                  />
+                  {mediaItems.length > 0 && (
+                    <span className="creator-media-count">
+                      {mediaItems.length} média sélectionné(s)
+                    </span>
+                  )}
+                </div>
+                <button
+                  className="btn-primary"
+                  onClick={handleCreatePost}
+                  disabled={createLoading}
+                >
+                  {createLoading ? "Publication..." : "Publier"}
                 </button>
               </div>
+
+              {mediaItems.length > 0 && (
+                <div className="page-preview-grid">
+                  {mediaItems.map((item, idx) => (
+                    <div key={idx} className="page-preview-item">
+                      <button
+                        className="page-preview-remove"
+                        type="button"
+                        onClick={() => handleRemoveMedia(idx)}
+                        aria-label="Retirer le média"
+                      >
+                        ✕
+                      </button>
+
+                      {item.file.type.startsWith("video/") ? (
+                        <video src={item.preview} controls muted />
+                      ) : (
+                        <img src={item.preview} alt="Prévisualisation" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -241,9 +346,20 @@ export default function PageProfile() {
                 {p.text && <div className="page-post-text">{p.text}</div>}
                 {p.media?.length > 0 && (
                   <div className="page-post-media">
-                    {p.media.map((m, idx) => (
-                      <img key={idx} src={getImageUrl(m.url)} alt="media" />
-                    ))}
+                    {p.media.map((m, idx) => {
+                      const url = getImageUrl(m.url);
+                      if (m.type === "video") {
+                        return <video key={idx} src={url} controls />;
+                      }
+                      if (m.type === "audio") {
+                        return (
+                          <audio key={idx} controls>
+                            <source src={url} />
+                          </audio>
+                        );
+                      }
+                      return <img key={idx} src={url} alt="media" />;
+                    })}
                   </div>
                 )}
               </div>
