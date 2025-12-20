@@ -9,7 +9,7 @@ import {
 import { getImageUrl } from "../utils/imageUtils";
 import "../styles/page.css";
 import Post from "../components/Post";
-import CommentSection from "../components/CommentSection";
+import CommentsModal from "../components/CommentsModal";
 
 export default function PageProfile() {
   const { slug } = useParams();
@@ -20,6 +20,8 @@ export default function PageProfile() {
   const [mediaItems, setMediaItems] = useState([]);
   const [createLoading, setCreateLoading] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [activePostForComments, setActivePostForComments] = useState(null);
   const fileInputRef = useRef(null);
 
   const token = localStorage.getItem("token");
@@ -88,6 +90,16 @@ export default function PageProfile() {
       prev.forEach((item) => item.preview && URL.revokeObjectURL(item.preview));
       return [];
     });
+  };
+
+  const openCommentsModal = (post) => {
+    setActivePostForComments(post);
+    setIsCommentsModalOpen(true);
+  };
+
+  const closeCommentsModal = () => {
+    setIsCommentsModalOpen(false);
+    setActivePostForComments(null);
   };
 
   const handleFileChange = (e) => {
@@ -169,81 +181,6 @@ export default function PageProfile() {
 
         return { ...p, likes: newLikes };
       });
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleComment = async (postId, text) => {
-    try {
-      const res = await fetch(`/api/posts/${postId}/comment`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      const updated = await res.json();
-      if (!res.ok) return;
-
-      updatePostState(postId, () => updated);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleReply = async (postId, commentId, text) => {
-    try {
-      const res = await fetch(`/api/posts/${postId}/comment/${commentId}/reply`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      const updated = await res.json();
-      if (!res.ok) return;
-
-      updatePostState(postId, () => updated);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteComment = async (postId, commentId) => {
-    try {
-      const res = await fetch(`/api/posts/${postId}/comment/${commentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const updated = await res.json();
-      if (!res.ok) return;
-
-      updatePostState(postId, () => updated);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteReply = async (postId, commentId, replyId) => {
-    try {
-      const res = await fetch(
-        `/api/posts/${postId}/comment/${commentId}/reply/${replyId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      const updated = await res.json();
-      if (!res.ok) return;
-
-      updatePostState(postId, () => updated);
     } catch (err) {
       console.error(err);
     }
@@ -467,27 +404,20 @@ export default function PageProfile() {
                   post={p}
                   currentUser={currentUser}
                   onLike={() => handleLike(p._id)}
-                  onComment={(text) => handleComment(p._id, text)}
-                  onReply={(commentId, text) => handleReply(p._id, commentId, text)}
-                  onDeleteComment={(commentId) => handleDeleteComment(p._id, commentId)}
-                  onDeleteReply={(commentId, replyId) =>
-                    handleDeleteReply(p._id, commentId, replyId)
-                  }
+                  onCommentClick={() => openCommentsModal(p)}
                   onDeletePost={() => handleDeletePost(p._id)}
-                />
-
-                <CommentSection
-                  post={p}
-                  onComment={(text) => handleComment(p._id, text)}
-                  onReply={(commentId, text) => handleReply(p._id, commentId, text)}
-                  onDeleteComment={(commentId) => handleDeleteComment(p._id, commentId)}
-                  onDeleteReply={(commentId, replyId) =>
-                    handleDeleteReply(p._id, commentId, replyId)
-                  }
                 />
               </div>
             ))}
           </div>
+        
+          {isCommentsModalOpen && activePostForComments && (
+            <CommentsModal
+              post={activePostForComments}
+              onClose={closeCommentsModal}
+              targetType="page"
+            />
+          )}
         </div>
       </div>
     </div>

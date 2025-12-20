@@ -25,6 +25,7 @@ export default function Post({
   onDeleteComment,
   onDeleteReply,
   onMediaClick,
+  onCommentClick,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -192,6 +193,11 @@ export default function Post({
           <button
             className="fb-action-btn"
             onClick={() => {
+              if (onCommentClick) {
+                onCommentClick(post);
+                return;
+              }
+
               const box = document.querySelector(`#comment-box-${id}`);
               box?.scrollIntoView({ behavior: "smooth" });
               setTimeout(() => box?.focus(), 200);
