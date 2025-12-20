@@ -24,12 +24,12 @@
 
 .fb-compact-shell {
   min-height: 100vh;
-  background: transparent;
-  color: inherit;
+  background: #f0f2f5;
+  color: #111;
 }
 
 .fb-compact-body {
-  padding: 76px 0 0;
+  padding: 76px 12px 24px;
 }
 
 .fb-layout--header-only {
