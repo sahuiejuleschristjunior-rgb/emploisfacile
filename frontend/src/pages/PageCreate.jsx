@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   createPage,
@@ -7,12 +7,15 @@ import {
   uploadPageCover,
 } from "../api/pagesApi";
 import "../styles/page.css";
+import { COUNTRY_CALLING_CODES, COUNTRY_LIST } from "../utils/countries";
 import { PAGE_CATEGORY_GROUPS } from "../utils/pageCategories";
 import { validatePageName } from "../utils/pageNameRules";
 
 export default function PageCreate() {
   const [form, setForm] = useState({ name: "", categories: [], bio: "", contact: "" });
   const [locationForm, setLocationForm] = useState({ country: "", city: "", commune: "" });
+  const [phoneCode, setPhoneCode] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [photoForm, setPhotoForm] = useState({ avatar: null, cover: null });
   const [error, setError] = useState("");
   const [locationError, setLocationError] = useState("");
@@ -26,6 +29,18 @@ export default function PageCreate() {
   const [categoryQuery, setCategoryQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const nav = useNavigate();
+
+  const countryCodeMap = useMemo(() => {
+    const map = new Map();
+    COUNTRY_CALLING_CODES.forEach(({ country, code }) => map.set(country, code));
+    return map;
+  }, []);
+
+  useEffect(() => {
+    if (!locationForm.country) return;
+    const code = countryCodeMap.get(locationForm.country);
+    setPhoneCode(code || "");
+  }, [countryCodeMap, locationForm.country]);
 
   const allCategories = useMemo(
     () =>
@@ -83,7 +98,11 @@ export default function PageCreate() {
     setLoading(true);
 
     try {
-      const res = await createPage({ ...form, name: nameValidation.value });
+      const phone = phoneNumber.trim()
+        ? `${phoneCode || ""} ${phoneNumber.trim()}`.trim()
+        : "";
+
+      const res = await createPage({ ...form, name: nameValidation.value, phone });
       if (res?.slug) {
         setCreatedSlug(res.slug);
         setCreatedPageName(res.name || nameValidation.value);
@@ -105,7 +124,10 @@ export default function PageCreate() {
     setLocationLoading(true);
 
     try {
-      const res = await updatePage(createdSlug, { ...locationForm });
+      const location = [locationForm.city, locationForm.commune, locationForm.country]
+        .filter(Boolean)
+        .join(", ");
+      const res = await updatePage(createdSlug, { location });
       if (res?.error) {
         setLocationError(res.error || "Impossible d'enregistrer la localisation");
         return;
@@ -264,6 +286,35 @@ export default function PageCreate() {
           </label>
 
           <label>
+            Téléphone (optionnel)
+            <div className="phone-field">
+              <div className="phone-code">
+                <input
+                  list="phone-codes"
+                  value={phoneCode}
+                  onChange={(e) => setPhoneCode(e.target.value.trim())}
+                  placeholder="+237"
+                  disabled={loading}
+                />
+                <datalist id="phone-codes">
+                  {COUNTRY_CALLING_CODES.map((entry) => (
+                    <option key={entry.country} value={entry.code}>
+                      {`${entry.country} (${entry.code})`}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
+              <input
+                name="phoneNumber"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="Numéro de téléphone"
+                disabled={loading}
+              />
+            </div>
+          </label>
+
+          <label>
             Contact
             <input
               name="contact"
@@ -291,16 +342,24 @@ export default function PageCreate() {
 
           <label>
             Pays
-            <input
+            <select
               name="country"
               value={locationForm.country}
               onChange={(e) =>
                 setLocationForm((prev) => ({ ...prev, country: e.target.value }))
               }
-              placeholder="Ex: Cameroun"
               required
               disabled={locationLoading}
-            />
+            >
+              <option value="" disabled>
+                Sélectionnez un pays
+              </option>
+              {COUNTRY_LIST.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label>

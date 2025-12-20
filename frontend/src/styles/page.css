@@ -147,6 +147,24 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.phone-field {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.phone-code {
+  min-width: 140px;
+}
+
+.phone-code input {
+  width: 100%;
+}
+
+.phone-field input[name="phoneNumber"] {
+  flex: 1 1 220px;
+}
+
 .page-form input:focus,
 .page-form textarea:focus {
   outline: none;
