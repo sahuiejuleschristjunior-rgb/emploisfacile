@@ -28,6 +28,7 @@ import JobDetailPage from "./pages/JobDetailPage";
 import PageCreate from "./pages/PageCreate";
 import MyPages from "./pages/MyPages";
 import PageProfile from "./pages/PageProfile";
+import LikesPage from "./pages/LikesPage";
 
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
@@ -128,6 +129,7 @@ export default function App() {
                 <Route path="/post/:id" element={<PostPage />} />
                 <Route path="/emplois" element={<EmploisPage />} />
                 <Route path="/emplois/:id" element={<JobDetailPage />} />
+                <Route path="/likes/:postId" element={<LikesPage />} />
 
                 <Route
                   path="/recruiter/dashboard"

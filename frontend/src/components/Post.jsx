@@ -1,5 +1,6 @@
 // src/components/Post.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/post.css";
 import FBIcon from "./FBIcon";
 import PostEditModal from "./PostEditModal"; // ⬅️ AJOUT IMPORTANT
@@ -27,9 +28,21 @@ export default function Post({
   onMediaClick,
   onCommentClick,
   onCommentsCountClick,
+  onLikesCountClick,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const nav = useNavigate();
+
+  const textButtonStyle = {
+    background: "none",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    color: "inherit",
+    font: "inherit",
+    cursor: "pointer",
+  };
 
   if (!post) return null;
 
@@ -66,6 +79,39 @@ export default function Post({
   imageItems.forEach((item, idx) => {
     imageIndexMap.set(item.originIndex, idx);
   });
+
+  const focusCommentBox = () => {
+    const box = document.querySelector(`#comment-box-${id}`);
+    box?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => box?.focus(), 200);
+  };
+
+  const handleCommentArea = () => {
+    if (onCommentClick) {
+      onCommentClick(post);
+      return;
+    }
+
+    focusCommentBox();
+  };
+
+  const handleCommentsCount = () => {
+    if (onCommentsCountClick) {
+      onCommentsCountClick(post);
+      return;
+    }
+
+    handleCommentArea();
+  };
+
+  const handleLikesCount = () => {
+    if (onLikesCountClick) {
+      onLikesCountClick(post);
+      return;
+    }
+
+    nav(`/likes/${id}`);
+  };
 
   return (
     <>
@@ -175,10 +221,22 @@ export default function Post({
 
         {/* STATS */}
         <div className="fb-post-stats">
-          <span>{post.likes?.length || 0} j’aime</span>
-          <span onClick={() => onCommentsCountClick?.(post)}>
+          <button
+            type="button"
+            style={textButtonStyle}
+            onClick={handleLikesCount}
+            aria-label="Voir les mentions j'aime"
+          >
+            {post.likes?.length || 0} j’aime
+          </button>
+          <button
+            type="button"
+            style={textButtonStyle}
+            onClick={handleCommentsCount}
+            aria-label="Afficher les commentaires"
+          >
             {post.comments?.length || 0} commentaires
-          </span>
+          </button>
         </div>
 
         {/* ACTIONS */}
@@ -195,16 +253,7 @@ export default function Post({
 
           <button
             className="fb-action-btn"
-            onClick={() => {
-              if (onCommentClick) {
-                onCommentClick(post);
-                return;
-              }
-
-              const box = document.querySelector(`#comment-box-${id}`);
-              box?.scrollIntoView({ behavior: "smooth" });
-              setTimeout(() => box?.focus(), 200);
-            }}
+            onClick={handleCommentArea}
           >
             <FBIcon name="comment" size={20} />
             Commenter

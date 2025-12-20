@@ -189,6 +189,16 @@ export default function FeedPage() {
   const [storyIndex, setStoryIndex] = useState(0);
   const [showPostModal, setShowPostModal] = useState(false);
 
+  const textButtonStyle = {
+    background: "none",
+    border: "none",
+    padding: 0,
+    margin: 0,
+    color: "inherit",
+    font: "inherit",
+    cursor: "pointer",
+  };
+
   const token = localStorage.getItem("token");
 
   const currentUser = (() => {
@@ -209,6 +219,12 @@ export default function FeedPage() {
     }
     fetchPosts();
   }, [token, nav]);
+
+  const focusCommentBox = (postId) => {
+    const box = document.querySelector(`#comment-box-${postId}`);
+    box?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => box?.focus(), 150);
+  };
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -473,8 +489,20 @@ export default function FeedPage() {
 
             {/* STATS */}
             <div className="feed-post-stats">
-              <span>{likesCount} j’aime</span>
-              <span>{commentsCount} commentaires</span>
+              <button
+                type="button"
+                style={textButtonStyle}
+                onClick={() => nav(`/likes/${id}`)}
+              >
+                {likesCount} j’aime
+              </button>
+              <button
+                type="button"
+                style={textButtonStyle}
+                onClick={() => focusCommentBox(id)}
+              >
+                {commentsCount} commentaires
+              </button>
             </div>
 
             {/* ACTIONS */}
@@ -484,11 +512,7 @@ export default function FeedPage() {
               </button>
               <button
                 className="fb-action-btn"
-                onClick={() => {
-                  const box = document.querySelector(`#comment-box-${id}`);
-                  box?.scrollIntoView({ behavior: "smooth" });
-                  setTimeout(() => box?.focus(), 150);
-                }}
+                onClick={() => focusCommentBox(id)}
               >
                 <i className="material-icons">chat</i>
               </button>
