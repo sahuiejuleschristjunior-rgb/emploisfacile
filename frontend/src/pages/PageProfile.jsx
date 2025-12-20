@@ -169,7 +169,7 @@ export default function PageProfile() {
             )}
             {page.contact && (
               <div className="info-row">
-                <span className="label">Contact</span>
+                <span className="label">Email</span>
                 <span className="value">{page.contact}</span>
               </div>
             )}

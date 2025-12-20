@@ -315,12 +315,13 @@ export default function PageCreate() {
           </label>
 
           <label>
-            Contact
+            Email
             <input
+              type="email"
               name="contact"
               value={form.contact}
               onChange={handleChange}
-              placeholder="Email, téléphone ou lien"
+              placeholder="Adresse email"
               disabled={loading}
             />
           </label>
