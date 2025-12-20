@@ -259,8 +259,9 @@ exports.getLikes = async (req, res) => {
     if (!post) return res.status(404).json({ error: "Post introuvable" });
 
     const likes = (post.likes || []).map((user) => ({ user }));
+    const total = Array.isArray(post.likes) ? post.likes.length : 0;
 
-    res.json({ likes });
+    res.json({ likes, total });
   } catch (err) {
     res.status(500).json({ error: "Erreur chargement likes" });
   }
