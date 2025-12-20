@@ -12,10 +12,13 @@ export default function LikesPage() {
   const [likers, setLikers] = useState([]);
   const [likesCount, setLikesCount] = useState(0);
 
+  /* =====================================================
+     CURRENT USER
+  ===================================================== */
   const currentUser = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem("user")) || {};
-    } catch (err) {
+    } catch {
       return {};
     }
   }, []);
@@ -23,10 +26,15 @@ export default function LikesPage() {
   const token = localStorage.getItem("token");
 
   const authHeaders = useMemo(
-    () => ({ Authorization: `Bearer ${token}` }),
+    () => ({
+      Authorization: `Bearer ${token}`,
+    }),
     [token]
   );
 
+  /* =====================================================
+     LOAD LIKES
+  ===================================================== */
   const loadPostLikes = useCallback(
     async (id) => {
       setLoading(true);
@@ -34,6 +42,7 @@ export default function LikesPage() {
         const res = await fetch(`${API_URL}/posts/${id}/likes`, {
           headers: authHeaders,
         });
+
         const data = await res.json();
 
         if (!res.ok) {
@@ -45,12 +54,11 @@ export default function LikesPage() {
           ? data.likes
               .map((like) => {
                 const user = like?.user;
-
                 if (!user || !user._id) return null;
 
                 return {
                   ...user,
-                  avatar: user.avatar || user.profile?.avatar,
+                  avatar: user.avatar || user.profile?.avatar || null,
                 };
               })
               .filter(Boolean)
@@ -59,9 +67,7 @@ export default function LikesPage() {
         const total =
           typeof data.total === "number"
             ? data.total
-            : Array.isArray(data.likes)
-            ? data.likes.length
-            : 0;
+            : users.length;
 
         setLikers(users);
         setLikesCount(total);
@@ -85,6 +91,9 @@ export default function LikesPage() {
     }
   }, [postId, token, nav, loadPostLikes]);
 
+  /* =====================================================
+     HELPERS
+  ===================================================== */
   const handleProfileClick = (userId) => {
     nav(`/profil/${userId}`);
   };
@@ -98,6 +107,7 @@ export default function LikesPage() {
       return avatar;
     }
 
+    // 🔥 normalisation ABSOLUE du chemin
     const cleanPath = avatar.startsWith("/") ? avatar : `/${avatar}`;
     return `${API_URL}${cleanPath}`;
   };
@@ -107,20 +117,27 @@ export default function LikesPage() {
     [currentUser]
   );
 
+  /* =====================================================
+     RENDER
+  ===================================================== */
   return (
     <div className="relations-page">
       <h2>Mentions J’aime ({likesCount})</h2>
 
-      {loading && <div className="relations-loading">Chargement…</div>}
+      {loading && (
+        <div className="relations-loading">Chargement…</div>
+      )}
 
       {!loading && likers.length === 0 && (
-        <div className="relations-empty">Aucune mention J’aime pour le moment.</div>
+        <div className="relations-empty">
+          Aucune mention J’aime pour le moment.
+        </div>
       )}
 
       <div className="relations-list">
         {likers.map((user) => (
           <LikeCard
-            key={user?._id}
+            key={user._id}
             user={user}
             isMe={isMe}
             onProfileClick={handleProfileClick}
@@ -133,6 +150,9 @@ export default function LikesPage() {
   );
 }
 
+/* =====================================================
+   LIKE CARD
+===================================================== */
 function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
   const { status, loading, sendRequest, acceptRequest } = useRelation(
     user?._id
@@ -145,7 +165,6 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
 
   const handleMessage = (e) => {
     e.stopPropagation();
-    if (!user?._id) return;
     navigate(`/messages?userId=${user._id}`);
   };
 
@@ -172,7 +191,11 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
 
     if (status.requestReceived) {
       return (
-        <button className="btn-accept" onClick={handleAccept} disabled={loading}>
+        <button
+          className="btn-accept"
+          onClick={handleAccept}
+          disabled={loading}
+        >
           Accepter
         </button>
       );
@@ -187,7 +210,11 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
     }
 
     return (
-      <button className="btn-accept" onClick={handleAddFriend} disabled={loading}>
+      <button
+        className="btn-accept"
+        onClick={handleAddFriend}
+        disabled={loading}
+      >
         Ajouter
       </button>
     );
@@ -197,7 +224,11 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
     if (!user?._id || isMe(user._id)) return null;
 
     return (
-      <button className="btn-reject" onClick={handleMessage} disabled={loading}>
+      <button
+        className="btn-reject"
+        onClick={handleMessage}
+        disabled={loading}
+      >
         Message
       </button>
     );
@@ -217,7 +248,11 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
         src={fixAvatar(user?.avatar)}
         alt={user?.name || "Profil"}
         className="relation-avatar"
+        onError={(e) => {
+          e.currentTarget.src = "/default-avatar.png";
+        }}
       />
+
       <div className="relation-info">
         <strong>{user?.name || "Utilisateur"}</strong>
         {user?.email && <span>{user.email}</span>}
