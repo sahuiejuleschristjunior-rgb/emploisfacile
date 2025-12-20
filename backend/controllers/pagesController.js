@@ -5,25 +5,15 @@ const Post = require("../models/Post");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
 const { getIO } = require("../socket");
+const { validatePageName, generatePageSlug } = require("../utils/pageNameRules");
 
 const uploadDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-function slugify(text) {
-  return (text || "")
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-")
-    .replace(/^-$/, "page");
-}
-
 async function generateUniqueSlug(name) {
-  let base = slugify(name) || "page";
+  let base = generatePageSlug(name) || "page";
   let slug = base;
   let counter = 1;
 
@@ -126,17 +116,24 @@ exports.createPage = async (req, res) => {
       return res.status(400).json({ error: "Nom et catégorie requis" });
     }
 
+    const nameValidation = validatePageName(name);
+    if (!nameValidation.valid) {
+      return res.status(400).json({ error: nameValidation.error });
+    }
+
+    const normalizedName = nameValidation.value;
+
     const ownerId = req.user?.id;
     if (!ownerId) {
       return res.status(401).json({ error: "Utilisateur non authentifié" });
     }
 
-    const slug = await generateUniqueSlug(name);
+    const slug = await generateUniqueSlug(normalizedName);
 
     await Page.create({
       owner: ownerId,
       admins: [ownerId],
-      name,
+      name: normalizedName,
       slug,
       category: categories[0],
       categories,
@@ -198,7 +195,16 @@ exports.updatePage = async (req, res) => {
       return res.status(403).json({ error: "Accès refusé" });
     }
 
-    const allowedFields = ["name", "bio", "website", "phone", "whatsapp", "location", "contact"];
+    if (req.body.name !== undefined) {
+      const nameValidation = validatePageName(req.body.name);
+      if (!nameValidation.valid) {
+        return res.status(400).json({ error: nameValidation.error });
+      }
+
+      page.name = nameValidation.value;
+    }
+
+    const allowedFields = ["bio", "website", "phone", "whatsapp", "location", "contact"];
 
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
