@@ -6,12 +6,20 @@ import { getAvatarStyle } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
 import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
+import {
+  fetchRelationStatus,
+  sendFriendRequest,
+  cancelFriendRequest,
+} from "../api/socialApi";
 
-export default function FacebookLayout() {
+export default function FacebookLayout({ headerOnly = false }) {
   const location = useLocation();
   const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const { token: authToken, user: authUser, logout } = useAuth();
+
+  const isFullLayout = location.pathname.startsWith("/fb");
+  const isCompactLayout = headerOnly || !isFullLayout;
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -53,12 +61,27 @@ export default function FacebookLayout() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    const stored = localStorage.getItem("ef_recent_searches");
+    if (!stored) return [];
+
+    try {
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.error("Erreur parse recent searches:", err);
+      return [];
+    }
+  });
 
   const [searchResults, setSearchResults] = useState({
     users: [],
     posts: [],
     jobs: [],
   });
+
+  const [relationStatuses, setRelationStatuses] = useState({});
 
   const searchBoxRef = useRef(null);
 
@@ -190,8 +213,49 @@ export default function FacebookLayout() {
   }, [pushRealtimeMessage]);
 
   /* ============================================================
-     🔍 SEARCH 
+     🔍 SEARCH
   ============================================================ */
+  useEffect(() => {
+    try {
+      localStorage.setItem("ef_recent_searches", JSON.stringify(recentSearches));
+    } catch (err) {
+      console.error("Erreur save recent searches:", err);
+    }
+  }, [recentSearches]);
+
+  const addRecentSearch = useCallback((entry) => {
+    if (!entry?.id) return;
+
+    setRecentSearches((prev) => {
+      const filtered = prev.filter(
+        (item) => !(item.id === entry.id && item.type === entry.type)
+      );
+
+      return [entry, ...filtered].slice(0, 8);
+    });
+  }, []);
+
+  const handleRecentNavigation = useCallback(
+    (entry) => {
+      if (!entry?.link) return;
+
+      nav(entry.link);
+      setSearchOpen(false);
+      setShowMobileSearch(false);
+    },
+    [nav]
+  );
+
+  const handleSearchNavigation = useCallback(
+    (entry, path) => {
+      addRecentSearch({ ...entry, link: path });
+      nav(path);
+      setSearchOpen(false);
+      setShowMobileSearch(false);
+    },
+    [addRecentSearch, nav]
+  );
+
   const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
       setSearchResults({ users: [], posts: [], jobs: [] });
@@ -223,11 +287,150 @@ export default function FacebookLayout() {
   }, [searchTerm, API_URL]);
 
   useEffect(() => {
+    if (!searchTerm.trim()) {
+      setSearchResults({ users: [], posts: [], jobs: [] });
+    }
+
     const t = setTimeout(() => {
       if (searchTerm.trim()) performSearch();
     }, 300);
     return () => clearTimeout(t);
   }, [searchTerm, performSearch]);
+
+  useEffect(() => {
+    const loadStatuses = async () => {
+      if (!searchResults.users || searchResults.users.length === 0) return;
+
+      try {
+        const statuses = await Promise.all(
+          searchResults.users.map(async (u) => {
+            try {
+              const res = await fetchRelationStatus(u._id);
+              return { id: u._id, status: res.status };
+            } catch (e) {
+              console.error("STATUS ERROR", e);
+              return { id: u._id, status: null };
+            }
+          })
+        );
+
+        setRelationStatuses((prev) => {
+          const next = { ...prev };
+          statuses.forEach(({ id, status }) => {
+            if (status) next[id] = status;
+          });
+          return next;
+        });
+      } catch (e) {
+        console.error("LOAD STATUS ERROR", e);
+      }
+    };
+
+    loadStatuses();
+  }, [searchResults.users]);
+
+  const getRelationFor = useCallback(
+    (userId) => relationStatuses[userId] || {},
+    [relationStatuses]
+  );
+
+  const handleSendFriendRequest = useCallback(
+    async (userId) => {
+      try {
+        await sendFriendRequest(userId);
+        setRelationStatuses((prev) => ({
+          ...prev,
+          [userId]: {
+            ...(prev[userId] || {}),
+            requestSent: true,
+            requestReceived: false,
+            isFriend: false,
+          },
+        }));
+      } catch (e) {
+        console.error("SEND REQUEST ERROR", e);
+      }
+    },
+    []
+  );
+
+  const handleCancelFriendRequest = useCallback(
+    async (userId) => {
+      try {
+        await cancelFriendRequest(userId);
+        setRelationStatuses((prev) => ({
+          ...prev,
+          [userId]: {
+            ...(prev[userId] || {}),
+            requestSent: false,
+          },
+        }));
+      } catch (e) {
+        console.error("CANCEL REQUEST ERROR", e);
+      }
+    },
+    []
+  );
+
+  const renderFriendButton = (user) => {
+    const status = getRelationFor(user._id);
+
+    if (status.isBlocked) {
+      return (
+        <button className="fb-search-secondary" disabled>
+          Bloqué
+        </button>
+      );
+    }
+
+    if (status.isFriend) {
+      return (
+        <button className="fb-search-secondary" disabled>
+          Amis
+        </button>
+      );
+    }
+
+    if (status.requestReceived) {
+      return (
+        <button
+          className="fb-search-primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            nav("/fb/relations");
+          }}
+        >
+          Répondre
+        </button>
+      );
+    }
+
+    if (status.requestSent) {
+      return (
+        <button
+          className="fb-search-secondary"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCancelFriendRequest(user._id);
+          }}
+        >
+          Demande envoyée
+        </button>
+      );
+    }
+
+    return (
+      <button
+        className="fb-search-primary"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSendFriendRequest(user._id);
+        }}
+      >
+        Ajouter ami
+      </button>
+    );
+  };
 
   /* ============================================================
      🔥 LOAD NOTIFICATIONS
@@ -302,14 +505,241 @@ export default function FacebookLayout() {
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
 
+  const renderSearchContent = () => {
+    if (loadingSearch)
+      return <div className="fb-search-loader">Recherche...</div>;
+
+    const hasResults =
+      searchResults.users.length > 0 ||
+      searchResults.posts.length > 0 ||
+      searchResults.jobs.length > 0;
+
+    const showEmptyMessage = !searchTerm.trim();
+
+    return (
+      <div className="fb-search-page">
+        <div className="fb-search-left">
+          <div className="fb-search-chips">
+            {["Tous", "Employeurs / Recruteurs", "Services", "Bloguer"].map(
+              (label) => (
+                <span key={label} className="fb-search-chip">
+                  {label}
+                </span>
+              )
+            )}
+          </div>
+
+          <div className="fb-search-section-card">
+            <div className="fb-search-section-header">
+              <div className="fb-search-title">Récentes</div>
+              <button className="fb-search-link">Voir tout</button>
+            </div>
+
+            {recentSearches.length === 0 ? (
+              <div className="fb-search-empty-inline">
+                Aucune recherche récente.
+              </div>
+            ) : (
+              recentSearches.map((item) => (
+                <div
+                  key={`${item.type}-${item.id}`}
+                  className="fb-search-item"
+                  onClick={() => handleRecentNavigation(item)}
+                >
+                  <div className="fb-search-avatar">
+                    {item.avatar ? (
+                      <img src={item.avatar} alt={item.title} />
+                    ) : (
+                      <FBIcon name="search" size={18} />
+                    )}
+                  </div>
+                  <div className="fb-search-item-text">
+                    <span className="fb-search-item-title">{item.title}</span>
+                    <span className="fb-search-item-sub">{item.subtitle}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="fb-search-section-card">
+            <div className="fb-search-section-header">
+              <div className="fb-search-title">Résultats</div>
+            </div>
+
+            {showEmptyMessage && (
+              <div className="fb-search-empty-inline">
+                Commencez à taper pour rechercher.
+              </div>
+            )}
+
+            {!showEmptyMessage && !hasResults && (
+              <div className="fb-search-empty-inline">Aucun résultat</div>
+            )}
+
+            {!showEmptyMessage && hasResults && (
+              <div className="fb-search-list">
+                {searchResults.users.map((u) => (
+                  <div
+                    key={u._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: u._id,
+                          type: "user",
+                          title: u.name,
+                          subtitle: "Profil",
+                          avatar: u.avatar,
+                        },
+                        `/profil/${u._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={u.avatar || "https://i.pravatar.cc/150"}
+                        alt={u.name}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">{u.name}</span>
+                      <span className="fb-search-item-sub">Profil</span>
+                    </div>
+                    <div className="fb-search-item-actions">
+                      {renderFriendButton(u)}
+                    </div>
+                  </div>
+                ))}
+
+                {searchResults.jobs.map((j) => (
+                  <div
+                    key={j._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: j._id,
+                          type: "job",
+                          title: j.title,
+                          subtitle: j.company || "Emploi",
+                          avatar: j.companyLogo,
+                        },
+                        `/emplois/${j._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={j.companyLogo || "https://i.pravatar.cc/150"}
+                        alt={j.title}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">{j.title}</span>
+                      <span className="fb-search-item-sub">
+                        {j.company || "Emploi"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {searchResults.posts.map((p) => (
+                  <div
+                    key={p._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: p._id,
+                          type: "post",
+                          title: p.author?.name || "Publication",
+                          subtitle:
+                            p.content?.slice(0, 70) || "(Sans contenu)",
+                          avatar: p.author?.avatar,
+                        },
+                        `/fb/post/${p._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={p.author?.avatar || "https://i.pravatar.cc/150"}
+                        alt={p.author?.name || "Publication"}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">
+                        {p.author?.name || "Publication"}
+                      </span>
+                      <span className="fb-search-item-sub">
+                        {p.content?.slice(0, 70) || "(Sans contenu)"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="fb-search-right">
+          <div className="fb-search-title">Personnes que vous pourriez connaître</div>
+          <div className="fb-search-grid">
+            {(searchResults.users.length > 0 ? searchResults.users : [])
+              .slice(0, 4)
+              .map((u) => (
+                <div key={`suggest-${u._id}`} className="fb-search-card">
+                  <div className="fb-search-card-header">
+                    <img
+                      src={u.avatar || "https://i.pravatar.cc/150"}
+                      alt={u.name}
+                    />
+                    <div>
+                      <div className="fb-search-card-title">{u.name}</div>
+                      <div className="fb-search-card-sub">2 ami(e)s en commun</div>
+                    </div>
+                  </div>
+                  <div className="fb-search-card-actions">
+                    {renderFriendButton(u)}
+                    <button
+                      className="fb-search-secondary"
+                      onClick={() =>
+                        handleSearchNavigation(
+                          {
+                            id: u._id,
+                            type: "user",
+                            title: u.name,
+                            subtitle: "Profil",
+                            avatar: u.avatar,
+                          },
+                          `/profil/${u._id}`
+                        )
+                      }
+                    >
+                      Voir
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+            {searchResults.users.length === 0 && (
+              <div className="fb-search-empty-inline">
+                Tapez pour découvrir de nouvelles personnes.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  return (
-    <div className="fb-app fb-app--with-bottom-nav">
-      {/* HEADER */}
-      <header className="fb-header">
-        <div className="fb-header-inner">
+  const header = (
+    <header className="fb-header">
+      <div className="fb-header-inner">
           
           {/* LOGO */}
           <div className="fb-header-left" onClick={() => nav("/fb")}>
@@ -334,60 +764,17 @@ export default function FacebookLayout() {
 
             {searchOpen && (
               <div className="fb-search-dropdown">
-                {loadingSearch ? (
-                  <div className="fb-search-loader">Recherche...</div>
-                ) : (
-                  <>
-                    {searchResults.users.length > 0 && (
-                      <div className="fb-search-section">
-                        <div className="fb-search-title">Utilisateurs</div>
-                        {searchResults.users.map((u) => (
-                          <div
-                            key={u._id}
-                            className="fb-search-item"
-                            onClick={() => nav(`/profil/${u._id}`)}
-                          >
-                            <img src={u.avatar || "/default-avatar.png"} />
-                            <span>{u.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {searchResults.posts.length > 0 && (
-                      <div className="fb-search-section">
-                        <div className="fb-search-title">Publications</div>
-                        {searchResults.posts.map((p) => (
-                          <div
-                            key={p._id}
-                            className="fb-search-item"
-                            onClick={() => nav(`/fb/post/${p._id}`)}
-                          >
-                            <span>{(p.content || p.text)?.slice(0, 60)}...</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {searchResults.jobs.length > 0 && (
-                      <div className="fb-search-section">
-                        <div className="fb-search-title">Emplois</div>
-                        {searchResults.jobs.map((j) => (
-                          <div
-                            key={j._id}
-                            className="fb-search-item"
-                            onClick={() => nav(`/job/${j._id}`)}
-                          >
-                            <span>{j.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+                {renderSearchContent()}
               </div>
             )}
           </div>
+
+          {searchOpen && !showMobileSearch && (
+            <div
+              className="fb-search-overlay"
+              onClick={() => setSearchOpen(false)}
+            />
+          )}
 
           {/* RIGHT ACTIONS */}
           <div className="fb-header-right">
@@ -476,8 +863,27 @@ export default function FacebookLayout() {
               <div className="fb-header-avatar" style={avatarStyle} />
             </button>
           </div>
-        </div>
-      </header>
+      </div>
+    </header>
+  );
+
+  if (isCompactLayout) {
+    return (
+      <div className="fb-compact-shell">
+        {header}
+
+        <main className="fb-compact-body">
+          <Outlet />
+        </main>
+
+        {toast && <div className="fb-toast">{toast}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="fb-app fb-app--with-bottom-nav">
+      {header}
 
       {/* APP BODY */}
       <main className="fb-app-body">
@@ -508,7 +914,12 @@ export default function FacebookLayout() {
 
                 <div className="fb-sidebar-item" onClick={() => nav("/emplois")}>
                   <FBIcon name="jobs" size={20} />
-                  <div className="fb-sidebar-item-label">Tableau de bord</div>
+                  <div className="fb-sidebar-item-label">Emplois</div>
+                </div>
+
+                <div className="fb-sidebar-item" onClick={() => nav("/pages/me")}>
+                  <FBIcon name="profile" size={20} />
+                  <div className="fb-sidebar-item-label">Pages</div>
                 </div>
 
                 <div className="fb-sidebar-item" onClick={() => nav("/notifications")}>
@@ -531,7 +942,24 @@ export default function FacebookLayout() {
 
                 {showSettings && (
                   <div className="fb-sidebar-submenu">
-                    <div className="fb-sidebar-subitem" onClick={() => nav("/settings")}>
+                    <div
+                      className="fb-sidebar-subitem"
+                      onClick={() => {
+                        nav("/fb/dashboard");
+                        setShowSettings(false);
+                      }}
+                    >
+                      <FBIcon name="home" size={18} />
+                      <span>Tableau de bord</span>
+                    </div>
+
+                    <div
+                      className="fb-sidebar-subitem"
+                      onClick={() => {
+                        nav("/fb/settings");
+                        setShowSettings(false);
+                      }}
+                    >
                       <FBIcon name="settings" size={18} />
                       <span>Général</span>
                     </div>
@@ -571,9 +999,15 @@ export default function FacebookLayout() {
             <div>Emplois</div>
           </div>
 
-          <div className="fb-bottom-nav-item" onClick={() => nav("/fb/relations")}>
-            <FBIcon name="friends" size={22} />
-            <div>Relations</div>
+          <div
+            className="fb-bottom-nav-item"
+            onClick={() => {
+              setShowMobileSearch(true);
+              setSearchOpen(true);
+            }}
+          >
+            <FBIcon name="search" size={22} />
+            <div>Recherche</div>
           </div>
 
           <div className="fb-bottom-nav-item" onClick={() => nav("/messages")}>
@@ -602,22 +1036,68 @@ export default function FacebookLayout() {
           </div>
 
           <div className="fs-menu-grid">
-            <div className="fs-item" onClick={() => nav("/emplois")}>
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/emplois");
+                setShowMobileMenu(false);
+              }}
+            >
               <FBIcon name="jobs" size={22} />
+              <span>Emplois</span>
+            </div>
+
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/pages/me");
+                setShowMobileMenu(false);
+              }}
+            >
+              <FBIcon name="profile" size={22} />
+              <span>Pages</span>
+            </div>
+
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/fb");
+                setShowMobileMenu(false);
+              }}
+            >
+              <FBIcon name="home" size={22} />
+              <span>Acceuil</span>
+            </div>
+
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/fb/relations");
+                setShowMobileMenu(false);
+              }}
+            >
+              <FBIcon name="friends" size={22} />
+              <span>Relation</span>
+            </div>
+
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/fb/dashboard");
+                setShowMobileMenu(false);
+              }}
+            >
+              <FBIcon name="home" size={22} />
               <span>Tableau de bord</span>
             </div>
 
-            <div className="fs-item" onClick={() => nav("/fb")}>
-              <FBIcon name="home" size={22} />
-              <span>Fils</span>
-            </div>
-
-            <div className="fs-item" onClick={() => nav("/fb/relations")}>
-              <FBIcon name="friends" size={22} />
-              <span>Découvrir</span>
-            </div>
-
-            <div className="fs-item" onClick={() => nav("/settings")}>
+            <div
+              className="fs-item"
+              onClick={() => {
+                nav("/settings");
+                setShowMobileMenu(false);
+              }}
+            >
               <FBIcon name="settings" size={22} />
               <span>Paramètres</span>
             </div>
@@ -626,6 +1106,45 @@ export default function FacebookLayout() {
               <FBIcon name="logout" size={22} />
               <span>Déconnexion</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showMobileSearch && (
+        <div
+          className="fb-mobile-search-modal"
+          onClick={() => {
+            setShowMobileSearch(false);
+            setSearchOpen(false);
+          }}
+        >
+          <div
+            className="fb-mobile-search-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="fb-mobile-search-header">
+              <FBIcon name="search" size={20} />
+              <input
+                value={searchTerm}
+                placeholder="Rechercher..."
+                onFocus={() => setSearchOpen(true)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSearchOpen(true);
+                }}
+              />
+              <button
+                className="fb-mobile-search-close"
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  setSearchOpen(false);
+                }}
+              >
+                ✖
+              </button>
+            </div>
+
+            <div className="fb-mobile-search-results">{renderSearchContent()}</div>
           </div>
         </div>
       )}
