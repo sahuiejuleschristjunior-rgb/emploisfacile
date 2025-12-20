@@ -62,41 +62,19 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
    ROUTES API
 ============================================================ */
 
-// Auth / User
 app.use("/api/auth", authRoutes);
-
-// Posts
 app.use("/api/posts", postRoutes);
-
-// Stories
 app.use("/api/stories", storyRoutes);
-
-// Upload
 app.use("/api/upload", uploadRoutes);
-
-// Notifications
 app.use("/api/notifications", notificationRoutes);
-
-// Jobs
 app.use("/api/jobs", jobRoutes);
-
-// Applications
 app.use("/api/applications", applicationRoutes);
-
-// Saved jobs
 app.use("/api/saved-jobs", savedJobRoutes);
-
-// Messages
 app.use("/api/messages", messageRoutes);
-
-// Search
 app.use("/api/search", searchRoutes);
-
-// ⭐ SOCIAL SYSTEM (amis + follow)
 app.use("/api/social", socialRoutes);
 
 // ⭐ PAGES
-console.log("🔥 MOUNTING /api/pages ROUTES");
 app.use("/api/pages", pagesRoutes);
 app.use("/api/page-posts", pagePostsRoutes);
 
@@ -113,28 +91,25 @@ app.get("/api/health", (req, res) => {
 initSocket(server);
 
 /* ============================================================
-   🔥 DEBUG — DUMP DES ROUTES EXPRESS RÉELLES
+   🔍 DEBUG SAFE (OPTIONNEL – NE PLANTE JAMAIS)
 ============================================================ */
-function dumpRoutes() {
-  console.log("========== 📋 EXPRESS ROUTES DUMP ==========");
-  app._router.stack.forEach((layer) => {
-    if (layer.route && layer.route.path) {
-      const methods = Object.keys(layer.route.methods)
-        .join(",")
-        .toUpperCase();
-      console.log(`🧭 ROUTE ${methods} ${layer.route.path}`);
-    } else if (layer.name === "router" && layer.handle.stack) {
-      layer.handle.stack.forEach((r) => {
-        if (r.route) {
-          const methods = Object.keys(r.route.methods)
-            .join(",")
-            .toUpperCase();
-          console.log(`🧭 ROUTER ${methods} ${r.route.path}`);
-        }
-      });
-    }
-  });
-  console.log("============================================");
+function dumpRoutesSafe() {
+  try {
+    if (!app._router || !app._router.stack) return;
+
+    console.log("========== 📋 ROUTES EXPRESS ==========");
+    app._router.stack.forEach((layer) => {
+      if (layer.route && layer.route.path) {
+        const methods = Object.keys(layer.route.methods)
+          .join(",")
+          .toUpperCase();
+        console.log(`🧭 ${methods} ${layer.route.path}`);
+      }
+    });
+    console.log("======================================");
+  } catch (err) {
+    // 🔇 jamais bloquer le serveur pour du debug
+  }
 }
 
 /* ============================================================
@@ -144,7 +119,9 @@ db.connect()
   .then(() => {
     server.listen(PORT, "0.0.0.0", () => {
       console.log("✔ Backend running on port", PORT);
-      dumpRoutes(); // 🔥 ICI LA PREUVE ABSOLUE
+
+      // 🔍 active seulement si besoin
+      // dumpRoutesSafe();
     });
   })
   .catch((err) => {
