@@ -56,7 +56,10 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 /* ============================================================
    STATIC FILES
 ============================================================ */
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Serve uploaded files under both /uploads and /api/uploads for backward compatibility
+const uploadsPath = path.join(__dirname, "uploads");
+app.use("/uploads", express.static(uploadsPath));
+app.use("/api/uploads", express.static(uploadsPath));
 
 /* ============================================================
    ROUTES API
