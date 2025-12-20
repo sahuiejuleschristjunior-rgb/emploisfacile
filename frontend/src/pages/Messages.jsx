@@ -63,15 +63,6 @@ const BackIcon = () => (
   </svg>
 );
 
-const HomeIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-    <path
-      fill="currentColor"
-      d="M12 3.2a1 1 0 0 0-.65.24l-8 7a1 1 0 0 0 1.3 1.52l.35-.3V19a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4h2v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.34l.35.3a1 1 0 0 0 1.3-1.52l-8-7A1 1 0 0 0 12 3.2Z"
-    />
-  </svg>
-);
-
 const PhoneIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
     <path
@@ -1532,10 +1523,6 @@ export default function Messages() {
       {/* ================= LEFT — AMIS ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
-          <button className="messages-home-btn" onClick={() => navigate("/fb")}>
-            <HomeIcon />
-            <span>Accueil</span>
-          </button>
           <h2>Messages</h2>
         </div>
 
