@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { createPage } from "../api/pagesApi";
 import "../styles/page.css";
 import { PAGE_CATEGORY_GROUPS } from "../utils/pageCategories";
+import { validatePageName } from "../utils/pageNameRules";
 
 export default function PageCreate() {
   const [form, setForm] = useState({ name: "", categories: [], bio: "", contact: "" });
@@ -56,6 +57,11 @@ export default function PageCreate() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    const nameValidation = validatePageName(form.name);
+    if (!nameValidation.valid) {
+      setError(nameValidation.error);
+      return;
+    }
     if (!form.categories.length) {
       setError("Sélectionnez au moins une catégorie");
       return;
@@ -63,7 +69,7 @@ export default function PageCreate() {
     setLoading(true);
 
     try {
-      const res = await createPage(form);
+      const res = await createPage({ ...form, name: nameValidation.value });
       if (res?.slug) {
         nav(`/pages/${res.slug}`);
       } else {
