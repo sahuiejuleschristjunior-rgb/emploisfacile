@@ -737,9 +737,15 @@ export default function FacebookLayout({ headerOnly = false }) {
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  const header = (
-    <header className="fb-header">
-      <div className="fb-header-inner">
+  return (
+    <div
+      className={`fb-app ${
+        isCompactLayout ? "fb-app--header-only" : "fb-app--with-bottom-nav"
+      }`}
+    >
+      {/* HEADER */}
+      <header className="fb-header">
+        <div className="fb-header-inner">
           
           {/* LOGO */}
           <div className="fb-header-left" onClick={() => nav("/fb")}>
@@ -863,32 +869,20 @@ export default function FacebookLayout({ headerOnly = false }) {
               <div className="fb-header-avatar" style={avatarStyle} />
             </button>
           </div>
-      </div>
-    </header>
-  );
-
-  if (isCompactLayout) {
-    return (
-      <div className="fb-compact-shell">
-        {header}
-
-        <main className="fb-compact-body">
-          <Outlet />
-        </main>
-
-        {toast && <div className="fb-toast">{toast}</div>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="fb-app fb-app--with-bottom-nav">
-      {header}
+        </div>
+      </header>
 
       {/* APP BODY */}
-      <main className="fb-app-body">
-        <div className="fb-layout">
-          <aside className="fb-left-column">
+      <main className={`fb-app-body ${isCompactLayout ? "fb-app-body--solo" : ""}`}>
+        {isCompactLayout ? (
+          <div className="fb-layout fb-layout--header-only">
+            <section className="fb-center-column">
+              <Outlet />
+            </section>
+          </div>
+        ) : (
+          <div className="fb-layout">
+            <aside className="fb-left-column">
             <div className="fb-left-section">
               <div className="fb-sidebar-group">
                 <div
@@ -977,17 +971,19 @@ export default function FacebookLayout({ headerOnly = false }) {
             </div>
           </aside>
 
-          <section className="fb-center-column">
-            <Outlet />
-          </section>
+            <section className="fb-center-column">
+              <Outlet />
+            </section>
 
-          <aside className="fb-right-column"></aside>
-        </div>
+            <aside className="fb-right-column"></aside>
+          </div>
+        )}
       </main>
 
       {/* BOTTOM NAV */}
-      <nav className="fb-bottom-nav">
-        <div className="fb-bottom-nav-inner">
+      {!isCompactLayout && (
+        <nav className="fb-bottom-nav">
+          <div className="fb-bottom-nav-inner">
 
           <div className="fb-bottom-nav-item" onClick={() => nav("/fb")}>
             <FBIcon name="home" size={22} />
@@ -1021,6 +1017,7 @@ export default function FacebookLayout({ headerOnly = false }) {
           </div>
         </div>
       </nav>
+      )}
 
       {/* FULLSCREEN MENU */}
       {showMobileMenu && (
