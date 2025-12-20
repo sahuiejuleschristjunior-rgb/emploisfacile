@@ -71,6 +71,9 @@ router.get("/", auth, postCtrl.list);
 // ⭐⭐⭐ ROUTE PUBLIC PROFILE (placer AVANT les routes dynamiques !)
 router.get("/user/:id", auth, postCtrl.getPostsByUser);
 
+// ➤ Récupérer les likes d'un post
+router.get("/:id/likes", auth, postCtrl.getLikes);
+
 // ➤ Like / unlike post
 router.post("/:id/like", auth, postCtrl.like);
 

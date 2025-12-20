@@ -245,6 +245,28 @@ exports.like = async (req, res) => {
 };
 
 /* ============================================================
+   📌 LISTE DES LIKES D’UN POST
+============================================================ */
+exports.getLikes = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const post = await Post.findById(id).populate(
+      "likes",
+      "name email avatar"
+    );
+
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    const likes = (post.likes || []).map((user) => ({ user }));
+
+    res.json({ likes });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur chargement likes" });
+  }
+};
+
+/* ============================================================
    📌 RÉPONSE (texte + media) + NOTIFICATION
 ============================================================ */
 exports.reply = async (req, res) => {

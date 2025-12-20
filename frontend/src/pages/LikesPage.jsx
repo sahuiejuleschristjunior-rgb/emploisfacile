@@ -7,8 +7,7 @@ export default function LikesPage() {
   const { postId } = useParams();
   const nav = useNavigate();
 
-  const [loadingPost, setLoadingPost] = useState(true);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [likers, setLikers] = useState([]);
 
   const token = localStorage.getItem("token");
@@ -18,55 +17,36 @@ export default function LikesPage() {
     [token]
   );
 
-  const loadUserProfiles = useCallback(
-    async (ids) => {
-      setLoadingUsers(true);
-      try {
-        const uniqueIds = Array.from(new Set((ids || []).map(String)));
-
-        const profiles = [];
-        for (const uid of uniqueIds) {
-          try {
-            const res = await fetch(`${API_URL}/auth/user/${uid}`, {
-              headers: authHeaders,
-            });
-
-            const data = await res.json();
-            if (res.ok && data) profiles.push(data.user || data);
-          } catch (err) {
-            console.error("Erreur profil liker", err);
-          }
-        }
-
-        setLikers(profiles);
-      } finally {
-        setLoadingUsers(false);
-      }
-    },
-    [authHeaders]
-  );
-
   const loadPostLikes = useCallback(
     async (id) => {
-      setLoadingPost(true);
+      setLoading(true);
       try {
-        const res = await fetch(`/api/posts/${id}`, { headers: authHeaders });
+        const res = await fetch(`${API_URL}/posts/${id}/likes`, {
+          headers: authHeaders,
+        });
         const data = await res.json();
+
+        console.log(data.likes);
 
         if (!res.ok) {
           nav(-1);
           return;
         }
 
-        const ids = Array.isArray(data.likes) ? data.likes : [];
-        await loadUserProfiles(ids);
+        const users = Array.isArray(data.likes)
+          ? data.likes
+              .map((like) => like?.user)
+              .filter((user) => Boolean(user && user._id))
+          : [];
+
+        setLikers(users);
       } catch (err) {
         console.error("Erreur chargement likes", err);
       } finally {
-        setLoadingPost(false);
+        setLoading(false);
       }
     },
-    [authHeaders, loadUserProfiles, nav]
+    [authHeaders, nav]
   );
 
   useEffect(() => {
@@ -88,11 +68,9 @@ export default function LikesPage() {
     <div className="relations-page">
       <h2>Mentions J’aime</h2>
 
-      {(loadingPost || loadingUsers) && (
-        <div className="relations-loading">Chargement…</div>
-      )}
+      {loading && <div className="relations-loading">Chargement…</div>}
 
-      {!loadingUsers && likers.length === 0 && (
+      {!loading && likers.length === 0 && (
         <div className="relations-empty">Aucune mention J’aime pour le moment.</div>
       )}
 
