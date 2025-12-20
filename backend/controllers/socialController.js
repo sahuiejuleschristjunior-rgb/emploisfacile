@@ -298,21 +298,29 @@ exports.getRelationStatus = async (req, res) => {
   const me = await User.findById(req.user.id);
   const other = req.params.id;
 
-  const isFriend = me.friends.some(
-    (f) => f.user.toString() === other
+  if (!me) {
+    return res.status(404).json({ error: "Utilisateur introuvable" });
+  }
+
+  const isFriend = (me.friends || []).some(
+    (f) => f?.user && f.user.toString() === other
   );
 
-  const requestSent = me.friendRequestsSent.some(
-    (id) => id.toString() === other
+  const requestSent = (me.friendRequestsSent || []).some(
+    (id) => id?.toString() === other
   );
 
-  const requestReceived = me.friendRequestsReceived.some(
-    (id) => id.toString() === other
+  const requestReceived = (me.friendRequestsReceived || []).some(
+    (id) => id?.toString() === other
   );
 
-  const isFollowing = me.following.some((id) => id.toString() === other);
+  const isFollowing = (me.following || []).some(
+    (id) => id?.toString() === other
+  );
 
-  const isBlocked = me.blockedUsers.some((id) => id.toString() === other);
+  const isBlocked = (me.blockedUsers || []).some(
+    (id) => id?.toString() === other
+  );
 
   res.json({
     success: true,
