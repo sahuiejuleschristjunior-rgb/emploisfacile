@@ -90,9 +90,16 @@ export default function LikesPage() {
   };
 
   const fixAvatar = (avatar) => {
-    if (!avatar || typeof avatar !== "string") return "/default-avatar.png";
-    if (avatar.startsWith("http")) return avatar;
-    return `${API_URL}${avatar}`;
+    if (!avatar || typeof avatar !== "string") {
+      return "/default-avatar.png";
+    }
+
+    if (avatar.startsWith("http")) {
+      return avatar;
+    }
+
+    const cleanPath = avatar.startsWith("/") ? avatar : `/${avatar}`;
+    return `${API_URL}${cleanPath}`;
   };
 
   const isMe = useCallback(
