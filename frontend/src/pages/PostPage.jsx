@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Post from "../components/Post";
+import CommentSection from "../components/CommentSection";
 import "../styles/postpage.css";
 
 export default function PostPage() {
@@ -190,6 +191,14 @@ export default function PostPage() {
             onDeleteComment={handleDeleteComment}
             onDeleteReply={handleDeleteReply}
             onDeletePost={handleDeletePost}
+          />
+
+          <CommentSection
+            post={post}
+            onComment={handleComment}
+            onReply={handleReply}
+            onDeleteComment={handleDeleteComment}
+            onDeleteReply={handleDeleteReply}
           />
         </div>
       )}
