@@ -22,6 +22,16 @@
   margin-top: 65px;
 }
 
+.fb-compact-shell {
+  min-height: 100vh;
+  background: transparent;
+  color: inherit;
+}
+
+.fb-compact-body {
+  padding: 76px 0 0;
+}
+
 .fb-layout--header-only {
   max-width: 1360px;
   width: 100%;
