@@ -24,6 +24,17 @@ async function pushNotification(userId, data) {
 
 const VALID_REACTIONS = ["like", "love", "haha", "wow", "sad", "angry"];
 
+function normalizeAvatarPath(avatar) {
+  if (!avatar || typeof avatar !== "string") return "/default-avatar.png";
+
+  const trimmed = avatar.trim();
+  if (!trimmed) return "/default-avatar.png";
+
+  if (trimmed.startsWith("http")) return trimmed;
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
 /* ============================================================
    📌 SCROLL INFINI — PAGINATION
 ============================================================ */
@@ -258,7 +269,22 @@ exports.getLikes = async (req, res) => {
 
     if (!post) return res.status(404).json({ error: "Post introuvable" });
 
-    const likes = (post.likes || []).map((user) => ({ user }));
+    const likes = (post.likes || [])
+      .map((userDoc) => {
+        if (!userDoc) return null;
+
+        const user = userDoc.toObject ? userDoc.toObject() : userDoc;
+
+        return {
+          user: {
+            ...user,
+            avatar: normalizeAvatarPath(
+              user.avatar || user.profile?.avatar || "/default-avatar.png"
+            ),
+          },
+        };
+      })
+      .filter(Boolean);
     const total = Array.isArray(post.likes) ? post.likes.length : 0;
 
     res.json({ likes, total });
