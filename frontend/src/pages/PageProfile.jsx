@@ -8,6 +8,7 @@ import {
 } from "../api/pagesApi";
 import { getImageUrl } from "../utils/imageUtils";
 import "../styles/page.css";
+import Post from "../components/Post";
 
 export default function PageProfile() {
   const { slug } = useParams();
@@ -19,6 +20,15 @@ export default function PageProfile() {
   const [createLoading, setCreateLoading] = useState(false);
   const [posts, setPosts] = useState([]);
   const fileInputRef = useRef(null);
+
+  const token = localStorage.getItem("token");
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user"));
+    } catch {
+      return null;
+    }
+  })();
 
   const loadPage = async () => {
     try {
@@ -129,6 +139,129 @@ export default function PageProfile() {
       console.error(err);
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const updatePostState = (postId, updater) => {
+    setPosts((prev) => prev.map((p) => (p._id === postId ? updater(p) : p)));
+  };
+
+  const handleLike = async (postId) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}/like`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (!res.ok) return;
+
+      const liked = data.liked;
+      const userId = currentUser?._id;
+
+      updatePostState(postId, (p) => {
+        const hasLike = p.likes?.includes(userId);
+        let newLikes = p.likes || [];
+
+        if (liked && !hasLike) newLikes = [...newLikes, userId];
+        if (!liked && hasLike) newLikes = newLikes.filter((l) => l !== userId);
+
+        return { ...p, likes: newLikes };
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleComment = async (postId, text) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}/comment`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      const updated = await res.json();
+      if (!res.ok) return;
+
+      updatePostState(postId, () => updated);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleReply = async (postId, commentId, text) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}/comment/${commentId}/reply`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      const updated = await res.json();
+      if (!res.ok) return;
+
+      updatePostState(postId, () => updated);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteComment = async (postId, commentId) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}/comment/${commentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const updated = await res.json();
+      if (!res.ok) return;
+
+      updatePostState(postId, () => updated);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteReply = async (postId, commentId, replyId) => {
+    try {
+      const res = await fetch(
+        `/api/posts/${postId}/comment/${commentId}/reply/${replyId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const updated = await res.json();
+      if (!res.ok) return;
+
+      updatePostState(postId, () => updated);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!confirm("Supprimer le post ?")) return;
+
+    try {
+      const res = await fetch(`/api/posts/${postId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setPosts((prev) => prev.filter((p) => p._id !== postId));
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -326,47 +459,163 @@ export default function PageProfile() {
             {posts.length === 0 && (
               <div className="empty">Aucun post pour le moment.</div>
             )}
+
             {posts.map((p) => (
               <div key={p._id} className="page-post-card">
-                <div className="page-post-header">
-                  <div
-                    className="page-avatar"
-                    style={{
-                      backgroundImage: `url(${getImageUrl(p.page?.avatar || page.avatar)})`,
-                    }}
-                  />
-                  <div>
-                    <div className="page-post-author">{p.page?.name || page.name}</div>
-                    <div className="page-meta">
-                      {new Date(p.createdAt).toLocaleString()}
-                    </div>
-                  </div>
-                  <span className="post-badge">Publié par la page</span>
-                </div>
-                {p.text && <div className="page-post-text">{p.text}</div>}
-                {p.media?.length > 0 && (
-                  <div className="page-post-media">
-                    {p.media.map((m, idx) => {
-                      const url = getImageUrl(m.url);
-                      if (m.type === "video") {
-                        return <video key={idx} src={url} controls />;
-                      }
-                      if (m.type === "audio") {
-                        return (
-                          <audio key={idx} controls>
-                            <source src={url} />
-                          </audio>
-                        );
-                      }
-                      return <img key={idx} src={url} alt="media" />;
-                    })}
-                  </div>
-                )}
+                <Post
+                  post={p}
+                  currentUser={currentUser}
+                  onLike={() => handleLike(p._id)}
+                  onComment={(text) => handleComment(p._id, text)}
+                  onReply={(commentId, text) => handleReply(p._id, commentId, text)}
+                  onDeleteComment={(commentId) => handleDeleteComment(p._id, commentId)}
+                  onDeleteReply={(commentId, replyId) =>
+                    handleDeleteReply(p._id, commentId, replyId)
+                  }
+                  onDeletePost={() => handleDeletePost(p._id)}
+                />
+
+                <CommentSection
+                  post={p}
+                  onComment={(text) => handleComment(p._id, text)}
+                  onReply={(commentId, text) => handleReply(p._id, commentId, text)}
+                  onDeleteComment={(commentId) => handleDeleteComment(p._id, commentId)}
+                  onDeleteReply={(commentId, replyId) =>
+                    handleDeleteReply(p._id, commentId, replyId)
+                  }
+                />
               </div>
             ))}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CommentSection({ post, onComment, onReply, onDeleteComment, onDeleteReply }) {
+  const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  let currentUser = null;
+  try {
+    currentUser = JSON.parse(localStorage.getItem("user"));
+  } catch {}
+
+  const send = async () => {
+    if (!text.trim()) return;
+
+    setLoading(true);
+
+    if (replyTo) await onReply(replyTo.id, text);
+    else await onComment(text);
+
+    setText("");
+    setReplyTo(null);
+    setLoading(false);
+  };
+
+  return (
+    <div className="comment-section">
+      <div className="comment-input-wrapper">
+        <input
+          id={`comment-box-${post._id || post.id}`}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={
+            replyTo ? `Répondre à ${replyTo.name}` : "Ajouter un commentaire…"
+          }
+          className="comment-input"
+        />
+
+        {loading ? (
+          <div className="heartbeat"></div>
+        ) : (
+          <button className="comment-send-btn" onClick={send}>
+            Envoyer
+          </button>
+        )}
+      </div>
+
+      {(post.comments || []).map((c) => {
+        const isCommentAuthor =
+          String(c.user?._id) === String(currentUser?._id);
+
+        return (
+          <div key={c._id} className="comment-item">
+            <div className="comment-avatar" />
+
+            <div className="comment-content">
+              <div className="comment-header">
+                <strong>{c.user?.name}</strong>
+                <span className="comment-date">
+                  {new Date(c.createdAt).toLocaleString()}
+                </span>
+
+                <div className="comment-menu">
+                  <button className="comment-menu-btn">⋮</button>
+
+                  <div className="comment-menu-popup">
+                    <button onClick={() => setReplyTo({ id: c._id, name: c.user?.name })}>
+                      Répondre
+                    </button>
+
+                    {isCommentAuthor && (
+                      <button
+                        className="delete-btn"
+                        onClick={() => onDeleteComment(c._id)}
+                      >
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="comment-text">{c.text}</div>
+
+              <div className="reply-list">
+                {(c.replies || []).map((r) => {
+                  const isReplyAuthor =
+                    String(r.user?._id) === String(currentUser?._id);
+
+                  return (
+                    <div key={r._id} className="reply-item">
+                      <div className="reply-avatar" />
+
+                      <div className="reply-content">
+                        <div className="comment-header">
+                          <strong>{r.user?.name}</strong>
+                          <span className="comment-date">
+                            {new Date(r.createdAt).toLocaleString()}
+                          </span>
+
+                          <div className="comment-menu">
+                            <button className="comment-menu-btn">⋮</button>
+                            <div className="comment-menu-popup">
+                              {isReplyAuthor && (
+                                <button
+                                  className="delete-btn"
+                                  onClick={() => onDeleteReply(c._id, r._id)}
+                                >
+                                  Supprimer
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="comment-text">{r.text}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
