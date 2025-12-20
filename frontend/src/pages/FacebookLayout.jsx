@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, Outlet, useLocation, Navigate } from "react-router-dom";
 import NotificationItem from "../components/NotificationItem";
 import "../styles/facebook-layout.css";
-import { getAvatarStyle } from "../utils/imageUtils";
+import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
 import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
@@ -79,6 +79,7 @@ export default function FacebookLayout({ headerOnly = false }) {
     users: [],
     posts: [],
     jobs: [],
+    pages: [],
   });
 
   const [relationStatuses, setRelationStatuses] = useState({});
@@ -258,7 +259,7 @@ export default function FacebookLayout({ headerOnly = false }) {
 
   const performSearch = useCallback(async () => {
     if (!searchTerm.trim()) {
-      setSearchResults({ users: [], posts: [], jobs: [] });
+      setSearchResults({ users: [], posts: [], jobs: [], pages: [] });
       return;
     }
 
@@ -277,6 +278,7 @@ export default function FacebookLayout({ headerOnly = false }) {
           users: data.users || [],
           posts: data.posts || [],
           jobs: data.jobs || [],
+          pages: data.pages || [],
         });
       }
     } catch (err) {
@@ -288,7 +290,7 @@ export default function FacebookLayout({ headerOnly = false }) {
 
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setSearchResults({ users: [], posts: [], jobs: [] });
+      setSearchResults({ users: [], posts: [], jobs: [], pages: [] });
     }
 
     const t = setTimeout(() => {
@@ -512,7 +514,8 @@ export default function FacebookLayout({ headerOnly = false }) {
     const hasResults =
       searchResults.users.length > 0 ||
       searchResults.posts.length > 0 ||
-      searchResults.jobs.length > 0;
+      searchResults.jobs.length > 0 ||
+      searchResults.pages.length > 0;
 
     const showEmptyMessage = !searchTerm.trim();
 
@@ -608,6 +611,54 @@ export default function FacebookLayout({ headerOnly = false }) {
                     </div>
                     <div className="fb-search-item-actions">
                       {renderFriendButton(u)}
+                    </div>
+                  </div>
+                ))}
+
+                {searchResults.pages.map((p) => (
+                  <div
+                    key={p._id}
+                    className="fb-search-item"
+                    onClick={() =>
+                      handleSearchNavigation(
+                        {
+                          id: p._id,
+                          type: "page",
+                          title: p.name,
+                          subtitle:
+                            (p.categories && p.categories.length
+                              ? p.categories
+                              : [p.category]
+                            )
+                              ?.filter(Boolean)
+                              .join(" • ") || "Page",
+                          avatar: getImageUrl(p.avatar),
+                        },
+                        `/pages/${p.slug || p._id}`
+                      )
+                    }
+                  >
+                    <div className="fb-search-avatar">
+                      <img
+                        src={
+                          getImageUrl(p.avatar) ||
+                          "https://i.pravatar.cc/150?u=page"
+                        }
+                        alt={p.name || "Page"}
+                      />
+                    </div>
+                    <div className="fb-search-item-text">
+                      <span className="fb-search-item-title">
+                        {p.name || "Page"}
+                      </span>
+                      <span className="fb-search-item-sub">
+                        {(p.categories && p.categories.length
+                          ? p.categories
+                          : [p.category]
+                        )
+                          ?.filter(Boolean)
+                          .join(" • ") || "Page"}
+                      </span>
                     </div>
                   </div>
                 ))}
