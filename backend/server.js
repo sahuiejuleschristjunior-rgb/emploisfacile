@@ -95,7 +95,8 @@ app.use("/api/search", searchRoutes);
 // ⭐ SOCIAL SYSTEM (amis + follow)
 app.use("/api/social", socialRoutes);
 
-// Pages
+// ⭐ PAGES
+console.log("🔥 MOUNTING /api/pages ROUTES");
 app.use("/api/pages", pagesRoutes);
 app.use("/api/page-posts", pagePostsRoutes);
 
@@ -112,12 +113,38 @@ app.get("/api/health", (req, res) => {
 initSocket(server);
 
 /* ============================================================
+   🔥 DEBUG — DUMP DES ROUTES EXPRESS RÉELLES
+============================================================ */
+function dumpRoutes() {
+  console.log("========== 📋 EXPRESS ROUTES DUMP ==========");
+  app._router.stack.forEach((layer) => {
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods)
+        .join(",")
+        .toUpperCase();
+      console.log(`🧭 ROUTE ${methods} ${layer.route.path}`);
+    } else if (layer.name === "router" && layer.handle.stack) {
+      layer.handle.stack.forEach((r) => {
+        if (r.route) {
+          const methods = Object.keys(r.route.methods)
+            .join(",")
+            .toUpperCase();
+          console.log(`🧭 ROUTER ${methods} ${r.route.path}`);
+        }
+      });
+    }
+  });
+  console.log("============================================");
+}
+
+/* ============================================================
    START SERVER
 ============================================================ */
 db.connect()
   .then(() => {
     server.listen(PORT, "0.0.0.0", () => {
       console.log("✔ Backend running on port", PORT);
+      dumpRoutes(); // 🔥 ICI LA PREUVE ABSOLUE
     });
   })
   .catch((err) => {
