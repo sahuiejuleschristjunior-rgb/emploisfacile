@@ -46,7 +46,14 @@ export default function MyPages() {
             />
             <div className="page-card-body">
               <div className="page-card-title">{p.name}</div>
-              <div className="page-card-sub">{p.category}</div>
+              <div className="page-card-sub">
+                {(p.categories && p.categories.length > 0
+                  ? p.categories
+                  : [p.category]
+                )
+                  .filter(Boolean)
+                  .join(" • ")}
+              </div>
               <div className="page-card-followers">
                 {p.followersCount || 0} abonnés
               </div>

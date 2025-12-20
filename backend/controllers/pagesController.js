@@ -41,6 +41,26 @@ function canManagePage(page, userId) {
   return (page.admins || []).some((id) => String(id) === String(userId));
 }
 
+function normalizeCategories(input) {
+  if (input === undefined || input === null) return [];
+
+  const raw = Array.isArray(input) ? input : [input];
+  const unique = [];
+
+  raw
+    .map((c) => (typeof c === "string" ? c.trim() : ""))
+    .filter(Boolean)
+    .forEach((c) => {
+      if (!unique.includes(c)) unique.push(c);
+    });
+
+  if (unique.length > 3) {
+    throw new Error("Max 3 categories autorisées");
+  }
+
+  return unique;
+}
+
 function buildUploadPayload(file) {
   if (!file) return null;
   const mime = file.mimetype || "";
@@ -87,15 +107,22 @@ exports.createPage = async (req, res) => {
   try {
     const {
       name,
-      category,
       bio = "",
       website = "",
       phone = "",
       whatsapp = "",
       location = "",
+      contact = "",
     } = req.body;
 
-    if (!name || !category) {
+    let categories;
+    try {
+      categories = normalizeCategories(req.body.categories ?? req.body.category);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (!name || categories.length === 0) {
       return res.status(400).json({ error: "Nom et catégorie requis" });
     }
 
@@ -111,12 +138,14 @@ exports.createPage = async (req, res) => {
       admins: [ownerId],
       name,
       slug,
-      category,
+      category: categories[0],
+      categories,
       bio,
       website,
       phone,
       whatsapp,
       location,
+      contact,
     });
 
     res.status(201).json({ slug });
@@ -169,21 +198,29 @@ exports.updatePage = async (req, res) => {
       return res.status(403).json({ error: "Accès refusé" });
     }
 
-    const allowedFields = [
-      "name",
-      "category",
-      "bio",
-      "website",
-      "phone",
-      "whatsapp",
-      "location",
-    ];
+    const allowedFields = ["name", "bio", "website", "phone", "whatsapp", "location", "contact"];
 
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         page[field] = req.body[field];
       }
     });
+
+    if (req.body.categories !== undefined || req.body.category !== undefined) {
+      let categories;
+      try {
+        categories = normalizeCategories(req.body.categories ?? req.body.category);
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      if (categories.length === 0) {
+        return res.status(400).json({ error: "Au moins une catégorie requise" });
+      }
+
+      page.categories = categories;
+      page.category = categories[0];
+    }
 
     await page.save();
     res.json(page);

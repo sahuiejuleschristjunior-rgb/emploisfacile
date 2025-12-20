@@ -83,6 +83,10 @@ export default function PageProfile() {
   const { page, permissions, isFollowing } = pageData;
   const coverUrl = getImageUrl(page.coverPhoto);
   const avatarUrl = getImageUrl(page.avatar);
+  const categoryLabel =
+    page.categories?.length > 0
+      ? page.categories.join(" • ")
+      : page.category || "Page";
 
   return (
     <div className="page-shell page-profile-shell">
@@ -97,7 +101,7 @@ export default function PageProfile() {
           <div className="page-title-block">
             <h1>{page.name}</h1>
             <div className="page-meta">
-              <span>{page.category || "Page"}</span>
+              <span>{categoryLabel}</span>
               <span className="separator">•</span>
               <span>{page.followersCount || 0} abonnés</span>
             </div>
@@ -149,8 +153,14 @@ export default function PageProfile() {
             )}
             <div className="info-row">
               <span className="label">Catégorie</span>
-              <span className="value">{page.category || "Non renseignée"}</span>
+              <span className="value">{categoryLabel || "Non renseignée"}</span>
             </div>
+            {page.contact && (
+              <div className="info-row">
+                <span className="label">Contact</span>
+                <span className="value">{page.contact}</span>
+              </div>
+            )}
             <div className="info-row">
               <span className="label">Abonnés</span>
               <span className="value">{page.followersCount || 0} personnes</span>
