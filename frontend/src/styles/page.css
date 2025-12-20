@@ -80,6 +80,53 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
+.page-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 12px auto 6px;
+  max-width: 540px;
+}
+
+.page-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.7;
+  transition: border-color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+}
+
+.page-step.active {
+  border-color: var(--fb-primary, #2d88ff);
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(45, 136, 255, 0.15);
+}
+
+.page-step.done {
+  opacity: 1;
+}
+
+.step-index {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(45, 136, 255, 0.18);
+  color: #fff;
+  font-weight: 700;
+}
+
+.step-label {
+  font-weight: 700;
+  color: var(--fb-text, #e4e6eb);
+}
+
 .page-form label {
   display: flex;
   flex-direction: column;
@@ -116,6 +163,53 @@
 .error-text {
   color: #f87171;
   font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.step-header h2 {
+  margin: 0;
+  color: var(--fb-text, #e4e6eb);
+  font-size: 18px;
+}
+
+.step-header p {
+  margin: 4px 0 0;
+  color: var(--fb-subtext, #b0b3b8);
+}
+
+.created-page-reminder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px dashed var(--fb-border, #3a3b3c);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.created-page-reminder .badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(45, 136, 255, 0.2);
+  color: #fff;
+  font-weight: 700;
+  border: 1px solid rgba(45, 136, 255, 0.4);
+}
+
+.reminder-title {
+  font-weight: 700;
+  color: var(--fb-text, #e4e6eb);
+}
+
+.reminder-subtitle {
+  color: var(--fb-subtext, #b0b3b8);
+  font-size: 14px;
 }
 
 .category-selector {
