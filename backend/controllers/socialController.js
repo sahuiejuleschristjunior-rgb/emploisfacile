@@ -295,43 +295,77 @@ exports.changeFriendCategory = async (req, res) => {
    🔥 STATUT RELATION
 ============================================================ */
 exports.getRelationStatus = async (req, res) => {
-  const me = await User.findById(req.user.id);
-  const other = req.params.id;
+  try {
+    const meId = req.user?.id;
+    const otherId = req.params?.id;
 
-  if (!me) {
-    return res.status(404).json({ error: "Utilisateur introuvable" });
+    if (!meId || !otherId) {
+      return res.json({
+        success: true,
+        status: {
+          isFriend: false,
+          requestSent: false,
+          requestReceived: false,
+          isFollowing: false,
+          isBlocked: false,
+        },
+      });
+    }
+
+    const me = await User.findById(meId).select(
+      "friends friendRequestsSent friendRequestsReceived following blockedUsers"
+    );
+
+    if (!me) {
+      return res.status(404).json({ error: "Utilisateur introuvable" });
+    }
+
+    const otherStr = String(otherId);
+
+    const isFriend = Array.isArray(me.friends)
+      ? me.friends.some(
+          (f) => f && f.user && String(f.user) === otherStr
+        )
+      : false;
+
+    const requestSent = Array.isArray(me.friendRequestsSent)
+      ? me.friendRequestsSent.some(
+          (id) => id && String(id) === otherStr
+        )
+      : false;
+
+    const requestReceived = Array.isArray(me.friendRequestsReceived)
+      ? me.friendRequestsReceived.some(
+          (id) => id && String(id) === otherStr
+        )
+      : false;
+
+    const isFollowing = Array.isArray(me.following)
+      ? me.following.some(
+          (id) => id && String(id) === otherStr
+        )
+      : false;
+
+    const isBlocked = Array.isArray(me.blockedUsers)
+      ? me.blockedUsers.some(
+          (id) => id && String(id) === otherStr
+        )
+      : false;
+
+    return res.json({
+      success: true,
+      status: {
+        isFriend,
+        requestSent,
+        requestReceived,
+        isFollowing,
+        isBlocked,
+      },
+    });
+  } catch (err) {
+    console.error("getRelationStatus sécurisé :", err);
+    return res.status(500).json({ error: "Erreur serveur relation" });
   }
-
-  const isFriend = (me.friends || []).some(
-    (f) => f?.user && f.user.toString() === other
-  );
-
-  const requestSent = (me.friendRequestsSent || []).some(
-    (id) => id?.toString() === other
-  );
-
-  const requestReceived = (me.friendRequestsReceived || []).some(
-    (id) => id?.toString() === other
-  );
-
-  const isFollowing = (me.following || []).some(
-    (id) => id?.toString() === other
-  );
-
-  const isBlocked = (me.blockedUsers || []).some(
-    (id) => id?.toString() === other
-  );
-
-  res.json({
-    success: true,
-    status: {
-      isFriend,
-      requestSent,
-      requestReceived,
-      isFollowing,
-      isBlocked,
-    },
-  });
 };
 
 /* ============================================================
