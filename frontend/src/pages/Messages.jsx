@@ -63,15 +63,6 @@ const BackIcon = () => (
   </svg>
 );
 
-const HomeIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
-    <path
-      fill="currentColor"
-      d="M12 3.2a1 1 0 0 0-.65.24l-8 7a1 1 0 0 0 1.3 1.52l.35-.3V19a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4h2v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.34l.35.3a1 1 0 0 0 1.3-1.52l-8-7A1 1 0 0 0 12 3.2Z"
-    />
-  </svg>
-);
-
 const PhoneIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
     <path
@@ -1532,10 +1523,6 @@ export default function Messages() {
       {/* ================= LEFT — AMIS ================= */}
       <aside className="messages-sidebar">
         <div className="messages-sidebar-header">
-          <button className="messages-home-btn" onClick={() => navigate("/fb")}>
-            <HomeIcon />
-            <span>Accueil</span>
-          </button>
           <h2>Messages</h2>
         </div>
 
@@ -1590,7 +1577,7 @@ export default function Messages() {
             <p>Clique sur un ami pour commencer une conversation.</p>
           </div>
         ) : (
-          <>
+          <div className="chat-panel">
             {/* HEADER */}
             <div className="chat-header">
               <button
@@ -1647,100 +1634,102 @@ export default function Messages() {
         </div>
 
             {/* BODY */}
-            <div className="chat-body" ref={chatBodyRef}>
-              {topPinnedMessage && (
-                <div className="pinned-banner">
-                  <div className="pinned-label">Message épinglé</div>
-                  <div className="pinned-main">
-                    <div
-                      className="pinned-preview"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => scrollToMessage(topPinnedMessage._id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          scrollToMessage(topPinnedMessage._id);
-                        }
-                      }}
-                    >
-                      <div className="pinned-author">
-                        {isMessageFromMe(topPinnedMessage)
-                          ? "Vous"
-                          : activeChat?.name || "Contact"}
-                      </div>
-                      <div className="pinned-text">
-                        {topPinnedMessage.type === "audio"
-                          ? getAudioPreviewText(topPinnedMessage)
-                          : topPinnedMessage.content || "Message"}
-                      </div>
-                    </div>
-
-                    <div className="pinned-actions">
-                      <button
-                        type="button"
-                        className="pinned-btn"
+            <div className="chat-scroll" ref={chatBodyRef}>
+              <div className="chat-body">
+                {topPinnedMessage && (
+                  <div className="pinned-banner">
+                    <div className="pinned-label">Message épinglé</div>
+                    <div className="pinned-main">
+                      <div
+                        className="pinned-preview"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => scrollToMessage(topPinnedMessage._id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            scrollToMessage(topPinnedMessage._id);
+                          }
+                        }}
                       >
-                        Voir
-                      </button>
-                      <button
-                        type="button"
-                        className="pinned-btn"
-                        onClick={() => togglePin(topPinnedMessage)}
-                      >
-                        Désépingler
-                      </button>
+                        <div className="pinned-author">
+                          {isMessageFromMe(topPinnedMessage)
+                            ? "Vous"
+                            : activeChat?.name || "Contact"}
+                        </div>
+                        <div className="pinned-text">
+                          {topPinnedMessage.type === "audio"
+                            ? getAudioPreviewText(topPinnedMessage)
+                            : topPinnedMessage.content || "Message"}
+                        </div>
+                      </div>
+
+                      <div className="pinned-actions">
+                        <button
+                          type="button"
+                          className="pinned-btn"
+                          onClick={() => scrollToMessage(topPinnedMessage._id)}
+                        >
+                          Voir
+                        </button>
+                        <button
+                          type="button"
+                          className="pinned-btn"
+                          onClick={() => togglePin(topPinnedMessage)}
+                        >
+                          Désépingler
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {loadingConversation && <div className="chat-empty">Chargement…</div>}
+                {loadingConversation && <div className="chat-empty">Chargement…</div>}
 
-              {!loadingConversation && messages.length === 0 && (
-                <div className="chat-empty">
-                  Aucun message pour le moment
-                  <br />
-                  Commence la conversation 👋
-                </div>
-              )}
+                {!loadingConversation && messages.length === 0 && (
+                  <div className="chat-empty">
+                    Aucun message pour le moment
+                    <br />
+                    Commence la conversation 👋
+                  </div>
+                )}
 
-              {!loadingConversation &&
-                messages.map((msg) => {
-                  const senderId =
-                    typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
-                  const isMe = senderId === me?._id;
+                {!loadingConversation &&
+                  messages.map((msg) => {
+                    const senderId =
+                      typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
+                    const isMe = senderId === me?._id;
 
-                  return (
-                    <div key={msg._id} className={`message-row ${isMe ? "me" : "other"}`}>
-                      <div
-                        ref={(node) => {
-                          if (!node) {
-                            delete messageRefs.current[msg._id];
-                            return;
-                          }
-                          messageRefs.current[msg._id] = node;
-                        }}
-                        className={`message-bubble message-${msg.type || "text"} ${
-                          highlightedMessageId === msg._id ? "message-highlight" : ""
-                        }`}
-                        onMouseDown={(e) => handleBubblePointerStart(msg, e)}
-                        onMouseMove={(e) => handleBubblePointerMove(msg, e)}
-                        onMouseUp={handleBubblePointerEnd}
-                        onMouseLeave={handleBubblePointerEnd}
-                        onTouchStart={(e) => handleBubblePointerStart(msg, e)}
-                        onTouchMove={(e) => handleBubblePointerMove(msg, e)}
-                        onTouchEnd={handleBubblePointerEnd}
-                      >
-                        {renderMessageContent(msg)}
-                        {renderReactions(msg)}
+                    return (
+                      <div key={msg._id} className={`message-row ${isMe ? "me" : "other"}`}>
+                        <div
+                          ref={(node) => {
+                            if (!node) {
+                              delete messageRefs.current[msg._id];
+                              return;
+                            }
+                            messageRefs.current[msg._id] = node;
+                          }}
+                          className={`message-bubble message-${msg.type || "text"} ${
+                            highlightedMessageId === msg._id ? "message-highlight" : ""
+                          }`}
+                          onMouseDown={(e) => handleBubblePointerStart(msg, e)}
+                          onMouseMove={(e) => handleBubblePointerMove(msg, e)}
+                          onMouseUp={handleBubblePointerEnd}
+                          onMouseLeave={handleBubblePointerEnd}
+                          onTouchStart={(e) => handleBubblePointerStart(msg, e)}
+                          onTouchMove={(e) => handleBubblePointerMove(msg, e)}
+                          onTouchEnd={handleBubblePointerEnd}
+                        >
+                          {renderMessageContent(msg)}
+                          {renderReactions(msg)}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
 
-              <div ref={messagesEndRef} />
+                <div ref={messagesEndRef} />
+              </div>
             </div>
 
             {/* INPUT */}
