@@ -111,9 +111,12 @@ export default function CommentsModal({
   API_URL: propApiUrl,
   token: propToken,
   userId: propUserId,
+  targetType = "post",
 }) {
   const token = propToken || (typeof window !== "undefined" && localStorage.getItem("token"));
   const API_URL = propApiUrl || import.meta.env.VITE_API_URL || "";
+  const commentBasePath = targetType === "page" ? "posts" : "posts";
+  const buildPostUrl = (postId, suffix = "") => `${API_URL}/${commentBasePath}/${postId}${suffix}`;
   const resolvedUserId =
     propUserId ||
     (() => {
@@ -158,7 +161,7 @@ export default function CommentsModal({
       }
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/posts/${initialPost._id}`, {
+        const res = await fetch(buildPostUrl(initialPost._id), {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const data = await res.json();
@@ -177,7 +180,7 @@ export default function CommentsModal({
     };
     load();
     return () => { abort = true; };
-  }, [initialPost && initialPost._id, API_URL, token]);
+  }, [initialPost && initialPost._id, API_URL, token, commentBasePath]);
 
   useEffect(() => {
     // ensure visibleCommentsCount not larger than total
@@ -241,7 +244,7 @@ export default function CommentsModal({
         headers["Content-Type"] = "application/json";
         body = JSON.stringify({ text });
       }
-      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment`, {
+      const res = await safeFetch(buildPostUrl(post._id, "/comment"), {
         method: "POST",
         headers,
         body,
@@ -278,11 +281,14 @@ export default function CommentsModal({
         headers["Content-Type"] = "application/json";
         body = JSON.stringify({ text });
       }
-      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/reply`, {
-        method: "POST",
-        headers,
-        body,
-      });
+      const res = await safeFetch(
+        buildPostUrl(post._id, `/comment/${comment._id}/reply`),
+        {
+          method: "POST",
+          headers,
+          body,
+        }
+      );
       const updated = await res.json();
       if (!res.ok) throw new Error("reply failed");
       setPost(updated);
@@ -296,7 +302,7 @@ export default function CommentsModal({
 
   const deleteComment = async (comment) => {
     try {
-      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}`, { method: "DELETE" });
+      const res = await safeFetch(buildPostUrl(post._id, `/comment/${comment._id}`), { method: "DELETE" });
       const updated = await res.json();
       if (!res.ok) throw new Error("deleteComment failed");
       setPost(updated);
@@ -309,7 +315,10 @@ export default function CommentsModal({
   const deleteReply = async (comment, reply) => {
     try {
       const replyId = reply._id || reply.id;
-      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/reply/${replyId}`, { method: "DELETE" });
+      const res = await safeFetch(
+        buildPostUrl(post._id, `/comment/${comment._id}/reply/${replyId}`),
+        { method: "DELETE" }
+      );
       const updated = await res.json();
       if (!res.ok) throw new Error("deleteReply failed");
       setPost(updated);
@@ -321,7 +330,7 @@ export default function CommentsModal({
 
   const reactToComment = async (comment, type) => {
     try {
-      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/react`, {
+      const res = await safeFetch(buildPostUrl(post._id, `/comment/${comment._id}/react`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type }),
@@ -337,11 +346,14 @@ export default function CommentsModal({
 
   const reactToReply = async (comment, reply, type) => {
     try {
-      const res = await safeFetch(`${API_URL}/posts/${post._id}/comment/${comment._id}/reply/${reply._id}/react`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
-      });
+      const res = await safeFetch(
+        buildPostUrl(post._id, `/comment/${comment._id}/reply/${reply._id}/react`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type }),
+        }
+      );
       const updated = await res.json();
       if (!res.ok) throw new Error("react failed");
       setPost(updated);
@@ -372,6 +384,9 @@ export default function CommentsModal({
   if (!post) return null;
 
   const visibleComments = getVisibleComments();
+  const isPagePost = post?.authorType === "page";
+  const authorAvatar = isPagePost ? post?.page?.avatar : post?.user?.avatar;
+  const authorName = isPagePost ? post?.page?.name : post?.user?.name;
 
   return (
     <div className="cm-backdrop" onMouseDown={handleClose} role="dialog" aria-modal="true">
@@ -381,9 +396,9 @@ export default function CommentsModal({
         {/* LEFT: post preview */}
         <div className="cm-left">
           <div className="cm-post-header">
-            <div className="cm-avatar" style={getAvatarStyle(post.user?.avatar)} />
+            <div className="cm-avatar" style={getAvatarStyle(authorAvatar)} />
             <div className="cm-post-meta">
-              <div className="cm-post-author">{post.user?.name}</div>
+              <div className="cm-post-author">{authorName}</div>
               <div className="cm-post-date">{new Date(post.createdAt).toLocaleString()}</div>
             </div>
           </div>
