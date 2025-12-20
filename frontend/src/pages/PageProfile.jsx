@@ -9,6 +9,7 @@ import {
 import { getImageUrl } from "../utils/imageUtils";
 import "../styles/page.css";
 import Post from "../components/Post";
+import CommentSection from "../components/CommentSection";
 
 export default function PageProfile() {
   const { slug } = useParams();
