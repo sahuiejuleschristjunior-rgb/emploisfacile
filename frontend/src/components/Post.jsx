@@ -26,6 +26,7 @@ export default function Post({
   onDeleteReply,
   onMediaClick,
   onCommentClick,
+  onCommentsCountClick,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -175,7 +176,9 @@ export default function Post({
         {/* STATS */}
         <div className="fb-post-stats">
           <span>{post.likes?.length || 0} j’aime</span>
-          <span>{post.comments?.length || 0} commentaires</span>
+          <span onClick={() => onCommentsCountClick?.(post)}>
+            {post.comments?.length || 0} commentaires
+          </span>
         </div>
 
         {/* ACTIONS */}

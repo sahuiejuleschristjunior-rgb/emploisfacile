@@ -20,7 +20,7 @@ export default function PageProfile() {
   const [mediaItems, setMediaItems] = useState([]);
   const [createLoading, setCreateLoading] = useState(false);
   const [posts, setPosts] = useState([]);
-  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const [activePostForComments, setActivePostForComments] = useState(null);
   const fileInputRef = useRef(null);
 
@@ -93,13 +93,23 @@ export default function PageProfile() {
   };
 
   const openCommentsModal = (post) => {
+    if (!post) return;
     setActivePostForComments(post);
-    setIsCommentsModalOpen(true);
+    setShowComments(true);
+  };
+
+  const toggleCommentsForPost = (post) => {
+    if (!post) return;
+
+    setActivePostForComments((prev) => {
+      const isSamePost = prev?._id === post._id;
+      setShowComments((visible) => (isSamePost ? !visible : true));
+      return isSamePost ? prev : post;
+    });
   };
 
   const closeCommentsModal = () => {
-    setIsCommentsModalOpen(false);
-    setActivePostForComments(null);
+    setShowComments(false);
   };
 
   const handleFileChange = (e) => {
@@ -405,18 +415,21 @@ export default function PageProfile() {
                   currentUser={currentUser}
                   onLike={() => handleLike(p._id)}
                   onCommentClick={() => openCommentsModal(p)}
+                  onCommentsCountClick={() => toggleCommentsForPost(p)}
                   onDeletePost={() => handleDeletePost(p._id)}
                 />
               </div>
             ))}
           </div>
-        
-          {isCommentsModalOpen && activePostForComments && (
-            <CommentsModal
-              post={activePostForComments}
-              onClose={closeCommentsModal}
-              targetType="page"
-            />
+
+          {activePostForComments && (
+            <div style={{ display: showComments ? "block" : "none" }}>
+              <CommentsModal
+                post={activePostForComments}
+                onClose={closeCommentsModal}
+                targetType="page"
+              />
+            </div>
           )}
         </div>
       </div>
