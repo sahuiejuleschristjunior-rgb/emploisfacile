@@ -155,6 +155,18 @@ export default function PageProfile() {
               <span className="label">Catégorie</span>
               <span className="value">{categoryLabel || "Non renseignée"}</span>
             </div>
+            {page.location && (
+              <div className="info-row">
+                <span className="label">Localisation</span>
+                <span className="value">{page.location}</span>
+              </div>
+            )}
+            {page.phone && (
+              <div className="info-row">
+                <span className="label">Téléphone</span>
+                <span className="value">{page.phone}</span>
+              </div>
+            )}
             {page.contact && (
               <div className="info-row">
                 <span className="label">Contact</span>
