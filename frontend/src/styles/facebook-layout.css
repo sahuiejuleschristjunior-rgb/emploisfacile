@@ -124,6 +124,87 @@
   gap: 10px;
 }
 
+.profile-switcher {
+  position: relative;
+}
+
+.profile-switcher-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 280px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2000;
+}
+
+.profile-switcher-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+}
+
+.profile-switcher-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #181818;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.profile-switcher-entry:hover {
+  border-color: #2d88ff;
+  background: #1e1f22;
+}
+
+.profile-switcher-entry--all {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.profile-switcher-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #2d88ff;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.profile-switcher-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-switcher-name {
+  font-weight: 700;
+}
+
+.profile-switcher-label {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.profile-switcher-empty {
+  padding: 8px 6px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
 .fb-header-icon-btn {
   width: 40px;
   height: 40px;
