@@ -8,6 +8,7 @@ import "../styles/facebook-feed.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
 import { io } from "socket.io-client";
+import MediaRenderer from "./MediaRenderer";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -506,8 +507,12 @@ export default function FacebookFeed() {
                 >
                   {post.media.map((m, idx) => {
                     const mediaUrl = resolveMediaUrl(m);
-
                     const isLocalMedia = Boolean(m.isLocal);
+                    const isVideo =
+                      (m.type && m.type.startsWith("video")) ||
+                      /(mp4|webm|mov)$/i.test(m.url || "");
+
+                    if (!mediaUrl) return null;
 
                     return (
                       <div
@@ -515,24 +520,22 @@ export default function FacebookFeed() {
                         className="fb-post-media"
                         onClick={() => {
                           if (isLocalMedia) return;
-                          return m.type === "video"
+                          return isVideo
                             ? openReels(post._id)
                             : openMediaViewer(post._id, idx);
                         }}
                       >
-                        {m.type === "image" && mediaUrl && (
-                          <img
-                            src={mediaUrl}
-                            className="fb-post-image"
-                            alt=""
-                          />
-                        )}
-
-                        {m.type === "video" && mediaUrl && (
-                          <video className="fb-post-video" muted>
-                            <source src={mediaUrl} />
-                          </video>
-                        )}
+                        <MediaRenderer
+                          media={m}
+                          src={mediaUrl}
+                          type={m.type}
+                          mimeType={m.mimeType}
+                          mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
+                          className="fb-post-media-renderer"
+                          alt=""
+                          muted={isVideo}
+                          autoPlay={m.autoPlay}
+                        />
 
                         {post.media.length > 4 &&
                           idx === 3 && (

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/post.css";
 import FBIcon from "./FBIcon";
 import PostEditModal from "./PostEditModal"; // ⬅️ AJOUT IMPORTANT
+import MediaRenderer from "./MediaRenderer";
 
 const API_URL = "https://emploisfacile.org";
 
@@ -183,6 +184,7 @@ export default function Post({
           <div className="fb-post-media">
             {post.media.map((m, index) => {
               const mediaUrl = fixUrl(m.url);
+              if (!mediaUrl) return null;
               const isImage = m.type
                 ? m.type.startsWith("image")
                 : /(png|jpe?g|webp|gif)$/i.test(m.url || "");
@@ -197,9 +199,12 @@ export default function Post({
                     onClick={() => onMediaClick?.(imageItems, imageIndex)}
                     aria-label="Afficher les photos de la publication"
                   >
-                    <img
+                    <MediaRenderer
+                      media={m}
                       src={mediaUrl}
-                      className="fb-post-image"
+                      type={m.type}
+                      mimeType={m.mimeType}
+                      mediaClassName="fb-post-image"
                       alt="media"
                     />
                   </button>
@@ -208,9 +213,15 @@ export default function Post({
 
               if (m.type === "video") {
                 return (
-                  <video key={index} controls className="fb-post-video">
-                    <source src={mediaUrl} />
-                  </video>
+                  <MediaRenderer
+                    key={index}
+                    media={m}
+                    src={mediaUrl}
+                    type={m.type}
+                    mimeType={m.mimeType}
+                    mediaClassName="fb-post-video"
+                    controls
+                  />
                 );
               }
 

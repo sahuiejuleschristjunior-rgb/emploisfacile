@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaHeart, FaRegComment, FaShare } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import MediaRenderer from "../components/MediaRenderer";
 
 export default function Feed() {
   const [posts, setPosts] = useState([]);
@@ -120,17 +121,30 @@ export default function Feed() {
               {post.text && <p className="post-text">{post.text}</p>}
 
               {/* MÉDIAS */}
-              {post.media?.map((m, idx) => (
-                m.type === "image" ? (
-                  <img key={idx} className="post-image" src={m.url} />
-                ) : m.type === "video" ? (
-                  <video key={idx} className="post-video" controls>
-                    <source src={m.url} />
-                  </video>
-                ) : (
-                  <audio key={idx} className="post-audio" controls src={m.url}></audio>
-                )
-              ))}
+              {post.media?.map((m, idx) => {
+                if (m.type === "audio") {
+                  return (
+                    <audio key={idx} className="post-audio" controls src={m.url}></audio>
+                  );
+                }
+
+                if (!m?.url) return null;
+
+                const isVideo = m.type === "video";
+                return (
+                  <MediaRenderer
+                    key={idx}
+                    media={m}
+                    src={m.url}
+                    type={m.type}
+                    mimeType={m.mimeType}
+                    mediaClassName={isVideo ? "post-video" : "post-image"}
+                    controls={isVideo}
+                    muted={isVideo ? m.muted : undefined}
+                    autoPlay={m.autoPlay}
+                  />
+                );
+              })}
 
               {/* META */}
               <div className="post-meta-small">
