@@ -14,6 +14,13 @@
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+}
+
+.reels-container::-webkit-scrollbar {
+  display: none;
 }
 
 .reels-item {
@@ -24,6 +31,7 @@
   align-items: center;
   justify-content: center;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   background: #000;
 }
 
