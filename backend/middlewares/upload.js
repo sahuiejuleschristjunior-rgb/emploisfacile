@@ -1,10 +1,10 @@
 const path = require("path");
 const multer = require("multer");
-const fs = require('fs'); 
+const fs = require('fs');
 
 // Définir le chemin d'upload et s'assurer que le dossier existe.
 // Le chemin est maintenant: backend/uploads (si ce fichier est dans backend/middlewares)
-const UPLOAD_DIR = path.join(__dirname, "..", "uploads"); 
+const UPLOAD_DIR = path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
     const base = path
       .basename(file.originalname, ext)
       // Nettoyer le nom de base pour n'autoriser que les caractères alphanumériques et '_'
-      .replace(/[^a-z0-9]/gi, "_") 
+      .replace(/[^a-z0-9]/gi, "_")
       .toLowerCase();
     const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
     // Format : nom_de_base-timestamp-random.ext
@@ -49,7 +49,7 @@ function fileFilter(req, file, cb) {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 Mo
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500 Mo
 });
 
 module.exports = upload;
