@@ -11,11 +11,13 @@ export default function ReelsPage() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const containerRef = useRef(null);
   const videoRefs = useRef([]);
   const hasUnlockedSound = useRef(false);
+  const activeIndexRef = useRef(0);
+  const isScrollingRef = useRef(false);
 
   const selectedVideoId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -76,6 +78,9 @@ export default function ReelsPage() {
               if (v && v !== videoEl) v.pause();
             });
 
+            const index = Number(videoEl.dataset.index || 0);
+            activeIndexRef.current = index;
+
             videoEl.muted = !soundEnabled;
             videoEl.defaultMuted = !soundEnabled;
             videoEl.play().catch(() => {});
@@ -119,8 +124,51 @@ export default function ReelsPage() {
     if (el) {
       el.scrollIntoView({ behavior: "auto", block: "start" });
       el.play().catch(() => {});
+      activeIndexRef.current = targetIndex;
     }
   }, [selectedVideoId, videos]);
+
+  const scrollToVideo = useCallback(
+    (index) => {
+      const target = videoRefs.current[index];
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        target.play().catch(() => {});
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      if (videos.length === 0) return;
+      e.preventDefault();
+
+      if (isScrollingRef.current) return;
+
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const nextIndex = Math.min(
+        Math.max(activeIndexRef.current + direction, 0),
+        videos.length - 1
+      );
+
+      if (nextIndex === activeIndexRef.current) return;
+
+      isScrollingRef.current = true;
+      scrollToVideo(nextIndex);
+
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 550);
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [scrollToVideo, videos.length]);
 
   const handleEnableSound = useCallback(
     (videoEl) => {
@@ -151,6 +199,7 @@ export default function ReelsPage() {
         {videos.map((video, index) => (
           <section key={video._id} className="reels-item">
             <video
+              data-index={index}
               ref={(el) => {
                 videoRefs.current[index] = el;
               }}
