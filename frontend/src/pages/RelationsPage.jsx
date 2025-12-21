@@ -127,6 +127,7 @@ export default function RelationsPage() {
               src={fixAvatar(u.avatar)}
               alt={u.name}
               className="relation-avatar"
+              loading="lazy"
             />
 
             <div className="relation-info">
@@ -175,6 +176,7 @@ export default function RelationsPage() {
               src={fixAvatar(friend.user.avatar)}
               alt={friend.user.name}
               className="relation-avatar"
+              loading="lazy"
             />
 
             <div className="relation-info">
@@ -211,6 +213,7 @@ export default function RelationsPage() {
               src={fixAvatar(friend.user.avatar)}
               alt={friend.user.name}
               className="relation-avatar"
+              loading="lazy"
             />
 
             <div className="relation-info">

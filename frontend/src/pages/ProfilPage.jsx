@@ -306,6 +306,7 @@ export default function ProfilPage() {
             src={coverURL}
             alt="Couverture du profil"
             className="profil-cover-media"
+            loading="lazy"
           />
           <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
           {isOwner && (
@@ -541,7 +542,7 @@ export default function ProfilPage() {
                       onClick={() => openPhotoViewer(photoItems, idx)}
                       aria-label={`Ouvrir la photo ${idx + 1}`}
                     >
-                      <img src={m.url} alt="Publication" />
+                      <img src={m.url} alt="Publication" loading="lazy" />
                     </button>
                   ))}
                 </div>

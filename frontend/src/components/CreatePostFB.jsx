@@ -285,7 +285,7 @@ export default function CreatePostFB({
                       {files[i] && files[i].type.startsWith("video/") ? (
                         <video src={src} className="fb-preview-img" controls />
                       ) : (
-                        <img src={src} className="fb-preview-img" alt="" />
+                        <img src={src} className="fb-preview-img" alt="" loading="lazy" />
                       )}
                     </div>
                   ))}

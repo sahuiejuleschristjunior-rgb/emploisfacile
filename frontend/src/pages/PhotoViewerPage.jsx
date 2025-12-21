@@ -146,7 +146,7 @@ export default function PhotoViewerPage() {
             onDoubleClick={() => setFullscreen((s) => !s)}
           >
             {current?.type === "image" ? (
-              <img src={getImageUrl(current.url)} alt="" className="pv-media" />
+              <img src={getImageUrl(current.url)} alt="" className="pv-media" loading="lazy" />
             ) : (
               <video controls className="pv-media">
                 <source src={getImageUrl(current.url)} />
@@ -195,7 +195,7 @@ export default function PhotoViewerPage() {
                   onClick={() => setIdx(i)}
                 >
                   {m.type === "image" ? (
-                    <img src={getImageUrl(m.url)} alt="" />
+                    <img src={getImageUrl(m.url)} alt="" loading="lazy" />
                   ) : (
                     <div className="pv-thumb-video">▶</div>
                   )}

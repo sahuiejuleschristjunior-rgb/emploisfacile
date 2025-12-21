@@ -251,6 +251,7 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
         onError={(e) => {
           e.currentTarget.src = "/default-avatar.png";
         }}
+        loading="lazy"
       />
 
       <div className="relation-info">

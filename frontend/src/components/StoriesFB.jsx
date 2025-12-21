@@ -161,10 +161,11 @@ export default function StoriesFB() {
             onClick={(e) => openStory(index, e)} 
           >
             {/* 💥 CORRECTION DE L'IMAGE : Utilisation de getImageUrl */}
-            <img 
-                src={getImageUrl(s.media.url)} 
-                className="fb-story-img" 
-                alt={s.user.name || "Story"} 
+            <img
+                src={getImageUrl(s.media.url)}
+                className="fb-story-img"
+                alt={s.user.name || "Story"}
+                loading="lazy"
             />
             {/* ⚠️ NOTE : Si vous avez un avatar de l'auteur dans 's.user.avatar', 
                vous devriez l'afficher ici en utilisant getAvatarStyle comme icône */}

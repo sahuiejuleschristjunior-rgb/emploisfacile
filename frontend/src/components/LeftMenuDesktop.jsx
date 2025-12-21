@@ -66,7 +66,7 @@ export default function LeftMenuDesktop({ role: roleProp }) {
       <div className="left-desktop-profile">
         <div className="left-desktop-avatar">
           {currentUser?.avatarUrl ? (
-            <img src={currentUser.avatarUrl} alt={name} />
+            <img src={currentUser.avatarUrl} alt={name} loading="lazy" />
           ) : (
             <span>{initials}</span>
           )}

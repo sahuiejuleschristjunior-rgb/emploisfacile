@@ -31,6 +31,7 @@ export default function MobileMenu({ open, onClose, user, role }) {
             }
             alt="avatar"
             className="mobile-profile-avatar"
+            loading="lazy"
           />
 
           <div className="mobile-profile-info">

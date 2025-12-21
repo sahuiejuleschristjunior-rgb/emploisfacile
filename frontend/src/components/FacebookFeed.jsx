@@ -656,6 +656,7 @@ export default function FacebookFeed() {
                     src={getImageUrl(viewerMedia.url)}
                     className="fb-media-viewer-img"
                     alt=""
+                    loading="lazy"
                   />
                 ) : (
                   <video

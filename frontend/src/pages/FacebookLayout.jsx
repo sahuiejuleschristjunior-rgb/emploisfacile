@@ -551,7 +551,7 @@ export default function FacebookLayout({ headerOnly = false }) {
                 >
                   <div className="fb-search-avatar">
                     {item.avatar ? (
-                      <img src={item.avatar} alt={item.title} />
+                      <img src={item.avatar} alt={item.title} loading="lazy" />
                     ) : (
                       <FBIcon name="search" size={18} />
                     )}
@@ -599,12 +599,13 @@ export default function FacebookLayout({ headerOnly = false }) {
                       )
                     }
                   >
-                    <div className="fb-search-avatar">
-                      <img
-                        src={u.avatar || "https://i.pravatar.cc/150"}
-                        alt={u.name}
-                      />
-                    </div>
+                  <div className="fb-search-avatar">
+                    <img
+                      src={u.avatar || "https://i.pravatar.cc/150"}
+                      alt={u.name}
+                      loading="lazy"
+                    />
+                  </div>
                     <div className="fb-search-item-text">
                       <span className="fb-search-item-title">{u.name}</span>
                       <span className="fb-search-item-sub">Profil</span>
@@ -645,6 +646,7 @@ export default function FacebookLayout({ headerOnly = false }) {
                           "https://i.pravatar.cc/150?u=page"
                         }
                         alt={p.name || "Page"}
+                        loading="lazy"
                       />
                     </div>
                     <div className="fb-search-item-text">
@@ -684,6 +686,7 @@ export default function FacebookLayout({ headerOnly = false }) {
                       <img
                         src={j.companyLogo || "https://i.pravatar.cc/150"}
                         alt={j.title}
+                        loading="lazy"
                       />
                     </div>
                     <div className="fb-search-item-text">
@@ -717,6 +720,7 @@ export default function FacebookLayout({ headerOnly = false }) {
                       <img
                         src={p.author?.avatar || "https://i.pravatar.cc/150"}
                         alt={p.author?.name || "Publication"}
+                        loading="lazy"
                       />
                     </div>
                     <div className="fb-search-item-text">
@@ -745,6 +749,7 @@ export default function FacebookLayout({ headerOnly = false }) {
                     <img
                       src={u.avatar || "https://i.pravatar.cc/150"}
                       alt={u.name}
+                      loading="lazy"
                     />
                     <div>
                       <div className="fb-search-card-title">{u.name}</div>

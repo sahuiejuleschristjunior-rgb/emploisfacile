@@ -134,7 +134,7 @@ export default function RecruiterJobApplications() {
         <div className="app-main">
           <div className="app-avatar">
             {c.avatar ? (
-              <img src={c.avatar} alt={c.name} />
+              <img src={c.avatar} alt={c.name} loading="lazy" />
             ) : (
               <div className="app-avatar-fallback">
                 {(c.name || "?").charAt(0).toUpperCase()}

@@ -75,7 +75,7 @@ function MediaCarousel({ items = [], maxHeight = "70vh" }) {
         {item.type === "video" ? (
           <video controls src={getImageUrl(item.url)} style={{ maxHeight, borderRadius: 14 }} />
         ) : (
-          <img src={getImageUrl(item.url)} alt="" style={{ maxHeight, borderRadius: 14 }} />
+          <img src={getImageUrl(item.url)} alt="" style={{ maxHeight, borderRadius: 14 }} loading="lazy" />
         )}
       </div>
 
@@ -532,7 +532,7 @@ export default function CommentsModal({
                       {replyMedia[c._id] && (
                         <div className="cm-reply-preview">
                           {replyMedia[c._id].type.startsWith("image/") ? (
-                            <img className="cm-reply-preview-media" src={URL.createObjectURL(replyMedia[c._id])} alt="" />
+                            <img className="cm-reply-preview-media" src={URL.createObjectURL(replyMedia[c._id])} alt="" loading="lazy" />
                           ) : (
                             <video className="cm-reply-preview-media" controls src={URL.createObjectURL(replyMedia[c._id])} />
                           )}
@@ -551,7 +551,7 @@ export default function CommentsModal({
 
                               {r.media && (
                                 <div className="cm-reply-media" style={{ marginTop: 8 }}>
-                                  {normalizeMedia(r.media).map((m, i) => m.type === "image" ? <img key={i} src={getImageUrl(m.url)} alt="" /> : <video key={i} controls src={getImageUrl(m.url)} />)}
+                                  {normalizeMedia(r.media).map((m, i) => m.type === "image" ? <img key={i} src={getImageUrl(m.url)} alt="" loading="lazy" /> : <video key={i} controls src={getImageUrl(m.url)} />)}
                                 </div>
                               )}
 
@@ -591,7 +591,7 @@ export default function CommentsModal({
             {commentMedia && (
               <div className="cm-comment-preview">
                 {commentMedia.type?.startsWith?.("image/") ? (
-                  <img className="cm-comment-preview-media" src={URL.createObjectURL(commentMedia)} alt="" />
+                  <img className="cm-comment-preview-media" src={URL.createObjectURL(commentMedia)} alt="" loading="lazy" />
                 ) : (
                   <video className="cm-comment-preview-media" controls src={URL.createObjectURL(commentMedia)} />
                 )}

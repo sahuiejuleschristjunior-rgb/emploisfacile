@@ -29,7 +29,7 @@ export default function RightMenu() {
       <div className="right-suggestions">
         {suggestions.map((item, i) => (
           <div key={i} className="right-item">
-            <img src={item.avatar} className="right-avatar" alt="" />
+            <img src={item.avatar} className="right-avatar" alt="" loading="lazy" />
 
             <div className="right-info">
               <p className="right-name">{item.name}</p>

@@ -194,13 +194,14 @@ export default function StoriesViewer({ stories, startIndex, onClose }) {
 
       {/* RENDU DU MEDIA */}
       {mediaType === 'image' && (
-        <img 
+        <img
             src={fullMediaUrl} // 👈 URL CORRIGÉE
-            alt="Story Media" 
-            className="story-media" 
+            alt="Story Media"
+            className="story-media"
             style={{ display: mediaLoading ? 'none' : 'block' }}
             onLoad={() => setMediaLoading(false)}
             onError={() => setMediaLoading(false)}
+            loading="lazy"
         />
       )}
       {mediaType === 'video' && (
