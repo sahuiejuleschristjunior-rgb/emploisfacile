@@ -102,6 +102,44 @@ export default function FacebookFeed() {
 
   const socketRef = useRef(null);
 
+  const addOptimisticPost = (post) => {
+    if (!post) return;
+    setPosts((prev) => [post, ...prev]);
+  };
+
+  const applyCacheBust = (media = []) =>
+    media.map((m) => {
+      if (!m?.url) return m;
+      if (m.url.startsWith("blob:")) return m;
+
+      const cacheKey = Date.now();
+      return {
+        ...m,
+        url: `${m.url}${m.url.includes("?") ? "&" : "?"}v=${cacheKey}`,
+      };
+    });
+
+  const replaceOptimisticPost = (tempId, savedPost) => {
+    if (!tempId || !savedPost) return;
+
+    const postWithCacheBust = {
+      ...savedPost,
+      media: applyCacheBust(savedPost.media),
+    };
+
+    setPosts((prev) => {
+      const exists = prev.some((p) => p._id === tempId);
+      if (!exists) return [postWithCacheBust, ...prev];
+
+      return prev.map((p) => (p._id === tempId ? postWithCacheBust : p));
+    });
+  };
+
+  const removeOptimisticPost = (tempId) => {
+    if (!tempId) return;
+    setPosts((prev) => prev.filter((p) => p._id !== tempId));
+  };
+
   /* =================================================================
         LOAD POSTS
   ================================================================= */
@@ -328,12 +366,23 @@ export default function FacebookFeed() {
     setIsCommentsModalOpen(false);
   };
 
+  const resolveMediaUrl = (media) => {
+    if (!media?.url) return null;
+    if (media.isLocal || media.url.startsWith("blob:")) return media.url;
+
+    return getImageUrl(media.url);
+  };
+
   /* =================================================================
         RENDER FEED
   ================================================================= */
   return (
     <div className="fb-feed">
-      <CreatePostFB onPosted={() => loadPosts(1, true)} />
+      <CreatePostFB
+        onOptimisticPost={addOptimisticPost}
+        onPostCreated={replaceOptimisticPost}
+        onPostError={removeOptimisticPost}
+      />
       <StoriesFB />
 
       {/* LOADER INITIAL */}
@@ -385,38 +434,45 @@ export default function FacebookFeed() {
                       : "fb-post-media-wrapper fb-post-media-wrapper--multi"
                   }
                 >
-                  {post.media.map((m, idx) => (
-                    <div
-                      key={idx}
-                      className="fb-post-media"
-                      onClick={() =>
-                        m.type === "video"
-                          ? openReels(post._id)
-                          : openMediaViewer(post._id, idx)
-                      }
-                    >
-                      {m.type === "image" && (
-                        <img
-                          src={getImageUrl(m.url)}
-                          className="fb-post-image"
-                          alt=""
-                        />
-                      )}
+                  {post.media.map((m, idx) => {
+                    const mediaUrl = resolveMediaUrl(m);
 
-                      {m.type === "video" && (
-                        <video className="fb-post-video" muted>
-                          <source src={getImageUrl(m.url)} />
-                        </video>
-                      )}
+                    const isLocalMedia = Boolean(m.isLocal);
 
-                      {post.media.length > 4 &&
-                        idx === 3 && (
-                          <div className="fb-post-media-more">
-                            +{post.media.length - 4}
-                          </div>
+                    return (
+                      <div
+                        key={idx}
+                        className="fb-post-media"
+                        onClick={() => {
+                          if (isLocalMedia) return;
+                          return m.type === "video"
+                            ? openReels(post._id)
+                            : openMediaViewer(post._id, idx);
+                        }}
+                      >
+                        {m.type === "image" && mediaUrl && (
+                          <img
+                            src={mediaUrl}
+                            className="fb-post-image"
+                            alt=""
+                          />
                         )}
-                    </div>
-                  ))}
+
+                        {m.type === "video" && mediaUrl && (
+                          <video className="fb-post-video" muted>
+                            <source src={mediaUrl} />
+                          </video>
+                        )}
+
+                        {post.media.length > 4 &&
+                          idx === 3 && (
+                            <div className="fb-post-media-more">
+                              +{post.media.length - 4}
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
