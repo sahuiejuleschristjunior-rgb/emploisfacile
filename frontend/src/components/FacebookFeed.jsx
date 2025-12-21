@@ -119,6 +119,62 @@ export default function FacebookFeed() {
       };
     });
 
+  const switchMediaToServer = (postId, mediaIndex, finalUrl) => {
+    if (!postId || !finalUrl) return;
+
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p._id !== postId || !p.media?.[mediaIndex]) return p;
+
+        const updatedMedia = [...p.media];
+        updatedMedia[mediaIndex] = {
+          ...updatedMedia[mediaIndex],
+          url: finalUrl,
+          isLocal: false,
+          previewUrl: undefined,
+          serverUrl: undefined,
+        };
+
+        return { ...p, media: updatedMedia };
+      })
+    );
+  };
+
+  const preloadServerMedia = (postId, mediaIndex, serverPath) => {
+    const finalUrl = getImageUrl(serverPath);
+    if (!finalUrl) return;
+
+    const img = new Image();
+    img.onload = () => switchMediaToServer(postId, mediaIndex, serverPath);
+    img.onerror = () => switchMediaToServer(postId, mediaIndex, serverPath);
+    img.src = finalUrl;
+  };
+
+  const mergeMediaWithPreview = (postId, incomingMedia = [], existingMedia = []) =>
+    incomingMedia.map((mediaItem, idx) => {
+      const existing = existingMedia[idx];
+      if (existing?.isLocal && existing?.url && mediaItem?.url) {
+        const serverUrl = mediaItem.url;
+        const mediaWithPreview = {
+          ...mediaItem,
+          url: existing.url,
+          previewUrl: existing.url,
+          serverUrl,
+          isLocal: true,
+        };
+
+        if (mediaItem.type === "image") {
+          preloadServerMedia(postId, idx, serverUrl);
+        } else {
+          switchMediaToServer(postId, idx, serverUrl);
+        }
+
+        return mediaWithPreview;
+      }
+
+      return mediaItem;
+    });
+
   const replaceOptimisticPost = (tempId, savedPost) => {
     if (!tempId || !savedPost) return;
 
@@ -128,10 +184,22 @@ export default function FacebookFeed() {
     };
 
     setPosts((prev) => {
-      const exists = prev.some((p) => p._id === tempId);
-      if (!exists) return [postWithCacheBust, ...prev];
+      const existing = prev.find((p) => p._id === tempId);
+      const mergedMedia = mergeMediaWithPreview(
+        postWithCacheBust._id || savedPost._id,
+        postWithCacheBust.media,
+        existing?.media
+      );
 
-      return prev.map((p) => (p._id === tempId ? postWithCacheBust : p));
+      const nextPost = {
+        ...postWithCacheBust,
+        media: mergedMedia,
+      };
+
+      const exists = prev.some((p) => p._id === tempId);
+      if (!exists) return [nextPost, ...prev];
+
+      return prev.map((p) => (p._id === tempId ? nextPost : p));
     });
   };
 
@@ -367,10 +435,12 @@ export default function FacebookFeed() {
   };
 
   const resolveMediaUrl = (media) => {
-    if (!media?.url) return null;
-    if (media.isLocal || media.url.startsWith("blob:")) return media.url;
+    if (!media?.url && !media?.previewUrl) return null;
 
-    return getImageUrl(media.url);
+    const candidate = media.previewUrl || media.url;
+    if (media.isLocal || candidate?.startsWith("blob:")) return candidate;
+
+    return getImageUrl(candidate);
   };
 
   /* =================================================================
