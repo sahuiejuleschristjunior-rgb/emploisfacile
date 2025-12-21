@@ -38,8 +38,22 @@ const allowed = [
   "video/x-msvideo", // .avi
 ];
 
+const allowedExtensions = [
+  ".jpeg",
+  ".jpg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".mp4",
+  ".mov",
+  ".m4v",
+  ".avi",
+];
+
 function fileFilter(req, file, cb) {
-  if (allowed.includes(file.mimetype)) {
+  const ext = (path.extname(file.originalname) || "").toLowerCase();
+
+  if (allowed.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
     cb(new Error("Le format du fichier n'est pas autorisé. Formats acceptés: Images (JPEG, PNG, GIF, WEBP) et Vidéos (MP4, MOV, AVI)."));
