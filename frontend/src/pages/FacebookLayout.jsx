@@ -6,6 +6,7 @@ import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
 import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
+import PagesFeedSidebar from "../components/PagesFeedSidebar";
 import {
   fetchRelationStatus,
   sendFriendRequest,
@@ -21,6 +22,7 @@ export default function FacebookLayout({ headerOnly = false }) {
 
   const isFullLayout = location.pathname.startsWith("/fb");
   const isCompactLayout = headerOnly || !isFullLayout;
+  const isPagesFeed = location.pathname.startsWith("/fb/pages-feed");
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -1078,6 +1080,14 @@ export default function FacebookLayout({ headerOnly = false }) {
                   <div className="fb-sidebar-item-label">Accueil</div>
                 </div>
 
+                <div
+                  className="fb-sidebar-item"
+                  onClick={() => nav("/fb/pages-feed")}
+                >
+                  <FBIcon name="friends" size={20} />
+                  <div className="fb-sidebar-item-label">Feed des pages</div>
+                </div>
+
                 <div className="fb-sidebar-item" onClick={() => nav("/emplois")}>
                   <FBIcon name="jobs" size={20} />
                   <div className="fb-sidebar-item-label">Emplois</div>
@@ -1143,11 +1153,21 @@ export default function FacebookLayout({ headerOnly = false }) {
             </div>
           </aside>
 
-          <section className="fb-center-column">
+          <section
+            className={`fb-center-column ${
+              isPagesFeed ? "fb-center-column--pages" : ""
+            }`}
+          >
             <Outlet />
           </section>
 
-          <aside className="fb-right-column"></aside>
+          <aside
+            className={`fb-right-column ${
+              isPagesFeed ? "fb-right-column--visible" : ""
+            }`}
+          >
+            {isPagesFeed && <PagesFeedSidebar />}
+          </aside>
         </div>
       </main>
 

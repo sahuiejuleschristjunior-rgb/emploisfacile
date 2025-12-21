@@ -343,6 +343,15 @@
 
 .fb-right-column {
   width: 260px;
+  position: sticky;
+  top: 76px;
+  align-self: flex-start;
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+}
+
+.fb-right-column--visible {
+  display: block;
 }
 
 .fb-right-section {
