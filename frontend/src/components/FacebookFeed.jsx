@@ -535,6 +535,7 @@ export default function FacebookFeed() {
                           alt=""
                           muted={isVideo}
                           autoPlay={m.autoPlay}
+                          onExpand={() => openReels(post._id)}
                         />
 
                         {post.media.length > 4 &&

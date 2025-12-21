@@ -54,41 +54,62 @@
   }
 }
 
-.mr-controls {
+.mr-controls-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  padding: 12px;
-  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.55));
+  background: linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.65));
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
 
-.mr-controls.is-visible {
+.mr-controls-overlay.is-visible {
   opacity: 1;
   pointer-events: auto;
 }
 
-.mr-sound-btn {
-  width: 42px;
-  height: 42px;
+.mr-controls {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 12px;
+}
+
+.mr-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mr-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mr-icon-btn {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(28, 30, 33, 0.85);
   color: #fff;
-  font-size: 20px;
   display: grid;
   place-items: center;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-.mr-sound-btn:hover {
+.mr-icon-btn:hover {
   transform: scale(1.05);
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .mr-progress {
@@ -99,9 +120,9 @@
 
 .mr-progress-track {
   position: relative;
-  height: 6px;
+  height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.35);
   overflow: hidden;
 }
 
@@ -109,28 +130,32 @@
   position: absolute;
   inset: 0;
   width: 0;
-  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  background: linear-gradient(90deg, #0ea5e9, #1d9bf0);
   transition: width 0.1s linear;
 }
 
 .mr-volume input[type="range"] {
-  width: 120px;
-  accent-color: #38bdf8;
+  width: 110px;
+  accent-color: #1d9bf0;
+}
+
+.mr-expand-btn {
+  background: rgba(28, 30, 33, 0.92);
 }
 
 @media (max-width: 768px) {
   .mr-controls {
     gap: 8px;
-    padding: 10px;
-    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.7));
+    padding: 10px 8px;
+    background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.75));
   }
 
-  .mr-sound-btn {
-    width: 38px;
-    height: 38px;
+  .mr-icon-btn {
+    width: 36px;
+    height: 36px;
   }
 
   .mr-volume input[type="range"] {
-    width: 100px;
+    width: 90px;
   }
 }
