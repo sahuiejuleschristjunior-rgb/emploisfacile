@@ -3,7 +3,12 @@ import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 
 const MAX_FILES = 10;
 
-export default function CreatePostFB({ onPosted }) {
+export default function CreatePostFB({
+  onPosted,
+  onOptimisticPost,
+  onPostCreated,
+  onPostError,
+}) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState([]);
@@ -76,8 +81,29 @@ export default function CreatePostFB({ onPosted }) {
     if (!text.trim() && files.length === 0) return;
     if (!token) return (window.location.href = "/login");
 
+    let tempId = null;
+
     try {
       setLoading(true);
+
+      tempId = `temp-${Date.now()}`;
+      const optimisticPost = {
+        _id: tempId,
+        text,
+        media: files.map((f, idx) => ({
+          url: preview[idx] || URL.createObjectURL(f),
+          type: f.type.startsWith("video/") ? "video" : "image",
+          isLocal: true,
+        })),
+        user: currentUser || {},
+        authorType: "user",
+        createdAt: new Date().toISOString(),
+        likes: [],
+        comments: [],
+        reactions: [],
+      };
+
+      if (onOptimisticPost) onOptimisticPost(optimisticPost);
 
       const fd = new FormData();
       fd.append("text", text);
@@ -92,15 +118,18 @@ export default function CreatePostFB({ onPosted }) {
       const data = await res.json();
       if (!res.ok) {
         alert(data.error || "Erreur lors de la publication");
+        if (onPostError) onPostError(tempId);
         return;
       }
 
       resetState();
       setIsModalOpen(false);
+      if (onPostCreated) onPostCreated(tempId, data);
       if (onPosted) onPosted();
     } catch (err) {
       console.error("CREATE POST ERROR:", err);
       alert("Erreur serveur");
+      if (onPostError) onPostError(tempId);
     } finally {
       setLoading(false);
     }
