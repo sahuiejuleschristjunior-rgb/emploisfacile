@@ -11,6 +11,7 @@ import {
   sendFriendRequest,
   cancelFriendRequest,
 } from "../api/socialApi";
+import { getMyPages } from "../api/pagesApi";
 
 export default function FacebookLayout({ headerOnly = false }) {
   const location = useLocation();
@@ -52,6 +53,9 @@ export default function FacebookLayout({ headerOnly = false }) {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
+  const [pages, setPages] = useState([]);
+  const [loadingPages, setLoadingPages] = useState(false);
 
   const socketRef = useRef(null);
   const notifIdsRef = useRef(new Set());
@@ -85,11 +89,38 @@ export default function FacebookLayout({ headerOnly = false }) {
   const [relationStatuses, setRelationStatuses] = useState({});
 
   const searchBoxRef = useRef(null);
+  const profileSwitcherRef = useRef(null);
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 4500);
   };
+
+  useEffect(() => {
+    const loadPages = async () => {
+      setLoadingPages(true);
+      try {
+        const res = await getMyPages();
+        if (Array.isArray(res)) setPages(res);
+      } finally {
+        setLoadingPages(false);
+      }
+    };
+
+    loadPages();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!profileSwitcherRef.current) return;
+      if (!profileSwitcherRef.current.contains(e.target)) {
+        setProfileSwitcherOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   /* ============================================================
      🔥 SOCKET
@@ -911,13 +942,92 @@ export default function FacebookLayout({ headerOnly = false }) {
               )}
             </div>
 
-            {/* PROFILE */}
-            <button
-              className="fb-header-icon-btn"
-              onClick={() => nav(`/profil/${currentUser?._id}`)}
-            >
-              <div className="fb-header-avatar" style={avatarStyle} />
-            </button>
+            {/* PROFILE SWITCHER */}
+            <div className="profile-switcher" ref={profileSwitcherRef}>
+              <button
+                className="fb-header-icon-btn"
+                onClick={() => setProfileSwitcherOpen((v) => !v)}
+              >
+                <div className="fb-header-avatar" style={avatarStyle} />
+              </button>
+
+              {profileSwitcherOpen && (
+                <div className="profile-switcher-dropdown">
+                  <div className="profile-switcher-title">
+                    Utiliser EmploisFacile en tant que
+                  </div>
+
+                  <button
+                    className="profile-switcher-entry"
+                    onClick={() => {
+                      nav(`/profil/${currentUser?._id}`);
+                      setProfileSwitcherOpen(false);
+                    }}
+                  >
+                    <div className="profile-switcher-avatar" style={avatarStyle} />
+                    <div className="profile-switcher-meta">
+                      <div className="profile-switcher-name">
+                        {currentUser?.name || "Mon profil"}
+                      </div>
+                      <div className="profile-switcher-label">Profil personnel</div>
+                    </div>
+                  </button>
+
+                  <div className="profile-switcher-title">Pages</div>
+
+                  {loadingPages && (
+                    <div className="profile-switcher-empty">Chargement...</div>
+                  )}
+
+                  {!loadingPages && pages.length === 0 && (
+                    <div className="profile-switcher-empty">
+                      Vous n'avez pas encore de page.
+                    </div>
+                  )}
+
+                  {!loadingPages &&
+                    pages.map((page) => (
+                      <button
+                        key={page._id}
+                        className="profile-switcher-entry"
+                        onClick={() => {
+                          nav(`/pages/${page.slug}`);
+                          setProfileSwitcherOpen(false);
+                        }}
+                      >
+                        <div
+                          className="profile-switcher-avatar"
+                          style={{
+                            backgroundImage: `url(${getImageUrl(page.avatar)})`,
+                          }}
+                        />
+                        <div className="profile-switcher-meta">
+                          <div className="profile-switcher-name">{page.name}</div>
+                          <div className="profile-switcher-label">
+                            {page.followersCount || 0} abonnés
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+
+                  <button
+                    className="profile-switcher-entry profile-switcher-entry--all"
+                    onClick={() => {
+                      nav("/pages/me");
+                      setProfileSwitcherOpen(false);
+                    }}
+                  >
+                    <FBIcon name="profile" size={18} />
+                    <div className="profile-switcher-meta">
+                      <div className="profile-switcher-name">Voir toutes les pages</div>
+                      <div className="profile-switcher-label">
+                        Gérer vos pages et en créer une nouvelle
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
       </div>
     </header>
