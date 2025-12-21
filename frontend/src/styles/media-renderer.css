@@ -1,0 +1,55 @@
+.media-renderer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--mr-aspect, 16/9);
+  background: #0f0f10;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.media-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #1c1c1e 0%,
+    #242427 40%,
+    #1c1c1e 80%
+  );
+  background-size: 200% 100%;
+  animation: mr-shimmer 1.4s infinite;
+}
+
+.media-element {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.media-element.is-visible {
+  opacity: 1;
+}
+
+.media-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b0b3b8;
+  background: #111;
+  font-size: 14px;
+}
+
+@keyframes mr-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
