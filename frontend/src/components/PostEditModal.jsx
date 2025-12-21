@@ -115,7 +115,7 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
             {existingMedia.map((m, index) => (
               <div key={index} className="pem-media-item">
                 {m.type === "image" ? (
-                  <img className="pem-img" src={fixUrl(m.url)} />
+                  <img className="pem-img" src={fixUrl(m.url)} loading="lazy" />
                 ) : (
                   <video className="pem-video" controls src={fixUrl(m.url)} />
                 )}
@@ -140,6 +140,7 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
                   <img
                     className="pem-img"
                     src={URL.createObjectURL(file)}
+                    loading="lazy"
                   />
                 ) : (
                   <video

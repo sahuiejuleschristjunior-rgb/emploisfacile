@@ -5,7 +5,7 @@ export default function StoryBar({ stories }) {
       {stories.map((item) => (
         <div key={item.id} className="story-item">
           <div className="story-avatar-wrapper">
-            <img src={item.avatar} className="story-avatar" alt="" />
+            <img src={item.avatar} className="story-avatar" alt="" loading="lazy" />
           </div>
           <span className="story-name">{item.name}</span>
         </div>

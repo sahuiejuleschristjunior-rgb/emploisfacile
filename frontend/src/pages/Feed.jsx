@@ -110,6 +110,7 @@ export default function Feed() {
                 <img
                   src={post.user?.avatar || "/assets/default-avatar.png"}
                   className="post-avatar"
+                  loading="lazy"
                 />
                 <div>
                   <div className="post-user">{post.user?.name || "Utilisateur"}</div>

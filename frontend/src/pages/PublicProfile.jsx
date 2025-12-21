@@ -130,6 +130,7 @@ export default function PublicProfile() {
             src={user.coverPhoto}
             alt="Couverture du profil"
             className="profil-cover-media"
+            loading="lazy"
           />
           <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
         </div>

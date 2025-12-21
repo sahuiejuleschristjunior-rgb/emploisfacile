@@ -10,7 +10,7 @@ export default function StoriesBar({ stories, onOpen }) {
           className="story-item"
           onClick={() => onOpen(index)}
         >
-          <img src={story.avatar} className="story-avatar" />
+          <img src={story.avatar} className="story-avatar" loading="lazy" />
           <p className="story-name">{story.name}</p>
         </div>
       ))}

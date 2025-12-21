@@ -394,7 +394,7 @@ export default function PageProfile() {
                       {item.file.type.startsWith("video/") ? (
                         <video src={item.preview} controls muted />
                       ) : (
-                        <img src={item.preview} alt="Prévisualisation" />
+                        <img src={item.preview} alt="Prévisualisation" loading="lazy" />
                       )}
                     </div>
                   ))}

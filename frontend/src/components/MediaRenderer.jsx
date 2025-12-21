@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
@@ -51,6 +51,21 @@ export default function MediaRenderer({
 
   const showVideo = resolvedType === "video";
 
+  useEffect(() => {
+    setLoaded(false);
+    setErrored(false);
+  }, [finalSrc, resolvedType]);
+
+  useEffect(() => {
+    if (!finalSrc || loaded) return undefined;
+
+    const timeout = setTimeout(() => {
+      setLoaded(true);
+    }, showVideo ? 2000 : 1500);
+
+    return () => clearTimeout(timeout);
+  }, [finalSrc, loaded, showVideo]);
+
   const handleReady = () => {
     setLoaded(true);
   };
@@ -71,8 +86,7 @@ export default function MediaRenderer({
       {showVideo ? (
         <video
           className={`media-element ${mediaClassName} ${loaded ? "is-visible" : ""}`.trim()}
-          onLoadedData={handleReady}
-          onCanPlay={handleReady}
+          onLoadedMetadata={handleReady}
           onError={handleError}
           poster={finalPoster}
           autoPlay={autoPlay}

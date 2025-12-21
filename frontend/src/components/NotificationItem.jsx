@@ -118,6 +118,7 @@ export default function NotificationItem({ notif, onHandled }) {
           src={avatarUrl}
           alt={notif.from?.name || "Utilisateur"}
           className="notif-avatar"
+          loading="lazy"
         />
         <span className="notif-icon">{icon}</span>
       </div>

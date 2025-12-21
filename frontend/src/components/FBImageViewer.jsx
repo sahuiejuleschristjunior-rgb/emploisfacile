@@ -27,7 +27,7 @@ export default function FBImageViewer({ images, startIndex = 0, onClose }) {
       <div className="fb-viewer-content" onClick={(e) => e.stopPropagation()}>
 
         {/* Image */}
-        <img src={images[current]} className="fb-viewer-img" />
+        <img src={images[current]} className="fb-viewer-img" loading="lazy" />
 
         {/* Buttons */}
         <button className="fb-viewer-close" onClick={onClose}>✕</button>

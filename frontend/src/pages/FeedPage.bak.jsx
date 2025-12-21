@@ -72,7 +72,7 @@ function StoriesBar({ stories, onOpen }) {
           className="story-item"
           onClick={() => onOpen(index)}
         >
-          <img src={story.avatar} className="story-avatar" alt={story.name} />
+          <img src={story.avatar} className="story-avatar" alt={story.name} loading="lazy" />
           <p className="story-name">{story.name}</p>
         </div>
       ))}
@@ -113,6 +113,7 @@ function MediaSlider({ media = [] }) {
               src={m.url}
               alt={`media-${idx}`}
               style={{ width: "100%", height: "auto", display: "block" }}
+              loading="lazy"
             />
           )}
         </div>
@@ -173,7 +174,7 @@ function StoryViewer({ stories, startIndex, onClose }) {
         onClick={() => index < stories.length - 1 && setIndex(index + 1)}
       />
 
-      <img src={current.media} className="story-media" alt="story" />
+      <img src={current.media} className="story-media" alt="story" loading="lazy" />
 
       <button className="story-close" onClick={onClose}>
         ×

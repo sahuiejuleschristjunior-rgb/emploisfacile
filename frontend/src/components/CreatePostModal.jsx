@@ -91,7 +91,7 @@ export default function CreatePostModal({ initialFiles = [], onClose, onPosted }
                 {files[i].type.startsWith("video/") ? (
                   <video src={src} controls className="fb-preview-img" />
                 ) : (
-                  <img src={src} className="fb-preview-img" />
+                  <img src={src} className="fb-preview-img" loading="lazy" />
                 )}
               </div>
             ))}

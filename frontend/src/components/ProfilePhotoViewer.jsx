@@ -59,7 +59,7 @@ export default function ProfilePhotoViewer({ items = [], index = 0, onClose, onC
         )}
 
         <div className="ppv-stage">
-          <img src={currentItem.url} alt="Photo de profil" />
+          <img src={currentItem.url} alt="Photo de profil" loading="lazy" />
         </div>
 
         {items.length > 1 && (
@@ -83,7 +83,7 @@ export default function ProfilePhotoViewer({ items = [], index = 0, onClose, onC
                 role="listitem"
                 aria-label={`Aller à la photo ${i + 1}`}
               >
-                <img src={item.url} alt="Miniature de la photo" />
+                <img src={item.url} alt="Miniature de la photo" loading="lazy" />
               </button>
             ))}
           </div>

@@ -1554,7 +1554,7 @@ export default function Messages() {
               }`}
               onClick={() => loadConversation(friend)}
             >
-              <img src={friend.avatar} alt={friend.name} className="conversation-avatar" />
+              <img src={friend.avatar} alt={friend.name} className="conversation-avatar" loading="lazy" />
 
               <div className="conversation-info">
                 <div className="conversation-name">{friend.name}</div>
@@ -1592,7 +1592,7 @@ export default function Messages() {
                 <BackIcon />
               </button>
 
-              <img src={activeChat.avatar} alt={activeChat.name} className="chat-avatar" />
+              <img src={activeChat.avatar} alt={activeChat.name} className="chat-avatar" loading="lazy" />
 
               <div className="chat-user-info">
                 <div className="chat-username">{activeChat.name}</div>
