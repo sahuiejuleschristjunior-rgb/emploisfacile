@@ -11,13 +11,6 @@ import "../styles/media-renderer.css";
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
 const VIDEO_EXT = /(\.mp4|\.mov|\.webm|\.m4v|\.avi)$/i;
 
-const stopAll = (event) => {
-  event?.stopPropagation?.();
-  event?.preventDefault?.();
-};
-
-const AUDIO_GAIN_MULTIPLIER = 1.6;
-
 const getMediaType = ({ type, mimeType, url = "" }) => {
   const hint = type || mimeType || "";
   if (hint.startsWith("video")) return "video";
@@ -58,9 +51,6 @@ export default function MediaRenderer({
   const lastVolumeRef = useRef(0.6);
   const videoRef = useRef(null);
   const progressRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const gainNodeRef = useRef(null);
-  const mediaSourceRef = useRef(null);
 
   const finalSrc = src || media?.url || media?.src;
   const finalPoster = poster || media?.poster || media?.thumbnail;
@@ -78,45 +68,6 @@ export default function MediaRenderer({
   }, [aspectRatio, media?.ratio, media?.width, media?.height]);
 
   const showVideo = resolvedType === "video";
-
-  const ensureAudioGraph = () => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
-
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    }
-
-    const ctx = audioContextRef.current;
-    if (ctx?.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
-
-    if (!mediaSourceRef.current && ctx) {
-      try {
-        mediaSourceRef.current = ctx.createMediaElementSource(videoEl);
-        gainNodeRef.current = ctx.createGain();
-        mediaSourceRef.current.connect(gainNodeRef.current);
-        gainNodeRef.current.connect(ctx.destination);
-      } catch (err) {
-        console.error("AUDIO GRAPH ERROR", err);
-      }
-    }
-  };
-
-  const applyVolume = (nextVolume, mutedState) => {
-    const videoEl = videoRef.current;
-    if (videoEl) {
-      videoEl.volume = mutedState ? 0 : nextVolume;
-      videoEl.muted = mutedState;
-    }
-
-    const gainNode = gainNodeRef.current;
-    if (gainNode) {
-      const gainValue = mutedState ? 0 : Math.min(nextVolume * AUDIO_GAIN_MULTIPLIER, 3);
-      gainNode.gain.value = gainValue;
-    }
-  };
 
   useEffect(() => {
     setLoaded(false);
@@ -173,8 +124,8 @@ export default function MediaRenderer({
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
-    ensureAudioGraph();
-    applyVolume(volume || 0.6, isMuted);
+    videoEl.muted = isMuted;
+    videoEl.volume = isMuted ? 0 : volume || 0.6;
   }, [isMuted, volume]);
 
   const handleImageLoad = () => {
@@ -185,8 +136,6 @@ export default function MediaRenderer({
     setLoaded(true);
     const videoEl = videoRef.current;
     if (videoEl) {
-      ensureAudioGraph();
-      applyVolume(volume || 0.6, isMuted);
       setDuration(videoEl.duration || 0);
       setCurrentTime(videoEl.currentTime || 0);
       videoEl.play().catch(() => {});
@@ -195,49 +144,47 @@ export default function MediaRenderer({
   };
 
   const toggleSound = (event) => {
-    stopAll(event);
+    event?.stopPropagation?.();
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
-    ensureAudioGraph();
-
     if (isMuted) {
       const nextVolume = volume === 0 ? lastVolumeRef.current || 0.6 : volume;
-      applyVolume(nextVolume, false);
+      videoEl.muted = false;
+      videoEl.volume = nextVolume;
       setVolume(nextVolume);
       setIsMuted(false);
-      audioContextRef.current?.resume?.().catch(() => {});
     } else {
       lastVolumeRef.current = volume || 0.6;
-      applyVolume(0, true);
+      videoEl.muted = true;
+      videoEl.volume = 0;
       setVolume(0);
       setIsMuted(true);
     }
   };
 
   const handleVolumeChange = (event) => {
-    stopAll(event);
+    event.stopPropagation();
     const videoEl = videoRef.current;
     if (!videoEl) return;
-
-    ensureAudioGraph();
 
     const nextVolume = Number(event.target.value);
     setVolume(nextVolume);
 
     if (nextVolume === 0) {
-      applyVolume(0, true);
+      videoEl.volume = 0;
+      videoEl.muted = true;
       setIsMuted(true);
     } else {
-      applyVolume(nextVolume, false);
+      videoEl.volume = nextVolume;
+      videoEl.muted = false;
       setIsMuted(false);
       lastVolumeRef.current = nextVolume;
-      audioContextRef.current?.resume?.().catch(() => {});
     }
   };
 
   const handlePlayPause = (event) => {
-    stopAll(event);
+    event.stopPropagation();
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
@@ -251,20 +198,20 @@ export default function MediaRenderer({
   };
 
   const handleExpand = (event) => {
-    stopAll(event);
+    event.stopPropagation();
     if (typeof onExpand === "function") {
       onExpand();
     }
   };
 
   const stopControlsPropagation = (event) => {
-    stopAll(event);
+    event.stopPropagation();
   };
 
   const progressPercent = duration ? Math.min((currentTime / duration) * 100, 100) : 0;
 
   const handleSeek = (event) => {
-    stopAll(event);
+    event.stopPropagation();
     const videoEl = videoRef.current;
     const bar = progressRef.current;
     if (!videoEl || !bar || !duration) return;
@@ -337,10 +284,7 @@ export default function MediaRenderer({
           className={`mr-controls-overlay ${showControls ? "is-visible" : ""}`.trim()}
           onPointerDown={stopControlsPropagation}
           onMouseDown={stopControlsPropagation}
-          onMouseMove={stopControlsPropagation}
-          onPointerMove={stopControlsPropagation}
           onTouchStart={stopControlsPropagation}
-          onTouchMove={stopControlsPropagation}
           onClick={stopControlsPropagation}
         >
           <div className="mr-controls">
@@ -369,10 +313,6 @@ export default function MediaRenderer({
                 onClick={handleSeek}
                 onTouchStart={handleSeek}
                 onPointerDown={stopControlsPropagation}
-                onPointerMove={stopControlsPropagation}
-                onMouseDown={stopControlsPropagation}
-                onMouseMove={stopControlsPropagation}
-                onTouchMove={stopControlsPropagation}
                 role="presentation"
               >
                 <div className="mr-progress-track">
@@ -385,10 +325,6 @@ export default function MediaRenderer({
               <div
                 className="mr-volume"
                 onPointerDown={stopControlsPropagation}
-                onPointerMove={stopControlsPropagation}
-                onMouseDown={stopControlsPropagation}
-                onMouseMove={stopControlsPropagation}
-                onTouchMove={stopControlsPropagation}
                 onClick={stopControlsPropagation}
               >
                 <input
@@ -398,14 +334,6 @@ export default function MediaRenderer({
                   step="0.05"
                   value={volume}
                   onChange={handleVolumeChange}
-                  onInput={handleVolumeChange}
-                  onClick={stopControlsPropagation}
-                  onMouseDown={stopControlsPropagation}
-                  onMouseMove={stopControlsPropagation}
-                  onPointerDown={stopControlsPropagation}
-                  onPointerMove={stopControlsPropagation}
-                  onTouchStart={stopControlsPropagation}
-                  onTouchMove={stopControlsPropagation}
                   aria-label="Volume"
                 />
               </div>
