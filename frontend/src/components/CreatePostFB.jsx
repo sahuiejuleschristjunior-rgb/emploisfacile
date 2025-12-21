@@ -39,6 +39,36 @@ export default function CreatePostFB({
   /* =====================================================
         GESTION DES FICHIERS
   ===================================================== */
+  const addCacheBust = (url) => {
+    if (!url) return url;
+    const cacheKey = Date.now();
+    return `${url}${url.includes("?") ? "&" : "?"}v=${cacheKey}`;
+  };
+
+  const waitForServerImages = async (media = []) => {
+    const imageMedia = media.filter((m) => m?.type === "image" && m?.url);
+    if (imageMedia.length === 0) return;
+
+    const checkAvailability = () =>
+      Promise.all(
+        imageMedia.map(
+          (m) =>
+            new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve(true);
+              img.onerror = () => resolve(false);
+              img.src = getImageUrl(m.url);
+            })
+        )
+      );
+
+    while (true) {
+      const results = await checkAvailability();
+      if (results.every(Boolean)) return;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  };
+
   const handleFileChange = (e) => {
     const incoming = Array.from(e.target.files || []);
     if (!incoming.length) return;
@@ -122,10 +152,22 @@ export default function CreatePostFB({
         return;
       }
 
+      const mediaWithCacheBust = (data.media || []).map((m) => ({
+        ...m,
+        url: addCacheBust(m.url),
+        isLocal: false,
+      }));
+
+      const notifyPostCreated = async () => {
+        await waitForServerImages(mediaWithCacheBust);
+        if (onPostCreated)
+          onPostCreated(tempId, { ...data, media: mediaWithCacheBust });
+        if (onPosted) onPosted();
+      };
+
       resetState();
       setIsModalOpen(false);
-      if (onPostCreated) onPostCreated(tempId, data);
-      if (onPosted) onPosted();
+      notifyPostCreated();
     } catch (err) {
       console.error("CREATE POST ERROR:", err);
       alert("Erreur serveur");
