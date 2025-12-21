@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  IconFullscreen,
+  IconPause,
+  IconPlay,
+  IconVolumeOff,
+  IconVolumeOn,
+} from "./icons/FbIcons";
 import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
@@ -30,11 +37,13 @@ export default function MediaRenderer({
   controls,
   playsInline = true,
   preload = "metadata",
+  onExpand,
 }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [volume, setVolume] = useState(muted ? 0 : 0.6);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(false);
@@ -95,14 +104,19 @@ export default function MediaRenderer({
 
     const handleTimeUpdate = () => {
       setCurrentTime(videoEl.currentTime || 0);
+      setIsPlaying(!videoEl.paused);
     };
 
     videoEl.addEventListener("loadedmetadata", handleLoadedMetadata);
     videoEl.addEventListener("timeupdate", handleTimeUpdate);
+    videoEl.addEventListener("play", handleTimeUpdate);
+    videoEl.addEventListener("pause", handleTimeUpdate);
 
     return () => {
       videoEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
       videoEl.removeEventListener("timeupdate", handleTimeUpdate);
+      videoEl.removeEventListener("play", handleTimeUpdate);
+      videoEl.removeEventListener("pause", handleTimeUpdate);
     };
   }, [finalSrc, isMuted, volume]);
 
@@ -125,6 +139,7 @@ export default function MediaRenderer({
       setDuration(videoEl.duration || 0);
       setCurrentTime(videoEl.currentTime || 0);
       videoEl.play().catch(() => {});
+      setIsPlaying(!videoEl.paused);
     }
   };
 
@@ -166,6 +181,31 @@ export default function MediaRenderer({
       setIsMuted(false);
       lastVolumeRef.current = nextVolume;
     }
+  };
+
+  const handlePlayPause = (event) => {
+    event.stopPropagation();
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    if (videoEl.paused) {
+      videoEl.play();
+      setIsPlaying(true);
+    } else {
+      videoEl.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleExpand = (event) => {
+    event.stopPropagation();
+    if (typeof onExpand === "function") {
+      onExpand();
+    }
+  };
+
+  const stopControlsPropagation = (event) => {
+    event.stopPropagation();
   };
 
   const progressPercent = duration ? Math.min((currentTime / duration) * 100, 100) : 0;
@@ -240,38 +280,73 @@ export default function MediaRenderer({
       )}
 
       {showVideo && (
-        <div className={`mr-controls ${showControls ? "is-visible" : ""}`.trim()}>
-          <button
-            type="button"
-            className="mr-sound-btn"
-            onClick={toggleSound}
-            aria-label={isMuted ? "Activer le son" : "Couper le son"}
-          >
-            {isMuted ? "🔇" : "🔊"}
-          </button>
+        <div
+          className={`mr-controls-overlay ${showControls ? "is-visible" : ""}`.trim()}
+          onPointerDown={stopControlsPropagation}
+          onMouseDown={stopControlsPropagation}
+          onTouchStart={stopControlsPropagation}
+          onClick={stopControlsPropagation}
+        >
+          <div className="mr-controls">
+            <div className="mr-controls-left">
+              <button
+                type="button"
+                className="mr-icon-btn"
+                onClick={handlePlayPause}
+                aria-label={isPlaying ? "Mettre en pause" : "Lecture"}
+              >
+                {isPlaying ? <IconPause /> : <IconPlay />}
+              </button>
 
-          <div
-            className="mr-progress"
-            ref={progressRef}
-            onClick={handleSeek}
-            onTouchStart={handleSeek}
-            role="presentation"
-          >
-            <div className="mr-progress-track">
-              <div className="mr-progress-fill" style={{ width: `${progressPercent}%` }} />
+              <button
+                type="button"
+                className="mr-icon-btn"
+                onClick={toggleSound}
+                aria-label={isMuted ? "Activer le son" : "Couper le son"}
+              >
+                {isMuted ? <IconVolumeOff /> : <IconVolumeOn />}
+              </button>
+
+              <div
+                className="mr-progress"
+                ref={progressRef}
+                onClick={handleSeek}
+                onTouchStart={handleSeek}
+                onPointerDown={stopControlsPropagation}
+                role="presentation"
+              >
+                <div className="mr-progress-track">
+                  <div className="mr-progress-fill" style={{ width: `${progressPercent}%` }} />
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="mr-volume">
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={volume}
-              onChange={handleVolumeChange}
-              aria-label="Volume"
-            />
+            <div className="mr-controls-right">
+              <div
+                className="mr-volume"
+                onPointerDown={stopControlsPropagation}
+                onClick={stopControlsPropagation}
+              >
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  aria-label="Volume"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="mr-icon-btn mr-expand-btn"
+                onClick={handleExpand}
+                aria-label="Agrandir la vidéo"
+              >
+                <IconFullscreen />
+              </button>
+            </div>
           </div>
         </div>
       )}
