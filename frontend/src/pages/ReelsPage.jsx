@@ -1,0 +1,145 @@
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
+import "../styles/reels.css";
+import { getImageUrl } from "../utils/imageUtils";
+
+export default function ReelsPage() {
+  const API_URL = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem("token");
+  const location = useLocation();
+
+  const [videos, setVideos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const containerRef = useRef(null);
+  const videoRefs = useRef([]);
+
+  const selectedVideoId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("videoId");
+  }, [location.search]);
+
+  const fetchVideos = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetch(`${API_URL}/posts/videos`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data)) {
+        setError("Impossible de charger les vidéos pour le moment.");
+        setVideos([]);
+        return;
+      }
+
+      setVideos(data);
+    } catch (err) {
+      console.error("Erreur chargement vidéos:", err);
+      setError("Une erreur est survenue lors du chargement des vidéos.");
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, token]);
+
+  useEffect(() => {
+    fetchVideos();
+  }, [fetchVideos]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      videoRefs.current.forEach((v) => v?.pause());
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!videos.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoEl = entry.target;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            videoRefs.current.forEach((v) => {
+              if (v && v !== videoEl) v.pause();
+            });
+            videoEl.play().catch(() => {});
+          } else {
+            videoEl.pause();
+          }
+        });
+      },
+      {
+        threshold: 0.6,
+        root: containerRef.current,
+      }
+    );
+
+    videoRefs.current.forEach((video) => {
+      if (video) observer.observe(video);
+    });
+
+    return () => observer.disconnect();
+  }, [videos]);
+
+  useEffect(() => {
+    if (!videos.length) return;
+
+    const targetIndex = selectedVideoId
+      ? videos.findIndex((v) => String(v._id) === String(selectedVideoId))
+      : 0;
+
+    if (targetIndex < 0) return;
+
+    const el = videoRefs.current[targetIndex];
+    if (el) {
+      el.scrollIntoView({ behavior: "auto", block: "start" });
+      el.play().catch(() => {});
+    }
+  }, [selectedVideoId, videos]);
+
+  return (
+    <div className="reels-page">
+      <div className="reels-container" ref={containerRef}>
+        {loading && <div className="reels-status">Chargement…</div>}
+        {error && !loading && <div className="reels-status">{error}</div>}
+
+        {!loading && !error && videos.length === 0 && (
+          <div className="reels-status">Aucune vidéo disponible pour le moment.</div>
+        )}
+
+        {videos.map((video, index) => (
+          <section key={video._id} className="reels-item">
+            <video
+              ref={(el) => {
+                videoRefs.current[index] = el;
+              }}
+              className="reels-video"
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              src={getImageUrl(video.media)}
+            />
+
+            <div className="reels-overlay">
+              <div className="reels-user">{video.user?.name || "Utilisateur"}</div>
+              <div className="reels-meta">
+                <span>{video.likesCount ?? 0} j’aime</span>
+                <span>{video.commentsCount ?? 0} commentaires</span>
+              </div>
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}

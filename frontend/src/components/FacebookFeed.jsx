@@ -279,6 +279,11 @@ export default function FacebookFeed() {
     document.body.classList.add("fb-no-scroll");
   };
 
+  const openReels = (postId) => {
+    if (!postId) return;
+    nav(`/reels?videoId=${postId}`);
+  };
+
   const closeMediaViewer = () => {
     setMediaViewerOpen(false);
     setMediaViewer({ postId: null, index: 0 });
@@ -384,7 +389,11 @@ export default function FacebookFeed() {
                     <div
                       key={idx}
                       className="fb-post-media"
-                      onClick={() => openMediaViewer(post._id, idx)}
+                      onClick={() =>
+                        m.type === "video"
+                          ? openReels(post._id)
+                          : openMediaViewer(post._id, idx)
+                      }
                     >
                       {m.type === "image" && (
                         <img
