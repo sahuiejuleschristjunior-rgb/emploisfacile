@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
@@ -24,15 +24,16 @@ export default function MediaRenderer({
   aspectRatio,
   onClick,
   alt = "",
-  autoPlay,
+  autoPlay = true,
   loop,
-  muted,
+  muted = true,
   controls,
   playsInline = true,
   preload = "metadata",
 }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
+  const videoRef = useRef(null);
 
   const finalSrc = src || media?.url || media?.src;
   const finalPoster = poster || media?.poster || media?.thumbnail;
@@ -61,13 +62,24 @@ export default function MediaRenderer({
 
     const timeout = setTimeout(() => {
       setLoaded(true);
-    }, showVideo ? 2000 : 1500);
+      if (showVideo && videoRef.current) {
+        videoRef.current.play().catch(() => {});
+      }
+    }, showVideo ? 2500 : 1500);
 
     return () => clearTimeout(timeout);
   }, [finalSrc, loaded, showVideo]);
 
-  const handleReady = () => {
+  const handleImageLoad = () => {
     setLoaded(true);
+  };
+
+  const handleVideoLoadedData = () => {
+    setLoaded(true);
+    const videoEl = videoRef.current;
+    if (videoEl) {
+      videoEl.play().catch(() => {});
+    }
   };
 
   const handleError = () => {
@@ -86,7 +98,8 @@ export default function MediaRenderer({
       {showVideo ? (
         <video
           className={`media-element ${mediaClassName} ${loaded ? "is-visible" : ""}`.trim()}
-          onLoadedMetadata={handleReady}
+          ref={videoRef}
+          onLoadedData={handleVideoLoadedData}
           onError={handleError}
           poster={finalPoster}
           autoPlay={autoPlay}
@@ -105,7 +118,7 @@ export default function MediaRenderer({
           alt={alt}
           loading="lazy"
           className={`media-element ${mediaClassName} ${loaded ? "is-visible" : ""}`.trim()}
-          onLoad={handleReady}
+          onLoad={handleImageLoad}
           onError={handleError}
         />
       )}
