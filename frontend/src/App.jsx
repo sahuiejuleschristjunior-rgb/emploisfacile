@@ -39,6 +39,7 @@ import FacebookFeed from "./components/FacebookFeed";
 
 import PhotoViewerPage from "./pages/PhotoViewerPage";
 import RelationsPage from "./pages/RelationsPage";
+import ReelsPage from "./pages/ReelsPage";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -130,6 +131,7 @@ export default function App() {
                 <Route path="/emplois" element={<EmploisPage />} />
                 <Route path="/emplois/:id" element={<JobDetailPage />} />
                 <Route path="/likes/:postId" element={<LikesPage />} />
+                <Route path="/reels" element={<ReelsPage />} />
 
                 <Route
                   path="/recruiter/dashboard"

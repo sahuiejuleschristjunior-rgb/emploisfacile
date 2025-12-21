@@ -90,6 +90,40 @@ exports.list = async (req, res) => {
 };
 
 /* ============================================================
+   📌 LISTE DES POSTS VIDÉO
+============================================================ */
+exports.listVideoPosts = async (req, res) => {
+  try {
+    const posts = await Post.find({ media: { $elemMatch: { type: "video" } } })
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    const formatted = posts
+      .map((p) => {
+        const videoMedia = Array.isArray(p.media)
+          ? p.media.find((m) => m.type === "video")
+          : null;
+
+        if (!videoMedia) return null;
+
+        return {
+          _id: p._id,
+          media: videoMedia.url,
+          user: p.user ? { _id: p.user._id, name: p.user.name } : null,
+          likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
+          commentsCount: Array.isArray(p.comments) ? p.comments.length : 0,
+          createdAt: p.createdAt,
+        };
+      })
+      .filter(Boolean);
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: "Erreur chargement vidéos" });
+  }
+};
+
+/* ============================================================
    📌 CRÉER UN POST
 ============================================================ */
 exports.create = async (req, res) => {

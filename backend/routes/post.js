@@ -68,6 +68,9 @@ router.get("/paginated", auth, postCtrl.listPaginated);
 // ➤ Liste complète des posts
 router.get("/", auth, postCtrl.list);
 
+// ➤ Liste des posts vidéo
+router.get("/videos", auth, postCtrl.listVideoPosts);
+
 // ⭐⭐⭐ ROUTE PUBLIC PROFILE (placer AVANT les routes dynamiques !)
 router.get("/user/:id", auth, postCtrl.getPostsByUser);
 
