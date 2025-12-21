@@ -3,6 +3,7 @@ const Notification = require("../models/Notification");
 const fs = require("fs");
 const path = require("path");
 const { getIO } = require("../socket");
+const { buildMediaPayload } = require("../utils/mediaPayloadBuilder");
 
 /* ============================================================
    🔥 UTILITAIRE — NOTIFICATION + SOCKET
@@ -142,14 +143,9 @@ exports.create = async (req, res) => {
     }
 
     if (req.files?.length) {
-      const uploaded = req.files.map((f) => ({
-        url: "/uploads/" + f.filename,
-        type: f.mimetype.startsWith("image")
-          ? "image"
-          : f.mimetype.startsWith("video")
-          ? "video"
-          : "audio",
-      }));
+      const uploaded = req.files
+        .map((file) => buildMediaPayload(file))
+        .filter(Boolean);
 
       media = [...media, ...uploaded];
     }
@@ -185,24 +181,9 @@ exports.comment = async (req, res) => {
     // fichier venant de multer.single("media") ou .array()
     let media = null;
     if (req.file) {
-      media = {
-        url: "/uploads/" + req.file.filename,
-        type: req.file.mimetype.startsWith("image")
-          ? "image"
-          : req.file.mimetype.startsWith("video")
-          ? "video"
-          : "audio",
-      };
+      media = buildMediaPayload(req.file);
     } else if (req.files && req.files[0]) {
-      const f = req.files[0];
-      media = {
-        url: "/uploads/" + f.filename,
-        type: f.mimetype.startsWith("image")
-          ? "image"
-          : f.mimetype.startsWith("video")
-          ? "video"
-          : "audio",
-      };
+      media = buildMediaPayload(req.files[0]);
     }
 
     if (!text && !media) {
@@ -339,24 +320,9 @@ exports.reply = async (req, res) => {
 
     let media = null;
     if (req.file) {
-      media = {
-        url: "/uploads/" + req.file.filename,
-        type: req.file.mimetype.startsWith("image")
-          ? "image"
-          : req.file.mimetype.startsWith("video")
-          ? "video"
-          : "audio",
-      };
+      media = buildMediaPayload(req.file);
     } else if (req.files && req.files[0]) {
-      const f = req.files[0];
-      media = {
-        url: "/uploads/" + f.filename,
-        type: f.mimetype.startsWith("image")
-          ? "image"
-          : f.mimetype.startsWith("video")
-          ? "video"
-          : "audio",
-      };
+      media = buildMediaPayload(req.files[0]);
     }
 
     if (!text && !media) {

@@ -6,6 +6,7 @@ const User = require("../models/User");
 const Notification = require("../models/Notification");
 const { getIO } = require("../socket");
 const { validatePageName, generatePageSlug } = require("../utils/pageNameRules");
+const { buildMediaPayload } = require("../utils/mediaPayloadBuilder");
 
 const uploadDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -49,19 +50,6 @@ function normalizeCategories(input) {
   }
 
   return unique;
-}
-
-function buildUploadPayload(file) {
-  if (!file) return null;
-  const mime = file.mimetype || "";
-  return {
-    url: "/uploads/" + file.filename,
-    type: mime.startsWith("image")
-      ? "image"
-      : mime.startsWith("video")
-      ? "video"
-      : "audio",
-  };
 }
 
 async function pushPageFollowNotification(targetUserId, fromUserId, pageId) {
@@ -391,7 +379,9 @@ exports.createPagePost = async (req, res) => {
     }
 
     if (req.files?.length) {
-      const uploaded = req.files.map((f) => buildUploadPayload(f));
+      const uploaded = req.files
+        .map((file) => buildMediaPayload(file))
+        .filter(Boolean);
       media = [...media, ...uploaded];
     }
 
