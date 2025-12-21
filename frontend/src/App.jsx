@@ -40,6 +40,7 @@ import FacebookFeed from "./components/FacebookFeed";
 import PhotoViewerPage from "./pages/PhotoViewerPage";
 import RelationsPage from "./pages/RelationsPage";
 import ReelsPage from "./pages/ReelsPage";
+import PagesFeed from "./pages/PagesFeed";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -97,9 +98,10 @@ export default function App() {
                 }
               >
                 {/* Groupe /fb avec colonnes latérales sur desktop */}
-                <Route path="/fb" element={<Outlet />}>
-                  <Route index element={<FacebookFeed />} />
-                  <Route path="post/:id" element={<PostPage />} />
+                  <Route path="/fb" element={<Outlet />}>
+                    <Route index element={<FacebookFeed />} />
+                    <Route path="post/:id" element={<PostPage />} />
+                    <Route path="pages-feed" element={<PagesFeed />} />
 
                   <Route
                     path="dashboard"
