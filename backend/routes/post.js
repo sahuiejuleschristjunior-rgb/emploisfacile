@@ -42,8 +42,24 @@ const allowedTypes = [
   "audio/wav",
 ];
 
+const allowedExtensions = [
+  ".png",
+  ".jpeg",
+  ".jpg",
+  ".webp",
+  ".mp4",
+  ".mov",
+  ".m4v",
+  ".avi",
+  ".mpeg",
+  ".mp3",
+  ".wav",
+];
+
 function fileFilter(req, file, cb) {
-  if (!allowedTypes.includes(file.mimetype)) {
+  const ext = (path.extname(file.originalname) || "").toLowerCase();
+
+  if (!allowedTypes.includes(file.mimetype) && !allowedExtensions.includes(ext)) {
     return cb(new Error("Format non supporté"), false);
   }
   cb(null, true);
