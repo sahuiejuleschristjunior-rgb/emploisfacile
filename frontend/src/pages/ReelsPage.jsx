@@ -11,9 +11,11 @@ export default function ReelsPage() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [soundEnabled, setSoundEnabled] = useState(false);
 
   const containerRef = useRef(null);
   const videoRefs = useRef([]);
+  const hasUnlockedSound = useRef(false);
 
   const selectedVideoId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -67,10 +69,15 @@ export default function ReelsPage() {
       (entries) => {
         entries.forEach((entry) => {
           const videoEl = entry.target;
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          const isVisibleEnough = entry.isIntersecting && entry.intersectionRatio >= 0.7;
+
+          if (isVisibleEnough) {
             videoRefs.current.forEach((v) => {
               if (v && v !== videoEl) v.pause();
             });
+
+            videoEl.muted = !soundEnabled;
+            videoEl.defaultMuted = !soundEnabled;
             videoEl.play().catch(() => {});
           } else {
             videoEl.pause();
@@ -78,7 +85,7 @@ export default function ReelsPage() {
         });
       },
       {
-        threshold: 0.6,
+        threshold: 0.7,
         root: containerRef.current,
       }
     );
@@ -88,7 +95,16 @@ export default function ReelsPage() {
     });
 
     return () => observer.disconnect();
-  }, [videos]);
+  }, [soundEnabled, videos]);
+
+  useEffect(() => {
+    videoRefs.current.forEach((video) => {
+      if (video) {
+        video.muted = !soundEnabled;
+        video.defaultMuted = !soundEnabled;
+      }
+    });
+  }, [soundEnabled]);
 
   useEffect(() => {
     if (!videos.length) return;
@@ -105,6 +121,22 @@ export default function ReelsPage() {
       el.play().catch(() => {});
     }
   }, [selectedVideoId, videos]);
+
+  const handleEnableSound = useCallback(
+    (videoEl) => {
+      if (hasUnlockedSound.current) return;
+
+      hasUnlockedSound.current = true;
+      setSoundEnabled(true);
+
+      if (videoEl) {
+        videoEl.muted = false;
+        videoEl.defaultMuted = false;
+        videoEl.play().catch(() => {});
+      }
+    },
+    []
+  );
 
   return (
     <div className="reels-page">
@@ -123,11 +155,12 @@ export default function ReelsPage() {
                 videoRefs.current[index] = el;
               }}
               className="reels-video"
-              muted
+              muted={!soundEnabled}
               loop
               playsInline
               preload="metadata"
               src={getImageUrl(video.media)}
+              onClick={() => handleEnableSound(videoRefs.current[index])}
             />
 
             <div className="reels-overlay">
