@@ -5,10 +5,11 @@ html, body, #root {
   padding: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
-  height: 100vh;
-  overflow: hidden !important;
+  min-height: 100vh;
   background: #020617;
   box-sizing: border-box !important;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ——————— Neutralisation totale de Vite ——————— */
