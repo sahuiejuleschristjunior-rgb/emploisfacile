@@ -8,7 +8,7 @@
 
 .fb-app {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   background: #000;
   color: #fff;
   display: flex;
@@ -23,9 +23,11 @@
 }
 
 .fb-app-body--solo {
-  padding-top: var(--fb-header-height);
-  height: 100vh;
+  height: calc(100vh - var(--fb-header-height));
+  min-height: calc(100vh - var(--fb-header-height));
   box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .fb-compact-shell {
@@ -35,8 +37,10 @@
 }
 
 .fb-compact-body {
-  padding: 76px 0 0;
-  margin-top: 72px;
+  min-height: calc(100vh - var(--fb-header-height));
+  padding-top: var(--fb-header-height);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .fb-layout--header-only {
@@ -49,8 +53,8 @@
   flex: 1;
   display: flex;
   justify-content: center;
-  height: 100vh;
-  padding-top: var(--fb-header-height);
+  height: calc(100vh - var(--fb-header-height));
+  min-height: calc(100vh - var(--fb-header-height));
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -349,6 +353,7 @@
   height: 100%;
   overflow-y: auto;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ========================= */
