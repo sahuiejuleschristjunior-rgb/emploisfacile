@@ -6,6 +6,18 @@ import { getImageUrl } from "../utils/imageUtils";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 const POSTS_PER_PAGE = 5;
+const AGE_MIN_LIMIT = 13;
+const AGE_MAX_LIMIT = 65;
+const COUNTRY_SUGGESTIONS = ["Côte d'Ivoire", "Sénégal", "Cameroun", "Bénin", "Burkina Faso"];
+const AUDIENCE_CATEGORIES = [
+  "Tout",
+  "Emploi",
+  "Services",
+  "Immobilier",
+  "Vente",
+  "Formation",
+  "Autre",
+];
 
 function decodeUserId(token) {
   if (!token) return null;
@@ -144,6 +156,15 @@ export default function AdsCreate() {
   const [savedPostId, setSavedPostId] = useState(null);
   const [draftSaved, setDraftSaved] = useState(false);
   const [objective, setObjective] = useState("");
+  const [audience, setAudience] = useState({
+    country: "",
+    city: "",
+    district: "",
+    ageMin: "",
+    ageMax: "",
+    category: "",
+  });
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   const [newText, setNewText] = useState("");
   const [newLink, setNewLink] = useState("");
@@ -154,32 +175,50 @@ export default function AdsCreate() {
 
   useEffect(() => {
     const storedDraftRaw = typeof window !== "undefined" ? localStorage.getItem("adsDraftV1") : null;
-    if (!storedDraftRaw) return;
+    if (storedDraftRaw) {
+      try {
+        const storedDraft = JSON.parse(storedDraftRaw);
+        if (storedDraft?.mode === "existing" || storedDraft?.mode === "new") {
+          setActiveTab(storedDraft.mode);
+        }
 
-    try {
-      const storedDraft = JSON.parse(storedDraftRaw);
-      if (storedDraft?.mode === "existing" || storedDraft?.mode === "new") {
-        setActiveTab(storedDraft.mode);
-      }
+        if (storedDraft?.postId) {
+          setSavedPostId(storedDraft.postId);
+        }
 
-      if (storedDraft?.postId) {
-        setSavedPostId(storedDraft.postId);
-      }
+        if (typeof storedDraft?.text === "string") {
+          setNewText(storedDraft.text);
+        }
 
-      if (typeof storedDraft?.text === "string") {
-        setNewText(storedDraft.text);
-      }
+        if (typeof storedDraft?.link === "string") {
+          setNewLink(storedDraft.link);
+        }
 
-      if (typeof storedDraft?.link === "string") {
-        setNewLink(storedDraft.link);
-      }
+        if (typeof storedDraft?.objective === "string") {
+          setObjective(storedDraft.objective);
+        }
 
-      if (typeof storedDraft?.objective === "string") {
-        setObjective(storedDraft.objective);
+        if (storedDraft?.audience) {
+          setAudience({
+            country: storedDraft.audience.country || "",
+            city: storedDraft.audience.city || "",
+            district: storedDraft.audience.district || "",
+            ageMin:
+              typeof storedDraft.audience.ageMin === "number" && !Number.isNaN(storedDraft.audience.ageMin)
+                ? String(storedDraft.audience.ageMin)
+                : "",
+            ageMax:
+              typeof storedDraft.audience.ageMax === "number" && !Number.isNaN(storedDraft.audience.ageMax)
+                ? String(storedDraft.audience.ageMax)
+                : "",
+            category: storedDraft.audience.category || "",
+          });
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.debug("ADS draft parse error", err);
       }
-    } catch (err) {
-      if (import.meta.env.DEV) console.debug("ADS draft parse error", err);
     }
+    setDraftLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -269,42 +308,132 @@ export default function AdsCreate() {
     activeTab === "existing"
       ? Boolean(selectedPost)
       : Boolean(newText.trim() || newLink.trim() || newMedia.length > 0);
+  const canProceedToStep3 = Boolean(objective);
+  const ageMinNumber = audience.ageMin ? Number(audience.ageMin) : null;
+  const ageMaxNumber = audience.ageMax ? Number(audience.ageMax) : null;
+  const ageError = (() => {
+    if (ageMinNumber !== null && ageMinNumber < AGE_MIN_LIMIT) return `Âge minimum ${AGE_MIN_LIMIT} ans minimum`;
+    if (ageMaxNumber !== null && ageMaxNumber > AGE_MAX_LIMIT) return `Âge maximum ${AGE_MAX_LIMIT} ans`;
+    if (ageMinNumber !== null && ageMaxNumber !== null && ageMinNumber > ageMaxNumber)
+      return "L'âge minimum doit être inférieur ou égal à l'âge maximum";
+    return "";
+  })();
+  const canContinueToStep4 = Boolean(audience.country.trim()) && !ageError;
+  const audienceSummaryText = getAudienceSummaryText();
+
+  const normalizeAudience = () => ({
+    country: audience.country.trim(),
+    city: audience.city.trim(),
+    district: audience.district.trim(),
+    ageMin: ageMinNumber !== null ? ageMinNumber : null,
+    ageMax: ageMaxNumber !== null ? ageMaxNumber : null,
+    category: audience.category ? audience.category : null,
+  });
+
+  const persistDraft = (updater) => {
+    if (typeof window === "undefined") return;
+    try {
+      const storedRaw = localStorage.getItem("adsDraftV1");
+      const storedDraft = storedRaw ? JSON.parse(storedRaw) : {};
+      const updatedDraft = typeof updater === "function" ? updater(storedDraft) : { ...storedDraft, ...updater };
+      updatedDraft.savedAt = new Date().toISOString();
+      localStorage.setItem("adsDraftV1", JSON.stringify(updatedDraft));
+    } catch (err) {
+      if (import.meta.env.DEV) console.debug("ADS draft persist error", err);
+    }
+  };
+
+  const buildDraftPayload = () => {
+    const baseDraft = {
+      mode: activeTab,
+      objective: objective || undefined,
+      savedAt: new Date().toISOString(),
+      audience: normalizeAudience(),
+    };
+
+    return activeTab === "existing"
+      ? {
+          ...baseDraft,
+          postId: selectedPost?._id || savedPostId || null,
+          source: selectedPost?.page ? "page" : "profil",
+        }
+      : {
+          ...baseDraft,
+          text: newText,
+          link: newLink,
+          media: newMedia.map((m) => ({
+            name: m.file?.name,
+            size: m.file?.size,
+            type: m.file?.type,
+          })),
+        };
+  };
 
   const handleContinueToStep2 = () => {
     if (!canProceedToStep2) return;
     setCurrentStep(2);
   };
 
+  const handleContinueToStep3 = () => {
+    if (!canProceedToStep3) return;
+    persistDraft(buildDraftPayload());
+    setCurrentStep(3);
+  };
+
+  const handleContinueToStep4 = () => {
+    if (!canContinueToStep4) return;
+    persistDraft(buildDraftPayload());
+    setCurrentStep(4);
+  };
+
   const handleBackToStep1 = () => setCurrentStep(1);
+  const handleBackToStep2 = () => setCurrentStep(2);
 
   const saveDraft = () => {
-    const baseDraft = {
-      mode: activeTab,
-      objective: objective || undefined,
-      savedAt: new Date().toISOString(),
-    };
-
-    const draft =
-      activeTab === "existing"
-        ? {
-            ...baseDraft,
-            postId: selectedPost?._id || savedPostId || null,
-            source: selectedPost?.page ? "page" : "profil",
-          }
-        : {
-            ...baseDraft,
-            text: newText,
-            link: newLink,
-            media: newMedia.map((m) => ({
-              name: m.file?.name,
-              size: m.file?.size,
-              type: m.file?.type,
-            })),
-          };
-
-    localStorage.setItem("adsDraftV1", JSON.stringify(draft));
+    persistDraft(buildDraftPayload());
     setDraftSaved(true);
     setTimeout(() => setDraftSaved(false), 2500);
+  };
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const timeout = setTimeout(() => {
+      persistDraft((draft) => ({
+        ...draft,
+        ...buildDraftPayload(),
+      }));
+    }, 250);
+
+    return () => clearTimeout(timeout);
+  }, [audience, draftLoaded]);
+
+  const getAudienceSummaryText = () => {
+    const parts = [];
+    if (audience.country) parts.push(audience.country);
+    if (audience.city) parts.push(audience.city);
+    if (audience.district) parts.push(audience.district);
+
+    const agePart =
+      ageMinNumber !== null && ageMaxNumber !== null
+        ? `${ageMinNumber}-${ageMaxNumber}`
+        : ageMinNumber !== null
+          ? `${ageMinNumber}+`
+          : ageMaxNumber !== null
+            ? `≤${ageMaxNumber}`
+            : "";
+    if (agePart) parts.push(agePart);
+
+    const categoryPart = audience.category && audience.category !== "Tout" ? `Catégorie: ${audience.category}` : "";
+    if (categoryPart) parts.push(categoryPart);
+
+    if (parts.length === 0) return "";
+    return parts.join(", ");
+  };
+
+  const renderAudienceSummary = () => {
+    const summary = getAudienceSummaryText();
+    if (!summary) return null;
+    return <div className="ads-audience-summary">Audience: {summary}</div>;
   };
 
   return (
@@ -313,9 +442,10 @@ export default function AdsCreate() {
         <div>
           <div className="ads-title">Créer une publicité</div>
           <div className="ads-subtitle">
-            {currentStep === 1
-              ? "Étape 1 · Création ou sélection de la publication."
-              : "Étape 2 · Choix de l'objectif de la campagne."}
+            {currentStep === 1 && "Étape 1 · Création ou sélection de la publication."}
+            {currentStep === 2 && "Étape 2 · Choix de l'objectif de la campagne."}
+            {currentStep === 3 && "Étape 3 · Audience et ciblage."}
+            {currentStep === 4 && "Étape 4 · Budget & durée (bientôt disponible)."}
           </div>
         </div>
         <div className="ads-meta-row">
@@ -332,8 +462,10 @@ export default function AdsCreate() {
         >
           2. Objectif
         </div>
-        <div className="ads-step disabled">3. Audience</div>
-        <div className="ads-step disabled">4. Budget & durée</div>
+        <div className={`ads-step ${currentStep === 3 ? "active" : canProceedToStep3 ? "" : "disabled"}`}>
+          3. Audience
+        </div>
+        <div className={`ads-step ${currentStep === 4 ? "active" : "disabled"}`}>4. Budget & durée</div>
       </div>
 
       {currentStep === 1 && (
@@ -433,22 +565,23 @@ export default function AdsCreate() {
                         <div className="ads-subtitle">Sponsorisé</div>
                       </div>
                     </div>
-                    <div className="ads-preview-text">{selectedPost.text}</div>
-                    {selectedPost.media?.[0]?.url && (
-                      <div
-                        className="ads-preview-media"
-                        style={{ backgroundImage: `url(${getImageUrl(selectedPost.media[0].url)})` }}
-                      />
-                    )}
-                    {selectedPost.link && (
-                      <a className="ads-preview-link" href={selectedPost.link} target="_blank" rel="noreferrer">
-                        {selectedPost.link}
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
+                  <div className="ads-preview-text">{selectedPost.text}</div>
+                  {selectedPost.media?.[0]?.url && (
+                    <div
+                      className="ads-preview-media"
+                      style={{ backgroundImage: `url(${getImageUrl(selectedPost.media[0].url)})` }}
+                    />
+                  )}
+                  {selectedPost.link && (
+                    <a className="ads-preview-link" href={selectedPost.link} target="_blank" rel="noreferrer">
+                      {selectedPost.link}
+                    </a>
+                  )}
+                  {renderAudienceSummary()}
+                </div>
+              )}
             </div>
+          </div>
           ) : (
             <div className="ads-wizard-grid">
               <div className="ads-panel">
@@ -500,20 +633,21 @@ export default function AdsCreate() {
                     </div>
                   </div>
                   <div className="ads-preview-text">{newText || "Texte de votre publicité"}</div>
-                  {newMedia[0]?.preview && (
-                    <div
-                      className="ads-preview-media"
-                      style={{ backgroundImage: `url(${newMedia[0].preview})` }}
-                    />
-                  )}
-                  {newLink && (
-                    <a className="ads-preview-link" href={newLink} target="_blank" rel="noreferrer">
-                      {newLink}
-                    </a>
-                  )}
-                </div>
+                {newMedia[0]?.preview && (
+                  <div
+                    className="ads-preview-media"
+                    style={{ backgroundImage: `url(${newMedia[0].preview})` }}
+                  />
+                )}
+                {newLink && (
+                  <a className="ads-preview-link" href={newLink} target="_blank" rel="noreferrer">
+                    {newLink}
+                  </a>
+                )}
+                {renderAudienceSummary()}
               </div>
             </div>
+          </div>
           )}
 
           <div className="ads-footer">
@@ -597,6 +731,7 @@ export default function AdsCreate() {
                     : "À choisir"}
                 </strong>
               </div>
+              {renderAudienceSummary()}
             </div>
           </div>
 
@@ -604,10 +739,207 @@ export default function AdsCreate() {
             <button className="ads-btn" type="button" onClick={handleBackToStep1}>
               Retour
             </button>
-            <button className="ads-btn primary" type="button" onClick={saveDraft} disabled={!objective}>
+            <button className="ads-btn primary" type="button" onClick={handleContinueToStep3} disabled={!objective}>
               Continuer
             </button>
             {draftSaved && <span className="ads-success">Brouillon enregistré</span>}
+          </div>
+        </div>
+      )}
+
+      {currentStep === 3 && (
+        <div className="ads-wizard-grid">
+          <div className="ads-panel">
+            <div className="ads-panel-head">
+              <div>
+                <div className="ads-panel-title">Audience</div>
+                <div className="ads-subtitle">Définissez qui verra votre publicité.</div>
+              </div>
+            </div>
+
+            <div className="ads-audience-grid">
+              <div className="ads-field">
+                <label className="ads-label" htmlFor="audience-country">
+                  Pays <span className="ads-required">*</span>
+                </label>
+                <input
+                  id="audience-country"
+                  className="ads-input"
+                  type="text"
+                  list="ads-country-suggestions"
+                  placeholder="Ex: Côte d'Ivoire"
+                  value={audience.country}
+                  onChange={(e) => setAudience((prev) => ({ ...prev, country: e.target.value }))}
+                  required
+                />
+                <datalist id="ads-country-suggestions">
+                  {COUNTRY_SUGGESTIONS.map((country) => (
+                    <option key={country} value={country} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="ads-field">
+                <label className="ads-label" htmlFor="audience-city">
+                  Commune
+                </label>
+                <input
+                  id="audience-city"
+                  className="ads-input"
+                  type="text"
+                  placeholder="Ex: Abidjan"
+                  value={audience.city}
+                  onChange={(e) => setAudience((prev) => ({ ...prev, city: e.target.value }))}
+                />
+              </div>
+
+              <div className="ads-field">
+                <label className="ads-label" htmlFor="audience-district">
+                  Quartier
+                </label>
+                <input
+                  id="audience-district"
+                  className="ads-input"
+                  type="text"
+                  placeholder="Ex: Cocody"
+                  value={audience.district}
+                  onChange={(e) => setAudience((prev) => ({ ...prev, district: e.target.value }))}
+                />
+              </div>
+
+              <div className="ads-field">
+                <label className="ads-label">Âge</label>
+                <div className="ads-field-row">
+                  <input
+                    className="ads-input"
+                    type="number"
+                    min={AGE_MIN_LIMIT}
+                    max={AGE_MAX_LIMIT}
+                    placeholder="Min"
+                    value={audience.ageMin}
+                    onChange={(e) => setAudience((prev) => ({ ...prev, ageMin: e.target.value }))}
+                  />
+                  <span className="ads-separator">—</span>
+                  <input
+                    className="ads-input"
+                    type="number"
+                    min={AGE_MIN_LIMIT}
+                    max={AGE_MAX_LIMIT}
+                    placeholder="Max"
+                    value={audience.ageMax}
+                    onChange={(e) => setAudience((prev) => ({ ...prev, ageMax: e.target.value }))}
+                  />
+                </div>
+                <div className="ads-subtext">Laisser vide si vous ne souhaitez pas filtrer l'âge.</div>
+                {ageError && <div className="ads-error small">{ageError}</div>}
+              </div>
+
+              <div className="ads-field">
+                <label className="ads-label" htmlFor="audience-category">
+                  Catégorie
+                </label>
+                <select
+                  id="audience-category"
+                  className="ads-input"
+                  value={audience.category}
+                  onChange={(e) => setAudience((prev) => ({ ...prev, category: e.target.value }))}
+                >
+                  <option value="">Sélectionner</option>
+                  {AUDIENCE_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="ads-panel">
+            <div className="ads-panel-head">
+              <div className="ads-panel-title">Aperçu</div>
+              <span className="ads-status-badge">Brouillon</span>
+            </div>
+            <div className="ads-preview-card">
+              <div className="ads-preview-header">
+                <div className="ads-avatar" />
+                <div>
+                  <div className="ads-preview-author">
+                    {selectedPost?.page?.name || selectedPost?.user?.name || "Votre publication"}
+                  </div>
+                  <div className="ads-subtitle">Sponsorisé</div>
+                </div>
+              </div>
+              <div className="ads-preview-text">
+                {selectedPost?.text || newText || "Texte de votre publicité"}
+              </div>
+              {(selectedPost?.media?.[0]?.url || newMedia[0]?.preview) && (
+                <div
+                  className="ads-preview-media"
+                  style={{
+                    backgroundImage: `url(${selectedPost?.media?.[0]?.url
+                      ? getImageUrl(selectedPost.media[0].url)
+                      : newMedia[0]?.preview || ""})`,
+                  }}
+                />
+              )}
+              {(selectedPost?.link || newLink) && (
+                <a
+                  className="ads-preview-link"
+                  href={selectedPost?.link || newLink}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {selectedPost?.link || newLink}
+                </a>
+              )}
+
+              <div className="ads-objective-summary">
+                Audience : <strong>{audienceSummaryText || "À compléter"}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="ads-footer">
+            <button className="ads-btn" type="button" onClick={handleBackToStep2}>
+              Retour
+            </button>
+            <button className="ads-btn primary" type="button" onClick={handleContinueToStep4} disabled={!canContinueToStep4}>
+              Continuer
+            </button>
+            {!canContinueToStep4 && <span className="ads-subtext">Renseignez au moins le pays.</span>}
+            {draftSaved && <span className="ads-success">Brouillon enregistré</span>}
+          </div>
+        </div>
+      )}
+
+      {currentStep === 4 && (
+        <div className="ads-disabled-step">
+          <div className="ads-panel">
+            <div className="ads-panel-head">
+              <div className="ads-panel-title">Budget & durée</div>
+              <span className="ads-status-badge">Bientôt</span>
+            </div>
+            <div className="ads-disabled-overlay">
+              <div className="ads-disabled-text">
+                Cette étape arrive bientôt. Vos informations d'audience ont été enregistrées.
+              </div>
+            </div>
+            <div className="ads-preview-card muted">
+              <div className="ads-preview-text">
+                Budget quotidien, durée et récapitulatif final seront disponibles dans une prochaine mise à jour.
+              </div>
+              {renderAudienceSummary()}
+            </div>
+          </div>
+
+          <div className="ads-footer">
+            <button className="ads-btn" type="button" onClick={handleBackToStep2}>
+              Retour
+            </button>
+            <button className="ads-btn primary" type="button" disabled>
+              Lancement bientôt
+            </button>
           </div>
         </div>
       )}
