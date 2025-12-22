@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
-import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
@@ -263,5 +262,5 @@ export default function PublicProfile() {
     );
   };
 
-  return <FacebookLayout headerOnly>{renderContent()}</FacebookLayout>;
+  return renderContent();
 }
