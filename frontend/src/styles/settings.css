@@ -4,6 +4,9 @@
   min-height: calc(100vh - 72px);
   background: #0f172a;
   margin-top: 12px;
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
 }
 
 .settings-header {

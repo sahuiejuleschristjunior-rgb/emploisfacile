@@ -17,6 +17,9 @@
   color: var(--fb-text);
   overflow-x: hidden;
   box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
 }
 
 .profil-file-input {
