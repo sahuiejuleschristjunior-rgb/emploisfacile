@@ -3,9 +3,10 @@ import CreatePostFB from "../components/CreatePostFB";
 import CommentsModal from "../components/CommentsModal";
 import MediaRenderer from "../components/MediaRenderer";
 import FBIcon from "../components/FBIcon";
+import SkeletonPost from "../components/SkeletonPost";
+import StoriesFB from "../components/StoriesFB";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import "../styles/facebook-feed.css";
-import "../styles/pages-feed.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -241,166 +242,160 @@ export default function PagesFeed() {
   );
 
   return (
-    <div className="pages-feed">
-      <div className="pages-feed-wrapper">
-        <div className="pages-feed-main">
-          <CreatePostFB
-            onOptimisticPost={addOptimisticPost}
-            onPostCreated={replaceOptimisticPost}
-            onPostError={removeOptimisticPost}
-          />
+    <div className="fb-feed">
+      <CreatePostFB
+        onOptimisticPost={addOptimisticPost}
+        onPostCreated={replaceOptimisticPost}
+        onPostError={removeOptimisticPost}
+      />
 
-          {loading && (
-            <div className="pages-feed-loader">Chargement du feed…</div>
-          )}
+      <StoriesFB />
 
-          {!loading &&
-            posts.map((post) => {
-              const isPagePost = post.authorType === "page" || Boolean(post.page);
-              const postAvatarStyle = getAvatarStyle(
-                isPagePost ? post.page?.avatar : post.user?.avatar
-              );
-              const displayName = isPagePost ? post.page?.name : post.user?.name;
-              const likes = post.likes?.length || 0;
-              const commentsCount = post.comments?.length || 0;
+      {loading && [...Array(4)].map((_, i) => <SkeletonPost key={i} />)}
 
-              return (
-                <article key={post._id} className="fb-post">
-                  <div className="fb-post-header">
-                    <div className="fb-post-avatar" style={postAvatarStyle} />
-                    <div className="fb-post-user">
-                      <div className="fb-post-author">{displayName}</div>
-                      <div className="fb-post-meta">
-                        {new Date(post.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-                    <button
-                      className="fb-post-menu-btn"
-                      onClick={() => {
-                        if (window.confirm("Supprimer la publication ?")) {
-                          handleDeletePost(post._id);
-                        }
-                      }}
-                    >
-                      ⋮
-                    </button>
+      {!loading &&
+        posts.map((post) => {
+          const isPagePost = post.authorType === "page" || Boolean(post.page);
+          const postAvatarStyle = getAvatarStyle(
+            isPagePost ? post.page?.avatar : post.user?.avatar
+          );
+          const displayName = isPagePost ? post.page?.name : post.user?.name;
+          const likes = post.likes?.length || 0;
+          const commentsCount = post.comments?.length || 0;
+
+          return (
+            <article key={post._id} className="fb-post">
+              <div className="fb-post-header">
+                <div className="fb-post-avatar" style={postAvatarStyle} />
+                <div className="fb-post-user">
+                  <div className="fb-post-author">{displayName}</div>
+                  <div className="fb-post-meta">
+                    {new Date(post.createdAt).toLocaleString()}
                   </div>
+                </div>
+                <button
+                  className="fb-post-menu-btn"
+                  onClick={() => {
+                    if (window.confirm("Supprimer la publication ?")) {
+                      handleDeletePost(post._id);
+                    }
+                  }}
+                >
+                  ⋮
+                </button>
+              </div>
 
-                  {post.text && (
-                    <div className="fb-post-text">
-                      {truncateText(post.text, post._id)}
-                    </div>
-                  )}
+              {post.text && (
+                <div className="fb-post-text">
+                  {truncateText(post.text, post._id)}
+                </div>
+              )}
 
-                  {post.media?.length > 0 && (
-                    <div
-                      className={
-                        post.media.length === 1
-                          ? "fb-post-media-wrapper fb-post-media-wrapper--single"
-                          : "fb-post-media-wrapper fb-post-media-wrapper--multi"
-                      }
-                    >
-                      {post.media.map((m, idx) => {
-                        const mediaUrl = resolveMediaUrl(m);
-                        const isVideo =
-                          (m.type && m.type.startsWith("video")) ||
-                          /(mp4|webm|mov)$/i.test(m.url || "");
+              {post.media?.length > 0 && (
+                <div
+                  className={
+                    post.media.length === 1
+                      ? "fb-post-media-wrapper fb-post-media-wrapper--single"
+                      : "fb-post-media-wrapper fb-post-media-wrapper--multi"
+                  }
+                >
+                  {post.media.map((m, idx) => {
+                    const mediaUrl = resolveMediaUrl(m);
+                    const isVideo =
+                      (m.type && m.type.startsWith("video")) ||
+                      /(mp4|webm|mov)$/i.test(m.url || "");
 
-                        if (!mediaUrl) return null;
+                    if (!mediaUrl) return null;
 
-                        return (
-                          <div key={idx} className="fb-post-media">
-                            <MediaRenderer
-                              media={m}
-                              src={mediaUrl}
-                              type={m.type}
-                              mimeType={m.mimeType}
-                              mediaClassName={
-                                isVideo ? "fb-post-video" : "fb-post-image"
-                              }
-                              className="fb-post-media-renderer"
-                              alt=""
-                              muted={isVideo}
-                              autoPlay={m.autoPlay}
-                            />
+                    return (
+                      <div key={idx} className="fb-post-media">
+                        <MediaRenderer
+                          media={m}
+                          src={mediaUrl}
+                          type={m.type}
+                          mimeType={m.mimeType}
+                          mediaClassName={
+                            isVideo ? "fb-post-video" : "fb-post-image"
+                          }
+                          className="fb-post-media-renderer"
+                          alt=""
+                          muted={isVideo}
+                          autoPlay={m.autoPlay}
+                        />
 
-                            {post.media.length > 4 &&
-                              idx === 3 && (
-                                <div className="fb-post-media-more">
-                                  +{post.media.length - 4}
-                                </div>
-                              )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                        {post.media.length > 4 &&
+                          idx === 3 && (
+                            <div className="fb-post-media-more">
+                              +{post.media.length - 4}
+                            </div>
+                          )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-                  <div className="fb-post-stats">
-                    <div className="fb-post-stats-left">
-                      {likes > 0 && (
-                        <>
-                          <span className="fb-reactions-bubble">
-                            <FBIcon name="like" size={14} />
-                          </span>
-                          <button
-                            type="button"
-                            className="fb-post-stats-text"
-                            style={textButtonStyle}
-                          >
-                            {likes} j’aime
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="fb-post-stats-right">
+              <div className="fb-post-stats">
+                <div className="fb-post-stats-left">
+                  {likes > 0 && (
+                    <>
+                      <span className="fb-reactions-bubble">
+                        <FBIcon name="like" size={14} />
+                      </span>
                       <button
                         type="button"
-                        className="fb-post-stats-text fb-comments-link"
+                        className="fb-post-stats-text"
                         style={textButtonStyle}
-                        onClick={() => openCommentsModal(post)}
                       >
-                        {commentsCount} commentaires
+                        {likes} j’aime
                       </button>
-                    </div>
-                  </div>
+                    </>
+                  )}
+                </div>
 
-                  <div className="fb-post-actions">
-                    <button
-                      className="fb-post-action-btn"
-                      onClick={() => handleLike(post)}
-                    >
-                      <FBIcon name="like" size={18} /> J’aime
-                    </button>
+                <div className="fb-post-stats-right">
+                  <button
+                    type="button"
+                    className="fb-post-stats-text fb-comments-link"
+                    style={textButtonStyle}
+                    onClick={() => openCommentsModal(post)}
+                  >
+                    {commentsCount} commentaires
+                  </button>
+                </div>
+              </div>
 
-                    <button
-                      className="fb-post-action-btn"
-                      onClick={() => openCommentsModal(post)}
-                    >
-                      <FBIcon name="comment" size={18} /> Commenter
-                    </button>
+              <div className="fb-post-actions">
+                <button
+                  className="fb-post-action-btn"
+                  onClick={() => handleLike(post)}
+                >
+                  <FBIcon name="like" size={18} /> J’aime
+                </button>
 
-                    <button
-                      className="fb-post-action-btn"
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/post/${post._id}`
-                        )
-                      }
-                    >
-                      <FBIcon name="share" size={18} /> Partager
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
+                <button
+                  className="fb-post-action-btn"
+                  onClick={() => openCommentsModal(post)}
+                >
+                  <FBIcon name="comment" size={18} /> Commenter
+                </button>
 
-          {loadingMore && (
-            <div className="pages-feed-loader">Chargement des contenus…</div>
-          )}
-        </div>
-      </div>
+                <button
+                  className="fb-post-action-btn"
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/post/${post._id}`
+                    )
+                  }
+                >
+                  <FBIcon name="share" size={18} /> Partager
+                </button>
+              </div>
+            </article>
+          );
+        })}
+
+      {loadingMore && <SkeletonPost />}
 
       {isCommentsModalOpen && activePostForComments && (
         <CommentsModal
