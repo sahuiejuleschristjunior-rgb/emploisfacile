@@ -62,9 +62,28 @@ function buildPaymentLink(campaignId) {
 
 async function maybeSendAwaitingPaymentEmail(campaign) {
   try {
-    if (!campaign || campaign.payment?.emailSentAt) return;
+    console.log("EMAIL_TRIGGER_CALLED");
+
+    if (!campaign) {
+      console.log("EMAIL_STATUS", "NO_CAMPAIGN");
+      return;
+    }
+
+    console.log("EMAIL_CAMPAIGN_ID", String(campaign._id || ""));
+    console.log("EMAIL_STATUS", campaign.status || "NO_STATUS");
+
+    if (!campaign.payment?.emailSentAt && (!campaign.post || !campaign.post.user)) {
+      await campaign.populate({ path: "post", populate: [{ path: "user", select: "name email" }] });
+    }
+
+    if (campaign.payment?.emailSentAt) {
+      console.log("EMAIL_STATUS", "ALREADY_SENT");
+      return;
+    }
+
     const recipient = campaign.post?.user?.email;
     const recipientName = campaign.post?.user?.name || "client";
+    console.log("EMAIL_TO", recipient || "MISSING_RECIPIENT");
     if (!recipient) return;
 
     const variables = {
@@ -88,6 +107,8 @@ async function maybeSendAwaitingPaymentEmail(campaign) {
       variables,
       "noreply"
     );
+
+    console.log("EMAIL_STATUS", "SEND_OK");
 
     campaign.payment.emailSentAt = new Date();
     await campaign.save();
