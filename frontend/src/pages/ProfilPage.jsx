@@ -1,6 +1,7 @@
 import { useEffect, useState, useId } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
+import Header from "../components/Header";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import "../styles/profil.css";
 
@@ -246,7 +247,12 @@ export default function ProfilPage() {
      LOADING
   ================================================ */
   if (!user || loading) {
-    return <div className="profil-loading">Chargement du profil…</div>;
+    return (
+      <>
+        <Header />
+        <div className="profil-loading">Chargement du profil…</div>
+      </>
+    );
   }
 
   const isOwner = currentUser?._id === profileId;
@@ -275,7 +281,9 @@ export default function ProfilPage() {
      RENDER
   ================================================ */
   return (
-    <div className="profil-wrapper">
+    <>
+      <Header />
+      <div className="profil-wrapper">
       {/* Hidden Upload Inputs */}
       {isOwner && (
         <>
@@ -560,6 +568,7 @@ export default function ProfilPage() {
           onClose={() => setShowPhotoViewer(false)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }

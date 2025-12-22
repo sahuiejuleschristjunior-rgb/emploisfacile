@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
+import Header from "../components/Header";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import "../styles/profil.css";
 
@@ -104,7 +105,12 @@ export default function PublicProfile() {
   }, [photoItems]);
 
   if (loading || !user || !viewer) {
-    return <div className="profil-loading">Chargement…</div>;
+    return (
+      <>
+        <Header />
+        <div className="profil-loading">Chargement…</div>
+      </>
+    );
   }
 
   const isMe = String(viewer._id) === String(user._id);
@@ -122,10 +128,12 @@ export default function PublicProfile() {
       RENDER
   ============================================================ */
   return (
-    <div className="profil-wrapper">
-      <div className="profil-hero">
-        {/* COUVERTURE */}
-        <div className="profil-cover">
+    <>
+      <Header />
+      <div className="profil-wrapper">
+        <div className="profil-hero">
+          {/* COUVERTURE */}
+          <div className="profil-cover">
           <img
             src={user.coverPhoto}
             alt="Couverture du profil"
@@ -257,6 +265,7 @@ export default function PublicProfile() {
           onClose={() => setViewerOpen(false)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
