@@ -301,6 +301,7 @@
   padding: 0 !important;
   margin: 0 !important;
   width: 100% !important;
+  max-width: 100% !important; /* Utilise toute la colonne centrale */
 }
 
 .fb-post-card {
