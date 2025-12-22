@@ -827,7 +827,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
      🚀 RENDER UI
   ============================================================ */
   const header = (
-    <header className="fb-header">
+    <header
+      className="fb-header"
+      onPointerDownCapture={(e) => e.stopPropagation()}
+      onMouseDownCapture={(e) => e.stopPropagation()}
+      onClickCapture={(e) => e.stopPropagation()}
+    >
       <div className="fb-header-inner">
           
           {/* LOGO */}
