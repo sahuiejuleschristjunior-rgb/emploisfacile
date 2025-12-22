@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
+import { useAuth } from "../context/AuthContext";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 
@@ -20,7 +21,7 @@ const fixUrl = (path) => {
 export default function PublicProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const { token, user: authUser } = useAuth();
 
   const [user, setUser] = useState(null);     // Profil visité
   const [viewer, setViewer] = useState(null); // Utilisateur connecté
@@ -34,6 +35,11 @@ export default function PublicProfile() {
       LOAD CONNECTED USER
   ============================================================ */
   useEffect(() => {
+    if (authUser) {
+      setViewer(authUser);
+      return;
+    }
+
     if (!token) return;
 
     fetch(`${API_ROOT}/auth/me`, {
@@ -42,7 +48,7 @@ export default function PublicProfile() {
       .then((res) => res.json())
       .then((data) => data?.user && setViewer(data.user))
       .catch(console.error);
-  }, [token]);
+  }, [authUser, token]);
 
   /* ============================================================
       LOAD PROFILE USER
@@ -51,15 +57,24 @@ export default function PublicProfile() {
     fetch(`${API_ROOT}/auth/user/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) =>
+      .then(async (res) => {
+        const data = await res.json();
+        const payload = data?.user ?? data;
+
+        if (!res.ok || !payload?._id) {
+          throw new Error("Utilisateur introuvable");
+        }
+
         setUser({
-          ...data,
-          avatar: fixUrl(data.avatar),
-          coverPhoto: fixUrl(data.coverPhoto),
-        })
-      )
-      .catch(console.error);
+          ...payload,
+          avatar: fixUrl(payload.avatar),
+          coverPhoto: fixUrl(payload.coverPhoto),
+        });
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [id, token]);
 
   /* ============================================================
@@ -85,20 +100,32 @@ export default function PublicProfile() {
         setPosts(filtered);
         setLoading(false);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [id, token]);
 
-  const photoItems = posts
-    .flatMap((p) =>
-      (p.media || [])
-        .filter((m) => {
-          if (!m?.url) return false;
-          if (m.type) return m.type.startsWith("image");
-          return /(png|jpe?g|webp|gif)$/i.test(m.url);
-        })
-        .map((m, idx) => ({ ...m, url: fixUrl(m.url), key: `${p._id || idx}-${idx}`, fromPost: p?._id }))
-    )
-    .slice(0, 30);
+  const photoItems = useMemo(
+    () =>
+      posts
+        .flatMap((p) =>
+          (p.media || [])
+            .filter((m) => {
+              if (!m?.url) return false;
+              if (m.type) return m.type.startsWith("image");
+              return /(png|jpe?g|webp|gif)$/i.test(m.url);
+            })
+            .map((m, idx) => ({
+              ...m,
+              url: fixUrl(m.url),
+              key: `${p._id || idx}-${idx}`,
+              fromPost: p?._id,
+            }))
+        )
+        .slice(0, 30),
+    [posts]
+  );
 
   useEffect(() => {
     setViewerItems(photoItems);
