@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { getMyPages, getPagePosts } from "../api/pagesApi";
 import "../styles/ads.css";
 import { getImageUrl } from "../utils/imageUtils";
+import { buildPaymentLink, loadLocalCampaigns, upsertLocalCampaign } from "../utils/adsStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 const POSTS_PER_PAGE = 5;
 const AGE_MIN_LIMIT = 13;
 const AGE_MAX_LIMIT = 65;
-const LOCAL_CAMPAIGN_KEY = "campaignDraftV1";
 const COUNTRY_SUGGESTIONS = ["Côte d'Ivoire", "Sénégal", "Cameroun", "Bénin", "Burkina Faso"];
 const AUDIENCE_CATEGORIES = [
   "Tout",
@@ -166,8 +166,8 @@ export default function AdsCreate() {
     category: "",
   });
   const [budget, setBudget] = useState({
-    budgetTotal: "",
-    budgetDaily: "",
+    budgetTotal: null,
+    budgetDaily: null,
     startDate: "",
     endDate: "",
   });
@@ -225,15 +225,23 @@ export default function AdsCreate() {
         }
 
         if (storedDraft?.budget) {
+          const storedBudgetTotalRaw =
+            typeof storedDraft.budget.total === "number" ? storedDraft.budget.total : storedDraft.budget.budgetTotal;
+          const storedBudgetDailyRaw =
+            typeof storedDraft.budget.daily === "number" ? storedDraft.budget.daily : storedDraft.budget.budgetDaily;
+
+          const storedBudgetTotal =
+            typeof storedBudgetTotalRaw === "number" && !Number.isNaN(storedBudgetTotalRaw)
+              ? storedBudgetTotalRaw
+              : null;
+          const storedBudgetDaily =
+            typeof storedBudgetDailyRaw === "number" && !Number.isNaN(storedBudgetDailyRaw)
+              ? storedBudgetDailyRaw
+              : null;
+
           setBudget({
-            budgetTotal:
-              typeof storedDraft.budget.budgetTotal === "number" && !Number.isNaN(storedDraft.budget.budgetTotal)
-                ? String(storedDraft.budget.budgetTotal)
-                : "",
-            budgetDaily:
-              typeof storedDraft.budget.budgetDaily === "number" && !Number.isNaN(storedDraft.budget.budgetDaily)
-                ? String(storedDraft.budget.budgetDaily)
-                : "",
+            budgetTotal: storedBudgetTotal,
+            budgetDaily: storedBudgetDaily,
             startDate: storedDraft.budget.startDate || "",
             endDate: storedDraft.budget.endDate || "",
           });
@@ -345,8 +353,33 @@ export default function AdsCreate() {
   const canContinueToStep4 = Boolean(audience.country.trim()) && !ageError;
   const audienceSummaryText = getAudienceSummaryText();
 
-  const budgetTotalNumber = budget.budgetTotal ? Number(budget.budgetTotal) : null;
-  const budgetDailyNumber = budget.budgetDaily ? Number(budget.budgetDaily) : null;
+  const normalizeBudgetNumber = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    const cleaned = String(value)
+      .replace(/\s+/g, "")
+      .replace(/(fcfa|frs)/gi, "")
+      .replace(/,/g, ".");
+    if (!cleaned) return null;
+    const parsed = Number(cleaned);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
+  const handleBudgetNumberChange = (field, value) => {
+    const normalized = normalizeBudgetNumber(value);
+    setBudget((prev) => ({
+      ...prev,
+      [field]: normalized,
+    }));
+  };
+
+  const budgetTotalNumber =
+    typeof budget.budgetTotal === "number" && !Number.isNaN(budget.budgetTotal)
+      ? budget.budgetTotal
+      : normalizeBudgetNumber(budget.budgetTotal);
+  const budgetDailyNumber =
+    typeof budget.budgetDaily === "number" && !Number.isNaN(budget.budgetDaily)
+      ? budget.budgetDaily
+      : normalizeBudgetNumber(budget.budgetDaily);
 
   const normalizeDate = (value) => {
     if (!value) return null;
@@ -364,7 +397,11 @@ export default function AdsCreate() {
   const startDateObj = normalizeDate(budget.startDate);
   const endDateObj = normalizeDate(budget.endDate);
 
-  const budgetTotalError = budgetTotalNumber !== null && budgetTotalNumber < 1 ? "Budget total minimal: 1" : "";
+  const budgetTotalError = (() => {
+    if (budgetTotalNumber === null) return "Budget total requis";
+    if (budgetTotalNumber < 1) return "Budget total minimal: 1";
+    return "";
+  })();
   const budgetDailyError = (() => {
     if (budgetDailyNumber !== null && budgetDailyNumber < 1) return "Budget quotidien minimal: 1";
     if (budgetDailyNumber !== null && budgetTotalNumber !== null && budgetDailyNumber > budgetTotalNumber)
@@ -389,18 +426,19 @@ export default function AdsCreate() {
   const durationDays = (() => {
     if (!startDateObj || !endDateObj) return 0;
     const diff = endDateObj.getTime() - startDateObj.getTime();
-    return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)) + 1);
+    return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1);
   })();
 
   const computedBudgetPerDay = (() => {
     if (budgetDailyNumber !== null && !budgetDailyError) return budgetDailyNumber;
-    if (budgetTotalNumber !== null && durationDays > 0) return Math.max(1, Math.round(budgetTotalNumber / durationDays));
+    if (budgetTotalNumber !== null && durationDays > 0) return Math.max(1, Math.ceil(budgetTotalNumber / durationDays));
     return null;
   })();
 
   const budgetStepValid =
     budgetTotalNumber !== null &&
     budgetTotalNumber >= 1 &&
+    durationDays > 0 &&
     !budgetTotalError &&
     !budgetDailyError &&
     !startDateError &&
@@ -418,11 +456,13 @@ export default function AdsCreate() {
   });
 
   const normalizeBudget = () => ({
-    budgetTotal: budgetTotalNumber !== null ? budgetTotalNumber : null,
-    budgetDaily: budgetDailyNumber !== null ? budgetDailyNumber : null,
+    total: budgetTotalNumber !== null ? budgetTotalNumber : null,
+    daily: budgetDailyNumber !== null ? budgetDailyNumber : null,
     startDate: budget.startDate || null,
     endDate: budget.endDate || null,
     durationDays: durationDays || null,
+    budgetTotal: budgetTotalNumber !== null ? budgetTotalNumber : null,
+    budgetDaily: budgetDailyNumber !== null ? budgetDailyNumber : null,
   });
 
   const persistDraft = (updater) => {
@@ -517,25 +557,7 @@ export default function AdsCreate() {
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    const stored = localStorage.getItem(LOCAL_CAMPAIGN_KEY);
-    if (!stored) return undefined;
-
-    try {
-      const parsed = JSON.parse(stored);
-      const campaigns = Array.isArray(parsed) ? parsed : [];
-      const now = Date.now();
-      const updatedCampaigns = campaigns.map((camp) => {
-        if (camp.status === "review" && camp.analysisEndsAt && now >= camp.analysisEndsAt) {
-          return { ...camp, status: "awaiting_payment", analysisFinishedAt: new Date(now).toISOString() };
-        }
-        return camp;
-      });
-
-      localStorage.setItem(LOCAL_CAMPAIGN_KEY, JSON.stringify(updatedCampaigns));
-    } catch (err) {
-      if (import.meta.env.DEV) console.debug("ADS campaign simulation sync error", err);
-    }
-
+    loadLocalCampaigns();
     return undefined;
   }, []);
 
@@ -569,67 +591,134 @@ export default function AdsCreate() {
   };
 
   const handleLaunchCampaign = async () => {
-    if (!budgetStepValid) return;
+    const finalAudience = normalizeAudience();
+    const validationErrors = [];
+    if (!objective) validationErrors.push("Choisissez un objectif.");
+    if (!finalAudience.country) validationErrors.push("Pays requis pour l'audience.");
+    if (!budgetStepValid) validationErrors.push("Complétez le budget et les dates.");
+    if (durationDays <= 0) validationErrors.push("La durée doit être d'au moins un jour.");
+
+    if (validationErrors.length > 0) {
+      setLaunchToast(validationErrors[0]);
+      setTimeout(() => setLaunchToast(""), 3000);
+      return;
+    }
+
     setLaunching(true);
     setLaunchToast("");
 
-    const payload = {
-      budgetTotal: budgetTotalNumber,
-      budgetDaily: budgetDailyNumber,
-      startDate: budget.startDate,
-      endDate: budget.endDate,
-      audience: normalizeAudience(),
-      objective: objective || null,
-      durationDays,
-      source: activeTab,
+    const now = new Date();
+    const isProd = import.meta.env.PROD;
+    const minDelay = isProd ? 5 * 60 * 1000 : 10 * 1000;
+    const maxDelay = isProd ? 10 * 60 * 1000 : 20 * 1000;
+    const reviewDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+    const analysisText = isProd ? "5-10 minutes" : "10-20 secondes";
+    const reviewEndsAt = now.getTime() + reviewDelay;
+
+    const creative =
+      activeTab === "existing"
+        ? {
+            text: selectedPost?.text || "",
+            link: selectedPost?.link || "",
+            media: Array.isArray(selectedPost?.media)
+              ? selectedPost.media.map((m) => ({ url: m.url, type: m.type }))
+              : [],
+          }
+        : {
+            text: newText,
+            link: newLink,
+            media: [],
+          };
+
+    const budgetPayload = normalizeBudget();
+    const tempId = `${Date.now()}-${Math.floor(Math.random() * 99999)}`;
+
+    const baseCampaign = {
+      id: tempId,
+      _id: tempId,
+      ownerId: userId || null,
       postId: selectedPost?._id || savedPostId || null,
-      createdAt: new Date().toISOString(),
+      creative,
+      objective,
+      audience: finalAudience,
+      budget: budgetPayload,
+      budgetTotal: budgetPayload.total,
+      budgetDaily: budgetPayload.daily,
+      startDate: budgetPayload.startDate,
+      endDate: budgetPayload.endDate,
+      durationDays: budgetPayload.durationDays,
       status: "review",
+      createdAt: now.toISOString(),
+      review: {
+        startedAt: now.toISOString(),
+        endsAt: new Date(reviewEndsAt).toISOString(),
+      },
+      payment: {
+        amount: budgetPayload.total || 0,
+        currency: "FCFA",
+        status: "pending",
+        link: buildPaymentLink(tempId),
+        emailSentAt: null,
+      },
+      analysisEndsAt: reviewEndsAt,
+      source: activeTab,
     };
 
-    const runSimulation = (campaignId = null) => {
-      const randomDelay = Math.floor((Math.random() * 5 + 5) * 60 * 1000);
-      const campaignItem = {
-        ...payload,
-        id: campaignId || `${Date.now()}-${Math.floor(Math.random() * 9999)}`,
-        analysisEndsAt: Date.now() + randomDelay,
+    upsertLocalCampaign(baseCampaign);
+    setLaunchToast(`Publicité en cours d'analyse (${analysisText})`);
+    setTimeout(() => setLaunchToast(""), 4000);
+
+    const finalizeAwaitingPayment = async (campaignId, backendId = null) => {
+      const finalId = backendId || campaignId;
+      const updatedCampaign = {
+        ...baseCampaign,
+        id: finalId,
+        _id: finalId,
+        status: "awaiting_payment",
+        review: {
+          ...baseCampaign.review,
+          endsAt: baseCampaign.review.endsAt || new Date().toISOString(),
+        },
+        payment: {
+          ...baseCampaign.payment,
+          link: buildPaymentLink(finalId),
+        },
+        analysisFinishedAt: new Date().toISOString(),
       };
 
-      try {
-        const stored = localStorage.getItem(LOCAL_CAMPAIGN_KEY);
-        const parsed = stored ? JSON.parse(stored) : [];
-        const campaigns = Array.isArray(parsed) ? parsed : [];
-        const existingIndex = campaigns.findIndex((c) => c.id === campaignItem.id);
-        if (existingIndex >= 0) campaigns[existingIndex] = { ...campaigns[existingIndex], ...campaignItem };
-        else campaigns.push(campaignItem);
-        localStorage.setItem(LOCAL_CAMPAIGN_KEY, JSON.stringify(campaigns));
-      } catch (err) {
-        if (import.meta.env.DEV) console.debug("ADS campaign local save error", err);
+      upsertLocalCampaign(updatedCampaign);
+
+      if (backendId && token) {
+        try {
+          await fetch(`${API_URL}/ads/${backendId}/status`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              status: "awaiting_payment",
+              review: updatedCampaign.review,
+              payment: {
+                amount: updatedCampaign.payment.amount,
+                currency: updatedCampaign.payment.currency,
+              },
+            }),
+          });
+        } catch (err) {
+          if (import.meta.env.DEV) console.debug("ADS awaiting payment sync error", err);
+        }
       }
 
-      setLaunchToast("Publicité en cours d'analyse (5-10 min)");
-      setTimeout(() => setLaunchToast(""), 4000);
-
-      setTimeout(() => {
-        try {
-          const stored = localStorage.getItem(LOCAL_CAMPAIGN_KEY);
-          const parsed = stored ? JSON.parse(stored) : [];
-          const campaigns = Array.isArray(parsed) ? parsed : [];
-          const updated = campaigns.map((c) =>
-            c.id === campaignItem.id
-              ? { ...c, status: "awaiting_payment", analysisFinishedAt: new Date().toISOString() }
-              : c
-          );
-          localStorage.setItem(LOCAL_CAMPAIGN_KEY, JSON.stringify(updated));
-          setLaunchToast("Analyse terminée: paiement requis (bientôt)");
-          setTimeout(() => setLaunchToast(""), 5000);
-        } catch (err) {
-          if (import.meta.env.DEV) console.debug("ADS campaign local update error", err);
-        }
-      }, randomDelay);
+      setLaunchToast("Analyse terminée — Paiement requis");
+      setTimeout(() => setLaunchToast(""), 5000);
     };
 
-    if (selectedPost?._id) {
+    const scheduleFinalization = (campaignId, backendId = null) => {
+      setTimeout(() => finalizeAwaitingPayment(campaignId, backendId), reviewDelay);
+    };
+
+    if (selectedPost?._id && token) {
       try {
         const res = await fetch(`${API_URL}/ads/create/${selectedPost._id}`, {
           method: "POST",
@@ -638,27 +727,43 @@ export default function AdsCreate() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            budgetTotal: budgetTotalNumber,
-            budgetDaily: budgetDailyNumber,
-            startDate: budget.startDate,
-            endDate: budget.endDate,
+            budgetTotal: budgetPayload.total,
+            budgetDaily: budgetPayload.daily,
+            startDate: budgetPayload.startDate,
+            endDate: budgetPayload.endDate,
+            audience: finalAudience,
+            objective,
+            creative,
+            review: baseCampaign.review,
+            payment: baseCampaign.payment,
           }),
         });
 
         if (!res.ok) {
-          runSimulation();
+          scheduleFinalization(baseCampaign.id);
         } else {
           const data = await res.json().catch(() => ({}));
           const returnedId = data?.data?._id || data?._id || null;
-          runSimulation(returnedId);
+          if (returnedId) {
+            const backendCampaign = {
+              ...baseCampaign,
+              id: returnedId,
+              _id: returnedId,
+              payment: { ...baseCampaign.payment, link: buildPaymentLink(returnedId) },
+            };
+            upsertLocalCampaign(backendCampaign);
+            scheduleFinalization(returnedId, returnedId);
+          } else {
+            scheduleFinalization(baseCampaign.id);
+          }
         }
       } catch (err) {
-        runSimulation();
+        scheduleFinalization(baseCampaign.id);
       } finally {
         setLaunching(false);
       }
     } else {
-      runSimulation();
+      scheduleFinalization(baseCampaign.id);
       setLaunching(false);
     }
   };
@@ -1158,8 +1263,8 @@ export default function AdsCreate() {
                   className="ads-input"
                   type="number"
                   min={1}
-                  value={budget.budgetTotal}
-                  onChange={(e) => setBudget((prev) => ({ ...prev, budgetTotal: e.target.value }))}
+                  value={budget.budgetTotal ?? ""}
+                  onChange={(e) => handleBudgetNumberChange("budgetTotal", e.target.value)}
                   required
                 />
                 {budgetTotalError && <div className="ads-error small">{budgetTotalError}</div>}
@@ -1172,8 +1277,8 @@ export default function AdsCreate() {
                   className="ads-input"
                   type="number"
                   min={1}
-                  value={budget.budgetDaily}
-                  onChange={(e) => setBudget((prev) => ({ ...prev, budgetDaily: e.target.value }))}
+                  value={budget.budgetDaily ?? ""}
+                  onChange={(e) => handleBudgetNumberChange("budgetDaily", e.target.value)}
                 />
                 {budgetDailyError && <div className="ads-error small">{budgetDailyError}</div>}
               </div>

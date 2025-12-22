@@ -44,6 +44,7 @@ import PagesFeed from "./pages/PagesFeed";
 import AdsDashboard from "./pages/AdsDashboard";
 import AdsDetails from "./pages/AdsDetails";
 import AdsCreate from "./pages/AdsCreate";
+import AdsPayment from "./pages/AdsPayment";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -107,6 +108,7 @@ export default function App() {
                     <Route path="pages-feed" element={<PagesFeed />} />
                     <Route path="ads/create" element={<AdsCreate />} />
                     <Route path="ads" element={<AdsDashboard />} />
+                    <Route path="ads/pay/:campaignId" element={<AdsPayment />} />
                     <Route path="ads/:id" element={<AdsDetails />} />
 
                   <Route

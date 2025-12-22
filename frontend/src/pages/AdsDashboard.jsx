@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ads.css";
 import FBIcon from "../components/FBIcon";
+import { buildPaymentLink, loadLocalCampaigns, upsertLocalCampaign } from "../utils/adsStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
-const LOCAL_CAMPAIGN_KEY = "campaignDraftV1";
 
 export default function AdsDashboard() {
   const [campaigns, setCampaigns] = useState([]);
@@ -15,25 +15,8 @@ export default function AdsDashboard() {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const getLocalCampaigns = () => {
-    if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem(LOCAL_CAMPAIGN_KEY);
-      const campaigns = stored ? JSON.parse(stored) : [];
-      const now = Date.now();
-      const normalized = Array.isArray(campaigns)
-        ? campaigns.map((c) => {
-            if (c.status === "review" && c.analysisEndsAt && now >= c.analysisEndsAt) {
-              return { ...c, status: "awaiting_payment", analysisFinishedAt: new Date(now).toISOString() };
-            }
-            return c;
-          })
-        : [];
-      localStorage.setItem(LOCAL_CAMPAIGN_KEY, JSON.stringify(normalized));
-      return normalized;
-    } catch (err) {
-      console.error("ADS LOCAL CAMPAIGN ERROR", err);
-      return [];
-    }
+    const campaigns = loadLocalCampaigns();
+    return campaigns.map((c) => ({ ...c, localOnly: !c.ownerType }));
   };
 
   const loadCampaigns = async () => {
@@ -55,10 +38,64 @@ export default function AdsDashboard() {
       const normalizedLocal = local.map((c) => ({
         ...c,
         _id: c._id || c.id || `local-${c.createdAt || Date.now()}`,
-        localOnly: true,
+        id: c.id || c._id || `local-${c.createdAt || Date.now()}`,
+        localOnly: !c.ownerType,
+        payment: {
+          ...c.payment,
+          link: c.payment?.link || buildPaymentLink(c._id || c.id),
+        },
       }));
 
-      setCampaigns([...backendCampaigns, ...normalizedLocal]);
+      if (token) {
+        const awaiting = normalizedLocal.filter(
+          (c) => c._id && c.status === "awaiting_payment" && !c.payment?.emailSentAt
+        );
+        for (const camp of awaiting) {
+          try {
+            const res = await fetch(`${API_URL}/ads/${camp._id}/status`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                status: "awaiting_payment",
+                review: camp.review,
+                payment: { amount: camp.payment?.amount || camp.budgetTotal, currency: "FCFA" },
+              }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data?.data) {
+              upsertLocalCampaign(data.data);
+            }
+          } catch (err) {
+            console.error("ADS SYNC ERROR", err);
+          }
+        }
+      }
+
+      const merged = new Map();
+      backendCampaigns.forEach((c) => {
+        const key = String(c._id);
+        merged.set(key, c);
+      });
+
+      normalizedLocal.forEach((c) => {
+        const key = String(c._id);
+        if (merged.has(key)) {
+          merged.set(key, { ...c, ...merged.get(key), localOnly: false });
+        } else {
+          merged.set(key, c);
+        }
+      });
+
+      const mergedList = Array.from(merged.values()).sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      });
+
+      setCampaigns(mergedList);
     } catch (err) {
       console.error("ADS LOAD ERROR", err);
     } finally {
@@ -76,10 +113,12 @@ export default function AdsDashboard() {
 
     if (isLocal) {
       try {
-        const stored = getLocalCampaigns();
-        const updated = stored.map((c) => (c.id === campaignId || c._id === campaignId ? { ...c, status } : c));
-        localStorage.setItem(LOCAL_CAMPAIGN_KEY, JSON.stringify(updated));
-        setCampaigns((prev) => prev.map((c) => (c._id === campaignId || c.id === campaignId ? { ...c, status } : c)));
+        const stored = loadLocalCampaigns();
+        const existing = stored.find((c) => c.id === campaignId || c._id === campaignId) || { id: campaignId };
+        upsertLocalCampaign({ ...existing, status });
+        setCampaigns((prev) =>
+          prev.map((c) => (c._id === campaignId || c.id === campaignId ? { ...c, status } : c))
+        );
       } catch (err) {
         console.error("ADS LOCAL STATUS ERROR", err);
       }
@@ -107,15 +146,17 @@ export default function AdsDashboard() {
     }
   };
 
-    const renderCard = (camp) => {
-      const status = camp.status || "draft";
-      const isLocal = Boolean(camp.localOnly && !camp.ownerType);
-      const postTitle = camp.post?.text?.slice(0, 80) || "Publication sponsorisée";
-      const impressions = camp.stats?.impressions || 0;
-      const clicks = camp.stats?.clicks || 0;
-    const budgetTotal = camp.budgetTotal || 0;
-    const budgetDaily = camp.budgetDaily || 0;
+  const renderCard = (camp) => {
+    const status = camp.status || "draft";
+    const isLocal = Boolean(camp.localOnly && !camp.ownerType);
+    const postTitle = camp.post?.text?.slice(0, 80) || "Publication sponsorisée";
+    const impressions = camp.stats?.impressions || 0;
+    const clicks = camp.stats?.clicks || 0;
+    const budgetTotal = camp.budget?.total ?? camp.budgetTotal ?? camp.payment?.amount ?? 0;
+    const budgetDaily = camp.budget?.daily ?? camp.budgetDaily ?? null;
     const audienceParts = [];
+    const startDate = camp.budget?.startDate || camp.startDate;
+    const endDate = camp.budget?.endDate || camp.endDate;
 
     if (camp.audience?.country) audienceParts.push(camp.audience.country);
     if (camp.audience?.city) audienceParts.push(camp.audience.city);
@@ -124,28 +165,37 @@ export default function AdsDashboard() {
 
     const audienceText = audienceParts.join(", ") || "Audience non renseignée";
     const campaignId = camp._id || camp.id;
+    const statusLabel =
+      {
+        review: "En analyse",
+        awaiting_payment: "Paiement requis",
+        active: "Active",
+        paused: "En pause",
+        ended: "Terminée",
+        draft: "Brouillon",
+      }[status] || status;
 
     return (
       <div
         key={campaignId}
         className="ads-card"
-        onClick={() => (isLocal ? null : nav(`/fb/ads/${camp._id}`))}
+        onClick={() => (isLocal ? null : nav(`/fb/ads/${campaignId}`))}
       >
         <div className="ads-meta-row">
-          <span className="ads-status-badge">{status}</span>
+          <span className={`ads-status-badge status-${status}`}>{statusLabel}</span>
           <span>{camp.ownerType === "page" ? "Page" : "Profil"}</span>
           <span>
-            {camp.startDate ? new Date(camp.startDate).toLocaleDateString() : ""} →
+            {startDate ? new Date(startDate).toLocaleDateString() : ""} →
             {" "}
-            {camp.endDate ? new Date(camp.endDate).toLocaleDateString() : "Illimité"}
+            {endDate ? new Date(endDate).toLocaleDateString() : "Illimité"}
           </span>
         </div>
 
         <h3>{postTitle}</h3>
 
         <div className="ads-stats">
-          <span>Budget total: {budgetTotal} FCFA</span>
-          <span>Quotidien: {budgetDaily || "—"} FCFA</span>
+          <span>Budget total: {budgetTotal || 0} FCFA</span>
+          <span>Quotidien: {budgetDaily || Math.ceil((budgetTotal || 0) / (camp.budget?.durationDays || 1))} FCFA</span>
           <span>Impressions: {impressions}</span>
           <span>Clics: {clicks}</span>
         </div>
@@ -154,6 +204,18 @@ export default function AdsDashboard() {
         <div className="ads-subtext">Audience : {audienceText}</div>
 
         <div className="ads-actions">
+          {status === "awaiting_payment" && (
+            <button
+              type="button"
+              className="ads-btn primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                nav(`/fb/ads/pay/${campaignId}`);
+              }}
+            >
+              Payer
+            </button>
+          )}
           <button
             type="button"
             className="ads-btn primary"
