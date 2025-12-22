@@ -14,7 +14,7 @@ import {
 } from "../api/socialApi";
 import { getMyPages } from "../api/pagesApi";
 
-export default function FacebookLayout({ headerOnly = false, children }) {
+export default function FacebookLayout({ headerOnly = false }) {
   const location = useLocation();
   const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
@@ -1046,7 +1046,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         {header}
 
         <main className="fb-compact-body">
-          {children || <Outlet />}
+          <Outlet />
         </main>
 
         {toast && <div className="fb-toast">{toast}</div>}
@@ -1163,7 +1163,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               isPagesFeed ? "fb-center-column--pages" : ""
             }`}
           >
-            {children || <Outlet />}
+            <Outlet />
           </section>
 
           <aside

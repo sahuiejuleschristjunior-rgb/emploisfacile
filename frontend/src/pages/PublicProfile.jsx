@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
-import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
@@ -104,164 +103,160 @@ export default function PublicProfile() {
     setViewerItems(photoItems);
   }, [photoItems]);
 
-  const renderContent = () => {
-    if (loading || !user || !viewer) {
-      return <div className="profil-loading">Chargement…</div>;
-    }
+  if (loading || !user || !viewer) {
+    return <div className="profil-loading">Chargement…</div>;
+  }
 
-    const isMe = String(viewer._id) === String(user._id);
+  const isMe = String(viewer._id) === String(user._id);
 
-    const openViewer = (items = photoItems, idx = 0) => {
-      const sourceItems = items?.length ? items : photoItems;
-      if (!sourceItems.length) return;
-      const safeIndex = Math.max(0, Math.min(idx, sourceItems.length - 1));
-      setViewerItems(sourceItems);
-      setViewerIndex(safeIndex);
-      setViewerOpen(true);
-    };
+  const openViewer = (items = photoItems, idx = 0) => {
+    const sourceItems = items?.length ? items : photoItems;
+    if (!sourceItems.length) return;
+    const safeIndex = Math.max(0, Math.min(idx, sourceItems.length - 1));
+    setViewerItems(sourceItems);
+    setViewerIndex(safeIndex);
+    setViewerOpen(true);
+  };
 
-    /* ============================================================
-        RENDER
-    ============================================================ */
-    return (
-      <div className="profil-wrapper">
-        <div className="profil-hero">
-          {/* COUVERTURE */}
-          <div className="profil-cover">
-            <img
-              src={user.coverPhoto}
-              alt="Couverture du profil"
-              className="profil-cover-media"
-              loading="lazy"
-            />
-            <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
-          </div>
-
-          {/* ENTÊTE */}
-          <div className="profil-hero-row">
-            <div className="profil-avatar-wrapper">
-              <div
-                className="profil-avatar profil-avatar-large"
-                style={{ backgroundImage: `url(${user.avatar})` }}
-              />
-            </div>
-            <div className="profil-hero-main">
-              <div className="profil-title-block">
-                <h1>{user.name}</h1>
-                <div className="profil-stats">
-                  <span>{user.friends?.length || 0} amis</span> |
-                  <span> {user.followers?.length || 0} abonnés</span>
-                </div>
-              </div>
-            </div>
-
-            {!isMe && (
-              <div className="profil-hero-actions">
-                <button
-                  className="profil-btn primary"
-                  onClick={() => navigate(`/messages?userId=${user._id}`)}
-                >
-                  Message
-                </button>
-                <RelationButton targetId={user._id} />
-              </div>
-            )}
-          </div>
-
-          {/* TABS */}
-          <div className="profil-tabs-bar">
-            <div className="profil-tabs">
-              <button className="active">Publications</button>
-              <button disabled>À propos</button>
-              <button disabled>Photos</button>
-            </div>
-            <div className="profil-tabs-actions">
-              <button className="profil-btn ghost" disabled>
-                ···
-              </button>
-            </div>
-          </div>
+  /* ============================================================
+      RENDER
+  ============================================================ */
+  return (
+    <div className="profil-wrapper">
+      <div className="profil-hero">
+        {/* COUVERTURE */}
+        <div className="profil-cover">
+          <img
+            src={user.coverPhoto}
+            alt="Couverture du profil"
+            className="profil-cover-media"
+            loading="lazy"
+          />
+          <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
         </div>
 
-        <div className="profil-content">
-          <div className="profil-grid">
-            <div className="profil-col">
-              <div className="profil-card intro-card">
-                <h3>Intro</h3>
-                <p className="profil-intro-text">
-                  {user.bio || "Aucune bio renseignée pour le moment."}
-                </p>
-                <div className="profil-info-line">
-                  <span role="img" aria-label="friends">
-                    👥
-                  </span>
-                  <span>{user.friends?.length || 0} amis</span>
-                </div>
-                <div className="profil-info-line">
-                  <span role="img" aria-label="followers">
-                    🌟
-                  </span>
-                  <span>{user.followers?.length || 0} abonnés</span>
-                </div>
+        {/* ENTÊTE */}
+        <div className="profil-hero-row">
+          <div className="profil-avatar-wrapper">
+            <div
+              className="profil-avatar profil-avatar-large"
+              style={{ backgroundImage: `url(${user.avatar})` }}
+            />
+          </div>
+          <div className="profil-hero-main">
+            <div className="profil-title-block">
+              <h1>{user.name}</h1>
+              <div className="profil-stats">
+                <span>{user.friends?.length || 0} amis</span> |
+                <span> {user.followers?.length || 0} abonnés</span>
               </div>
+            </div>
+          </div>
 
-              <div className="profil-card photos-card">
-                <div className="profil-card-header">
-                  <h3>Photos</h3>
-                  {photoItems.length > 0 && (
-                    <button className="profil-link" onClick={() => openViewer(photoItems, 0)}>
-                      Afficher tout
-                    </button>
-                  )}
-                </div>
-                {photoItems.length === 0 ? (
-                  <p className="profil-empty">Aucune photo pour le moment.</p>
-                ) : (
-                  <div className="profil-photo-grid">
-                    {photoItems.slice(0, 9).map((m, idx) => (
-                      <button
-                        key={m.key}
-                        className="profil-photo-thumb"
-                        style={{ backgroundImage: `url(${m.url})` }}
-                        aria-label="Photo de la galerie"
-                        onClick={() => openViewer(photoItems, idx)}
-                      />
-                    ))}
-                  </div>
-                )}
+          {!isMe && (
+            <div className="profil-hero-actions">
+              <button
+                className="profil-btn primary"
+                onClick={() => navigate(`/messages?userId=${user._id}`)}
+              >
+                Message
+              </button>
+              <RelationButton targetId={user._id} />
+            </div>
+          )}
+        </div>
+
+        {/* TABS */}
+        <div className="profil-tabs-bar">
+          <div className="profil-tabs">
+            <button className="active">Publications</button>
+            <button disabled>À propos</button>
+            <button disabled>Photos</button>
+          </div>
+          <div className="profil-tabs-actions">
+            <button className="profil-btn ghost" disabled>
+              ···
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="profil-content">
+        <div className="profil-grid">
+          <div className="profil-col">
+            <div className="profil-card intro-card">
+              <h3>Intro</h3>
+              <p className="profil-intro-text">
+                {user.bio || "Aucune bio renseignée pour le moment."}
+              </p>
+              <div className="profil-info-line">
+                <span role="img" aria-label="friends">
+                  👥
+                </span>
+                <span>{user.friends?.length || 0} amis</span>
+              </div>
+              <div className="profil-info-line">
+                <span role="img" aria-label="followers">
+                  🌟
+                </span>
+                <span>{user.followers?.length || 0} abonnés</span>
               </div>
             </div>
 
-            <div className="profil-col">
-              {posts.length === 0 ? (
-                <div className="profil-card profil-empty">Aucune publication.</div>
+            <div className="profil-card photos-card">
+              <div className="profil-card-header">
+                <h3>Photos</h3>
+                {photoItems.length > 0 && (
+                  <button className="profil-link" onClick={() => openViewer(photoItems, 0)}>
+                    Afficher tout
+                  </button>
+                )}
+              </div>
+              {photoItems.length === 0 ? (
+                <p className="profil-empty">Aucune photo pour le moment.</p>
               ) : (
-                <div className="profil-posts">
-                  {posts.map((p) => (
-                    <Post
-                      key={p._id}
-                      post={p}
-                      currentUser={viewer}
-                      onMediaClick={(items, start) => openViewer(items, start)}
+                <div className="profil-photo-grid">
+                  {photoItems.slice(0, 9).map((m, idx) => (
+                    <button
+                      key={m.key}
+                      className="profil-photo-thumb"
+                      style={{ backgroundImage: `url(${m.url})` }}
+                      aria-label="Photo de la galerie"
+                      onClick={() => openViewer(photoItems, idx)}
                     />
                   ))}
                 </div>
               )}
             </div>
           </div>
+
+          <div className="profil-col">
+            {posts.length === 0 ? (
+              <div className="profil-card profil-empty">Aucune publication.</div>
+            ) : (
+              <div className="profil-posts">
+                {posts.map((p) => (
+                  <Post
+                    key={p._id}
+                    post={p}
+                    currentUser={viewer}
+                    onMediaClick={(items, start) => openViewer(items, start)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-
-        {viewerOpen && (
-          <ProfilePhotoViewer
-            items={viewerItems}
-            index={viewerIndex}
-            onChangeIndex={setViewerIndex}
-            onClose={() => setViewerOpen(false)}
-          />
-        )}
       </div>
-    );
-  };
 
-  return <FacebookLayout headerOnly>{renderContent()}</FacebookLayout>;
+      {viewerOpen && (
+        <ProfilePhotoViewer
+          items={viewerItems}
+          index={viewerIndex}
+          onChangeIndex={setViewerIndex}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
+    </div>
+  );
 }
