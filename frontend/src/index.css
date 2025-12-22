@@ -5,8 +5,8 @@ html, body, #root {
   padding: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
-  overflow-x: hidden !important;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden !important;
   background: #020617;
   box-sizing: border-box !important;
 }
