@@ -407,7 +407,7 @@ export default function AdsCreate() {
     return () => clearTimeout(timeout);
   }, [audience, draftLoaded]);
 
-  const getAudienceSummaryText = () => {
+  function getAudienceSummaryText() {
     const parts = [];
     if (audience.country) parts.push(audience.country);
     if (audience.city) parts.push(audience.city);
@@ -428,7 +428,7 @@ export default function AdsCreate() {
 
     if (parts.length === 0) return "";
     return parts.join(", ");
-  };
+  }
 
   const renderAudienceSummary = () => {
     const summary = getAudienceSummaryText();
