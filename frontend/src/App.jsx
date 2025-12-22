@@ -86,9 +86,6 @@ export default function App() {
               <Route path="/verify-reset" element={<VerifyOtpReset />} />
               <Route path="/new-password" element={<NewPassword />} />
 
-              {/* Profil Public */}
-              <Route path="/profil/:id" element={<PublicProfile />} />
-
               {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
               <Route
                 element={
@@ -120,6 +117,7 @@ export default function App() {
 
                 {/* Pages compactes mais avec le header présent */}
                 <Route path="/profil" element={<ProfilPage />} />
+                <Route path="/profil/:id" element={<PublicProfile />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/messages/:id" element={<ChatPage />} />
                 <Route
