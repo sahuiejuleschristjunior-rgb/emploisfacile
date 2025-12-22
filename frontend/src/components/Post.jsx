@@ -34,6 +34,14 @@ export default function Post({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+  const [budgetTotal, setBudgetTotal] = useState("");
+  const [budgetDaily, setBudgetDaily] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [sponsorError, setSponsorError] = useState("");
+  const [sponsorLoading, setSponsorLoading] = useState(false);
+  const [sponsorToast, setSponsorToast] = useState("");
   const postRef = useRef(null);
   const clickSentRef = useRef(false);
   const nav = useNavigate();
@@ -41,7 +49,10 @@ export default function Post({
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const isSponsored = Boolean(post?.isSponsored);
+  const [isSponsored, setIsSponsored] = useState(Boolean(post?.isSponsored));
+  useEffect(() => {
+    setIsSponsored(Boolean(post?.isSponsored));
+  }, [post?.isSponsored]);
   const sponsoredPostId = post?.sponsoredPostId || post?._id;
 
   const textButtonStyle = {
@@ -58,6 +69,26 @@ export default function Post({
 
   const id = post._id;
   const isAuthor = String(post.user?._id) === String(currentUser?._id);
+  const pageOwnerId =
+    post.page?.owner?._id || post.page?.owner || post.pageOwnerId;
+  const pageAdminIds = Array.isArray(post.page?.admins)
+    ? post.page.admins
+        .map((admin) => admin?._id || admin)
+        .filter(Boolean)
+        .map(String)
+    : [];
+  const isPageOwner = Boolean(
+    (pageOwnerId && String(pageOwnerId) === String(currentUser?._id)) ||
+      pageAdminIds.includes(String(currentUser?._id))
+  );
+  const isPostPublic = Boolean(
+    post.privacy === "public" ||
+      post.visibility === "public" ||
+      post.audience === "public" ||
+      post.isPublic === true ||
+      (!post.privacy && !post.visibility && post.isPublic !== false)
+  );
+  const canSponsor = (isAuthor || isPageOwner) && !isSponsored && isPostPublic;
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleString("fr-FR", {
@@ -188,6 +219,61 @@ export default function Post({
     nav(`/likes/${id}`);
   };
 
+  const handleOpenSponsorModal = () => {
+    setSponsorError("");
+    setMenuOpen(false);
+    setIsSponsorModalOpen(true);
+  };
+
+  const resetSponsorForm = () => {
+    setBudgetTotal("");
+    setBudgetDaily("");
+    setStartDate("");
+    setEndDate("");
+  };
+
+  const handleSponsorSubmit = async (e) => {
+    e.preventDefault();
+    if (!token) {
+      setSponsorError("Connexion requise pour sponsoriser.");
+      return;
+    }
+
+    setSponsorError("");
+    setSponsorLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/ads/create/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          budgetTotal: Number(budgetTotal),
+          budgetDaily: Number(budgetDaily),
+          startDate,
+          endDate,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Impossible de lancer la campagne.");
+      }
+
+      setIsSponsorModalOpen(false);
+      resetSponsorForm();
+      setIsSponsored(true);
+      setSponsorToast("Campagne lancée");
+      setTimeout(() => setSponsorToast(""), 3500);
+    } catch (err) {
+      setSponsorError(err.message || "Erreur inconnue");
+    } finally {
+      setSponsorLoading(false);
+    }
+  };
+
   return (
     <>
       <article
@@ -239,6 +325,24 @@ export default function Post({
                       Supprimer
                     </button>
                   </>
+                )}
+
+                {canSponsor && (
+                  <button className="fb-sponsor-menu" onClick={handleOpenSponsorModal}>
+                    <span className="fb-sponsor-icon" aria-hidden="true">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M4 14.5V5.8c0-.6.4-1.1 1-1.3l10.3-3.3c.8-.2 1.6.4 1.6 1.2V6l2.3.7c.5.2.8.6.8 1.1v4.4c0 .5-.3 1-.8 1.1l-2.3.7v3.5c0 .8-.8 1.4-1.6 1.2L5 15.7c-.6-.2-1-.7-1-1.2Z" />
+                        <path d="M4 18.5c0-1 .9-1.8 2-1.5l2.4.7c.9.3 1.6 1.1 1.6 2v2.5c0 1-.9 1.8-2 1.5l-2.4-.7c-.9-.3-1.6-1.1-1.6-2v-2.5Z" />
+                      </svg>
+                    </span>
+                    Sponsoriser
+                  </button>
                 )}
 
                 <button
@@ -377,6 +481,107 @@ export default function Post({
           }}
         />
       )}
+
+      {isSponsorModalOpen && (
+        <div
+          className="fb-sponsor-modal-overlay"
+          onClick={() => {
+            setIsSponsorModalOpen(false);
+            resetSponsorForm();
+          }}
+        >
+          <div
+            className="fb-sponsor-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="fb-sponsor-modal-header">
+              <div className="fb-sponsor-title">Sponsoriser la publication</div>
+              <button
+                type="button"
+                className="fb-sponsor-close"
+                onClick={() => {
+                  setIsSponsorModalOpen(false);
+                  resetSponsorForm();
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form className="fb-sponsor-form" onSubmit={handleSponsorSubmit}>
+              <label className="fb-sponsor-field">
+                <span>Budget total</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={budgetTotal}
+                  onChange={(e) => setBudgetTotal(e.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="fb-sponsor-field">
+                <span>Budget journalier</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={budgetDaily}
+                  onChange={(e) => setBudgetDaily(e.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="fb-sponsor-field">
+                <span>Date début</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                />
+              </label>
+
+              <label className="fb-sponsor-field">
+                <span>Date fin</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  required
+                />
+              </label>
+
+              {sponsorError && (
+                <div className="fb-sponsor-error">{sponsorError}</div>
+              )}
+
+              <div className="fb-sponsor-actions">
+                <button
+                  type="button"
+                  className="fb-sponsor-cancel"
+                  onClick={() => {
+                    setIsSponsorModalOpen(false);
+                    resetSponsorForm();
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="fb-sponsor-submit"
+                  disabled={sponsorLoading}
+                >
+                  {sponsorLoading ? "Lancement..." : "Lancer la campagne"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {sponsorToast && <div className="fb-sponsor-toast">{sponsorToast}</div>}
     </>
   );
 }
