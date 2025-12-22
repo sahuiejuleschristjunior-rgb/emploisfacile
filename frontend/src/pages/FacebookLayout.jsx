@@ -93,6 +93,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const searchBoxRef = useRef(null);
   const profileSwitcherRef = useRef(null);
 
+  useEffect(() => {
+    setSearchOpen(false);
+    setShowMobileSearch(false);
+    setShowMobileMenu(false);
+    setIsDropdownOpen(false);
+    setProfileSwitcherOpen(false);
+  }, [location.pathname]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 4500);
