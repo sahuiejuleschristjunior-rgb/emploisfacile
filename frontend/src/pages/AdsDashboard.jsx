@@ -132,6 +132,9 @@ export default function AdsDashboard() {
         <div className="ads-meta-row">
           <FBIcon name="ads" size={22} />
           <span>{campaigns.length} campagne(s)</span>
+          <button className="ads-btn primary" onClick={() => nav("/fb/ads/create")}>
+            Créer une publicité
+          </button>
         </div>
       </div>
 
