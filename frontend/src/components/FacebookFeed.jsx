@@ -218,7 +218,7 @@ export default function FacebookFeed() {
       else setLoadingMore(true);
 
       const res = await fetch(
-        `${API_URL}/posts/paginated?page=${pageToLoad}&limit=${limit}`,
+        `${API_URL}/posts/paginated?page=${pageToLoad}&limit=${limit}&includeAds=1`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

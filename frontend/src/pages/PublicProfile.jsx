@@ -81,23 +81,21 @@ export default function PublicProfile() {
       LOAD POSTS
   ============================================================ */
   useEffect(() => {
-    fetch(`${API_ROOT}/posts`, {
+    fetch(`${API_ROOT}/posts/user/${id}?includeAds=1`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((list) => {
-        const filtered = Array.isArray(list)
-          ? list
-              .filter((p) => String(p.user?._id) === String(id))
-              .map((p) => ({
-                ...p,
-                media: p.media?.map((m) => ({
-                  ...m,
-                  url: fixUrl(m.url),
-                })),
-              }))
+        const normalized = Array.isArray(list)
+          ? list.map((p) => ({
+              ...p,
+              media: p.media?.map((m) => ({
+                ...m,
+                url: fixUrl(m.url),
+              })),
+            }))
           : [];
-        setPosts(filtered);
+        setPosts(normalized);
         setLoading(false);
       })
       .catch((err) => {

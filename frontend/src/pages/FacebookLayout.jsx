@@ -1098,6 +1098,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                   <div className="fb-sidebar-item-label">Feed des pages</div>
                 </div>
 
+                <div
+                  className="fb-sidebar-item"
+                  onClick={() => nav("/fb/ads")}
+                >
+                  <FBIcon name="ads" size={20} />
+                  <div className="fb-sidebar-item-label">Publicités</div>
+                </div>
+
                 <div className="fb-sidebar-item" onClick={() => nav("/emplois")}>
                   <FBIcon name="jobs" size={20} />
                   <div className="fb-sidebar-item-label">Emplois</div>

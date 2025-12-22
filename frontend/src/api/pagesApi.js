@@ -102,7 +102,7 @@ export async function createPagePost(slug, payload = {}, files = []) {
 
 export async function getPagePosts(slug, page = 1, limit = 10) {
   const res = await fetch(
-    `${API_URL}/page-posts/${slug}?page=${page}&limit=${limit}`,
+    `${API_URL}/page-posts/${slug}?page=${page}&limit=${limit}&includeAds=1`,
     { headers: authHeaders(false) }
   );
   return res.json();

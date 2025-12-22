@@ -4,6 +4,10 @@ const fs = require("fs");
 const path = require("path");
 const { getIO } = require("../socket");
 const { buildMediaPayload } = require("../utils/mediaPayloadBuilder");
+const {
+  fetchActiveCampaigns,
+  injectSponsoredPosts,
+} = require("../utils/sponsoredFeedHelper");
 
 /* ============================================================
    🔥 UTILITAIRE — NOTIFICATION + SOCKET
@@ -60,12 +64,22 @@ exports.listPaginated = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    const includeAds =
+      String(req.query.includeAds || "").toLowerCase() === "1" ||
+      String(req.query.includeAds || "").toLowerCase() === "true";
+
+    let finalPosts = posts;
+    if (includeAds) {
+      const { adPosts, campaignByPost } = await fetchActiveCampaigns();
+      finalPosts = injectSponsoredPosts(posts, adPosts, campaignByPost);
+    }
+
     res.json({
       page,
       limit,
       total,
       hasMore: skip + posts.length < total,
-      posts,
+      posts: finalPosts,
     });
   } catch (err) {
     res.status(500).json({ error: "Erreur pagination posts" });
@@ -84,7 +98,17 @@ exports.list = async (req, res) => {
       .populate("comments.replies.user", "name email avatar avatarColor")
       .sort({ createdAt: -1 });
 
-    res.json(posts);
+    const includeAds =
+      String(req.query.includeAds || "").toLowerCase() === "1" ||
+      String(req.query.includeAds || "").toLowerCase() === "true";
+
+    let finalPosts = posts;
+    if (includeAds) {
+      const { adPosts, campaignByPost } = await fetchActiveCampaigns();
+      finalPosts = injectSponsoredPosts(posts, adPosts, campaignByPost);
+    }
+
+    res.json(finalPosts);
   } catch (err) {
     res.status(500).json({ error: "Erreur chargement posts" });
   }
@@ -688,7 +712,17 @@ exports.getPostsByUser = async (req, res) => {
       .populate("comments.replies.user", "name email avatar avatarColor")
       .sort({ createdAt: -1 });
 
-    res.json(posts);
+    const includeAds =
+      String(req.query.includeAds || "").toLowerCase() === "1" ||
+      String(req.query.includeAds || "").toLowerCase() === "true";
+
+    let finalPosts = posts;
+    if (includeAds) {
+      const { adPosts, campaignByPost } = await fetchActiveCampaigns();
+      finalPosts = injectSponsoredPosts(posts, adPosts, campaignByPost);
+    }
+
+    res.json(finalPosts);
   } catch (err) {
     res.status(500).json({ error: "Erreur chargement publications" });
   }

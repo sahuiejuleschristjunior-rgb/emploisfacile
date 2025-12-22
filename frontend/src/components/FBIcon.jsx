@@ -204,25 +204,41 @@ export default function FBIcon({ name, size = 26 }) {
     /* ============================
        SHARE — Facebook STYLE (Outline)
     ============================ */
-   case "share":
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M10 5L18 12L10 19V14C6 14 3.5 15.5 2 19C2.5 13 5.5 9 10 8V5Z"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </svg>
-  );
+    case "share":
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M10 5L18 12L10 19V14C6 14 3.5 15.5 2 19C2.5 13 5.5 9 10 8V5Z"
+            stroke={color}
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </svg>
+      );
+    case "ads":
+      return (
+        <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+          <path
+            d="M4 9l12-4v18l-12-4V9z"
+            stroke={color}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="rgba(45,136,255,0.2)"
+          />
+          <circle cx="20" cy="14" r="4" stroke={color} strokeWidth="1.8" />
+          <path d="M22.5 11.5L24 10" stroke={color} strokeWidth="1.8" />
+          <path d="M22.5 16.5L24 18" stroke={color} strokeWidth="1.8" />
+        </svg>
+      );
     default:
       return null;
   }

@@ -74,10 +74,10 @@ export default function PagesFeed() {
         if (isInitial) setLoading(true);
         else setLoadingMore(true);
 
-        const res = await fetch(
-          `${API_URL}/posts/paginated?page=${pageToLoad}&limit=10`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+      const res = await fetch(
+        `${API_URL}/posts/paginated?page=${pageToLoad}&limit=10&includeAds=1`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
         const data = await res.json();
         if (!res.ok || !Array.isArray(data.posts)) {

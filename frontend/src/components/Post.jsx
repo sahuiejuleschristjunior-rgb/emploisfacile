@@ -1,5 +1,5 @@
 // src/components/Post.jsx
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/post.css";
 import FBIcon from "./FBIcon";
@@ -7,6 +7,7 @@ import PostEditModal from "./PostEditModal"; // ⬅️ AJOUT IMPORTANT
 import MediaRenderer from "./MediaRenderer";
 
 const API_URL = "https://emploisfacile.org";
+const API_BASE = import.meta.env.VITE_API_URL || `${API_URL}/api`;
 
 const fixUrl = (path) => {
   if (!path) return "";
@@ -33,7 +34,15 @@ export default function Post({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const postRef = useRef(null);
+  const clickSentRef = useRef(false);
   const nav = useNavigate();
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  const isSponsored = Boolean(post?.isSponsored);
+  const sponsoredPostId = post?.sponsoredPostId || post?._id;
 
   const textButtonStyle = {
     background: "none",
@@ -81,6 +90,71 @@ export default function Post({
     imageIndexMap.set(item.originIndex, idx);
   });
 
+  const trackAdEvent = async (type) => {
+    if (!isSponsored || !sponsoredPostId || !token) return;
+
+    try {
+      await fetch(`${API_BASE}/ads/track`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ sponsoredPostId, type }),
+      });
+    } catch (err) {
+      console.error("AD TRACK ERROR", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!isSponsored || !postRef.current || !sponsoredPostId) return undefined;
+    const storageKey = `ad_imp_${sponsoredPostId}`;
+
+    try {
+      if (typeof window !== "undefined") {
+        if (window.sessionStorage?.getItem(storageKey)) return undefined;
+      }
+    } catch (err) {}
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          try {
+            window.sessionStorage?.setItem(storageKey, "1");
+          } catch (err) {}
+
+          trackAdEvent("impression");
+          observer.disconnect();
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(postRef.current);
+
+    return () => observer.disconnect();
+  }, [isSponsored, sponsoredPostId]);
+
+  const handleSponsoredClick = () => {
+    if (!isSponsored || !sponsoredPostId) return;
+    if (clickSentRef.current) return;
+
+    try {
+      const key = `ad_click_${sponsoredPostId}`;
+      if (typeof window !== "undefined") {
+        const already = window.sessionStorage?.getItem(key);
+        if (already) return;
+        window.sessionStorage?.setItem(key, "1");
+      }
+    } catch (err) {}
+
+    clickSentRef.current = true;
+    trackAdEvent("click");
+  };
+
   const focusCommentBox = () => {
     const box = document.querySelector(`#comment-box-${id}`);
     box?.scrollIntoView({ behavior: "smooth" });
@@ -116,14 +190,21 @@ export default function Post({
 
   return (
     <>
-      <article className="fb-post-card">
+      <article
+        className="fb-post-card"
+        ref={postRef}
+        onClickCapture={handleSponsoredClick}
+      >
         {/* HEADER */}
         <div className="fb-post-header">
           <div className="fb-post-avatar" style={avatarStyle} />
 
           <div className="fb-post-user-info">
             <div className="fb-post-author">{post.user?.name}</div>
-            <div className="fb-post-meta">{formatDate(post.createdAt)}</div>
+            <div className="fb-post-meta">
+              {formatDate(post.createdAt)}
+              {isSponsored && <span className="fb-sponsored-badge">Sponsorisé</span>}
+            </div>
           </div>
 
           {/* MENU (…) */}

@@ -7,6 +7,10 @@ const Notification = require("../models/Notification");
 const { getIO } = require("../socket");
 const { validatePageName, generatePageSlug } = require("../utils/pageNameRules");
 const { buildMediaPayload } = require("../utils/mediaPayloadBuilder");
+const {
+  fetchActiveCampaigns,
+  injectSponsoredPosts,
+} = require("../utils/sponsoredFeedHelper");
 
 const uploadDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -428,8 +432,18 @@ exports.getPagePosts = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    const includeAds =
+      String(req.query.includeAds || "").toLowerCase() === "1" ||
+      String(req.query.includeAds || "").toLowerCase() === "true";
+
+    let finalPosts = posts;
+    if (includeAds) {
+      const { adPosts, campaignByPost } = await fetchActiveCampaigns();
+      finalPosts = injectSponsoredPosts(posts, adPosts, campaignByPost);
+    }
+
     res.json({
-      posts,
+      posts: finalPosts,
       total,
       hasMore: skip + posts.length < total,
       page: pageNum,

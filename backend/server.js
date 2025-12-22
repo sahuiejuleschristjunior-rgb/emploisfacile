@@ -23,6 +23,8 @@ const pagePostsRoutes = require("./routes/pagePosts");
 // ⭐ SEARCH
 const searchRoutes = require("./routes/SearchRoutes");
 
+const adsRoutes = require("./routes/ads");
+
 // ⭐ SOCIAL SYSTEM (amis + follow)
 const socialRoutes = require("./routes/socialRoutes");
 
@@ -76,6 +78,7 @@ app.use("/api/saved-jobs", savedJobRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/social", socialRoutes);
+app.use("/api/ads", adsRoutes);
 
 // ⭐ PAGES
 app.use("/api/pages", pagesRoutes);
