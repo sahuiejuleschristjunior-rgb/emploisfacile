@@ -200,24 +200,25 @@ export default function ProfilPage() {
   const loadUserPosts = async (targetId) => {
     if (!targetId) return;
     try {
-      const res = await fetch(`${API_URL}/posts`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_URL}/posts/user/${targetId}?includeAds=1`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       const list = await res.json();
 
       if (res.ok && Array.isArray(list)) {
-        const filtered = list
-          .filter((p) => p.user?._id === targetId) // 👈 posts de CE profil
-          .map((p) => ({
-            ...p,
-            media: p.media?.map((m) => ({
-              ...m,
-              url: fixUrl(m.url),
-            })),
-          }));
+        const normalized = list.map((p) => ({
+          ...p,
+          media: p.media?.map((m) => ({
+            ...m,
+            url: fixUrl(m.url),
+          })),
+        }));
 
-        setPosts(filtered);
+        setPosts(normalized);
       }
     } catch (err) {
       console.error("POST ERROR:", err);

@@ -63,6 +63,8 @@ const PostSchema = new mongoose.Schema(
     comments: [commentSchema],
 
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+
+    isSponsored: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
