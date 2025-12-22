@@ -43,6 +43,7 @@ import ReelsPage from "./pages/ReelsPage";
 import PagesFeed from "./pages/PagesFeed";
 import AdsDashboard from "./pages/AdsDashboard";
 import AdsDetails from "./pages/AdsDetails";
+import AdsCreate from "./pages/AdsCreate";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -104,6 +105,7 @@ export default function App() {
                     <Route index element={<FacebookFeed />} />
                     <Route path="post/:id" element={<PostPage />} />
                     <Route path="pages-feed" element={<PagesFeed />} />
+                    <Route path="ads/create" element={<AdsCreate />} />
                     <Route path="ads" element={<AdsDashboard />} />
                     <Route path="ads/:id" element={<AdsDetails />} />
 
