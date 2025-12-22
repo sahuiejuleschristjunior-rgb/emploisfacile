@@ -1,4 +1,4 @@
-import { useEffect, useState, useId } from "react";
+import { useEffect, useState, useId, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
@@ -44,6 +44,8 @@ export default function ProfilPage() {
   const [showPhotoViewer, setShowPhotoViewer] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [viewerItems, setViewerItems] = useState([]);
+
+  const profilWrapperRef = useRef(null);
 
   const currentUser = (() => {
     try {
@@ -262,6 +264,20 @@ export default function ProfilPage() {
     return value;
   };
 
+  // Confine pointer guards to the profile area so header interactions stay untouched.
+  const handleWrapperPointer = (event) => {
+    const headerEl = document.querySelector(".fb-header");
+    if (headerEl && headerEl.contains(event.target)) return;
+
+    if (!profilWrapperRef.current?.contains(event.target)) return;
+
+    const isInteractive = event.target.closest("button, a, input, textarea, select, option, label");
+    if (isInteractive) return;
+
+    event.stopPropagation();
+    event.nativeEvent?.stopImmediatePropagation?.();
+  };
+
   const openPhotoViewer = (items = photoItems, startIdx = 0) => {
     const sourceItems = items?.length ? items : photoItems;
     if (!sourceItems.length) return;
@@ -275,7 +291,12 @@ export default function ProfilPage() {
      RENDER
   ================================================ */
   return (
-    <div className="profil-wrapper">
+    <div
+      ref={profilWrapperRef}
+      className="profil-wrapper"
+      onPointerDownCapture={handleWrapperPointer}
+      onTouchStartCapture={handleWrapperPointer}
+    >
       {/* Hidden Upload Inputs */}
       {isOwner && (
         <>
