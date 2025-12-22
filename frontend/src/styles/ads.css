@@ -78,6 +78,37 @@
   text-transform: capitalize;
 }
 
+.ads-status-badge.status-review {
+  background: rgba(255, 193, 7, 0.12);
+  color: #ffd166;
+  border-color: rgba(255, 193, 7, 0.35);
+}
+
+.ads-status-badge.status-awaiting_payment {
+  background: rgba(255, 87, 51, 0.12);
+  color: #ff9966;
+  border-color: rgba(255, 87, 51, 0.35);
+}
+
+.ads-status-badge.status-active {
+  background: rgba(40, 167, 69, 0.12);
+  color: #7bda9f;
+  border-color: rgba(40, 167, 69, 0.35);
+}
+
+.ads-status-badge.status-paused {
+  background: rgba(108, 117, 125, 0.12);
+  color: #c5c5c5;
+  border-color: rgba(108, 117, 125, 0.35);
+}
+
+.ads-status-badge.status-ended,
+.ads-status-badge.status-draft {
+  background: rgba(128, 128, 128, 0.12);
+  color: #bfbfbf;
+  border-color: rgba(128, 128, 128, 0.35);
+}
+
 .ads-stats {
   display: flex;
   gap: 12px;
@@ -711,6 +742,54 @@
   color: var(--ads-subtext);
   font-weight: 600;
   text-align: center;
+}
+
+.ads-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.ads-payment-card {
+  background: var(--ads-card);
+  border: 1px solid var(--ads-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ads-payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--ads-border);
+  color: var(--ads-text);
+}
+
+.ads-payment-row:last-child {
+  border-bottom: none;
+}
+
+.ads-payment-methods {
+  list-style: disc;
+  padding-left: 18px;
+  color: var(--ads-text);
+  display: grid;
+  gap: 6px;
+}
+
+.ads-budget-grid .ads-input {
+  background: #1e1f22;
+}
+
+.ads-budget-grid .ads-field label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 @keyframes ads-skeleton {
