@@ -183,6 +183,8 @@ export default function FeedPage() {
   const [search, setSearch] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [loading, setLoading] = useState(true);
+  const initialLoadDoneRef = useRef(false);
+  const postsRef = useRef([]);
 
   const [posts, setPosts] = useState([]);
   const [showStory, setShowStory] = useState(false);
@@ -217,6 +219,9 @@ export default function FeedPage() {
       nav("/login");
       return;
     }
+
+    if (initialLoadDoneRef.current) return;
+
     fetchPosts();
   }, [token, nav]);
 
@@ -227,7 +232,9 @@ export default function FeedPage() {
   };
 
   const fetchPosts = async () => {
-    setLoading(true);
+    const isInitialLoad = !initialLoadDoneRef.current;
+
+    if (isInitialLoad && !loading) setLoading(true);
 
     try {
       const res = await fetch(`${API_BASE}/api/posts`, {
@@ -237,24 +244,45 @@ export default function FeedPage() {
       });
 
       if (res.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        nav("/login");
+        if (!initialLoadDoneRef.current) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          nav("/login");
+        }
         return;
       }
 
       if (res.ok) {
         const data = await res.json();
-        setPosts(Array.isArray(data) ? data : []);
-      } else {
-        setPosts(demoPosts);
+        const nextPosts = Array.isArray(data) ? data : [];
+        setPosts(() => {
+          postsRef.current = nextPosts;
+          return nextPosts;
+        });
+      } else if (isInitialLoad && postsRef.current.length === 0) {
+        setPosts(() => {
+          postsRef.current = demoPosts;
+          return demoPosts;
+        });
       }
     } catch {
-      setPosts(demoPosts);
+      if (isInitialLoad && postsRef.current.length === 0) {
+        setPosts(() => {
+          postsRef.current = demoPosts;
+          return demoPosts;
+        });
+      }
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        initialLoadDoneRef.current = true;
+        setLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    postsRef.current = posts;
+  }, [posts]);
   /* ========================================================= */
   /* ACTIONS : CREATE / DELETE / LIKE / COMMENT FIXÉES         */
   /* ========================================================= */
