@@ -2,14 +2,18 @@
 /* GLOBAL RESET         */
 /* ========================= */
 
+:root {
+  --fb-header-height: 72px;
+}
+
 .fb-app {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   background: #000;
   color: #fff;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
     sans-serif;
 }
@@ -19,7 +23,9 @@
 }
 
 .fb-app-body--solo {
-  margin-top: 65px;
+  padding-top: var(--fb-header-height);
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 .fb-compact-shell {
@@ -43,6 +49,10 @@
   flex: 1;
   display: flex;
   justify-content: center;
+  height: 100vh;
+  padding-top: var(--fb-header-height);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* ========================= */
@@ -263,6 +273,8 @@
   display: flex;
   gap: 20px;
   padding: 20px 16px;
+  height: calc(100vh - var(--fb-header-height));
+  box-sizing: border-box;
 }
 
 /* ========================= */
@@ -274,13 +286,11 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-
-  /* Fixe le menu gauche sous le header, comme sur Facebook */
   position: sticky;
-  top: 76px;
-  align-self: flex-start;
-  max-height: calc(100vh - 90px);
-  overflow-y: auto;
+  top: 0;
+  height: 100%;
+  align-self: stretch;
+  overflow: hidden;
 }
 
 .fb-left-section {
@@ -336,6 +346,9 @@
 .fb-center-column {
   flex: 1;
   max-width: 680px;
+  height: 100%;
+  overflow-y: auto;
+  scroll-behavior: smooth;
 }
 
 /* ========================= */
@@ -345,10 +358,10 @@
 .fb-right-column {
   width: 260px;
   position: sticky;
-  top: 76px;
-  align-self: flex-start;
-  max-height: calc(100vh - 90px);
-  overflow-y: auto;
+  top: 0;
+  height: 100%;
+  align-self: stretch;
+  overflow: hidden;
 }
 
 .fb-right-column--visible {
@@ -669,7 +682,11 @@
 .fb-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; background: #242526; border-bottom: 1px solid #3a3b3c; }
 
 /* Décaler le contenu sous le header */
-.fb-app-body { margin-top: 65px; }
+.fb-app-body {
+  padding-top: var(--fb-header-height);
+  height: 100vh;
+  overflow: hidden;
+}
 
 @media (max-width: 768px) {
   .fb-header {
@@ -681,7 +698,8 @@
   }
 
   .fb-app-body {
-    margin-top: 72px;
+    padding-top: var(--fb-header-height);
+    height: 100vh;
   }
 
   .fb-compact-body {
