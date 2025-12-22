@@ -655,6 +655,45 @@
   opacity: 0.7;
 }
 
+.ads-budget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.ads-budget-summary {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--ads-border);
+  border-radius: 12px;
+  background: #1a1c1f;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ads-budget-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ads-budget-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.ads-budget-strong {
+  color: var(--ads-text);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.ads-success.inline {
+  margin-left: 10px;
+}
+
 .ads-disabled-step {
   display: grid;
   gap: 12px;
