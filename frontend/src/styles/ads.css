@@ -208,6 +208,7 @@
   padding: 16px;
   transition: border-color 0.2s, transform 0.2s;
   cursor: pointer;
+  position: relative;
 }
 
 .ads-card:hover {
@@ -285,6 +286,73 @@
   display: flex;
   gap: 10px;
   margin-top: 10px;
+}
+
+.ads-card-menu {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+}
+
+.ads-menu-trigger {
+  background: #2b2d30;
+  border: 1px solid var(--ads-border);
+  color: var(--ads-text);
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.ads-menu-trigger:hover {
+  background: #3a3b3f;
+  border-color: var(--ads-primary);
+}
+
+.ads-menu-dropdown {
+  position: absolute;
+  right: 0;
+  margin-top: 8px;
+  background: #1f2022;
+  border: 1px solid var(--ads-border);
+  border-radius: 12px;
+  min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.ads-menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--ads-text);
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ads-menu-item:hover:not(:disabled) {
+  background: #2b2d30;
+}
+
+.ads-menu-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ads-menu-item.danger {
+  color: #ff6b6b;
+}
+
+.ads-menu-item.danger:hover:not(:disabled) {
+  background: #3a1f23;
+  color: #ff9999;
 }
 
 .ads-btn {

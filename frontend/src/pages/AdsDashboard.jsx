@@ -10,6 +10,7 @@ export default function AdsDashboard() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
   const nav = useNavigate();
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -107,6 +108,19 @@ export default function AdsDashboard() {
     loadCampaigns();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".ads-card-menu")) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
   const changeStatus = async (campaignId, status, e, isLocal = false) => {
     e?.stopPropagation();
     if (!campaignId || !status) return;
@@ -165,6 +179,7 @@ export default function AdsDashboard() {
 
     const audienceText = audienceParts.join(", ") || "Audience non renseignée";
     const campaignId = camp._id || camp.id;
+    const hasMenuActions = ["awaiting_payment", "active", "paused"].includes(status);
     const statusLabel =
       {
         review: "En analyse",
@@ -181,6 +196,93 @@ export default function AdsDashboard() {
         className="ads-card"
         onClick={() => (isLocal ? null : nav(`/ads/${campaignId}`))}
       >
+        <div className="ads-card-menu">
+          <button
+            type="button"
+            className="ads-menu-trigger"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!hasMenuActions) return;
+              setOpenMenuId(openMenuId === campaignId ? null : campaignId);
+            }}
+            disabled={!hasMenuActions}
+          >
+            ⋯
+          </button>
+
+          {openMenuId === campaignId && hasMenuActions && (
+            <div className="ads-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+              {status === "awaiting_payment" && (
+                <button
+                  type="button"
+                  className="ads-menu-item"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuId(null);
+                    nav(`/ads/pay/${campaignId}`);
+                  }}
+                >
+                  💳 Payer
+                </button>
+              )}
+
+              {status === "active" && (
+                <>
+                  <button
+                    type="button"
+                    className="ads-menu-item"
+                    disabled={updating}
+                    onClick={(e) => {
+                      changeStatus(campaignId, "paused", e, isLocal);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    ⏸️ Pause
+                  </button>
+                  <button
+                    type="button"
+                    className="ads-menu-item danger"
+                    disabled={updating}
+                    onClick={(e) => {
+                      changeStatus(campaignId, "ended", e, isLocal);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    ⛔ Terminer
+                  </button>
+                </>
+              )}
+
+              {status === "paused" && (
+                <>
+                  <button
+                    type="button"
+                    className="ads-menu-item"
+                    disabled={updating}
+                    onClick={(e) => {
+                      changeStatus(campaignId, "active", e, isLocal);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    ▶️ Activer
+                  </button>
+                  <button
+                    type="button"
+                    className="ads-menu-item danger"
+                    disabled={updating}
+                    onClick={(e) => {
+                      changeStatus(campaignId, "ended", e, isLocal);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    ⛔ Terminer
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="ads-meta-row">
           <span className={`ads-status-badge status-${status}`}>{statusLabel}</span>
           <span>{camp.ownerType === "page" ? "Page" : "Profil"}</span>
@@ -202,45 +304,6 @@ export default function AdsDashboard() {
 
         <div className="ads-subtext">Objectif : {camp.objective || "Non précisé"}</div>
         <div className="ads-subtext">Audience : {audienceText}</div>
-
-        <div className="ads-actions">
-          {status === "awaiting_payment" && (
-            <button
-              type="button"
-              className="ads-btn primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                nav(`/ads/pay/${campaignId}`);
-              }}
-            >
-              Payer
-            </button>
-          )}
-          <button
-            type="button"
-            className="ads-btn primary"
-            disabled={status === "active" || updating}
-            onClick={(e) => changeStatus(campaignId, "active", e, isLocal)}
-          >
-            Activer
-          </button>
-          <button
-            type="button"
-            className="ads-btn"
-            disabled={status === "paused" || updating}
-            onClick={(e) => changeStatus(campaignId, "paused", e, isLocal)}
-          >
-            Pause
-          </button>
-          <button
-            type="button"
-            className="ads-btn"
-            disabled={status === "ended" || updating}
-            onClick={(e) => changeStatus(campaignId, "ended", e, isLocal)}
-          >
-            Terminer
-          </button>
-        </div>
       </div>
     );
   };
