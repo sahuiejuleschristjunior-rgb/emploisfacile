@@ -5,7 +5,7 @@ export function buildPaymentLink(campaignId) {
   const base =
     (typeof window !== "undefined" && window.location && window.location.origin) ||
     "https://emploisfacile.org";
-  return `${base}/fb/ads/pay/${campaignId}`;
+  return `${base}/ads/pay/${campaignId}`;
 }
 
 function normalizeDate(value) {

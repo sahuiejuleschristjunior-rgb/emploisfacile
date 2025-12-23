@@ -157,7 +157,7 @@ export default function AdsDetails() {
               {campaign.status === "awaiting_payment" && (
                 <button
                   className="ads-btn primary"
-                  onClick={() => navigate(`/fb/ads/pay/${campaign._id || campaign.id}`)}
+                  onClick={() => navigate(`/ads/pay/${campaign._id || campaign.id}`)}
                 >
                   Accéder au paiement
                 </button>
