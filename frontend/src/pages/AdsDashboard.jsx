@@ -22,17 +22,37 @@ export default function AdsDashboard({ view = "campaigns" }) {
   const [devToast, setDevToast] = useState(null);
   const nav = useNavigate();
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
   const getLocalCampaigns = () => {
     const campaigns = loadLocalCampaigns();
     return campaigns.map((c) => ({ ...c, localOnly: !c.ownerType }));
+  };
+
+  const showSessionExpired = () => {
+    setDevToast("Session expirée");
+    setTimeout(() => setDevToast(null), 2500);
+  };
+
+  const getValidToken = () => {
+    const token = localStorage.getItem("token");
+    if (!token || token.split(".").length !== 3) {
+      showSessionExpired();
+      return null;
+    }
+    return token;
+  };
+
+  const logFetch = (payload) => {
+    console.debug("ADS FETCH", {
+      ...payload,
+      tokenPreview: payload.token ? `${payload.token.slice(0, 6)}...${payload.token.slice(-6)}` : null,
+    });
   };
 
   const loadCampaigns = async () => {
     try {
       const local = getLocalCampaigns();
       let backendCampaigns = [];
+      const token = localStorage.getItem("token");
 
       if (token) {
         const res = await fetch(`${API_URL}/ads/my`, {
@@ -61,12 +81,15 @@ export default function AdsDashboard({ view = "campaigns" }) {
           (c) => c._id && c.status === "awaiting_payment" && !c.payment?.emailSentAt
         );
         for (const camp of awaiting) {
+          const validToken = getValidToken();
+          if (!validToken) break;
           try {
+            logFetch({ action: "awaiting_payment_sync", id: camp._id, token: validToken });
             const res = await fetch(`${API_URL}/ads/${camp._id}/status`, {
               method: "PUT",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${validToken}`,
               },
               body: JSON.stringify({
                 status: "awaiting_payment",
@@ -181,8 +204,15 @@ export default function AdsDashboard({ view = "campaigns" }) {
       return;
     }
 
+    const token = getValidToken();
+    if (!token) {
+      setOpenMenuId(null);
+      return;
+    }
+
     try {
       setUpdating(true);
+      logFetch({ action: "changeStatus", id: campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
@@ -220,6 +250,15 @@ export default function AdsDashboard({ view = "campaigns" }) {
     const nextStatus = campaign.status === "active" ? "paused" : campaign.status;
     const payload = { archived: true, status: nextStatus };
 
+    let token = null;
+    if (!isLocal) {
+      token = getValidToken();
+      if (!token) {
+        setOpenMenuId(null);
+        return;
+      }
+    }
+
     addArchivedCampaign(campaignId);
     setCampaigns((prev) =>
       prev.map((c) =>
@@ -246,6 +285,7 @@ export default function AdsDashboard({ view = "campaigns" }) {
 
     try {
       setUpdating(true);
+      logFetch({ action: "archive", id: campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
@@ -289,6 +329,15 @@ export default function AdsDashboard({ view = "campaigns" }) {
     const beforeStatus = campaign.status;
     const beforeArchived = campaign.archived;
 
+    let token = null;
+    if (!isLocal) {
+      token = getValidToken();
+      if (!token) {
+        setOpenMenuId(null);
+        return;
+      }
+    }
+
     setCampaigns((prev) =>
       prev.map((c) => (c._id === campaignId || c.id === campaignId ? { ...c, status: "paused" } : c))
     );
@@ -312,6 +361,7 @@ export default function AdsDashboard({ view = "campaigns" }) {
 
     try {
       setUpdating(true);
+      logFetch({ action: "pause", id: campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
@@ -352,6 +402,15 @@ export default function AdsDashboard({ view = "campaigns" }) {
     const isLocal = Boolean(campaign.localOnly && !campaign.ownerType);
     const beforeStatus = campaign.status;
     const endedAt = new Date().toISOString();
+    let token = null;
+
+    if (!isLocal) {
+      token = getValidToken();
+      if (!token) {
+        setOpenMenuId(null);
+        return;
+      }
+    }
 
     setCampaigns((prev) =>
       prev.map((c) =>
@@ -381,6 +440,7 @@ export default function AdsDashboard({ view = "campaigns" }) {
 
     try {
       setUpdating(true);
+      logFetch({ action: "end", id: campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
