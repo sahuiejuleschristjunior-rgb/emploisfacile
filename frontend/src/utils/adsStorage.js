@@ -1,4 +1,5 @@
 const STORAGE_KEYS = ["adsCampaignsV1", "campaignDraftV1"];
+const ARCHIVE_KEY = "adsArchivedCampaignsV1";
 
 export function buildPaymentLink(campaignId) {
   if (!campaignId) return "";
@@ -47,8 +48,49 @@ function normalizeCampaignShape(campaign) {
     status,
     review,
     payment,
+    archived: Boolean(campaign.archived),
     createdAt: campaign.createdAt || new Date().toISOString(),
   };
+}
+
+export function loadArchivedCampaignIds() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(ARCHIVE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map((id) => String(id)) : [];
+  } catch (err) {
+    console.error("ADS ARCHIVE LOAD ERROR", err);
+    return [];
+  }
+}
+
+export function saveArchivedCampaignIds(ids) {
+  if (typeof window === "undefined") return [];
+  const sanitized = Array.isArray(ids) ? ids.filter(Boolean) : [];
+  try {
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(sanitized));
+  } catch (err) {
+    console.error("ADS ARCHIVE SAVE ERROR", err);
+  }
+  return sanitized;
+}
+
+export function addArchivedCampaign(campaignId) {
+  if (!campaignId || typeof window === "undefined") return [];
+  const cleanId = String(campaignId);
+  const existing = loadArchivedCampaignIds().map((id) => String(id));
+  if (existing.includes(cleanId)) return existing;
+  const updated = [...existing, cleanId];
+  return saveArchivedCampaignIds(updated);
+}
+
+export function removeArchivedCampaign(campaignId) {
+  if (!campaignId || typeof window === "undefined") return [];
+  const cleanId = String(campaignId);
+  const existing = loadArchivedCampaignIds().map((id) => String(id));
+  const updated = existing.filter((id) => id !== cleanId);
+  return saveArchivedCampaignIds(updated);
 }
 
 export function loadLocalCampaigns() {
@@ -102,4 +144,13 @@ export function upsertLocalCampaign(campaign) {
   }
   saveLocalCampaigns(all);
   return all;
+}
+
+export function deleteLocalCampaign(campaignId) {
+  if (!campaignId || typeof window === "undefined") return [];
+  const all = loadLocalCampaigns();
+  const filtered = all.filter((c) => c.id !== campaignId && c._id !== campaignId);
+  saveLocalCampaigns(filtered);
+  removeArchivedCampaign(campaignId);
+  return filtered;
 }

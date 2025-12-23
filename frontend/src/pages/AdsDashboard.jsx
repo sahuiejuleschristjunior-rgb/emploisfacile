@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ads.css";
 import FBIcon from "../components/FBIcon";
-import { buildPaymentLink, loadLocalCampaigns, upsertLocalCampaign } from "../utils/adsStorage";
+import {
+  addArchivedCampaign,
+  buildPaymentLink,
+  deleteLocalCampaign,
+  loadArchivedCampaignIds,
+  loadLocalCampaigns,
+  removeArchivedCampaign,
+  upsertLocalCampaign,
+} from "../utils/adsStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 
-export default function AdsDashboard() {
+export default function AdsDashboard({ view = "campaigns" }) {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -90,16 +98,26 @@ export default function AdsDashboard() {
         }
       });
 
-      const mergedList = Array.from(merged.values()).sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      });
+        const archivedIds = loadArchivedCampaignIds();
 
-      setCampaigns(mergedList);
-    } catch (err) {
-      console.error("ADS LOAD ERROR", err);
-    } finally {
+        const mergedList = Array.from(merged.values()).sort((a, b) => {
+          const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bDate - aDate;
+        });
+
+        const withArchives = mergedList.map((c) => {
+          const id = String(c._id || c.id);
+          return {
+            ...c,
+            archived: Boolean(c.archived || archivedIds.includes(id) || c.status === "ended"),
+          };
+        });
+
+        setCampaigns(withArchives);
+      } catch (err) {
+        console.error("ADS LOAD ERROR", err);
+      } finally {
       setLoading(false);
     }
   };
@@ -160,6 +178,34 @@ export default function AdsDashboard() {
     }
   };
 
+  const archiveCampaign = (campaign, isLocal = false) => {
+    if (!campaign) return;
+    const campaignId = campaign._id || campaign.id;
+    addArchivedCampaign(campaignId);
+    if (isLocal) {
+      upsertLocalCampaign({ ...campaign, archived: true });
+    }
+    setCampaigns((prev) =>
+      prev.map((c) => (c._id === campaignId || c.id === campaignId ? { ...c, archived: true } : c))
+    );
+  };
+
+  const deleteArchived = (campaignId) => {
+    if (!campaignId) return;
+    setCampaigns((prev) => prev.filter((c) => c._id !== campaignId && c.id !== campaignId));
+    deleteLocalCampaign(campaignId);
+    removeArchivedCampaign(campaignId);
+  };
+
+  const isArchiveView = view === "archives";
+
+  const filteredCampaigns = useMemo(() => {
+    if (!Array.isArray(campaigns)) return [];
+    return campaigns.filter((c) =>
+      isArchiveView ? c.archived === true || c.status === "ended" : c.status !== "ended" && !c.archived
+    );
+  }, [campaigns, isArchiveView]);
+
   const renderCard = (camp) => {
     const status = camp.status || "draft";
     const isLocal = Boolean(camp.localOnly && !camp.ownerType);
@@ -179,7 +225,8 @@ export default function AdsDashboard() {
 
     const audienceText = audienceParts.join(", ") || "Audience non renseignée";
     const campaignId = camp._id || camp.id;
-    const hasMenuActions = ["awaiting_payment", "active", "paused"].includes(status);
+    const isArchived = camp.archived || status === "ended";
+    const hasMenuActions = isArchiveView || ["awaiting_payment", "active", "paused"].includes(status);
     const statusLabel =
       {
         review: "En analyse",
@@ -193,8 +240,11 @@ export default function AdsDashboard() {
     return (
       <div
         key={campaignId}
-        className="ads-card"
-        onClick={() => (isLocal ? null : nav(`/ads/${campaignId}`))}
+        className={`ads-card ${isArchived ? "archived" : ""}`}
+        onClick={() => {
+          if (isArchiveView || isArchived || isLocal) return;
+          nav(`/ads/${campaignId}`);
+        }}
       >
         <div className="ads-card-menu">
           <button
@@ -212,7 +262,7 @@ export default function AdsDashboard() {
 
           {openMenuId === campaignId && hasMenuActions && (
             <div className="ads-menu-dropdown" onClick={(e) => e.stopPropagation()}>
-              {status === "awaiting_payment" && (
+              {!isArchiveView && status === "awaiting_payment" && (
                 <button
                   type="button"
                   className="ads-menu-item"
@@ -221,12 +271,12 @@ export default function AdsDashboard() {
                     setOpenMenuId(null);
                     nav(`/ads/pay/${campaignId}`);
                   }}
-                >
-                  💳 Payer
-                </button>
+                  >
+                    💳 Payer
+                  </button>
               )}
 
-              {status === "active" && (
+              {!isArchiveView && status === "active" && (
                 <>
                   <button
                     type="button"
@@ -241,6 +291,18 @@ export default function AdsDashboard() {
                   </button>
                   <button
                     type="button"
+                    className="ads-menu-item"
+                    disabled={updating}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      archiveCampaign(camp, isLocal);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    📦 Archiver
+                  </button>
+                  <button
+                    type="button"
                     className="ads-menu-item danger"
                     disabled={updating}
                     onClick={(e) => {
@@ -253,7 +315,7 @@ export default function AdsDashboard() {
                 </>
               )}
 
-              {status === "paused" && (
+              {!isArchiveView && status === "paused" && (
                 <>
                   <button
                     type="button"
@@ -268,6 +330,18 @@ export default function AdsDashboard() {
                   </button>
                   <button
                     type="button"
+                    className="ads-menu-item"
+                    disabled={updating}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      archiveCampaign(camp, isLocal);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    📦 Archiver
+                  </button>
+                  <button
+                    type="button"
                     className="ads-menu-item danger"
                     disabled={updating}
                     onClick={(e) => {
@@ -279,12 +353,29 @@ export default function AdsDashboard() {
                   </button>
                 </>
               )}
+
+              {isArchiveView && (
+                <button
+                  type="button"
+                  className="ads-menu-item danger"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm("Cette action est définitive")) {
+                      deleteArchived(campaignId);
+                      setOpenMenuId(null);
+                    }
+                  }}
+                >
+                  🗑️ Supprimer
+                </button>
+              )}
             </div>
           )}
         </div>
 
         <div className="ads-meta-row">
           <span className={`ads-status-badge status-${status}`}>{statusLabel}</span>
+          {isArchived && <span className="ads-status-badge archived">Archivée</span>}
           <span>{camp.ownerType === "page" ? "Page" : "Profil"}</span>
           <span>
             {startDate ? new Date(startDate).toLocaleDateString() : ""} →
@@ -304,6 +395,7 @@ export default function AdsDashboard() {
 
         <div className="ads-subtext">Objectif : {camp.objective || "Non précisé"}</div>
         <div className="ads-subtext">Audience : {audienceText}</div>
+        {isArchived && <div className="ads-subtext archived-note">Campagne archivée - actions limitées</div>}
       </div>
     );
   };
@@ -312,28 +404,34 @@ export default function AdsDashboard() {
     <div className="ads-shell">
       <div className="ads-header">
         <div>
-          <div className="ads-title">Centre de publicités</div>
+          <div className="ads-title">{isArchiveView ? "Archives des campagnes" : "Centre de publicités"}</div>
           <div className="ads-subtitle">
-            Gérez vos campagnes sponsorisées façon Facebook Ads (sans paiement).
+            {isArchiveView
+              ? "Retrouvez vos campagnes terminées ou archivées."
+              : "Gérez vos campagnes sponsorisées façon Facebook Ads (sans paiement)."}
           </div>
         </div>
         <div className="ads-meta-row">
           <FBIcon name="ads" size={22} />
-          <span>{campaigns.length} campagne(s)</span>
-          <button className="ads-btn primary" onClick={() => nav("/ads/create")}>
-            Créer une publicité
-          </button>
+          <span>{filteredCampaigns.length} campagne(s)</span>
+          {!isArchiveView && (
+            <button className="ads-btn primary" onClick={() => nav("/ads/create")}>
+              Créer une publicité
+            </button>
+          )}
         </div>
       </div>
 
       {loading ? (
         <div className="ads-subtitle">Chargement des campagnes…</div>
-      ) : campaigns.length === 0 ? (
+      ) : filteredCampaigns.length === 0 ? (
         <div className="ads-subtitle">
-          Aucune campagne pour le moment. Sponsorisez une publication pour commencer.
+          {isArchiveView
+            ? "Aucune campagne terminée ou archivée pour le moment."
+            : "Aucune campagne pour le moment. Sponsorisez une publication pour commencer."}
         </div>
       ) : (
-        <div className="ads-grid">{campaigns.map((c) => renderCard(c))}</div>
+        <div className="ads-grid">{filteredCampaigns.map((c) => renderCard(c))}</div>
       )}
     </div>
   );

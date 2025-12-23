@@ -5,6 +5,7 @@ const links = [
   { label: "Tableau de bord", to: "/ads" },
   { label: "Créer une publicité", to: "/ads/create" },
   { label: "Campagnes", to: "/ads" },
+  { label: "📦 Archives", to: "/ads/archives" },
   { label: "Paiements", to: "/ads", disabled: true },
   { label: "Statistiques", to: "/ads", disabled: true },
 ];
