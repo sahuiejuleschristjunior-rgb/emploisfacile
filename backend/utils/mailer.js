@@ -86,6 +86,14 @@ exports.sendTemplateEmail = async (
     }
 
     // Envoi du mail
+    console.log("EMAIL SEND ATTEMPT", {
+      to,
+      subject,
+      from,
+      template: templateName,
+      fromType,
+    });
+
     const info = await transporter.sendMail({
       from,
       to,
@@ -93,11 +101,11 @@ exports.sendTemplateEmail = async (
       html,
     });
 
-    console.log(`📨 Email envoyé (${fromType}) → ${to}`);
+    console.log("EMAIL SENT OK", { to, subject, messageId: info?.messageId || null });
     return info;
 
   } catch (err) {
-    console.error("❌ Erreur envoi mail HTML:", err.message);
+    console.error("EMAIL ERROR", err.message || err);
     // On renvoie l’erreur pour que le contrôleur puisse réagir
     throw err;
   }
