@@ -124,6 +124,7 @@ async function maybeFinalizeReview(campaign) {
     if (!reviewEndsAt || Number.isNaN(reviewEndsAt.getTime())) return campaign;
     if (reviewEndsAt.getTime() > Date.now()) return campaign;
 
+    console.log("ADS_REVIEW_AUTO_FINALIZED", String(campaign._id || ""));
     console.log("ADS_AUTO_ADVANCE", {
       id: String(campaign._id || ""),
       from: "review",
@@ -138,6 +139,14 @@ async function maybeFinalizeReview(campaign) {
   }
 
   return campaign;
+}
+
+async function finalizeReviewAndSendAwaitingPaymentEmail(campaign) {
+  const finalizedCampaign = await maybeFinalizeReview(campaign);
+  if (finalizedCampaign?.status === "awaiting_payment" && !finalizedCampaign.payment?.emailSentAt) {
+    await maybeSendAwaitingPaymentEmail(finalizedCampaign);
+  }
+  return finalizedCampaign;
 }
 
 exports.create = async (req, res) => {
@@ -201,7 +210,9 @@ exports.create = async (req, res) => {
       await updatePostFlag(post._id, true);
     }
 
-    res.status(201).json({ ok: true, data: campaign });
+    const finalizedCampaign = await finalizeReviewAndSendAwaitingPaymentEmail(campaign);
+
+    res.status(201).json({ ok: true, data: finalizedCampaign });
   } catch (err) {
     console.error("ADS CREATE ERROR", err.message || err);
     res.status(500).json({ ok: false, error: "Erreur création campagne" });
@@ -226,13 +237,7 @@ exports.getMy = async (req, res) => {
       .sort({ createdAt: -1 });
 
     const refreshedCampaigns = await Promise.all(
-      campaigns.map(async (campaign) => {
-        const finalized = await maybeFinalizeReview(campaign);
-        if (finalized.status === "awaiting_payment" && !finalized.payment?.emailSentAt) {
-          await maybeSendAwaitingPaymentEmail(finalized);
-        }
-        return finalized;
-      })
+      campaigns.map(async (campaign) => finalizeReviewAndSendAwaitingPaymentEmail(campaign))
     );
 
     res.json({ ok: true, data: refreshedCampaigns });
@@ -258,10 +263,7 @@ exports.getOne = async (req, res) => {
     const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
-    const refreshedCampaign = await maybeFinalizeReview(campaign);
-    if (refreshedCampaign.status === "awaiting_payment" && !refreshedCampaign.payment?.emailSentAt) {
-      await maybeSendAwaitingPaymentEmail(refreshedCampaign);
-    }
+    const refreshedCampaign = await finalizeReviewAndSendAwaitingPaymentEmail(campaign);
 
     res.json({ ok: true, data: refreshedCampaign });
   } catch (err) {
@@ -317,7 +319,7 @@ exports.updateStatus = async (req, res) => {
 
     campaign.status = status;
     await campaign.save();
-    await maybeFinalizeReview(campaign);
+    const finalizedCampaign = await finalizeReviewAndSendAwaitingPaymentEmail(campaign);
 
     if (status === "active" && isCampaignActive(campaign)) {
       await updatePostFlag(campaign.post, true);
@@ -325,11 +327,7 @@ exports.updateStatus = async (req, res) => {
       await refreshPostFlagForCampaign(campaign.post);
     }
 
-    if (status === "awaiting_payment" && !campaign.payment?.emailSentAt) {
-      await maybeSendAwaitingPaymentEmail(campaign);
-    }
-
-    res.json({ ok: true, data: campaign });
+    res.json({ ok: true, data: finalizedCampaign });
   } catch (err) {
     res.status(500).json({ ok: false, error: "Erreur mise à jour statut" });
   }
