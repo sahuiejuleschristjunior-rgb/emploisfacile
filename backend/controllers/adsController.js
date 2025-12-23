@@ -124,7 +124,7 @@ async function maybeFinalizeReview(campaign) {
     if (!reviewEndsAt || Number.isNaN(reviewEndsAt.getTime())) return campaign;
     if (reviewEndsAt.getTime() > Date.now()) return campaign;
 
-    console.log("ADS_REVIEW_AUTO_FINALIZED", String(campaign._id || ""));
+    console.log("ADS_REVIEW_AUTO_FINALIZED", campaign._id);
     console.log("ADS_AUTO_ADVANCE", {
       id: String(campaign._id || ""),
       from: "review",
@@ -147,6 +147,15 @@ async function finalizeReviewAndSendAwaitingPaymentEmail(campaign) {
     await maybeSendAwaitingPaymentEmail(finalizedCampaign);
   }
   return finalizedCampaign;
+}
+
+async function finalizeCampaignOnAccess(campaign) {
+  if (!campaign) return campaign;
+  return finalizeReviewAndSendAwaitingPaymentEmail(campaign);
+}
+
+async function finalizeCampaignListOnAccess(campaigns = []) {
+  return Promise.all(campaigns.map((campaign) => finalizeCampaignOnAccess(campaign)));
 }
 
 exports.create = async (req, res) => {
@@ -236,9 +245,7 @@ exports.getMy = async (req, res) => {
       .populate({ path: "post", populate: [{ path: "page", select: "name slug" }, { path: "user", select: "name" }] })
       .sort({ createdAt: -1 });
 
-    const refreshedCampaigns = await Promise.all(
-      campaigns.map(async (campaign) => finalizeReviewAndSendAwaitingPaymentEmail(campaign))
-    );
+    const refreshedCampaigns = await finalizeCampaignListOnAccess(campaigns);
 
     res.json({ ok: true, data: refreshedCampaigns });
   } catch (err) {
@@ -250,7 +257,7 @@ exports.getOne = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const campaign = await SponsoredPost.findById(id).populate({
+    let campaign = await SponsoredPost.findById(id).populate({
       path: "post",
       populate: [
         { path: "user", select: "name email avatar" },
@@ -263,9 +270,9 @@ exports.getOne = async (req, res) => {
     const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
-    const refreshedCampaign = await finalizeReviewAndSendAwaitingPaymentEmail(campaign);
+    campaign = await finalizeCampaignOnAccess(campaign);
 
-    res.json({ ok: true, data: refreshedCampaign });
+    res.json({ ok: true, data: campaign });
   } catch (err) {
     res.status(500).json({ ok: false, error: "Erreur chargement campagne" });
   }
@@ -281,7 +288,7 @@ exports.updateStatus = async (req, res) => {
       return res.status(400).json({ ok: false, error: "Statut invalide" });
     }
 
-    const campaign = await SponsoredPost.findById(id).populate({
+    let campaign = await SponsoredPost.findById(id).populate({
       path: "post",
       populate: [{ path: "user", select: "name email" }],
     });
@@ -289,6 +296,8 @@ exports.updateStatus = async (req, res) => {
 
     const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
+
+    campaign = await finalizeCampaignOnAccess(campaign);
 
     const previousStatus = campaign.status;
 
@@ -319,7 +328,7 @@ exports.updateStatus = async (req, res) => {
 
     campaign.status = status;
     await campaign.save();
-    const finalizedCampaign = await finalizeReviewAndSendAwaitingPaymentEmail(campaign);
+    const finalizedCampaign = await finalizeCampaignOnAccess(campaign);
 
     if (status === "active" && isCampaignActive(campaign)) {
       await updatePostFlag(campaign.post, true);
