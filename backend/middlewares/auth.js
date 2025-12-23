@@ -15,6 +15,13 @@ const isAuthenticated = (req, res, next) => {
 
   const token = authHeader.split(" ")[1];
 
+  // Vérifie rapidement le format du token pour éviter les erreurs "jwt malformed".
+  if (!token || token === "null" || token === "undefined" || token.split(".").length !== 3) {
+    return res.status(401).json({
+      error: "Accès refusé. Token manquant ou invalide.",
+    });
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
