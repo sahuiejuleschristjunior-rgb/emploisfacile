@@ -179,7 +179,7 @@ export default function AdsDashboard() {
       <div
         key={campaignId}
         className="ads-card"
-        onClick={() => (isLocal ? null : nav(`/fb/ads/${campaignId}`))}
+        onClick={() => (isLocal ? null : nav(`/ads/${campaignId}`))}
       >
         <div className="ads-meta-row">
           <span className={`ads-status-badge status-${status}`}>{statusLabel}</span>
@@ -210,7 +210,7 @@ export default function AdsDashboard() {
               className="ads-btn primary"
               onClick={(e) => {
                 e.stopPropagation();
-                nav(`/fb/ads/pay/${campaignId}`);
+                nav(`/ads/pay/${campaignId}`);
               }}
             >
               Payer
@@ -257,7 +257,7 @@ export default function AdsDashboard() {
         <div className="ads-meta-row">
           <FBIcon name="ads" size={22} />
           <span>{campaigns.length} campagne(s)</span>
-          <button className="ads-btn primary" onClick={() => nav("/fb/ads/create")}>
+          <button className="ads-btn primary" onClick={() => nav("/ads/create")}>
             Créer une publicité
           </button>
         </div>

@@ -45,6 +45,7 @@ import AdsDashboard from "./pages/AdsDashboard";
 import AdsDetails from "./pages/AdsDetails";
 import AdsCreate from "./pages/AdsCreate";
 import AdsPayment from "./pages/AdsPayment";
+import AdsLayout from "./pages/AdsLayout";
 
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -93,6 +94,23 @@ export default function App() {
               {/* Profil Public */}
               <Route path="/profil/:id" element={<PublicProfile />} />
 
+              {/* Centre publicitaire indépendant */}
+              <Route path="/fb/ads/*" element={<Navigate to="/ads" replace />} />
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <AdsLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/ads" element={<Outlet />}>
+                  <Route index element={<AdsDashboard />} />
+                  <Route path="create" element={<AdsCreate />} />
+                  <Route path="pay/:campaignId" element={<AdsPayment />} />
+                  <Route path=":id" element={<AdsDetails />} />
+                </Route>
+              </Route>
+
               {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
               <Route
                 element={
@@ -106,10 +124,6 @@ export default function App() {
                     <Route index element={<FacebookFeed />} />
                     <Route path="post/:id" element={<PostPage />} />
                     <Route path="pages-feed" element={<PagesFeed />} />
-                    <Route path="ads/create" element={<AdsCreate />} />
-                    <Route path="ads" element={<AdsDashboard />} />
-                    <Route path="ads/pay/:campaignId" element={<AdsPayment />} />
-                    <Route path="ads/:id" element={<AdsDetails />} />
 
                   <Route
                     path="dashboard"
