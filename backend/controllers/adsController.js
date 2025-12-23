@@ -211,6 +211,14 @@ exports.create = async (req, res) => {
     campaign.payment.link = buildPaymentLink(campaign._id);
     await campaign.save();
 
+    console.log("ADS_LAUNCH_DEBUG", {
+      campaignId: campaign._id,
+      postId: campaign.post,
+      postPopulated: !!campaign.post?.user,
+      userId: campaign.post?.user?._id,
+      userEmail: campaign.post?.user?.email,
+    });
+
     if (status === "awaiting_payment") {
       await maybeSendAwaitingPaymentEmail(campaign);
     }
