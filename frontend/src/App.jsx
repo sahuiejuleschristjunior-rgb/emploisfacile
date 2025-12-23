@@ -103,13 +103,14 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route path="/ads" element={<Outlet />}>
-                  <Route index element={<AdsDashboard />} />
-                  <Route path="create" element={<AdsCreate />} />
-                  <Route path="pay/:campaignId" element={<AdsPayment />} />
-                  <Route path=":id" element={<AdsDetails />} />
+                  <Route path="/ads" element={<Outlet />}>
+                    <Route index element={<AdsDashboard />} />
+                    <Route path="create" element={<AdsCreate />} />
+                    <Route path="pay/:campaignId" element={<AdsPayment />} />
+                    <Route path="archives" element={<AdsDashboard view="archives" />} />
+                    <Route path=":id" element={<AdsDetails />} />
+                  </Route>
                 </Route>
-              </Route>
 
               {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
               <Route
