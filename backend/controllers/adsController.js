@@ -117,6 +117,29 @@ async function maybeSendAwaitingPaymentEmail(campaign) {
   }
 }
 
+async function maybeFinalizeReview(campaign) {
+  try {
+    if (!campaign || campaign.status !== "review") return campaign;
+    const reviewEndsAt = campaign.review?.endsAt ? new Date(campaign.review.endsAt) : null;
+    if (!reviewEndsAt || Number.isNaN(reviewEndsAt.getTime())) return campaign;
+    if (reviewEndsAt.getTime() > Date.now()) return campaign;
+
+    console.log("ADS_AUTO_ADVANCE", {
+      id: String(campaign._id || ""),
+      from: "review",
+      to: "awaiting_payment",
+    });
+
+    campaign.status = "awaiting_payment";
+    await campaign.save();
+    await maybeSendAwaitingPaymentEmail(campaign);
+  } catch (err) {
+    console.error("ADS AUTO AWAITING PAYMENT ERROR", err.message || err);
+  }
+
+  return campaign;
+}
+
 exports.create = async (req, res) => {
   try {
     const { postId } = req.params;
@@ -202,7 +225,9 @@ exports.getMy = async (req, res) => {
       .populate({ path: "post", populate: [{ path: "page", select: "name slug" }, { path: "user", select: "name" }] })
       .sort({ createdAt: -1 });
 
-    res.json({ ok: true, data: campaigns });
+    const refreshedCampaigns = await Promise.all(campaigns.map((campaign) => maybeFinalizeReview(campaign)));
+
+    res.json({ ok: true, data: refreshedCampaigns });
   } catch (err) {
     res.status(500).json({ ok: false, error: "Erreur chargement campagnes" });
   }
@@ -225,7 +250,9 @@ exports.getOne = async (req, res) => {
     const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
-    res.json({ ok: true, data: campaign });
+    const refreshedCampaign = await maybeFinalizeReview(campaign);
+
+    res.json({ ok: true, data: refreshedCampaign });
   } catch (err) {
     res.status(500).json({ ok: false, error: "Erreur chargement campagne" });
   }

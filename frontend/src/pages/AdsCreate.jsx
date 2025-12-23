@@ -690,7 +690,7 @@ export default function AdsCreate() {
 
       if (backendId && token) {
         try {
-          await fetch(`${API_URL}/ads/${backendId}/status`, {
+          const syncResponse = await fetch(`${API_URL}/ads/${backendId}/status`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -705,8 +705,14 @@ export default function AdsCreate() {
               },
             }),
           });
+
+          if (!syncResponse.ok) {
+            throw new Error(`Sync failed with status ${syncResponse.status}`);
+          }
         } catch (err) {
-          if (import.meta.env.DEV) console.debug("ADS awaiting payment sync error", err);
+          console.error("Failed to sync awaiting_payment", err);
+          setLaunchToast("Synchronisation paiement impossible. Merci de réessayer.");
+          setTimeout(() => setLaunchToast(""), 5000);
         }
       }
 
