@@ -71,6 +71,8 @@ exports.sendTemplateEmail = async (
         ? process.env.FROM_EMAIL_INSCRIPTION
         : process.env.FROM_EMAIL_NO_REPLY;
 
+    console.log("SMTP_LOG", { to, subject });
+
     // Chemin du template
     const templatePath = path.join(__dirname, "../templates", templateName);
 
