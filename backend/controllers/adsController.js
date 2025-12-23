@@ -317,6 +317,7 @@ exports.updateStatus = async (req, res) => {
 
     campaign.status = status;
     await campaign.save();
+    await maybeFinalizeReview(campaign);
 
     if (status === "active" && isCampaignActive(campaign)) {
       await updatePostFlag(campaign.post, true);
