@@ -54,10 +54,101 @@ function normalizeDate(value) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+function formatDateRange(startDate, endDate) {
+  if (startDate && endDate) {
+    return `${new Date(startDate).toLocaleDateString()} → ${new Date(endDate).toLocaleDateString()}`;
+  }
+  return startDate || endDate
+    ? new Date(startDate || endDate).toLocaleDateString()
+    : "Dates non définies";
+}
+
 function buildPaymentLink(campaignId) {
   if (!campaignId) return "";
   const base = process.env.FRONTEND_URL || "https://emploisfacile.org";
   return `${base}/fb/ads/pay/${campaignId}`;
+}
+
+async function resolveCampaignRecipient(campaign) {
+  try {
+    if (!campaign) return { email: null, name: null, firstName: null };
+
+    if (!campaign.post?.user?.email) {
+      await campaign.populate({
+        path: "post",
+        populate: [{ path: "user", select: "name email" }, { path: "page", select: "name owner" }],
+      });
+    }
+
+    const postUserEmail = campaign.post?.user?.email;
+    if (postUserEmail) {
+      const name = campaign.post?.user?.name || "client";
+      return { email: postUserEmail, name, firstName: name.split(" ")[0] || "client" };
+    }
+
+    if (campaign.ownerType === "page" && campaign.owner) {
+      let page = campaign.owner;
+      if (!page?.owner?.email) {
+        page = await Page.findById(campaign.owner).populate({ path: "owner", select: "name email" });
+      }
+
+      const pageOwner = page?.owner;
+      if (pageOwner?.email) {
+        const name = pageOwner.name || "client";
+        return { email: pageOwner.email, name, firstName: name.split(" ")[0] || "client" };
+      }
+    }
+
+    return { email: null, name: null, firstName: null };
+  } catch (err) {
+    console.error("ADS EMAIL RECIPIENT ERROR", err.message || err);
+    return { email: null, name: null, firstName: null };
+  }
+}
+
+async function sendAdReviewStartedEmail(campaign) {
+  try {
+    if (!campaign || campaign.status !== "review") return;
+    if (campaign.review?.emailSentAt) return;
+
+    const recipient = await resolveCampaignRecipient(campaign);
+
+    if (!recipient.email) {
+      console.log("ADS_EMAIL_MISSING_RECIPIENT", {
+        campaignId: String(campaign._id || ""),
+        phase: "review",
+      });
+      return;
+    }
+
+    const variables = {
+      firstName: recipient.firstName || "client",
+      objective: campaign.objective || "Non spécifié",
+      budget: `${campaign.budgetTotal || 0} FCFA`,
+      dates: formatDateRange(campaign.startDate, campaign.endDate),
+    };
+
+    await mailer.sendTemplateEmail(
+      "ads_review_started.html",
+      recipient.email,
+      "Votre publicité est en cours de validation",
+      variables,
+      "noreply"
+    );
+
+    console.log("ADS_EMAIL_REVIEW_SENT", {
+      campaignId: String(campaign._id || ""),
+      to: recipient.email,
+    });
+
+    campaign.review = {
+      ...(campaign.review || {}),
+      emailSentAt: new Date(),
+    };
+    await campaign.save();
+  } catch (err) {
+    console.error("ADS REVIEW EMAIL ERROR", err.message || err);
+  }
 }
 
 async function maybeSendAwaitingPaymentEmail(campaign) {
@@ -72,6 +163,11 @@ async function maybeSendAwaitingPaymentEmail(campaign) {
     console.log("EMAIL_CAMPAIGN_ID", String(campaign._id || ""));
     console.log("EMAIL_STATUS", campaign.status || "NO_STATUS");
 
+    if (campaign.status !== "awaiting_payment") {
+      console.log("EMAIL_STATUS", "INVALID_STATUS");
+      return;
+    }
+
     if (!campaign.payment?.emailSentAt && (!campaign.post || !campaign.post.user)) {
       await campaign.populate({ path: "post", populate: [{ path: "user", select: "name email" }] });
     }
@@ -81,35 +177,40 @@ async function maybeSendAwaitingPaymentEmail(campaign) {
       return;
     }
 
-    const recipient = campaign.post?.user?.email;
-    const recipientName = campaign.post?.user?.name || "client";
-    console.log("EMAIL_TO", recipient || "MISSING_RECIPIENT");
-    if (!recipient) return;
+    const recipient = await resolveCampaignRecipient(campaign);
+    console.log("EMAIL_TO", recipient.email || "MISSING_RECIPIENT");
+    if (!recipient.email) {
+      console.log("ADS_EMAIL_MISSING_RECIPIENT", {
+        campaignId: String(campaign._id || ""),
+        phase: "awaiting_payment",
+      });
+      return;
+    }
 
     const variables = {
-      firstName: recipientName.split(" ")[0],
+      firstName: recipient.firstName || "client",
       objective: campaign.objective || "Non spécifié",
       audience: campaign.audience?.country || "Audience non définie",
       budget: `${campaign.budgetTotal || 0} FCFA`,
-      dates:
-        campaign.startDate && campaign.endDate
-          ? `${new Date(campaign.startDate).toLocaleDateString()} → ${new Date(
-              campaign.endDate
-            ).toLocaleDateString()}`
-          : "Dates non définies",
+      dates: formatDateRange(campaign.startDate, campaign.endDate),
       paymentLink: campaign.payment?.link || buildPaymentLink(campaign._id),
     };
 
     await mailer.sendTemplateEmail(
       "ads_payment_ready.html",
-      recipient,
+      recipient.email,
       "Votre publicité est prête — Paiement requis",
       variables,
       "noreply"
     );
 
     console.log("EMAIL_STATUS", "SEND_OK");
+    console.log("ADS_EMAIL_PAYMENT_SENT", {
+      campaignId: String(campaign._id || ""),
+      to: recipient.email,
+    });
 
+    campaign.payment = campaign.payment || {};
     campaign.payment.emailSentAt = new Date();
     await campaign.save();
   } catch (err) {
@@ -179,6 +280,7 @@ exports.create = async (req, res) => {
       review: {
         startedAt: reviewStartedAt,
         endsAt: reviewEndsAt,
+        emailSentAt: null,
       },
       payment: {
         amount: sanitizeBudget(body.payment?.amount || body.budgetTotal),
@@ -192,6 +294,10 @@ exports.create = async (req, res) => {
     // Inject payment link once we have the ID
     campaign.payment.link = buildPaymentLink(campaign._id);
     await campaign.save();
+
+    if (status === "review") {
+      await sendAdReviewStartedEmail(campaign);
+    }
 
     if (status === "awaiting_payment") {
       await maybeSendAwaitingPaymentEmail(campaign);
@@ -288,12 +394,12 @@ exports.updateStatus = async (req, res) => {
     const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
-    const previousStatus = campaign.status;
-
     if (status === "review") {
+      const currentReview = campaign.review || {};
       campaign.review = {
-        startedAt: normalizeDate(review?.startedAt) || new Date(),
-        endsAt: normalizeDate(review?.endsAt),
+        startedAt: normalizeDate(review?.startedAt) || currentReview.startedAt || new Date(),
+        endsAt: normalizeDate(review?.endsAt) || currentReview.endsAt || null,
+        emailSentAt: currentReview.emailSentAt || null,
       };
     }
 
@@ -308,9 +414,11 @@ exports.updateStatus = async (req, res) => {
         emailSentAt: currentPayment.emailSentAt || null,
       };
       if (review?.startedAt || review?.endsAt) {
+        const currentReview = campaign.review || {};
         campaign.review = {
-          startedAt: normalizeDate(review?.startedAt) || campaign.review?.startedAt || new Date(),
-          endsAt: normalizeDate(review?.endsAt) || campaign.review?.endsAt || null,
+          startedAt: normalizeDate(review?.startedAt) || currentReview.startedAt || new Date(),
+          endsAt: normalizeDate(review?.endsAt) || currentReview.endsAt || null,
+          emailSentAt: currentReview.emailSentAt || null,
         };
       }
     }
@@ -322,6 +430,10 @@ exports.updateStatus = async (req, res) => {
       await updatePostFlag(campaign.post, true);
     } else if (status === "paused" || status === "ended") {
       await refreshPostFlagForCampaign(campaign.post);
+    }
+
+    if (status === "review" && !campaign.review?.emailSentAt) {
+      await sendAdReviewStartedEmail(campaign);
     }
 
     if (status === "awaiting_payment" && !campaign.payment?.emailSentAt) {

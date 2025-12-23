@@ -32,6 +32,7 @@ const SponsoredPostSchema = new mongoose.Schema(
     review: {
       startedAt: { type: Date, default: null },
       endsAt: { type: Date, default: null },
+      emailSentAt: { type: Date, default: null },
     },
     payment: {
       amount: { type: Number, default: 0 },
