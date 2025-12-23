@@ -225,7 +225,15 @@ exports.getMy = async (req, res) => {
       .populate({ path: "post", populate: [{ path: "page", select: "name slug" }, { path: "user", select: "name" }] })
       .sort({ createdAt: -1 });
 
-    const refreshedCampaigns = await Promise.all(campaigns.map((campaign) => maybeFinalizeReview(campaign)));
+    const refreshedCampaigns = await Promise.all(
+      campaigns.map(async (campaign) => {
+        const finalized = await maybeFinalizeReview(campaign);
+        if (finalized.status === "awaiting_payment" && !finalized.payment?.emailSentAt) {
+          await maybeSendAwaitingPaymentEmail(finalized);
+        }
+        return finalized;
+      })
+    );
 
     res.json({ ok: true, data: refreshedCampaigns });
   } catch (err) {
@@ -251,6 +259,9 @@ exports.getOne = async (req, res) => {
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
     const refreshedCampaign = await maybeFinalizeReview(campaign);
+    if (refreshedCampaign.status === "awaiting_payment" && !refreshedCampaign.payment?.emailSentAt) {
+      await maybeSendAwaitingPaymentEmail(refreshedCampaign);
+    }
 
     res.json({ ok: true, data: refreshedCampaign });
   } catch (err) {
@@ -313,9 +324,9 @@ exports.updateStatus = async (req, res) => {
       await refreshPostFlagForCampaign(campaign.post);
     }
 
-  if (status === "awaiting_payment" && !campaign.payment?.emailSentAt) {
-    await maybeSendAwaitingPaymentEmail(campaign);
-  }
+    if (status === "awaiting_payment" && !campaign.payment?.emailSentAt) {
+      await maybeSendAwaitingPaymentEmail(campaign);
+    }
 
     res.json({ ok: true, data: campaign });
   } catch (err) {
