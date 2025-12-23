@@ -286,9 +286,9 @@ exports.updateStatus = async (req, res) => {
       await refreshPostFlagForCampaign(campaign.post);
     }
 
-    if (status === "awaiting_payment" && previousStatus !== "awaiting_payment") {
-      await maybeSendAwaitingPaymentEmail(campaign);
-    }
+  if (status === "awaiting_payment" && !campaign.payment?.emailSentAt) {
+    await maybeSendAwaitingPaymentEmail(campaign);
+  }
 
     res.json({ ok: true, data: campaign });
   } catch (err) {
