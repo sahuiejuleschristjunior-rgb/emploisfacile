@@ -378,7 +378,7 @@ exports.getOne = async (req, res) => {
 exports.updateStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, review, payment } = req.body || {};
+    const { status, review, payment, archived, endedAt } = req.body || {};
     const allowedStatus = ["draft", "review", "awaiting_payment", "active", "paused", "ended"];
 
     if (!allowedStatus.includes(status)) {
@@ -394,7 +394,14 @@ exports.updateStatus = async (req, res) => {
     const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
-    if (status === "review") {
+    const shouldArchive = typeof archived === "boolean" ? archived : campaign.archived;
+    let nextStatus = status;
+
+    if (shouldArchive && nextStatus === "active") {
+      nextStatus = "paused";
+    }
+
+    if (nextStatus === "review") {
       const currentReview = campaign.review || {};
       campaign.review = {
         startedAt: normalizeDate(review?.startedAt) || currentReview.startedAt || new Date(),
@@ -403,7 +410,7 @@ exports.updateStatus = async (req, res) => {
       };
     }
 
-    if (status === "awaiting_payment") {
+    if (nextStatus === "awaiting_payment") {
       const currentPayment = campaign.payment || {};
       campaign.payment = {
         ...currentPayment,
@@ -423,20 +430,29 @@ exports.updateStatus = async (req, res) => {
       }
     }
 
-    campaign.status = status;
+    if (typeof archived === "boolean") {
+      campaign.archived = archived;
+    }
+
+    if (nextStatus === "ended") {
+      campaign.archived = true;
+      campaign.endedAt = endedAt ? new Date(endedAt) : new Date();
+    }
+
+    campaign.status = nextStatus;
     await campaign.save();
 
-    if (status === "active" && isCampaignActive(campaign)) {
+    if (campaign.status === "active" && isCampaignActive(campaign)) {
       await updatePostFlag(campaign.post, true);
-    } else if (status === "paused" || status === "ended") {
+    } else if (campaign.status === "paused" || campaign.status === "ended") {
       await refreshPostFlagForCampaign(campaign.post);
     }
 
-    if (status === "review" && !campaign.review?.emailSentAt) {
+    if (campaign.status === "review" && !campaign.review?.emailSentAt) {
       await sendAdReviewStartedEmail(campaign);
     }
 
-    if (status === "awaiting_payment" && !campaign.payment?.emailSentAt) {
+    if (campaign.status === "awaiting_payment" && !campaign.payment?.emailSentAt) {
       await maybeSendAwaitingPaymentEmail(campaign);
     }
 

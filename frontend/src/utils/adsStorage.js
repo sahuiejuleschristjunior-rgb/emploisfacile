@@ -23,10 +23,15 @@ function normalizeCampaignShape(campaign) {
     ? new Date(campaign.review.endsAt).getTime()
     : campaign.analysisEndsAt || null;
 
-  const status =
+  let status =
     campaign.status === "review" && reviewEnds && now >= reviewEnds
       ? "awaiting_payment"
       : campaign.status || "draft";
+
+  const archived = Boolean(campaign.archived || status === "ended");
+  if (archived && status === "active") {
+    status = "paused";
+  }
 
   const review = {
     startedAt: normalizeDate(campaign.review?.startedAt) || normalizeDate(campaign.analysisStartedAt),
@@ -48,7 +53,8 @@ function normalizeCampaignShape(campaign) {
     status,
     review,
     payment,
-    archived: Boolean(campaign.archived),
+    archived,
+    endedAt: normalizeDate(campaign.endedAt),
     createdAt: campaign.createdAt || new Date().toISOString(),
   };
 }

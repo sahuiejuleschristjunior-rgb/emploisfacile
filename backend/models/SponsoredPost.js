@@ -45,6 +45,8 @@ const SponsoredPostSchema = new mongoose.Schema(
       impressions: { type: Number, default: 0 },
       clicks: { type: Number, default: 0 },
     },
+    archived: { type: Boolean, default: false },
+    endedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
