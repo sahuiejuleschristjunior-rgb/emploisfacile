@@ -1030,6 +1030,19 @@
   border-bottom: none;
 }
 
+.ads-dev-toast {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(45, 136, 255, 0.92);
+  color: #0b1a2f;
+  padding: 10px 14px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+  z-index: 50;
+}
+
 .ads-payment-methods {
   list-style: disc;
   padding-left: 18px;
