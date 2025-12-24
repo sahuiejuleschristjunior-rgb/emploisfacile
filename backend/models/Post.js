@@ -52,6 +52,18 @@ const PostSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
+    sharedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    sharedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      default: null,
+    },
+
     page: { type: mongoose.Schema.Types.ObjectId, ref: "Page", default: null },
 
     authorType: { type: String, enum: ["user", "page"], default: "user" },

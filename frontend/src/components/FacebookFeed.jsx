@@ -12,6 +12,7 @@ import { io } from "socket.io-client";
 import MediaRenderer from "./MediaRenderer";
 import PostEditModal from "./PostEditModal";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
+import { sharePost } from "../api/posts";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -126,6 +127,7 @@ export default function FacebookFeed() {
   const [sponsorToast, setSponsorToast] = useState("");
   const [actionMenuPostId, setActionMenuPostId] = useState(null);
   const [editModalPost, setEditModalPost] = useState(null);
+  const [sharingPostIds, setSharingPostIds] = useState({});
 
   const socketRef = useRef(null);
 
@@ -307,7 +309,7 @@ export default function FacebookFeed() {
     });
 
     s.on("post:new", (newPost) => {
-      if (!newPost?._id) return;
+      if (!newPost?._id || newPost.sharedBy) return;
       setPosts((prev) => filterVisiblePosts([newPost, ...prev]));
     });
 
@@ -376,6 +378,29 @@ export default function FacebookFeed() {
       );
     } catch (err) {
       console.log("LIKE ERROR:", err);
+    }
+  };
+
+  /* =================================================================
+        SHARE POST
+  ================================================================= */
+  const handleShare = async (post) => {
+    if (!post?._id || sharingPostIds[post._id]) return;
+
+    setSharingPostIds((prev) => ({ ...prev, [post._id]: true }));
+
+    try {
+      await sharePost(post._id);
+      alert("Publication partagée sur votre profil");
+    } catch (err) {
+      console.error("SHARE ERROR:", err);
+      alert("Impossible de partager cette publication pour le moment.");
+    } finally {
+      setSharingPostIds((prev) => {
+        const next = { ...prev };
+        delete next[post._id];
+        return next;
+      });
     }
   };
 
@@ -498,6 +523,7 @@ export default function FacebookFeed() {
 
   const canSponsorPost = (post) => {
     if (!post) return false;
+    if (post.sharedFrom) return false;
     const isAuthor = String(post.user?._id) === String(userId);
     const pageOwnerId = post.page?.owner?._id || post.page?.owner || post.pageOwnerId;
     const pageAdminIds = Array.isArray(post.page?.admins)
@@ -525,6 +551,9 @@ export default function FacebookFeed() {
     }
 
     const isAuthor = String(post.user?._id) === String(userId);
+    const isSharer = Boolean(
+      post.sharedBy && String(post.sharedBy._id || post.sharedBy) === String(userId)
+    );
     const pageOwnerId = post.page?.owner?._id || post.page?.owner || post.pageOwnerId;
     const pageAdminIds = Array.isArray(post.page?.admins)
       ? post.page.admins
@@ -537,11 +566,11 @@ export default function FacebookFeed() {
         pageAdminIds.includes(String(userId))
     );
 
-    const isOwner = isAuthor || isPageOwner;
+    const isOwner = (!post.sharedFrom && isAuthor) || isPageOwner;
 
     return {
-      canEdit: isOwner,
-      canDelete: isOwner || isAdmin,
+      canEdit: isOwner && !post.sharedFrom,
+      canDelete: isOwner || isAdmin || isSharer,
       canHide: Boolean(userId),
       canReport: !isOwner,
     };
@@ -673,11 +702,14 @@ export default function FacebookFeed() {
       {/* POSTS */}
       {!loadingInitial &&
         posts.map((post) => {
-          const isPagePost = post.authorType === "page";
+          const sourcePost = post.sharedFrom || post;
+          const isPagePost = sourcePost.authorType === "page";
           const postAvatarStyle = getAvatarStyle(
-            isPagePost ? post.page?.avatar : post.user?.avatar
+            isPagePost ? sourcePost.page?.avatar : sourcePost.user?.avatar
           );
-          const displayName = isPagePost ? post.page?.name : post.user?.name;
+          const displayName = isPagePost
+            ? sourcePost.page?.name
+            : sourcePost.user?.name;
           const likes = post.likes?.length || 0;
           const commentsCount = post.comments?.length || 0;
 
@@ -858,13 +890,11 @@ export default function FacebookFeed() {
 
                 <button
                   className="fb-post-action-btn"
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/post/${post._id}`
-                    )
-                  }
+                  disabled={sharingPostIds[post._id]}
+                  onClick={() => handleShare(post)}
                 >
-                  <FBIcon name="share" size={18} /> Partager
+                  <FBIcon name="share" size={18} />
+                  {sharingPostIds[post._id] ? "Partage…" : "Partager"}
                 </button>
 
                 {canSponsor && (

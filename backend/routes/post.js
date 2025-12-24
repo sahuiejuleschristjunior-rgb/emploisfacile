@@ -99,6 +99,9 @@ router.get("/:id/likes", auth, postCtrl.getLikes);
 // ➤ Like / unlike post
 router.post("/:id/like", auth, postCtrl.like);
 
+// ➤ Partager un post
+router.post("/:id/share", auth, postCtrl.sharePost);
+
 // =====================================================
 // ⭐⭐⭐ COMMENTAIRES
 // =====================================================
