@@ -381,8 +381,10 @@ export default function FeedPage() {
     setSharingPostIds((prev) => ({ ...prev, [postId]: true }));
 
     try {
-      const shared = await sharePost(postId);
-      setPosts((prev) => [shared, ...prev]);
+      const result = await sharePost(postId);
+      if (result?.success) {
+        alert("Publication partagée sur votre profil.");
+      }
     } catch (err) {
       console.error("Erreur partage post", err);
       alert("Impossible de partager cette publication.");

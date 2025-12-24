@@ -184,8 +184,10 @@ export default function PagesFeed() {
     setSharingPostIds((prev) => ({ ...prev, [post._id]: true }));
 
     try {
-      const shared = await sharePost(post._id);
-      addOptimisticPost(shared);
+      const result = await sharePost(post._id);
+      if (result?.success) {
+        alert("Publication partagée sur votre profil.");
+      }
     } catch (err) {
       console.error("Erreur partage", err);
       alert("Le partage a échoué. Veuillez réessayer.");
