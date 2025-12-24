@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import "../styles/post-edit-modal.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 
 /* Fonction pour corriger les URL */
 const fixUrl = (path) => {
@@ -53,6 +53,11 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
   /* ============== ENREGISTRER LES MODIFICATIONS ============== */
   const handleSave = async () => {
     try {
+      if (!token) {
+        setError("Connexion requise pour modifier la publication.");
+        return;
+      }
+
       const form = new FormData();
       form.append("text", text);
 
@@ -76,7 +81,7 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
       const updated = await res.json();
 
       if (!res.ok) {
-        setError("Erreur lors de la mise à jour.");
+        setError(updated?.error || "Erreur lors de la mise à jour.");
         return;
       }
 

@@ -90,11 +90,12 @@
   border: 1px solid #3a3b3c;
   border-radius: 8px;
   padding: 4px 0;
-  width: 140px;
+  width: 220px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 10;
 }
 
+.fb-post-menu-popup.open,
 .fb-post-menu:hover .fb-post-menu-popup {
   display: block;
 }
