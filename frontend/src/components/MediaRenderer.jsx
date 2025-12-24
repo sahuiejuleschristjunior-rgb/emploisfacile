@@ -10,6 +10,8 @@ import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
 const VIDEO_EXT = /(\.mp4|\.mov|\.webm|\.m4v|\.avi)$/i;
+const DEFAULT_ASPECT_RATIO = 16 / 9;
+const MIN_ASPECT_RATIO = 4 / 5; // Facebook max portrait ratio (width/height)
 
 const getMediaType = ({ type, mimeType, url = "" }) => {
   const hint = type || mimeType || "";
@@ -18,6 +20,23 @@ const getMediaType = ({ type, mimeType, url = "" }) => {
   if (VIDEO_EXT.test(url)) return "video";
   if (IMAGE_EXT.test(url)) return "image";
   return "image";
+};
+
+const parseAspectRatio = (value) => {
+  if (!value) return null;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    const cleaned = value.trim();
+    if (cleaned.includes("/")) {
+      const [w, h] = cleaned.split("/").map(Number);
+      if (w > 0 && h > 0) return w / h;
+    }
+
+    const numeric = Number(cleaned);
+    if (!Number.isNaN(numeric) && numeric > 0) return numeric;
+  }
+
+  return null;
 };
 
 export default function MediaRenderer({
@@ -61,11 +80,17 @@ export default function MediaRenderer({
   );
 
   const ratio = useMemo(() => {
-    if (aspectRatio) return aspectRatio;
-    if (media?.ratio) return media.ratio;
-    if (media?.width && media?.height) return `${media.width}/${media.height}`;
-    return "16/9";
-  }, [aspectRatio, media?.ratio, media?.width, media?.height]);
+    const providedRatio = parseAspectRatio(aspectRatio);
+    const mediaRatio = parseAspectRatio(media?.ratio);
+    const dimensionRatio = media?.width && media?.height ? media.width / media.height : null;
+
+    const resolved = providedRatio ?? mediaRatio ?? dimensionRatio ?? DEFAULT_ASPECT_RATIO;
+    if (!resolved || Number.isNaN(resolved) || resolved <= 0) {
+      return DEFAULT_ASPECT_RATIO;
+    }
+
+    return Math.max(resolved, MIN_ASPECT_RATIO);
+  }, [aspectRatio, media?.height, media?.ratio, media?.width]);
 
   const showVideo = resolvedType === "video";
 
