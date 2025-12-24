@@ -11,6 +11,7 @@ import FBIcon from "../components/FBIcon";
 import { io } from "socket.io-client";
 import MediaRenderer from "./MediaRenderer";
 import PostEditModal from "./PostEditModal";
+import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -98,6 +99,14 @@ export default function FacebookFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [expanded, setExpanded] = useState({});
+  const filterVisiblePosts = useCallback(
+    (list) => filterHiddenPosts(list, userId),
+    [userId]
+  );
+
+  useEffect(() => {
+    setPosts((prev) => filterVisiblePosts(prev));
+  }, [filterVisiblePosts]);
 
   /* Nouveau système modal commentaires */
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -122,7 +131,7 @@ export default function FacebookFeed() {
 
   const addOptimisticPost = (post) => {
     if (!post) return;
-    setPosts((prev) => [post, ...prev]);
+    setPosts((prev) => filterVisiblePosts([post, ...prev]));
   };
 
   const applyCacheBust = (media = []) =>
@@ -141,20 +150,22 @@ export default function FacebookFeed() {
     if (!postId || !finalUrl) return;
 
     setPosts((prev) =>
-      prev.map((p) => {
-        if (p._id !== postId || !p.media?.[mediaIndex]) return p;
+      filterVisiblePosts(
+        prev.map((p) => {
+          if (p._id !== postId || !p.media?.[mediaIndex]) return p;
 
-        const updatedMedia = [...p.media];
-        updatedMedia[mediaIndex] = {
-          ...updatedMedia[mediaIndex],
-          url: finalUrl,
-          isLocal: false,
-          previewUrl: undefined,
-          serverUrl: undefined,
-        };
+          const updatedMedia = [...p.media];
+          updatedMedia[mediaIndex] = {
+            ...updatedMedia[mediaIndex],
+            url: finalUrl,
+            isLocal: false,
+            previewUrl: undefined,
+            serverUrl: undefined,
+          };
 
-        return { ...p, media: updatedMedia };
-      })
+          return { ...p, media: updatedMedia };
+        })
+      )
     );
   };
 
@@ -215,15 +226,17 @@ export default function FacebookFeed() {
       };
 
       const exists = prev.some((p) => p._id === tempId);
-      if (!exists) return [nextPost, ...prev];
+      if (!exists) return filterVisiblePosts([nextPost, ...prev]);
 
-      return prev.map((p) => (p._id === tempId ? nextPost : p));
+      return filterVisiblePosts(
+        prev.map((p) => (p._id === tempId ? nextPost : p))
+      );
     });
   };
 
   const removeOptimisticPost = (tempId) => {
     if (!tempId) return;
-    setPosts((prev) => prev.filter((p) => p._id !== tempId));
+    setPosts((prev) => filterVisiblePosts(prev.filter((p) => p._id !== tempId)));
   };
 
   /* =================================================================
@@ -245,8 +258,8 @@ export default function FacebookFeed() {
         return;
       }
 
-      if (isInitial) setPosts(data.posts);
-      else setPosts((prev) => [...prev, ...data.posts]);
+      if (isInitial) setPosts(filterVisiblePosts(data.posts));
+      else setPosts((prev) => filterVisiblePosts([...prev, ...data.posts]));
 
       setHasMore(Boolean(data.hasMore));
       setPage(pageToLoad);
@@ -287,13 +300,15 @@ export default function FacebookFeed() {
       if (!updatedPost?._id) return;
 
       setPosts((prev) =>
-        prev.map((p) => (p._id === updatedPost._id ? updatedPost : p))
+        filterVisiblePosts(
+          prev.map((p) => (p._id === updatedPost._id ? updatedPost : p))
+        )
       );
     });
 
     s.on("post:new", (newPost) => {
       if (!newPost?._id) return;
-      setPosts((prev) => [newPost, ...prev]);
+      setPosts((prev) => filterVisiblePosts([newPost, ...prev]));
     });
 
     return () => {
@@ -547,7 +562,8 @@ export default function FacebookFeed() {
 
   const handleHidePost = (postId) => {
     setActionMenuPostId(null);
-    setPosts((prev) => prev.filter((p) => p._id !== postId));
+    rememberHiddenPost(postId, userId);
+    setPosts((prev) => filterVisiblePosts(prev));
   };
 
   const handleReportPost = () => {
