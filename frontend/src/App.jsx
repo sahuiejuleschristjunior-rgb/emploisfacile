@@ -1,6 +1,7 @@
 // ================================
 // IMPORTS — TOUJOURS EN PREMIER
 // ================================
+import { Component } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
 import ChangePassword from "./pages/ChangePassword";
@@ -66,43 +67,72 @@ window.addEventListener("unhandledrejection", (e) => {
 // ================================
 // APP
 // ================================
+class AppErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("🔥 APP ERROR BOUNDARY", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="app-error" style={{ padding: 24 }}>
+          <h2>Une erreur est survenue</h2>
+          <p>{this.state.error?.message || "Merci de rafraîchir la page."}</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <SocketProvider>
-        <NotificationProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Landing */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute redirectIfAuth to="/fb">
-                    <LandingPage />
-                  </ProtectedRoute>
-                }
-              />
+    <AppErrorBoundary>
+      <AuthProvider>
+        <SocketProvider>
+          <NotificationProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Landing */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute redirectIfAuth to="/fb">
+                      <LandingPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Public */}
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/verify-register" element={<VerifyOtpRegister />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgot" element={<ForgotPassword />} />
-              <Route path="/verify-reset" element={<VerifyOtpReset />} />
-              <Route path="/new-password" element={<NewPassword />} />
+                {/* Public */}
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/verify-register" element={<VerifyOtpRegister />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot" element={<ForgotPassword />} />
+                <Route path="/verify-reset" element={<VerifyOtpReset />} />
+                <Route path="/new-password" element={<NewPassword />} />
 
-              {/* Profil Public */}
-              <Route path="/profil/:id" element={<PublicProfile />} />
+                {/* Profil Public */}
+                <Route path="/profil/:id" element={<PublicProfile />} />
 
-              {/* Centre publicitaire indépendant */}
-              <Route path="/fb/ads/*" element={<Navigate to="/ads" replace />} />
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <AdsLayout />
-                  </ProtectedRoute>
-                }
-              >
+                {/* Centre publicitaire indépendant */}
+                <Route path="/fb/ads/*" element={<Navigate to="/ads" replace />} />
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <AdsLayout />
+                    </ProtectedRoute>
+                  }
+                >
                   <Route path="/ads" element={<Outlet />}>
                     <Route index element={<AdsDashboard />} />
                     <Route path="create" element={<AdsCreate />} />
@@ -112,15 +142,15 @@ export default function App() {
                   </Route>
                 </Route>
 
-              {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <FacebookLayout />
-                  </ProtectedRoute>
-                }
-              >
-                {/* Groupe /fb avec colonnes latérales sur desktop */}
+                {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <FacebookLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  {/* Groupe /fb avec colonnes latérales sur desktop */}
                   <Route path="/fb" element={<Outlet />}>
                     <Route index element={<FacebookFeed />} />
                     <Route path="post/:id" element={<PostPage />} />
@@ -184,6 +214,7 @@ export default function App() {
         </NotificationProvider>
       </SocketProvider>
     </AuthProvider>
+    </AppErrorBoundary>
   );
 }
 

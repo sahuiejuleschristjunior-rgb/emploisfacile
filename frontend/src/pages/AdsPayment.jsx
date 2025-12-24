@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "../styles/ads.css";
 import { buildPaymentLink, loadLocalCampaigns } from "../utils/adsStorage";
+import apiFetch from "../utils/apiFetch";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 
@@ -10,26 +11,31 @@ export default function AdsPayment() {
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
+    let alive = true;
+    const controller = new AbortController();
+
     const fetchCampaign = async () => {
+      setLoading(true);
       try {
-        let payload = null;
-        if (token) {
-          const res = await fetch(`${API_URL}/ads/${campaignId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const data = await res.json();
-          if (res.ok) payload = data?.data || data;
-        }
+        const local = loadLocalCampaigns();
+        let payload =
+          local.find((c) => String(c._id || c.id) === String(campaignId)) || null;
 
         if (!payload) {
-          const local = loadLocalCampaigns();
-          payload = local.find((c) => c._id === campaignId || c.id === campaignId) || null;
+          try {
+            const data = await apiFetch(`${API_URL}/ads/${campaignId}`, {
+              signal: controller.signal,
+            });
+            payload = data?.data || data || null;
+          } catch (err) {
+            if (err.name === "AbortError") return;
+            console.error("ADS PAYMENT LOAD ERROR", err);
+          }
         }
+
+        if (!alive) return;
 
         if (payload) {
           const paymentLink = payload.payment?.link || buildPaymentLink(payload._id || payload.id);
@@ -37,16 +43,23 @@ export default function AdsPayment() {
             ...payload,
             payment: { ...payload.payment, link: paymentLink },
           });
+        } else {
+          setCampaign(null);
         }
       } catch (err) {
         console.error("ADS PAYMENT LOAD ERROR", err);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     };
 
     fetchCampaign();
-  }, [campaignId, token]);
+
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [campaignId]);
 
   const budgetTotal = campaign?.budget?.total ?? campaign?.budgetTotal ?? campaign?.payment?.amount ?? 0;
   const budgetDaily = campaign?.budget?.daily ?? campaign?.budgetDaily ?? null;
