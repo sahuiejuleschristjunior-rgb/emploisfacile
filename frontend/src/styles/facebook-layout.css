@@ -636,8 +636,12 @@
 .fb-post-media img,
 .fb-post-media video {
   width: 100%;
+  height: auto;
   border-radius: 12px;
   margin-top: 8px;
+  object-fit: contain;
+  background: #000;
+  max-height: min(1350px, calc(100vw * 1.25));
 }
 
 /* Statistiques */
