@@ -13,17 +13,20 @@ const isAuthenticated = (req, res, next) => {
     });
   }
 
-  const token = authHeader.split(" ")[1];
+  const rawToken = authHeader.split(" ")[1]?.trim().replace(/^"|"$/g, "");
 
   // Vérifie rapidement le format du token pour éviter les erreurs "jwt malformed".
-  if (!token || token === "null" || token === "undefined" || token.split(".").length !== 3) {
+  const parts = rawToken?.split(".");
+  const hasValidParts = parts && parts.length === 3 && parts.every((p) => Boolean(p));
+
+  if (!rawToken || rawToken === "null" || rawToken === "undefined" || !hasValidParts) {
     return res.status(401).json({
       error: "Accès refusé. Token manquant ou invalide.",
     });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(rawToken, process.env.JWT_SECRET);
 
     // Décode : { id: xxx, role: xxx }
     req.user = {
