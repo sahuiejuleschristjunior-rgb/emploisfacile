@@ -6,6 +6,7 @@ import FBIcon from "../components/FBIcon";
 import SkeletonPost from "../components/SkeletonPost";
 import StoriesFB from "../components/StoriesFB";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
+import { sharePost } from "../api/posts";
 import "../styles/facebook-feed.css";
 import "../styles/post.css";
 
@@ -40,6 +41,7 @@ export default function PagesFeed() {
   const [sponsorError, setSponsorError] = useState("");
   const [sponsorLoading, setSponsorLoading] = useState(false);
   const [sponsorToast, setSponsorToast] = useState("");
+  const [sharingPostIds, setSharingPostIds] = useState({});
 
   const buildPageFeed = useCallback((source = []) => {
     const seenProfiles = new Set();
@@ -173,6 +175,26 @@ export default function PagesFeed() {
       );
     } catch (err) {
       console.error("Erreur like", err);
+    }
+  };
+
+  const handleShare = async (post) => {
+    if (!post?._id || sharingPostIds[post._id]) return;
+
+    setSharingPostIds((prev) => ({ ...prev, [post._id]: true }));
+
+    try {
+      const shared = await sharePost(post._id);
+      addOptimisticPost(shared);
+    } catch (err) {
+      console.error("Erreur partage", err);
+      alert("Le partage a échoué. Veuillez réessayer.");
+    } finally {
+      setSharingPostIds((prev) => {
+        const next = { ...prev };
+        delete next[post._id];
+        return next;
+      });
     }
   };
 
@@ -492,13 +514,11 @@ export default function PagesFeed() {
 
                 <button
                   className="fb-post-action-btn"
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/post/${post._id}`
-                    )
-                  }
+                  disabled={sharingPostIds[post._id]}
+                  onClick={() => handleShare(post)}
                 >
-                  <FBIcon name="share" size={18} /> Partager
+                  <FBIcon name="share" size={18} />
+                  {sharingPostIds[post._id] ? "Partage…" : "Partager"}
                 </button>
 
                 {canSponsor && (

@@ -9,6 +9,25 @@ const {
   injectSponsoredPosts,
 } = require("../utils/sponsoredFeedHelper");
 
+const basePopulate = [
+  { path: "user", select: "name email avatar avatarColor" },
+  { path: "page", select: "name slug avatar" },
+  { path: "comments.user", select: "name email avatar avatarColor" },
+  {
+    path: "comments.replies.user",
+    select: "name email avatar avatarColor",
+  },
+  {
+    path: "sharedFrom",
+    populate: [
+      { path: "user", select: "name email avatar avatarColor" },
+      { path: "page", select: "name slug avatar" },
+    ],
+  },
+];
+
+const withBasePopulate = (query) => query.populate(basePopulate);
+
 /* ============================================================
    🔥 UTILITAIRE — NOTIFICATION + SOCKET
 ============================================================ */
@@ -55,14 +74,9 @@ exports.listPaginated = async (req, res) => {
 
     const total = await Post.countDocuments();
 
-    const posts = await Post.find()
-      .populate("user", "name email avatar")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const posts = await withBasePopulate(
+      Post.find().sort({ createdAt: -1 }).skip(skip).limit(limit)
+    );
 
     const includeAds =
       String(req.query.includeAds || "").toLowerCase() === "1" ||
@@ -91,12 +105,9 @@ exports.listPaginated = async (req, res) => {
 ============================================================ */
 exports.list = async (req, res) => {
   try {
-    const posts = await Post.find()
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor")
-      .sort({ createdAt: -1 });
+    const posts = await withBasePopulate(
+      Post.find().sort({ createdAt: -1 })
+    );
 
     const includeAds =
       String(req.query.includeAds || "").toLowerCase() === "1" ||
@@ -119,9 +130,11 @@ exports.list = async (req, res) => {
 ============================================================ */
 exports.listVideoPosts = async (req, res) => {
   try {
-    const posts = await Post.find({ media: { $elemMatch: { type: "video" } } })
-      .populate("user", "name")
-      .sort({ createdAt: -1 });
+    const posts = await withBasePopulate(
+      Post.find({ media: { $elemMatch: { type: "video" } } }).sort({
+        createdAt: -1,
+      })
+    );
 
     const formatted = posts
       .map((p) => {
@@ -181,15 +194,47 @@ exports.create = async (req, res) => {
       media,
     });
 
-    const post = await Post.findById(created._id)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const post = await withBasePopulate(Post.findById(created._id));
 
     res.status(201).json(post);
   } catch (err) {
     res.status(500).json({ error: "Erreur création post" });
+  }
+};
+
+/* ============================================================
+   📌 PARTAGER UN POST
+============================================================ */
+exports.sharePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const original = await Post.findById(id);
+    if (!original) {
+      return res.status(404).json({ error: "Post introuvable" });
+    }
+
+    const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
+    const media = Array.isArray(original.media)
+      ? original.media.map((m) => (m.toObject ? m.toObject() : { ...m }))
+      : [];
+
+    const shared = await Post.create({
+      user: req.userId,
+      authorType: "user",
+      text,
+      media,
+      sharedFrom: original._id,
+    });
+
+    const populated = await withBasePopulate(Post.findById(shared._id));
+
+    getIO().emit("post:new", populated);
+
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error("SHARE POST ERROR", err);
+    res.status(500).json({ error: "Erreur partage post" });
   }
 };
 
@@ -257,11 +302,7 @@ exports.updatePost = async (req, res) => {
     post.media = media;
     await post.save();
 
-    const updated = await Post.findById(post._id)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(post._id));
 
     getIO().emit("post:update", updated);
 
@@ -320,11 +361,7 @@ exports.comment = async (req, res) => {
       });
     }
 
-    const updated = await Post.findById(post._id)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(post._id));
 
     getIO().emit("post:update", updated);
 
@@ -458,11 +495,7 @@ exports.reply = async (req, res) => {
       });
     }
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -504,11 +537,7 @@ exports.likeComment = async (req, res) => {
 
     await post.save();
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -553,11 +582,7 @@ exports.likeReply = async (req, res) => {
 
     await post.save();
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -604,11 +629,7 @@ exports.reactToComment = async (req, res) => {
 
     await post.save();
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -655,11 +676,7 @@ exports.reactToReply = async (req, res) => {
 
     await post.save();
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -694,11 +711,7 @@ exports.deleteComment = async (req, res) => {
     comment.deleteOne();
     await post.save();
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -734,11 +747,7 @@ exports.deleteReply = async (req, res) => {
     reply.deleteOne();
     await post.save();
 
-    const updated = await Post.findById(postId)
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor");
+    const updated = await withBasePopulate(Post.findById(postId));
 
     getIO().emit("post:update", updated);
 
@@ -784,12 +793,9 @@ exports.getPostsByUser = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    const posts = await Post.find({ user: userId })
-      .populate("user", "name email avatar avatarColor")
-      .populate("page", "name slug avatar")
-      .populate("comments.user", "name email avatar avatarColor")
-      .populate("comments.replies.user", "name email avatar avatarColor")
-      .sort({ createdAt: -1 });
+    const posts = await withBasePopulate(
+      Post.find({ user: userId }).sort({ createdAt: -1 })
+    );
 
     const includeAds =
       String(req.query.includeAds || "").toLowerCase() === "1" ||
