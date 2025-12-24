@@ -12,6 +12,7 @@ import { io } from "socket.io-client";
 import MediaRenderer from "./MediaRenderer";
 import PostEditModal from "./PostEditModal";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
+import { sharePost } from "../api/posts";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -126,6 +127,7 @@ export default function FacebookFeed() {
   const [sponsorToast, setSponsorToast] = useState("");
   const [actionMenuPostId, setActionMenuPostId] = useState(null);
   const [editModalPost, setEditModalPost] = useState(null);
+  const [sharingPostIds, setSharingPostIds] = useState({});
 
   const socketRef = useRef(null);
 
@@ -376,6 +378,29 @@ export default function FacebookFeed() {
       );
     } catch (err) {
       console.log("LIKE ERROR:", err);
+    }
+  };
+
+  /* =================================================================
+        SHARE POST
+  ================================================================= */
+  const handleShare = async (post) => {
+    if (!post?._id || sharingPostIds[post._id]) return;
+
+    setSharingPostIds((prev) => ({ ...prev, [post._id]: true }));
+
+    try {
+      const shared = await sharePost(post._id);
+      addOptimisticPost(shared);
+    } catch (err) {
+      console.error("SHARE ERROR:", err);
+      alert("Impossible de partager cette publication pour le moment.");
+    } finally {
+      setSharingPostIds((prev) => {
+        const next = { ...prev };
+        delete next[post._id];
+        return next;
+      });
     }
   };
 
@@ -858,13 +883,11 @@ export default function FacebookFeed() {
 
                 <button
                   className="fb-post-action-btn"
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/post/${post._id}`
-                    )
-                  }
+                  disabled={sharingPostIds[post._id]}
+                  onClick={() => handleShare(post)}
                 >
-                  <FBIcon name="share" size={18} /> Partager
+                  <FBIcon name="share" size={18} />
+                  {sharingPostIds[post._id] ? "Partage…" : "Partager"}
                 </button>
 
                 {canSponsor && (

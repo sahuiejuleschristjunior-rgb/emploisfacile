@@ -7,6 +7,7 @@ import RightMenu from "../components/MenuRight";
 import MobileMenu from "../components/MobileMenu";
 import CreatePostModal from "../components/CreatePostModal";
 import CommentSection from "../components/CommentSection";
+import { sharePost } from "../api/posts";
 
 import "./feed.css";
 import "../styles/menus.css";
@@ -190,6 +191,7 @@ export default function FeedPage() {
   const [showStory, setShowStory] = useState(false);
   const [storyIndex, setStoryIndex] = useState(0);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [sharingPostIds, setSharingPostIds] = useState({});
 
   const textButtonStyle = {
     background: "none",
@@ -373,6 +375,26 @@ export default function FeedPage() {
     } catch {}
   };
 
+  const handleShare = async (postId) => {
+    if (!postId || sharingPostIds[postId]) return;
+
+    setSharingPostIds((prev) => ({ ...prev, [postId]: true }));
+
+    try {
+      const shared = await sharePost(postId);
+      setPosts((prev) => [shared, ...prev]);
+    } catch (err) {
+      console.error("Erreur partage post", err);
+      alert("Impossible de partager cette publication.");
+    } finally {
+      setSharingPostIds((prev) => {
+        const next = { ...prev };
+        delete next[postId];
+        return next;
+      });
+    }
+  };
+
   const handleCommentSubmit = async (postId, text, parent = null) => {
     if (!text.trim()) return;
 
@@ -546,13 +568,11 @@ export default function FeedPage() {
               </button>
               <button
                 className="fb-action-btn"
-                onClick={() => {
-                  const url = `${window.location.origin}/post/${id}`;
-                  navigator.clipboard.writeText(url);
-                  alert("Lien copié !");
-                }}
+                disabled={sharingPostIds[id]}
+                onClick={() => handleShare(id)}
               >
                 <i className="material-icons">share</i>
+                {sharingPostIds[id] ? " Partage…" : ""}
               </button>
             </div>
 
