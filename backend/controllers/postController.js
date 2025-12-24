@@ -24,6 +24,7 @@ const basePopulate = [
       { path: "page", select: "name slug avatar" },
     ],
   },
+  { path: "sharedBy", select: "name email avatar avatarColor" },
 ];
 
 const withBasePopulate = (query) => query.populate(basePopulate);
@@ -72,10 +73,12 @@ exports.listPaginated = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const total = await Post.countDocuments();
+    const baseFilter = { sharedBy: null };
+
+    const total = await Post.countDocuments(baseFilter);
 
     const posts = await withBasePopulate(
-      Post.find().sort({ createdAt: -1 }).skip(skip).limit(limit)
+      Post.find(baseFilter).sort({ createdAt: -1 }).skip(skip).limit(limit)
     );
 
     const includeAds =
@@ -106,7 +109,7 @@ exports.listPaginated = async (req, res) => {
 exports.list = async (req, res) => {
   try {
     const posts = await withBasePopulate(
-      Post.find().sort({ createdAt: -1 })
+      Post.find({ sharedBy: null }).sort({ createdAt: -1 })
     );
 
     const includeAds =
@@ -131,9 +134,10 @@ exports.list = async (req, res) => {
 exports.listVideoPosts = async (req, res) => {
   try {
     const posts = await withBasePopulate(
-      Post.find({ media: { $elemMatch: { type: "video" } } }).sort({
-        createdAt: -1,
-      })
+      Post.find({
+        media: { $elemMatch: { type: "video" } },
+        sharedBy: null,
+      }).sort({ createdAt: -1 })
     );
 
     const formatted = posts
@@ -214,24 +218,30 @@ exports.sharePost = async (req, res) => {
       return res.status(404).json({ error: "Post introuvable" });
     }
 
-    const text = typeof req.body.text === "string" ? req.body.text.trim() : "";
-    const media = Array.isArray(original.media)
-      ? original.media.map((m) => (m.toObject ? m.toObject() : { ...m }))
+    const source =
+      original.sharedFrom && String(original.sharedFrom) !== String(original._id)
+        ? await Post.findById(original.sharedFrom)
+        : original;
+
+    const media = Array.isArray(source?.media)
+      ? source.media.map((m) => (m.toObject ? m.toObject() : { ...m }))
       : [];
 
     const shared = await Post.create({
-      user: req.userId,
-      authorType: "user",
-      text,
+      user: source?.user || original.user,
+      page: source?.page || original.page,
+      authorType: source?.authorType || original.authorType || "user",
+      text: source?.text || original.text || "",
       media,
-      sharedFrom: original._id,
+      sharedFrom: source?._id || original._id,
+      sharedBy: req.userId,
     });
 
     const populated = await withBasePopulate(Post.findById(shared._id));
 
     getIO().emit("post:new", populated);
 
-    res.status(201).json(populated);
+    res.status(201).json({ success: true, sharedPostId: shared._id });
   } catch (err) {
     console.error("SHARE POST ERROR", err);
     res.status(500).json({ error: "Erreur partage post" });
@@ -794,7 +804,9 @@ exports.getPostsByUser = async (req, res) => {
     const userId = req.params.id;
 
     const posts = await withBasePopulate(
-      Post.find({ user: userId }).sort({ createdAt: -1 })
+      Post.find({ $or: [{ user: userId }, { sharedBy: userId }] }).sort({
+        createdAt: -1,
+      })
     );
 
     const includeAds =

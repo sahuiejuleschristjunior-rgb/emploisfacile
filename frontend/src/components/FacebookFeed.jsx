@@ -309,7 +309,7 @@ export default function FacebookFeed() {
     });
 
     s.on("post:new", (newPost) => {
-      if (!newPost?._id) return;
+      if (!newPost?._id || newPost.sharedBy) return;
       setPosts((prev) => filterVisiblePosts([newPost, ...prev]));
     });
 
@@ -385,13 +385,15 @@ export default function FacebookFeed() {
         SHARE POST
   ================================================================= */
   const handleShare = async (post) => {
-    if (!post?._id || sharingPostIds[post._id]) return;
+    if (!post?._id || post.sharedBy || sharingPostIds[post._id]) return;
 
     setSharingPostIds((prev) => ({ ...prev, [post._id]: true }));
 
     try {
-      const shared = await sharePost(post._id);
-      addOptimisticPost(shared);
+      const result = await sharePost(post._id);
+      if (result?.success) {
+        alert("Publication partagée sur votre profil.");
+      }
     } catch (err) {
       console.error("SHARE ERROR:", err);
       alert("Impossible de partager cette publication pour le moment.");
@@ -563,10 +565,11 @@ export default function FacebookFeed() {
     );
 
     const isOwner = isAuthor || isPageOwner;
+    const isSharedPost = Boolean(post.sharedBy);
 
     return {
-      canEdit: isOwner,
-      canDelete: isOwner || isAdmin,
+      canEdit: isOwner && !isSharedPost,
+      canDelete: (isOwner && !isSharedPost) || isAdmin,
       canHide: Boolean(userId),
       canReport: !isOwner,
     };
@@ -706,6 +709,10 @@ export default function FacebookFeed() {
           const likes = post.likes?.length || 0;
           const commentsCount = post.comments?.length || 0;
 
+          const isSharedPost = Boolean(post.sharedBy);
+          const canShare = !isSharedPost;
+          const sharedByName = post.sharedBy?.name;
+
           const canSponsor = canSponsorPost(post);
           const isSponsored = Boolean(post.isSponsored);
           const permissions = getPostPermissions(post);
@@ -728,6 +735,11 @@ export default function FacebookFeed() {
                       <span className="fb-sponsored-badge">Sponsorisé</span>
                     )}
                   </div>
+                  {isSharedPost && (
+                    <div className="fb-post-meta fb-post-meta-shared">
+                      Partagé par {sharedByName || "un utilisateur"}
+                    </div>
+                  )}
                 </div>
                 <div className="fb-post-menu fb-post-menu-container">
                   <button
@@ -883,7 +895,7 @@ export default function FacebookFeed() {
 
                 <button
                   className="fb-post-action-btn"
-                  disabled={sharingPostIds[post._id]}
+                  disabled={sharingPostIds[post._id] || !canShare}
                   onClick={() => handleShare(post)}
                 >
                   <FBIcon name="share" size={18} />
