@@ -213,6 +213,10 @@ export default function PageProfile() {
     }
   };
 
+  const handleHidePost = (postId) => {
+    setPosts((prev) => prev.filter((p) => p._id !== postId));
+  };
+
   if (loading) return <div className="page-shell page-profile-shell">Chargement...</div>;
   if (!pageData?.page)
     return <div className="page-shell page-profile-shell">Page introuvable</div>;
@@ -410,16 +414,17 @@ export default function PageProfile() {
 
             {posts.map((p) => (
               <div key={p._id} className="page-post-card">
-                <Post
-                  post={p}
-                  currentUser={currentUser}
-                  onLike={() => handleLike(p._id)}
-                  onCommentClick={() => openCommentsModal(p)}
-                  onCommentsCountClick={() => toggleCommentsForPost(p)}
-                  onDeletePost={() => handleDeletePost(p._id)}
-                />
-              </div>
-            ))}
+                  <Post
+                    post={p}
+                    currentUser={currentUser}
+                    onLike={() => handleLike(p._id)}
+                    onCommentClick={() => openCommentsModal(p)}
+                    onCommentsCountClick={() => toggleCommentsForPost(p)}
+                    onDeletePost={() => handleDeletePost(p._id)}
+                    onHidePost={() => handleHidePost(p._id)}
+                  />
+                </div>
+              ))}
           </div>
 
           {activePostForComments && (

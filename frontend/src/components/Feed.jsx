@@ -25,6 +25,10 @@ export default function Feed() {
     }
   }
 
+  const handleHidePost = (postId) => {
+    setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+  };
+
   useEffect(() => {
     loadPosts();
   }, []);
@@ -40,7 +44,7 @@ export default function Feed() {
       )}
 
       {posts.map((post) => (
-        <Post key={post._id} post={post} refresh={loadPosts} />
+        <Post key={post._id} post={post} refresh={loadPosts} onHidePost={handleHidePost} />
       ))}
     </div>
   );
