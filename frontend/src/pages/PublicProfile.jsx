@@ -104,6 +104,10 @@ export default function PublicProfile() {
       });
   }, [id, token]);
 
+  const handleHidePost = (postId) => {
+    setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+  };
+
   const photoItems = useMemo(
     () =>
       posts
@@ -268,6 +272,7 @@ export default function PublicProfile() {
                       post={p}
                       currentUser={viewer}
                       onMediaClick={(items, start) => openViewer(items, start)}
+                      onHidePost={handleHidePost}
                     />
                   ))}
                 </div>

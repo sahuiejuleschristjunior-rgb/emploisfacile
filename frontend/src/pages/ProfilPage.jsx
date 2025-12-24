@@ -227,6 +227,10 @@ export default function ProfilPage() {
     setLoading(false);
   };
 
+  const handleHidePost = (postId) => {
+    setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+  };
+
   const photoItems = posts
     .flatMap((p) =>
       (p.media || [])
@@ -467,6 +471,7 @@ export default function ProfilPage() {
                       post={p}
                       currentUser={currentUser}
                       onMediaClick={(items, start) => openPhotoViewer(items, start)}
+                      onHidePost={handleHidePost}
                     />
                   ))
                 )}

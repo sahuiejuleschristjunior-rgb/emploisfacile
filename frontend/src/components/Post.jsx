@@ -31,6 +31,7 @@ export default function Post({
   onCommentClick,
   onCommentsCountClick,
   onLikesCountClick,
+  onHidePost,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -45,6 +46,7 @@ export default function Post({
   const postRef = useRef(null);
   const clickSentRef = useRef(false);
   const nav = useNavigate();
+  const [isHidden, setIsHidden] = useState(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -66,6 +68,7 @@ export default function Post({
   };
 
   if (!post) return null;
+  if (isHidden) return null;
 
   const id = post._id;
   const isAuthor = String(post.user?._id) === String(currentUser?._id);
@@ -89,6 +92,12 @@ export default function Post({
       (!post.privacy && !post.visibility && post.isPublic !== false)
   );
   const canSponsor = (isAuthor || isPageOwner) && !isSponsored && isPostPublic;
+  const isAdmin = (currentUser?.role || "").toLowerCase() === "admin";
+  const isOwner = isAuthor || isPageOwner;
+  const canEdit = isOwner;
+  const canDelete = isOwner || isAdmin;
+  const canHide = Boolean(currentUser?._id);
+  const canReport = !isOwner;
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleString("fr-FR", {
@@ -184,6 +193,19 @@ export default function Post({
 
     clickSentRef.current = true;
     trackAdEvent("click");
+  };
+
+  const handleHidePost = () => {
+    setMenuOpen(false);
+    setIsHidden(true);
+    if (typeof onHidePost === "function") {
+      onHidePost(id);
+    }
+  };
+
+  const handleReportPost = () => {
+    setMenuOpen(false);
+    alert("Merci pour votre signalement. Notre équipe va vérifier la publication.");
   };
 
   const focusCommentBox = () => {
@@ -304,27 +326,35 @@ export default function Post({
 
             {menuOpen && (
               <div className="fb-post-menu-popup">
-                {isAuthor && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setIsEditModalOpen(true); // ⬅️ Ouvrir modal modif
-                      }}
-                    >
-                      Modifier la publication
-                    </button>
+                {canEdit && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setIsEditModalOpen(true); // ⬅️ Ouvrir modal modif
+                    }}
+                  >
+                    Modifier la publication
+                  </button>
+                )}
 
-                    <button
-                      className="danger"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onDeletePost(id);
-                      }}
-                    >
-                      Supprimer
-                    </button>
-                  </>
+                {canDelete && (
+                  <button
+                    className="danger"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onDeletePost?.(id);
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                )}
+
+                {canHide && (
+                  <button onClick={handleHidePost}>Masquer la publication</button>
+                )}
+
+                {canReport && (
+                  <button onClick={handleReportPost}>Signaler</button>
                 )}
 
                 {canSponsor && (

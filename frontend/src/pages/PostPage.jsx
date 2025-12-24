@@ -165,6 +165,10 @@ export default function PostPage() {
     }
   };
 
+  const handleHidePost = () => {
+    setPost(null);
+  };
+
   /* ---------------------------- */
   /*         RENDER PAGE         */
   /* ---------------------------- */
@@ -191,6 +195,7 @@ export default function PostPage() {
             onDeleteComment={handleDeleteComment}
             onDeleteReply={handleDeleteReply}
             onDeletePost={handleDeletePost}
+            onHidePost={handleHidePost}
           />
 
           <CommentSection
