@@ -14,7 +14,6 @@ import MediaRenderer from "./MediaRenderer";
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
 import "../styles/comments-modal.css";
-import PostEditModal from "./PostEditModal";
 
 /* ============================================================
    CONFIG RÉACTIONS (si tu veux réactiver plus tard)
@@ -73,28 +72,13 @@ export default function FacebookFeed() {
 
   /* EXTRACTION USER ID */
   let userId = null;
-  let userRole = null;
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       userId = payload.id || payload._id || payload.userId || null;
-      userRole = payload.role || null;
     } catch {
       userId = null;
-      userRole = null;
     }
-  }
-
-  const currentUser = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("user"));
-    } catch {
-      return null;
-    }
-  })();
-
-  if (!userRole) {
-    userRole = currentUser?.role || null;
   }
 
   /* =================================================================
@@ -109,9 +93,6 @@ export default function FacebookFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [expanded, setExpanded] = useState({});
-  const [menuOpen, setMenuOpen] = useState({});
-  const [editingPost, setEditingPost] = useState(null);
-  const [actionToast, setActionToast] = useState("");
 
   /* Nouveau système modal commentaires */
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -274,23 +255,6 @@ export default function FacebookFeed() {
   }, []);
 
   /* =================================================================
-        MENU HELPERS
-  ================================================================= */
-  useEffect(() => {
-    const closeAllMenus = () => setMenuOpen({});
-    document.addEventListener("click", closeAllMenus);
-    return () => document.removeEventListener("click", closeAllMenus);
-  }, []);
-
-  const toggleMenu = (e, postId) => {
-    e?.stopPropagation();
-    setMenuOpen((prev) => ({ ...prev, [postId]: !prev[postId] }));
-  };
-
-  const closeMenu = (postId) =>
-    setMenuOpen((prev) => ({ ...prev, [postId]: false }));
-
-  /* =================================================================
         SOCKET REALTIME
   ================================================================= */
   useEffect(() => {
@@ -421,73 +385,6 @@ export default function FacebookFeed() {
         </button>
       </>
     );
-  };
-
-  /* =================================================================
-        ACTIONS CONTEXT MENU
-  ================================================================= */
-  const isAdminRole = () => {
-    if (!userRole) return false;
-    return String(userRole).toLowerCase().includes("admin");
-  };
-
-  const handleDeletePost = async (postId) => {
-    if (!postId || !token) return;
-
-    try {
-      const res = await fetch(`${API_URL}/posts/${postId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) return;
-
-      setPosts((prev) => prev.filter((p) => p._id !== postId));
-      closeMenu(postId);
-    } catch (err) {
-      console.error("DELETE POST ERROR:", err);
-    }
-  };
-
-  const handleHidePost = (postId) => {
-    if (!postId) return;
-    setPosts((prev) => prev.filter((p) => p._id !== postId));
-    closeMenu(postId);
-  };
-
-  const handleReportPost = async (postId) => {
-    if (!postId) return;
-    try {
-      const res = await fetch(`${API_URL}/posts/${postId}/report`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      if (!res.ok) throw new Error("REPORT_FAILED");
-      setActionToast("Signalement envoyé");
-    } catch (err) {
-      console.error("REPORT ERROR:", err);
-      setActionToast("Impossible de signaler pour le moment.");
-    } finally {
-      closeMenu(postId);
-      setTimeout(() => setActionToast(""), 2500);
-    }
-  };
-
-  const handlePostUpdated = (updated) => {
-    if (!updated?._id) return;
-    setPosts((prev) =>
-      prev.map((p) =>
-        p._id === updated._id
-          ? {
-              ...p,
-              ...updated,
-              media: applyCacheBust(updated.media),
-            }
-          : p
-      )
-    );
-    setEditingPost(null);
   };
 
   /* =================================================================
@@ -674,28 +571,6 @@ export default function FacebookFeed() {
           const canSponsor = canSponsorPost(post);
           const isSponsored = Boolean(post.isSponsored);
 
-          const pageOwnerId = post.page?.owner?._id || post.page?.owner;
-          const pageAdminIds = Array.isArray(post.page?.admins)
-            ? post.page.admins
-                .map((admin) => admin?._id || admin)
-                .filter(Boolean)
-                .map(String)
-            : [];
-          const isPageOwner = Boolean(
-            (pageOwnerId && String(pageOwnerId) === String(userId)) ||
-              pageAdminIds.includes(String(userId))
-          );
-
-          const isOwner =
-            userId &&
-            ((post.user?._id && String(post.user._id) === String(userId)) ||
-              isPageOwner);
-          const isAdmin = isAdminRole();
-          const canEdit = isOwner;
-          const canDelete = isOwner || isAdmin;
-          const canHide = true;
-          const canReport = !isOwner;
-
           return (
             <article key={post._id} className="fb-post">
 
@@ -714,57 +589,7 @@ export default function FacebookFeed() {
                     )}
                   </div>
                 </div>
-                <div className="fb-post-menu-wrapper" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    className="fb-post-menu-btn"
-                    onClick={(e) => toggleMenu(e, post._id)}
-                  >
-                    ⋯
-                  </button>
-
-                  {menuOpen[post._id] && (
-                    <div className="fb-post-menu-dropdown">
-                      {canEdit && (
-                        <button
-                          className="fb-post-menu-item"
-                          onClick={() => {
-                            setEditingPost(post);
-                            closeMenu(post._id);
-                          }}
-                        >
-                          Modifier
-                        </button>
-                      )}
-
-                      {canDelete && (
-                        <button
-                          className="fb-post-menu-item"
-                          onClick={() => handleDeletePost(post._id)}
-                        >
-                          Supprimer
-                        </button>
-                      )}
-
-                      {canHide && (
-                        <button
-                          className="fb-post-menu-item"
-                          onClick={() => handleHidePost(post._id)}
-                        >
-                          Masquer la publication
-                        </button>
-                      )}
-
-                      {canReport && (
-                        <button
-                          className="fb-post-menu-item"
-                          onClick={() => handleReportPost(post._id)}
-                        >
-                          Signaler
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <button className="fb-post-menu-btn">⋮</button>
               </div>
 
               {/* TEXTE */}
@@ -1007,16 +832,6 @@ export default function FacebookFeed() {
       )}
 
       {sponsorToast && <div className="fb-sponsor-toast">{sponsorToast}</div>}
-
-      {actionToast && <div className="fb-action-toast">{actionToast}</div>}
-
-      {editingPost && (
-        <PostEditModal
-          post={editingPost}
-          onClose={() => setEditingPost(null)}
-          onPostUpdated={handlePostUpdated}
-        />
-      )}
 
       {/* =================================================================
             MEDIA VIEWER FULLSCREEN

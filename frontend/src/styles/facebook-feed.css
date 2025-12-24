@@ -98,52 +98,6 @@
   padding: 4px;
 }
 
-.fb-post-menu-wrapper {
-  position: relative;
-  margin-left: auto;
-}
-
-.fb-post-menu-dropdown {
-  position: absolute;
-  top: 28px;
-  right: 0;
-  background: #242526;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  min-width: 190px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  z-index: 5;
-  padding: 4px 0;
-}
-
-.fb-post-menu-item {
-  width: 100%;
-  text-align: left;
-  padding: 10px 14px;
-  background: transparent;
-  border: none;
-  color: #e4e6eb;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.fb-post-menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.fb-action-toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #1c1e21;
-  color: #e4e6eb;
-  padding: 12px 16px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 20;
-}
-
 /* TEXTE DU POST — police augmentée */
 .fb-post-text {
   font-size: 16px; /* augmenté */
