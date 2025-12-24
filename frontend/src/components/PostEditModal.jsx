@@ -20,6 +20,8 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
   const [existingMedia, setExistingMedia] = useState(post.media || []);
   const [newMedia, setNewMedia] = useState([]);
   const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   /* LIMITE DE FICHIERS = 10 */
   const MAX_FILES = 10;
@@ -53,6 +55,10 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
   /* ============== ENREGISTRER LES MODIFICATIONS ============== */
   const handleSave = async () => {
     try {
+      setError("");
+      setStatusMessage("Votre publication est en cours de modification...");
+      setIsSaving(true);
+
       const form = new FormData();
       form.append("text", text);
 
@@ -77,14 +83,22 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
 
       if (!res.ok) {
         setError("Erreur lors de la mise à jour.");
+        setStatusMessage("");
+        setIsSaving(false);
         return;
       }
 
       onPostUpdated(updated);
-      onClose();
+      setStatusMessage("Modification enregistrée. Rafraîchissement de la page...");
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
     } catch (err) {
       console.log("UPDATE ERROR:", err);
       setError("Impossible de modifier le post.");
+      setStatusMessage("");
+      setIsSaving(false);
     }
   };
 
@@ -100,6 +114,7 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
 
         {/* ERREUR */}
         {error && <div className="pem-error">{error}</div>}
+        {statusMessage && <div className="pem-status">{statusMessage}</div>}
 
         {/* INPUT TEXTE */}
         <textarea
@@ -178,8 +193,8 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
         </div>
 
         {/* SAVE BUTTON */}
-        <button className="pem-save" onClick={handleSave}>
-          Enregistrer
+        <button className="pem-save" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? "Publication..." : "Enregistrer"}
         </button>
       </div>
     </div>

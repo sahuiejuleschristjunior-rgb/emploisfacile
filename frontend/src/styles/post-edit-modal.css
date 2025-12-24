@@ -81,6 +81,16 @@
   font-size: 14px;
 }
 
+.pem-status {
+  background: #1f6fe0;
+  color: #e4e6eb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 8px 0;
+  font-size: 14px;
+  border: 1px solid #2d88ff;
+}
+
 /***********************
  * TEXTAREA
  ***********************/
@@ -199,6 +209,11 @@
 
 .pem-save:hover {
   background: #1f6fe0;
+}
+
+.pem-save:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /***********************
