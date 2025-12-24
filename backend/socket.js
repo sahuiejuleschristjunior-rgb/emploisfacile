@@ -51,7 +51,20 @@ function initSocket(server) {
         return next(err);
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const rawToken = String(token)
+        .replace(/^Bearer\s+/i, "")
+        .trim()
+        .replace(/^"|"$/g, "");
+      const parts = rawToken.split(".");
+      const hasValidParts = parts.length === 3 && parts.every((p) => Boolean(p));
+
+      if (!hasValidParts || rawToken === "null" || rawToken === "undefined") {
+        const err = new Error("Token invalide");
+        err.data = { code: "INVALID_TOKEN" };
+        return next(err);
+      }
+
+      const decoded = jwt.verify(rawToken, process.env.JWT_SECRET);
       socket.userId = decoded.id;
       return next();
     } catch (err) {
