@@ -42,7 +42,7 @@ export default function AdsDashboard({ view = "campaigns" }) {
   };
 
   const logFetch = (payload) => {
-    console.debug("ADS FETCH", {
+    console.debug("[ADS ACTION]", {
       ...payload,
       tokenPreview: payload.token ? `${payload.token.slice(0, 6)}...${payload.token.slice(-6)}` : null,
     });
@@ -259,33 +259,32 @@ export default function AdsDashboard({ view = "campaigns" }) {
       }
     }
 
-    addArchivedCampaign(campaignId);
-    setCampaigns((prev) =>
-      prev.map((c) =>
-        c._id === campaignId || c.id === campaignId ? { ...c, archived: true, status: nextStatus } : c
-      )
-    );
-
-    const debugPayload = {
-      action: "archive",
-      id: campaignId,
-      backendId,
-      isLocal,
-      beforeStatus,
-      afterStatus: nextStatus,
-      archived: true,
-    };
-    logAction(debugPayload);
-
     if (isLocal) {
       upsertLocalCampaign({ ...campaign, ...payload });
+      addArchivedCampaign(campaignId);
+      setCampaigns((prev) =>
+        prev.map((c) =>
+          c._id === campaignId || c.id === campaignId
+            ? { ...c, ...payload, archived: true, status: nextStatus }
+            : c
+        )
+      );
+      logAction({
+        action: "archive",
+        id: campaignId,
+        backendId,
+        isLocal,
+        beforeStatus,
+        afterStatus: nextStatus,
+        archived: true,
+      });
       setOpenMenuId(null);
       return;
     }
 
     try {
       setUpdating(true);
-      logFetch({ action: "archive", id: campaignId, token });
+      logFetch({ action: "archive", campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
@@ -294,26 +293,34 @@ export default function AdsDashboard({ view = "campaigns" }) {
         },
         body: JSON.stringify({ ...payload, archived: true }),
       });
+      if (res.status === 401 || res.status === 403) {
+        showSessionExpired();
+        setOpenMenuId(null);
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error("ARCHIVE_FAILED");
       const updated = data?.data || {};
+      const finalStatus = updated.status || nextStatus;
       setCampaigns((prev) =>
         prev.map((c) =>
           c._id === campaignId || c.id === campaignId
-            ? { ...c, ...updated, archived: true, status: updated.status || nextStatus }
+            ? { ...c, ...updated, archived: true, status: finalStatus }
             : c
         )
       );
+      addArchivedCampaign(campaignId);
+      logAction({
+        action: "archive",
+        id: campaignId,
+        backendId,
+        isLocal,
+        beforeStatus,
+        afterStatus: finalStatus,
+        archived: true,
+      });
     } catch (err) {
       console.error("ADS ARCHIVE ERROR", err);
-      removeArchivedCampaign(campaignId);
-      setCampaigns((prev) =>
-        prev.map((c) =>
-          c._id === campaignId || c.id === campaignId
-            ? { ...c, archived: false, status: beforeStatus }
-            : c
-        )
-      );
       pushDevToast({ action: "archive_error", id: campaignId, afterStatus: beforeStatus });
     } finally {
       setUpdating(false);
@@ -338,30 +345,29 @@ export default function AdsDashboard({ view = "campaigns" }) {
       }
     }
 
-    setCampaigns((prev) =>
-      prev.map((c) => (c._id === campaignId || c.id === campaignId ? { ...c, status: "paused" } : c))
-    );
-
-    const debugPayload = {
-      action: "pause",
-      id: campaignId,
-      backendId: campaign._id,
-      isLocal,
-      beforeStatus,
-      afterStatus: "paused",
-      archived: beforeArchived,
-    };
-    logAction(debugPayload);
-
     if (isLocal) {
       upsertLocalCampaign({ ...campaign, status: "paused" });
+      setCampaigns((prev) =>
+        prev.map((c) =>
+          c._id === campaignId || c.id === campaignId ? { ...c, status: "paused" } : c
+        )
+      );
+      logAction({
+        action: "pause",
+        id: campaignId,
+        backendId: campaign._id,
+        isLocal,
+        beforeStatus,
+        afterStatus: "paused",
+        archived: beforeArchived,
+      });
       setOpenMenuId(null);
       return;
     }
 
     try {
       setUpdating(true);
-      logFetch({ action: "pause", id: campaignId, token });
+      logFetch({ action: "pause", campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
@@ -370,6 +376,11 @@ export default function AdsDashboard({ view = "campaigns" }) {
         },
         body: JSON.stringify({ status: "paused" }),
       });
+      if (res.status === 401 || res.status === 403) {
+        showSessionExpired();
+        setOpenMenuId(null);
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error("PAUSE_FAILED");
       setCampaigns((prev) =>
@@ -379,15 +390,17 @@ export default function AdsDashboard({ view = "campaigns" }) {
             : c
         )
       );
+      logAction({
+        action: "pause",
+        id: campaignId,
+        backendId: campaign._id,
+        isLocal,
+        beforeStatus,
+        afterStatus: "paused",
+        archived: beforeArchived,
+      });
     } catch (err) {
       console.error("ADS PAUSE ERROR", err);
-      setCampaigns((prev) =>
-        prev.map((c) =>
-          c._id === campaignId || c.id === campaignId
-            ? { ...c, status: beforeStatus, archived: beforeArchived }
-            : c
-        )
-      );
       pushDevToast({ action: "pause_error", id: campaignId, afterStatus: beforeStatus });
     } finally {
       setUpdating(false);
@@ -412,35 +425,32 @@ export default function AdsDashboard({ view = "campaigns" }) {
       }
     }
 
-    setCampaigns((prev) =>
-      prev.map((c) =>
-        c._id === campaignId || c.id === campaignId
-          ? { ...c, status: "ended", archived: true, endedAt }
-          : c
-      )
-    );
-    addArchivedCampaign(campaignId);
-
-    const debugPayload = {
-      action: "end",
-      id: campaignId,
-      backendId: campaign._id,
-      isLocal,
-      beforeStatus,
-      afterStatus: "ended",
-      archived: true,
-    };
-    logAction(debugPayload);
-
     if (isLocal) {
       upsertLocalCampaign({ ...campaign, status: "ended", archived: true, endedAt });
+      setCampaigns((prev) =>
+        prev.map((c) =>
+          c._id === campaignId || c.id === campaignId
+            ? { ...c, status: "ended", archived: true, endedAt }
+            : c
+        )
+      );
+      addArchivedCampaign(campaignId);
+      logAction({
+        action: "end",
+        id: campaignId,
+        backendId: campaign._id,
+        isLocal,
+        beforeStatus,
+        afterStatus: "ended",
+        archived: true,
+      });
       setOpenMenuId(null);
       return;
     }
 
     try {
       setUpdating(true);
-      logFetch({ action: "end", id: campaignId, token });
+      logFetch({ action: "end", campaignId, token });
       const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
         headers: {
@@ -449,25 +459,34 @@ export default function AdsDashboard({ view = "campaigns" }) {
         },
         body: JSON.stringify({ status: "ended", archived: true, endedAt }),
       });
+      if (res.status === 401 || res.status === 403) {
+        showSessionExpired();
+        setOpenMenuId(null);
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error("END_FAILED");
       const updated = data?.data || {};
+      const finalEndedAt = updated.endedAt || endedAt;
       setCampaigns((prev) =>
         prev.map((c) =>
           c._id === campaignId || c.id === campaignId
-            ? { ...c, ...updated, status: "ended", archived: true, endedAt: updated.endedAt || endedAt }
+            ? { ...c, ...updated, status: "ended", archived: true, endedAt: finalEndedAt }
             : c
         )
       );
+      addArchivedCampaign(campaignId);
+      logAction({
+        action: "end",
+        id: campaignId,
+        backendId: campaign._id,
+        isLocal,
+        beforeStatus,
+        afterStatus: "ended",
+        archived: true,
+      });
     } catch (err) {
       console.error("ADS END ERROR", err);
-      setCampaigns((prev) =>
-        prev.map((c) =>
-          c._id === campaignId || c.id === campaignId
-            ? { ...c, status: beforeStatus, archived: campaign.archived }
-            : c
-        )
-      );
       pushDevToast({ action: "end_error", id: campaignId, afterStatus: beforeStatus });
     } finally {
       setUpdating(false);
