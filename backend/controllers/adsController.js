@@ -10,8 +10,10 @@ function canManagePage(page, userId) {
   return (page.admins || []).some((id) => String(id) === String(userId));
 }
 
-async function ensurePostOwnership(post, userId) {
+async function ensurePostOwnership(post, userId, userRole = null) {
   if (!post) return false;
+  if (userRole === "admin") return true;
+
   if (post.authorType === "page" && post.page) {
     const page = await Page.findById(post.page);
     return canManagePage(page, userId);
@@ -250,7 +252,7 @@ exports.create = async (req, res) => {
     const post = await Post.findById(postId).populate("user");
     if (!post) return res.status(404).json({ ok: false, error: "Post introuvable" });
 
-    const canSponsor = await ensurePostOwnership(post, req.userId);
+    const canSponsor = await ensurePostOwnership(post, req.userId, req.user?.role);
     if (!canSponsor) {
       return res.status(403).json({ ok: false, error: "Accès refusé" });
     }
@@ -361,7 +363,7 @@ exports.getOne = async (req, res) => {
 
     if (!campaign) return res.status(404).json({ ok: false, error: "Campagne introuvable" });
 
-    const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
+    const ownerOk = await ensurePostOwnership(campaign.post, req.userId, req.user?.role);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
     const refreshedCampaign = await maybeFinalizeReview(campaign);
@@ -391,7 +393,7 @@ exports.updateStatus = async (req, res) => {
     });
     if (!campaign) return res.status(404).json({ ok: false, error: "Campagne introuvable" });
 
-    const ownerOk = await ensurePostOwnership(campaign.post, req.userId);
+    const ownerOk = await ensurePostOwnership(campaign.post, req.userId, req.user?.role);
     if (!ownerOk) return res.status(403).json({ ok: false, error: "Accès refusé" });
 
     const shouldArchive = typeof archived === "boolean" ? archived : campaign.archived;
