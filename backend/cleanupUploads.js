@@ -40,6 +40,26 @@ const Post = mongoose.model(
   )
 );
 
+/**
+ * Extract the filename from a media URL.
+ * Handles both absolute URLs (https://domain/uploads/foo.webp)
+ * and relative paths (/uploads/foo.webp or uploads/foo.webp).
+ */
+function getFileName(url) {
+  if (!url || typeof url !== "string") return null;
+
+  // Ignore query parameters (e.g., signed URLs)
+  const clean = url.split("?")[0];
+
+  try {
+    const parsed = new URL(clean);
+    return path.basename(parsed.pathname);
+  } catch (_err) {
+    // Not an absolute URL → treat as path
+    return path.basename(clean);
+  }
+}
+
 /* =====================================================
    🟧 3) Fonction principale
    ===================================================== */
@@ -65,13 +85,20 @@ async function cleanup() {
     if (Array.isArray(post.media)) {
       post.media.forEach((m) => {
         if (m.url) {
-          const fileName = m.url.replace("/uploads/", "").trim();
+          const fileName = getFileName(m.url);
+
+          if (!fileName) return;
+
           usedFiles.add(fileName);
 
           // thumbnail éventuel
           const ext = path.extname(fileName);
           const base = fileName.replace(ext, "");
-          usedFiles.add(base + "_thumb" + ext);
+
+          // Ancienne convention
+          usedFiles.add(`${base}_thumb${ext}`);
+          // Vidéos : thumbnails générés en .jpg avec suffixe -thumb
+          usedFiles.add(`${base}-thumb.jpg`);
         }
       });
     }
