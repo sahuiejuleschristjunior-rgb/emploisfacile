@@ -5,6 +5,7 @@ import "../styles/post.css";
 import FBIcon from "./FBIcon";
 import PostEditModal from "./PostEditModal"; // ⬅️ AJOUT IMPORTANT
 import MediaRenderer from "./MediaRenderer";
+import { getHiddenPostIds, rememberHiddenPost } from "../utils/hiddenPosts";
 
 const API_URL = "https://emploisfacile.org";
 const API_BASE = import.meta.env.VITE_API_URL || `${API_URL}/api`;
@@ -55,6 +56,12 @@ export default function Post({
   useEffect(() => {
     setIsSponsored(Boolean(post?.isSponsored));
   }, [post?.isSponsored]);
+  useEffect(() => {
+    const hidden = getHiddenPostIds(currentUser?._id);
+    if (hidden.includes(String(post?._id || post?.id))) {
+      setIsHidden(true);
+    }
+  }, [currentUser?._id, post?._id, post?.id]);
   const sponsoredPostId = post?.sponsoredPostId || post?._id;
 
   const textButtonStyle = {
@@ -197,6 +204,7 @@ export default function Post({
 
   const handleHidePost = () => {
     setMenuOpen(false);
+    rememberHiddenPost(id, currentUser?._id);
     setIsHidden(true);
     if (typeof onHidePost === "function") {
       onHidePost(id);

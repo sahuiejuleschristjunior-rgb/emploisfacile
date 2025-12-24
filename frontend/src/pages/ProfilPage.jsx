@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import "../styles/profil.css";
+import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -218,7 +219,7 @@ export default function ProfilPage() {
           })),
         }));
 
-        setPosts(normalized);
+        setPosts(filterHiddenPosts(normalized, currentUser?._id));
       }
     } catch (err) {
       console.error("POST ERROR:", err);
@@ -228,7 +229,8 @@ export default function ProfilPage() {
   };
 
   const handleHidePost = (postId) => {
-    setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+    rememberHiddenPost(postId, currentUser?._id);
+    setPosts((prev) => filterHiddenPosts(prev, currentUser?._id));
   };
 
   const photoItems = posts

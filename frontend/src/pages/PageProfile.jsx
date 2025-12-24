@@ -10,6 +10,7 @@ import { getImageUrl } from "../utils/imageUtils";
 import "../styles/page.css";
 import Post from "../components/Post";
 import CommentsModal from "../components/CommentsModal";
+import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 
 export default function PageProfile() {
   const { slug } = useParams();
@@ -45,7 +46,8 @@ export default function PageProfile() {
   const loadPosts = async () => {
     try {
       const res = await getPagePosts(slug, 1, 10);
-      if (Array.isArray(res.posts)) setPosts(res.posts);
+      if (Array.isArray(res.posts))
+        setPosts(filterHiddenPosts(res.posts, currentUser?._id));
     } catch (err) {
       console.error(err);
     }
@@ -214,7 +216,8 @@ export default function PageProfile() {
   };
 
   const handleHidePost = (postId) => {
-    setPosts((prev) => prev.filter((p) => p._id !== postId));
+    rememberHiddenPost(postId, currentUser?._id);
+    setPosts((prev) => filterHiddenPosts(prev, currentUser?._id));
   };
 
   if (loading) return <div className="page-shell page-profile-shell">Chargement...</div>;
