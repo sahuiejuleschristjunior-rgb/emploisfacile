@@ -52,8 +52,6 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { SocketProvider } from "./context/SocketContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import SplashScreen from "./components/SplashScreen";
-import useAppReady from "./hooks/useAppReady";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -98,12 +96,6 @@ class AppErrorBoundary extends Component {
 }
 
 export default function App() {
-  const appReady = useAppReady();
-
-  if (!appReady) {
-    return <SplashScreen />;
-  }
-
   return (
     <AppErrorBoundary>
       <AuthProvider>
