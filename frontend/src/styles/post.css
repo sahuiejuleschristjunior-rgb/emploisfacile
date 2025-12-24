@@ -140,10 +140,14 @@
 }
 
 .fb-post-media {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  width: 100%;
+  max-width: min(1200px, 100%);
   margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
 }
 
 .fb-post-image-btn {
@@ -164,10 +168,13 @@
 
 .fb-post-image {
   width: 100%;
+  height: auto;
   display: block;
   border-radius: 12px;
-  object-fit: cover;
   background: #000;
+  max-height: min(1350px, calc(100vw * 1.25));
+  max-width: min(1200px, 100%);
+  object-fit: contain;
 }
 
 /* STATS */
