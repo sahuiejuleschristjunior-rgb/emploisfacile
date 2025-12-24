@@ -11,6 +11,7 @@ import {
   removeArchivedCampaign,
   upsertLocalCampaign,
 } from "../utils/adsStorage";
+import apiFetch from "../utils/apiFetch";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 
@@ -52,17 +53,22 @@ export default function AdsDashboard({ view = "campaigns" }) {
     try {
       const local = getLocalCampaigns();
       let backendCampaigns = [];
-      const token = localStorage.getItem("token");
+      const token = getValidToken();
 
       if (token) {
-        const res = await fetch(`${API_URL}/ads/my`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-        backendCampaigns = Array.isArray(data?.data) ? data.data : [];
+        try {
+          const data = await apiFetch(`${API_URL}/ads/my`);
+          backendCampaigns = Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+            ? data
+            : [];
+        } catch (err) {
+          console.error("ADS LOAD ERROR", err);
+          if (err.status === 401 || err.status === 403) {
+            showSessionExpired();
+          }
+        }
       }
 
       const normalizedLocal = local.map((c) => ({
@@ -81,28 +87,25 @@ export default function AdsDashboard({ view = "campaigns" }) {
           (c) => c._id && c.status === "awaiting_payment" && !c.payment?.emailSentAt
         );
         for (const camp of awaiting) {
-          const validToken = getValidToken();
-          if (!validToken) break;
           try {
-            logFetch({ action: "awaiting_payment_sync", id: camp._id, token: validToken });
-            const res = await fetch(`${API_URL}/ads/${camp._id}/status`, {
+            logFetch({ action: "awaiting_payment_sync", id: camp._id, token });
+            const data = await apiFetch(`${API_URL}/ads/${camp._id}/status`, {
               method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${validToken}`,
-              },
-              body: JSON.stringify({
+              body: {
                 status: "awaiting_payment",
                 review: camp.review,
                 payment: { amount: camp.payment?.amount || camp.budgetTotal, currency: "FCFA" },
-              }),
+              },
             });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok && data?.data) {
+            if (data?.data) {
               upsertLocalCampaign(data.data);
             }
           } catch (err) {
             console.error("ADS SYNC ERROR", err);
+            if (err.status === 401 || err.status === 403) {
+              showSessionExpired();
+              break;
+            }
           }
         }
       }
@@ -213,13 +216,9 @@ export default function AdsDashboard({ view = "campaigns" }) {
     try {
       setUpdating(true);
       logFetch({ action: "changeStatus", id: campaignId, token });
-      const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
+      await apiFetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
+        body: { status },
       });
 
       logAction({
@@ -231,11 +230,12 @@ export default function AdsDashboard({ view = "campaigns" }) {
         afterStatus: status,
       });
 
-      if (res.ok) {
-        loadCampaigns();
-      }
+      loadCampaigns();
     } catch (err) {
       console.error("ADS STATUS ERROR", err);
+      if (err.status === 401 || err.status === 403) {
+        showSessionExpired();
+      }
     } finally {
       setUpdating(false);
     }
@@ -285,21 +285,10 @@ export default function AdsDashboard({ view = "campaigns" }) {
     try {
       setUpdating(true);
       logFetch({ action: "archive", campaignId, token });
-      const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
+      const data = await apiFetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ ...payload, archived: true }),
+        body: { ...payload, archived: true },
       });
-      if (res.status === 401 || res.status === 403) {
-        showSessionExpired();
-        setOpenMenuId(null);
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error("ARCHIVE_FAILED");
       const updated = data?.data || {};
       const finalStatus = updated.status || nextStatus;
       setCampaigns((prev) =>
@@ -321,6 +310,11 @@ export default function AdsDashboard({ view = "campaigns" }) {
       });
     } catch (err) {
       console.error("ADS ARCHIVE ERROR", err);
+      if (err.status === 401 || err.status === 403) {
+        showSessionExpired();
+        setOpenMenuId(null);
+        return;
+      }
       pushDevToast({ action: "archive_error", id: campaignId, afterStatus: beforeStatus });
     } finally {
       setUpdating(false);
@@ -368,21 +362,10 @@ export default function AdsDashboard({ view = "campaigns" }) {
     try {
       setUpdating(true);
       logFetch({ action: "pause", campaignId, token });
-      const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
+      const data = await apiFetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: "paused" }),
+        body: { status: "paused" },
       });
-      if (res.status === 401 || res.status === 403) {
-        showSessionExpired();
-        setOpenMenuId(null);
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error("PAUSE_FAILED");
       setCampaigns((prev) =>
         prev.map((c) =>
           c._id === campaignId || c.id === campaignId
@@ -401,6 +384,11 @@ export default function AdsDashboard({ view = "campaigns" }) {
       });
     } catch (err) {
       console.error("ADS PAUSE ERROR", err);
+      if (err.status === 401 || err.status === 403) {
+        showSessionExpired();
+        setOpenMenuId(null);
+        return;
+      }
       pushDevToast({ action: "pause_error", id: campaignId, afterStatus: beforeStatus });
     } finally {
       setUpdating(false);
@@ -451,21 +439,10 @@ export default function AdsDashboard({ view = "campaigns" }) {
     try {
       setUpdating(true);
       logFetch({ action: "end", campaignId, token });
-      const res = await fetch(`${API_URL}/ads/${campaignId}/status`, {
+      const data = await apiFetch(`${API_URL}/ads/${campaignId}/status`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: "ended", archived: true, endedAt }),
+        body: { status: "ended", archived: true, endedAt },
       });
-      if (res.status === 401 || res.status === 403) {
-        showSessionExpired();
-        setOpenMenuId(null);
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error("END_FAILED");
       const updated = data?.data || {};
       const finalEndedAt = updated.endedAt || endedAt;
       setCampaigns((prev) =>
@@ -487,6 +464,11 @@ export default function AdsDashboard({ view = "campaigns" }) {
       });
     } catch (err) {
       console.error("ADS END ERROR", err);
+      if (err.status === 401 || err.status === 403) {
+        showSessionExpired();
+        setOpenMenuId(null);
+        return;
+      }
       pushDevToast({ action: "end_error", id: campaignId, afterStatus: beforeStatus });
     } finally {
       setUpdating(false);
