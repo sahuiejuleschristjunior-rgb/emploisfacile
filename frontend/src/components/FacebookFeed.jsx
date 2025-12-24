@@ -10,6 +10,7 @@ import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import FBIcon from "../components/FBIcon";
 import { io } from "socket.io-client";
 import MediaRenderer from "./MediaRenderer";
+import PostEditModal from "./PostEditModal";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -72,14 +73,18 @@ export default function FacebookFeed() {
 
   /* EXTRACTION USER ID */
   let userId = null;
+  let userRole = null;
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       userId = payload.id || payload._id || payload.userId || null;
+      userRole =
+        payload.role || payload.userRole || payload.roleName || payload.type;
     } catch {
       userId = null;
     }
   }
+  const isAdmin = (userRole || "").toLowerCase() === "admin";
 
   /* =================================================================
         STATES DU FEED (AUCUN COMMENTAIRE ICI)
@@ -110,6 +115,8 @@ export default function FacebookFeed() {
   const [sponsorError, setSponsorError] = useState("");
   const [sponsorLoading, setSponsorLoading] = useState(false);
   const [sponsorToast, setSponsorToast] = useState("");
+  const [actionMenuPostId, setActionMenuPostId] = useState(null);
+  const [editModalPost, setEditModalPost] = useState(null);
 
   const socketRef = useRef(null);
 
@@ -316,6 +323,17 @@ export default function FacebookFeed() {
       window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
+  useEffect(() => {
+    const closeMenusOnClickOutside = (e) => {
+      if (!e.target.closest(".fb-post-menu-container")) {
+        setActionMenuPostId(null);
+      }
+    };
+
+    document.addEventListener("click", closeMenusOnClickOutside);
+    return () => document.removeEventListener("click", closeMenusOnClickOutside);
+  }, []);
+
   /* =================================================================
         LIKE POST
   ================================================================= */
@@ -481,6 +499,39 @@ export default function FacebookFeed() {
     return (isAuthor || isPageOwner) && !post.isSponsored && isPostPublic(post);
   };
 
+  const getPostPermissions = (post) => {
+    if (!post) {
+      return {
+        canEdit: false,
+        canDelete: false,
+        canHide: false,
+        canReport: false,
+      };
+    }
+
+    const isAuthor = String(post.user?._id) === String(userId);
+    const pageOwnerId = post.page?.owner?._id || post.page?.owner || post.pageOwnerId;
+    const pageAdminIds = Array.isArray(post.page?.admins)
+      ? post.page.admins
+          .map((admin) => admin?._id || admin)
+          .filter(Boolean)
+          .map(String)
+      : [];
+    const isPageOwner = Boolean(
+      (pageOwnerId && String(pageOwnerId) === String(userId)) ||
+        pageAdminIds.includes(String(userId))
+    );
+
+    const isOwner = isAuthor || isPageOwner;
+
+    return {
+      canEdit: isOwner,
+      canDelete: isOwner || isAdmin,
+      canHide: Boolean(userId),
+      canReport: !isOwner,
+    };
+  };
+
   const resetSponsorForm = () => {
     setBudgetTotal("");
     setBudgetDaily("");
@@ -492,6 +543,52 @@ export default function FacebookFeed() {
     setSponsorModalPost(null);
     resetSponsorForm();
     setSponsorError("");
+  };
+
+  const handleHidePost = (postId) => {
+    setActionMenuPostId(null);
+    setPosts((prev) => prev.filter((p) => p._id !== postId));
+  };
+
+  const handleReportPost = () => {
+    setActionMenuPostId(null);
+    alert("Merci pour votre signalement. Notre équipe va vérifier la publication.");
+  };
+
+  const handleDeletePost = async (postId) => {
+    setActionMenuPostId(null);
+    if (!token) return;
+    if (!window.confirm("Supprimer la publication ?")) return;
+
+    try {
+      const res = await fetch(`${API_URL}/posts/${postId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setPosts((prev) => prev.filter((p) => p._id !== postId));
+      } else {
+        alert("Impossible de supprimer la publication.");
+      }
+    } catch (err) {
+      console.error("DELETE POST ERROR:", err);
+      alert("Erreur lors de la suppression de la publication.");
+    }
+  };
+
+  const handleOpenEditPost = (post) => {
+    setActionMenuPostId(null);
+    setEditModalPost(post);
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    if (!updatedPost?._id) return;
+
+    setPosts((prev) =>
+      prev.map((p) => (p._id === updatedPost._id ? { ...p, ...updatedPost } : p))
+    );
+    setEditModalPost(null);
   };
 
   const handleSponsorSubmit = async (e) => {
@@ -570,6 +667,8 @@ export default function FacebookFeed() {
 
           const canSponsor = canSponsorPost(post);
           const isSponsored = Boolean(post.isSponsored);
+          const permissions = getPostPermissions(post);
+          const isMenuOpen = actionMenuPostId === post._id;
 
           return (
             <article key={post._id} className="fb-post">
@@ -589,7 +688,47 @@ export default function FacebookFeed() {
                     )}
                   </div>
                 </div>
-                <button className="fb-post-menu-btn">⋮</button>
+                <div className="fb-post-menu fb-post-menu-container">
+                  <button
+                    className="fb-post-menu-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActionMenuPostId(isMenuOpen ? null : post._id);
+                    }}
+                  >
+                    ⋯
+                  </button>
+
+                  <div
+                    className={`fb-post-menu-popup ${isMenuOpen ? "open" : ""}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {permissions.canEdit && (
+                      <button onClick={() => handleOpenEditPost(post)}>
+                        Modifier la publication
+                      </button>
+                    )}
+
+                    {permissions.canDelete && (
+                      <button
+                        className="danger"
+                        onClick={() => handleDeletePost(post._id)}
+                      >
+                        Supprimer
+                      </button>
+                    )}
+
+                    {permissions.canHide && (
+                      <button onClick={() => handleHidePost(post._id)}>
+                        Masquer la publication
+                      </button>
+                    )}
+
+                    {permissions.canReport && (
+                      <button onClick={handleReportPost}>Signaler</button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* TEXTE */}
@@ -743,6 +882,14 @@ export default function FacebookFeed() {
 
       {/* INFINITE SCROLL LOADER */}
       {loadingMore && <SkeletonPost />}
+
+      {editModalPost && (
+        <PostEditModal
+          post={editModalPost}
+          onClose={() => setEditModalPost(null)}
+          onPostUpdated={handlePostUpdated}
+        />
+      )}
 
       {sponsorModalPost && (
         <div className="fb-sponsor-modal-overlay" onClick={closeSponsorModal}>

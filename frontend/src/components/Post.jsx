@@ -316,7 +316,7 @@ export default function Post({
           </div>
 
           {/* MENU (…) */}
-          <div className="fb-post-menu-container">
+          <div className="fb-post-menu fb-post-menu-container">
             <button
               className="fb-post-menu-btn"
               onClick={() => setMenuOpen(!menuOpen)}
