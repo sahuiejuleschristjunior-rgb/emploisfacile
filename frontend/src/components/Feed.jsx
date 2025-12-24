@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 import Post from "./Post";
 import PageLoader from "./PageLoader"; // ton loader existant
+import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 
 export default function Feed() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem("token");
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user"));
+    } catch {
+      return null;
+    }
+  })();
 
   async function loadPosts() {
     try {
@@ -17,7 +26,7 @@ export default function Feed() {
       });
 
       const data = await res.json();
-      setPosts(data);
+      setPosts(filterHiddenPosts(data, currentUser?._id));
     } catch (err) {
       console.error("FEED LOAD ERROR:", err);
     } finally {
@@ -26,7 +35,8 @@ export default function Feed() {
   }
 
   const handleHidePost = (postId) => {
-    setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+    rememberHiddenPost(postId, currentUser?._id);
+    setPosts((prev) => filterHiddenPosts(prev, currentUser?._id));
   };
 
   useEffect(() => {

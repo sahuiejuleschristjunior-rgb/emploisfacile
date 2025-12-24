@@ -6,6 +6,7 @@ import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
 import { useAuth } from "../context/AuthContext";
+import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 
@@ -30,6 +31,8 @@ export default function PublicProfile() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [viewerItems, setViewerItems] = useState([]);
+
+  const viewerId = viewer?._id || authUser?._id;
 
   /* ============================================================
       LOAD CONNECTED USER
@@ -95,7 +98,7 @@ export default function PublicProfile() {
               })),
             }))
           : [];
-        setPosts(normalized);
+        setPosts(filterHiddenPosts(normalized, viewerId));
         setLoading(false);
       })
       .catch((err) => {
@@ -105,8 +108,14 @@ export default function PublicProfile() {
   }, [id, token]);
 
   const handleHidePost = (postId) => {
-    setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+    rememberHiddenPost(postId, viewerId);
+    setPosts((prev) => filterHiddenPosts(prev, viewerId));
   };
+
+  useEffect(() => {
+    if (!viewerId) return;
+    setPosts((prev) => filterHiddenPosts(prev, viewerId));
+  }, [viewerId]);
 
   const photoItems = useMemo(
     () =>
