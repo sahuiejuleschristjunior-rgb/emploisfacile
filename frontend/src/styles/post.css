@@ -64,11 +64,8 @@
 }
 
 /* MENU */
-
-.fb-post-menu,
-.fb-post-menu-container {
+.fb-post-menu {
   position: relative;
-  margin-left: auto;
 }
 
 .fb-post-menu-btn {
@@ -93,13 +90,12 @@
   border: 1px solid #3a3b3c;
   border-radius: 8px;
   padding: 4px 0;
-  width: 180px;
+  width: 140px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 10;
 }
 
-.fb-post-menu:hover .fb-post-menu-popup,
-.fb-post-menu-popup.open {
+.fb-post-menu:hover .fb-post-menu-popup {
   display: block;
 }
 
@@ -115,14 +111,6 @@
 
 .fb-post-menu-popup button:hover {
   background: #3a3b3c;
-}
-
-.fb-post-menu-popup .danger {
-  color: #ff6b6b;
-}
-
-.fb-post-menu-popup .close-menu {
-  border-top: 1px solid #3a3b3c;
 }
 
 .fb-post-menu-popup .fb-sponsor-menu {
