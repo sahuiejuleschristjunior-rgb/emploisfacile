@@ -12,6 +12,7 @@ import {
   upsertLocalCampaign,
 } from "../utils/adsStorage";
 import apiFetch from "../utils/apiFetch";
+import { useAuth } from "../context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 
@@ -22,6 +23,7 @@ export default function AdsDashboard({ view = "campaigns" }) {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [devToast, setDevToast] = useState(null);
   const nav = useNavigate();
+  const { logout } = useAuth();
 
   const getLocalCampaigns = () => {
     const campaigns = loadLocalCampaigns();
@@ -31,6 +33,7 @@ export default function AdsDashboard({ view = "campaigns" }) {
   const showSessionExpired = () => {
     setDevToast("Session expirée");
     setTimeout(() => setDevToast(null), 2500);
+    logout();
   };
 
   const getValidToken = () => {
