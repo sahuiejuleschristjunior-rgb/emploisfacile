@@ -78,6 +78,9 @@ const upload = multer({
 // ➤ Créer un post (texte + fichiers)
 router.post("/", auth, upload.array("files", 10), postCtrl.create);
 
+// ➤ Mettre à jour un post
+router.put("/:id", auth, upload.array("newMedia", 10), postCtrl.updatePost);
+
 // ⭐⭐⭐ NOUVELLE ROUTE SCROLL INFINI
 router.get("/paginated", auth, postCtrl.listPaginated);
 

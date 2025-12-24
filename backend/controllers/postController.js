@@ -194,6 +194,85 @@ exports.create = async (req, res) => {
 };
 
 /* ============================================================
+   📌 METTRE À JOUR UN POST
+============================================================ */
+exports.updatePost = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const post = await Post.findById(id);
+    if (!post) return res.status(404).json({ error: "Post introuvable" });
+
+    if (String(post.user) !== String(req.userId)) {
+      return res.status(403).json({ error: "Non autorisé" });
+    }
+
+    const text = typeof req.body.text === "string" ? req.body.text : "";
+
+    // ✅ Médias conservés (provenant du formulaire)
+    let existingMedia = [];
+    if (req.body.existingMedia) {
+      try {
+        existingMedia = Array.isArray(req.body.existingMedia)
+          ? req.body.existingMedia
+          : JSON.parse(req.body.existingMedia);
+      } catch {
+        existingMedia = [];
+      }
+    }
+
+    existingMedia = Array.isArray(existingMedia)
+      ? existingMedia.filter((m) => m && m.url && m.type)
+      : [];
+
+    // ✅ Nouveaux médias uploadés
+    const uploadedMedia = Array.isArray(req.files)
+      ? req.files.map((file) => buildMediaPayload(file)).filter(Boolean)
+      : [];
+
+    const media = [...existingMedia, ...uploadedMedia];
+
+    // Limite de sécurité côté serveur
+    if (media.length > 10) {
+      return res.status(400).json({
+        error: "Maximum 10 médias autorisés",
+      });
+    }
+
+    // 🧹 Supprimer les fichiers retirés par l'utilisateur
+    const keepUrls = new Set(media.map((m) => m.url));
+    if (Array.isArray(post.media)) {
+      post.media.forEach((m) => {
+        if (m?.url && !keepUrls.has(m.url)) {
+          const relativePath = m.url.startsWith("/")
+            ? m.url.substring(1)
+            : m.url;
+          const filePath = path.join(__dirname, "..", relativePath);
+          fs.unlink(filePath, () => {});
+        }
+      });
+    }
+
+    post.text = text;
+    post.media = media;
+    await post.save();
+
+    const updated = await Post.findById(post._id)
+      .populate("user", "name email avatar avatarColor")
+      .populate("page", "name slug avatar")
+      .populate("comments.user", "name email avatar avatarColor")
+      .populate("comments.replies.user", "name email avatar avatarColor");
+
+    getIO().emit("post:update", updated);
+
+    res.json(updated);
+  } catch (err) {
+    console.error("UPDATE POST ERROR:", err);
+    res.status(500).json({ error: "Erreur mise à jour post" });
+  }
+};
+
+/* ============================================================
    📌 COMMENTAIRE (texte + média) + NOTIFICATION
 ============================================================ */
 exports.comment = async (req, res) => {
