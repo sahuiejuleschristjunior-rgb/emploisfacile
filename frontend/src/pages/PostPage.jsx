@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Post from "../components/Post";
 import CommentSection from "../components/CommentSection";
 import "../styles/postpage.css";
+import { getHiddenPostIds, rememberHiddenPost } from "../utils/hiddenPosts";
 
 export default function PostPage() {
   const { id } = useParams();
@@ -38,8 +39,14 @@ export default function PostPage() {
 
       const data = await res.json();
 
-      if (res.ok) setPost(data);
-      else nav("/feed");
+      if (res.ok) {
+        const hidden = getHiddenPostIds(currentUser?._id);
+        if (hidden.includes(String(data?._id))) {
+          setPost(null);
+        } else {
+          setPost(data);
+        }
+      } else nav("/feed");
     } catch (err) {
       console.error(err);
       nav("/feed");
@@ -166,6 +173,7 @@ export default function PostPage() {
   };
 
   const handleHidePost = () => {
+    rememberHiddenPost(id, currentUser?._id);
     setPost(null);
   };
 
