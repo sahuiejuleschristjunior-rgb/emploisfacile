@@ -52,6 +52,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { SocketProvider } from "./context/SocketContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AppLoadingOverlay from "./components/AppLoadingOverlay";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -97,12 +98,14 @@ class AppErrorBoundary extends Component {
 
 export default function App() {
   return (
-    <AppErrorBoundary>
-      <AuthProvider>
-        <SocketProvider>
-          <NotificationProvider>
-            <BrowserRouter>
-              <Routes>
+    <>
+      <AppLoadingOverlay />
+      <AppErrorBoundary>
+        <AuthProvider>
+          <SocketProvider>
+            <NotificationProvider>
+              <BrowserRouter>
+                <Routes>
                 {/* Landing */}
                 <Route
                   path="/"
@@ -214,7 +217,8 @@ export default function App() {
         </NotificationProvider>
       </SocketProvider>
     </AuthProvider>
-    </AppErrorBoundary>
+        </AppErrorBoundary>
+    </>
   );
 }
 
