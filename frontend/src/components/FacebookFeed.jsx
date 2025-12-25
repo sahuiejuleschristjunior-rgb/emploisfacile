@@ -58,7 +58,7 @@ const svgThumb = (
 );
 
 function FeedVideoMedia({ media, onClick, onExpand }) {
-  const [aspectRatio, setAspectRatio] = useState("9 / 16");
+  const [aspectRatio, setAspectRatio] = useState(null);
 
   const handleMetadata = (event) => {
     const videoEl = event?.target;
@@ -67,13 +67,17 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
 
     if (videoWidth && videoHeight) {
       setAspectRatio(`${videoWidth} / ${videoHeight}`);
+    } else {
+      setAspectRatio(null);
     }
   };
+
+  const wrapperStyle = aspectRatio ? { aspectRatio } : undefined;
 
   return (
     <div
       className="fb-post-media fb-post-media-video"
-      style={{ aspectRatio }}
+      style={wrapperStyle}
       onClick={onClick}
     >
       <MediaRenderer
