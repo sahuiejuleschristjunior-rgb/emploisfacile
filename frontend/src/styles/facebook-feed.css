@@ -203,6 +203,13 @@
   background: #000;
 }
 
+/* Supprime les arrondis uniquement sur les vidéos dans les cartes du feed */
+.fb-feed .fb-post-card .fb-post-media video,
+.fb-feed .fb-post-card video.fb-post-video,
+.fb-feed .fb-post-card .fb-post-media-video video {
+  border-radius: 0;
+}
+
 /* ================================
    STATS
 ================================ */
