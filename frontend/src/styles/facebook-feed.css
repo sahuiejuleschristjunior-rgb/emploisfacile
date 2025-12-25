@@ -4132,67 +4132,6 @@
 /* MEDIA WRAPPER (multi images style FB)                 */
 /* ===================================================== */
 
-.fb-square,
-.fb-portrait,
-.fb-landscape,
-.fb-video-landscape,
-.fb-story {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #000;
-}
-
-.fb-portrait {
-  aspect-ratio: 4 / 5;
-}
-
-.fb-landscape {
-  aspect-ratio: 1.91 / 1;
-}
-
-.fb-video-landscape {
-  aspect-ratio: 16 / 9;
-}
-
-.fb-story {
-  aspect-ratio: 9 / 16;
-}
-
-.fb-square img,
-.fb-square video,
-.fb-portrait img,
-.fb-portrait video,
-.fb-landscape img,
-.fb-landscape video,
-.fb-video-landscape img,
-.fb-video-landscape video,
-.fb-story img,
-.fb-story video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.fb-story-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 8px;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.35) 0%,
-    rgba(0, 0, 0, 0.35) 10%,
-    transparent 10%,
-    transparent 75%,
-    rgba(0, 0, 0, 0.45) 75%,
-    rgba(0, 0, 0, 0.45) 100%
-  );
-}
-
 .fb-post-media-wrapper {
   margin-top: 8px;
   border-radius: px;
