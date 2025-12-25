@@ -315,9 +315,23 @@
 }
 
 /* reply input */
-.cm-reply-input-row { display:flex; gap:8px; align-items:center; margin-top:8px; }
+.cm-reply-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
 .cm-upload-btn { background:none; border:none; cursor:pointer; color:#b7d0ff; padding:6px; font-size:18px; }
-.cm-reply-input { flex:1; background:#0d1620; border:1px solid rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px; color:#e5f0ff; }
+.cm-reply-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  background: #0d1620;
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: #e5f0ff;
+}
 
 /* reply list */
 .cm-reply { display:flex; gap:8px; margin-top:10px; }
@@ -336,6 +350,7 @@
   padding: 12px;
   border-top: 1px solid rgba(255,255,255,0.02);
   align-items:center;
+  flex-wrap: wrap;
   background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
   max-width: 100%;
   overflow-x: hidden;
@@ -344,11 +359,11 @@
 .cm-send-btn { background:#2d7bff; color:white; border:none; padding:8px 10px; border-radius:999px; cursor:pointer; min-width: 42px; width: auto; flex-shrink: 0; font-weight: 700; font-size: 13px; }
 .cm-send-btn.small { padding:6px 8px; font-size:12px; }
 
-@media (max-width: 520px) {
-  .cm-input-bar {
-    flex-wrap: nowrap;
-    gap: 8px;
-  }
+  @media (max-width: 520px) {
+    .cm-input-bar {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
   .cm-upload-btn {
     flex-shrink: 0;
   }
