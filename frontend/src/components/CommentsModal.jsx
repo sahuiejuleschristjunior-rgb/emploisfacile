@@ -603,15 +603,26 @@ export default function CommentsModal({
               <input type="file" accept="image/*,video/*" style={{ display: "none" }} onChange={handleCommentMedia} />
             </label>
 
-            <input
-              className="cm-text-input"
-              placeholder="Écrire un commentaire..."
-              value={commentInput}
-              onChange={(e) => setCommentInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submitComment()}
-            />
+            <div className="cm-input-wrapper">
+              <input
+                className="cm-text-input"
+                placeholder="Écrire un commentaire..."
+                value={commentInput}
+                onChange={(e) => setCommentInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitComment()}
+              />
 
-            <button className="cm-send-btn" onClick={submitComment}>Envoyer</button>
+              <button
+                type="button"
+                className="cm-send-btn inside"
+                aria-label="Envoyer le commentaire"
+                onClick={submitComment}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20.75 4.5a1.25 1.25 0 0 0-1.34-.21l-15 6.5a1.25 1.25 0 0 0-.08 2.29l5.17 2.34 2.34 5.17a1.24 1.24 0 0 0 1.12.71h.06a1.25 1.25 0 0 0 1.11-.73l6.5-15a1.25 1.25 0 0 0-.88-1.87Zm-6.7 14.21-1.8-3.99 4.05-4.05a.75.75 0 0 0-1.06-1.06l-4.05 4.05-3.99-1.8 11.9-5.15Z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

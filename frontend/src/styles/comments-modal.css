@@ -355,9 +355,50 @@
   max-width: 100%;
   overflow-x: hidden;
 }
-.cm-text-input { flex:1; min-width:0; background:#0d1620; border:1px solid rgba(255,255,255,0.03); color:#e6f1ff; padding:10px 12px; border-radius:12px; }
-.cm-send-btn { background:#2d7bff; color:white; border:none; padding:8px 10px; border-radius:999px; cursor:pointer; min-width: 42px; width: auto; flex-shrink: 0; font-weight: 700; font-size: 13px; }
+.cm-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.cm-text-input {
+  width: 100%;
+  background:#0d1620;
+  border:1px solid rgba(255,255,255,0.03);
+  color:#e6f1ff;
+  padding:10px 48px 10px 12px;
+  border-radius:12px;
+}
+.cm-send-btn {
+  background:#2d7bff;
+  color:white;
+  border:none;
+  padding:8px 10px;
+  border-radius:999px;
+  cursor:pointer;
+  min-width: 42px;
+  width: auto;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 13px;
+}
 .cm-send-btn.small { padding:6px 8px; font-size:12px; }
+.cm-send-btn.inside {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  padding: 6px;
+  min-width: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+.cm-send-btn.inside:hover { background: rgba(45,123,255,0.12); }
+.cm-send-btn.inside svg { width: 20px; height: 20px; fill: #1877f2; }
 
   @media (max-width: 520px) {
     .cm-input-bar {
@@ -374,6 +415,12 @@
   .cm-send-btn {
     padding: 8px 10px;
     min-width: 44px;
+  }
+  .cm-send-btn.inside {
+    padding: 6px;
+    min-width: auto;
+    width: 36px;
+    height: 36px;
   }
 }
 
