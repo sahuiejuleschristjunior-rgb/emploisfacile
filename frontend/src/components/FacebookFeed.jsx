@@ -871,31 +871,15 @@ export default function FacebookFeed() {
                       (m.type && m.type.startsWith("video")) ||
                       /(mp4|webm|mov)$/i.test((m.resolvedUrl || m.url || ""));
 
-                    if (isVideo) {
-                      return (
-                        <div key={m.originalIndex} className="fb-post-media">
-                          <MediaRenderer
-                            media={m}
-                            src={m.resolvedUrl}
-                            type={m.type}
-                            mimeType={m.mimeType}
-                            mediaClassName="fb-post-video"
-                            className="fb-post-media-renderer"
-                            alt=""
-                            controls
-                            autoPlay={m.autoPlay ?? true}
-                          />
-                        </div>
-                      );
-                    }
-
                     return (
                       <div
                         key={m.originalIndex}
                         className="fb-post-media"
                         onClick={() => {
                           if (isLocalMedia) return;
-                          openMediaViewer(post._id, m.originalIndex);
+                          return isVideo
+                            ? openReels(post._id)
+                            : openMediaViewer(post._id, m.originalIndex);
                         }}
                       >
                         <MediaRenderer
@@ -903,11 +887,12 @@ export default function FacebookFeed() {
                           src={m.resolvedUrl}
                           type={m.type}
                           mimeType={m.mimeType}
-                          mediaClassName="fb-post-image"
+                          mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
                           className="fb-post-media-renderer"
                           alt=""
                           muted={false}
                           autoPlay={m.autoPlay ?? true}
+                          onExpand={() => openReels(post._id)}
                         />
                       </div>
                     );
