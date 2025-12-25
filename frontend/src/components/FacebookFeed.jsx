@@ -13,6 +13,7 @@ import MediaRenderer from "./MediaRenderer";
 import PostEditModal from "./PostEditModal";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 import { sharePost } from "../api/posts";
+import FacebookImage from "./FacebookImage";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -882,7 +883,7 @@ export default function FacebookFeed() {
                           openMediaViewer(post._id, imageMedia[0].originalIndex);
                         }}
                       >
-                        <img src={imageMedia[0].resolvedUrl} alt="" />
+                        <FacebookImage src={imageMedia[0].resolvedUrl} alt="" />
                       </div>
                     ) : (
                       <div
@@ -902,7 +903,7 @@ export default function FacebookFeed() {
                                 openMediaViewer(post._id, media.originalIndex);
                               }}
                             >
-                              <img src={media.resolvedUrl} alt="" />
+                              <FacebookImage src={media.resolvedUrl} alt="" />
                               {shouldShowOverlay && (
                                 <div className="fb-media-overlay">
                                   +{imageMedia.length - 4}
@@ -1179,11 +1180,10 @@ export default function FacebookFeed() {
 
               <div className="fb-media-viewer-content">
                 {viewerMedia.type === "image" ? (
-                  <img
+                  <FacebookImage
                     src={getImageUrl(viewerMedia.url)}
                     className="fb-media-viewer-img"
                     alt=""
-                    loading="lazy"
                   />
                 ) : (
                   <video
