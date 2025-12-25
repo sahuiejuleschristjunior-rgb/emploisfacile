@@ -58,7 +58,10 @@ const svgThumb = (
 );
 
 function FeedVideoMedia({ media, onClick, onExpand }) {
-  const [aspectRatio, setAspectRatio] = useState(null);
+  const MIN_FEED_VIDEO_RATIO = 4 / 5; // Empêche les vidéos trop hautes
+  const MAX_FEED_VIDEO_RATIO = 16 / 9; // Empêche les bandes noires horizontales
+
+  const [aspectRatio, setAspectRatio] = useState(1);
 
   const handleMetadata = (event) => {
     const videoEl = event?.target;
@@ -66,14 +69,18 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
     const videoHeight = videoEl?.videoHeight;
 
     if (videoWidth && videoHeight) {
-      setAspectRatio(`${videoWidth} / ${videoHeight}`);
+      const rawRatio = videoWidth / videoHeight;
+      const clampedRatio = Math.min(
+        Math.max(rawRatio, MIN_FEED_VIDEO_RATIO),
+        MAX_FEED_VIDEO_RATIO
+      );
+
+      setAspectRatio(clampedRatio);
     }
   };
 
-  const containerStyle = { aspectRatio: aspectRatio || "16 / 9" };
-  const videoStyle = aspectRatio
-    ? { width: "100%", height: "100%" }
-    : { width: "100%", height: "auto" };
+  const containerStyle = { aspectRatio };
+  const videoStyle = { width: "100%", height: "100%", objectFit: "cover" };
 
   return (
     <div
