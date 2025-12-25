@@ -95,8 +95,7 @@
   z-index: 10;
 }
 
-.fb-post-menu-popup.open,
-.fb-post-menu:hover .fb-post-menu-popup {
+.fb-post-menu-popup.open {
   display: block;
 }
 
