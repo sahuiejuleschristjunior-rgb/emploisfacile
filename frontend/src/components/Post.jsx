@@ -137,52 +137,77 @@ export default function Post({
     imageIndexMap.set(item.originIndex, idx);
   });
 
+  const buildLayout = (count) => {
+    if (count <= 1) {
+      return {
+        layoutClass: "single",
+        visibleCount: 1,
+        areaClasses: ["grid-area-a"],
+      };
+    }
+
+    if (count === 2) {
+      return {
+        layoutClass: "two",
+        visibleCount: 2,
+        areaClasses: ["grid-area-a", "grid-area-b"],
+      };
+    }
+
+    if (count === 3) {
+      return {
+        layoutClass: "three",
+        visibleCount: 3,
+        areaClasses: ["grid-area-a", "grid-area-b", "grid-area-c"],
+      };
+    }
+
+    if (count === 4) {
+      return {
+        layoutClass: "four",
+        visibleCount: 4,
+        areaClasses: [
+          "grid-area-a",
+          "grid-area-b",
+          "grid-area-c",
+          "grid-area-d",
+        ],
+      };
+    }
+
+    return {
+      layoutClass: "five-plus",
+      visibleCount: 4,
+      areaClasses: [
+        "grid-area-a",
+        "grid-area-b",
+        "grid-area-c",
+        "grid-area-d",
+      ],
+    };
+  };
+
   const renderImageGrid = () => {
     if (!imageItems.length) return null;
 
     const totalImages = imageItems.length;
-    const displayedImages = totalImages > 4 ? imageItems.slice(0, 4) : imageItems;
-    const remaining = totalImages > 4 ? totalImages - 4 : 0;
-
-    const layoutClass =
-      totalImages === 1
-        ? "single"
-        : totalImages === 2
-          ? "two"
-          : totalImages === 3
-            ? "three"
-            : totalImages === 4
-              ? "four"
-              : "five-plus";
-
-    const getAreaClass = (index) => {
-      if (layoutClass === "three") {
-        if (index === 0) return "grid-area-a";
-        if (index === 1) return "grid-area-b";
-        return "grid-area-c";
-      }
-
-      if (layoutClass === "five-plus") {
-        if (index === 0) return "grid-area-a";
-        if (index === 1) return "grid-area-b";
-        if (index === 2) return "grid-area-c";
-        return "grid-area-d";
-      }
-
-      return "";
-    };
+    const { layoutClass, visibleCount, areaClasses } = buildLayout(totalImages);
+    const displayedImages = imageItems.slice(0, visibleCount);
+    const remaining = totalImages - visibleCount;
 
     return (
       <div className={`fb-post-media-grid ${layoutClass}`}>
         {displayedImages.map((image, idx) => {
           const imageIndex = imageIndexMap.get(image.originIndex) ?? idx;
           const showOverlay = remaining > 0 && idx === displayedImages.length - 1;
+          const areaClass = areaClasses[idx] || "";
+          const altText = image.alt || image.name || "Image de la publication";
 
           return (
             <button
               type="button"
               key={image.originIndex || idx}
-              className={`fb-post-image-btn ${getAreaClass(idx)}`}
+              className={`fb-post-image-btn ${areaClass}`}
               onClick={() => onMediaClick?.(imageItems, imageIndex)}
               aria-label="Afficher les photos de la publication"
             >
@@ -192,10 +217,15 @@ export default function Post({
                 type={image.type}
                 mimeType={image.mimeType}
                 mediaClassName="fb-post-image fb-post-image-cover"
-                alt="media"
+                alt={altText}
               />
               {showOverlay && (
-                <span className="fb-post-image-overlay">+{remaining}</span>
+                <span
+                  className="fb-post-image-overlay"
+                  aria-label={`Afficher ${remaining} média${remaining > 1 ? "s" : ""} supplémentaires`}
+                >
+                  +{remaining}
+                </span>
               )}
             </button>
           );
