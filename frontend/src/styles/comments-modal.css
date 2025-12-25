@@ -16,6 +16,7 @@
   z-index: 20000;
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
+  overflow-x: hidden;
 }
 
 /* On mobile, start at the top and allow scrolling so nothing gets cut off */
@@ -29,8 +30,8 @@
 
 /* Container */
 .cm-container {
-  width: 94%;
-  max-width: 1180px;
+  width: min(94%, 1180px);
+  max-width: calc(100vw - 12px);
   height: calc(100vh - 40px);
   background: linear-gradient(180deg,#111217,#0f1316); /* un peu plus lumineux */
   border-radius: 14px;
@@ -45,6 +46,13 @@
   box-sizing: border-box;
 }
 
+.cm-container *,
+.cm-container *::before,
+.cm-container *::after {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
 /* Mobile: single column stacked */
 @media (max-width: 880px) {
   .cm-container {
@@ -52,6 +60,7 @@
     height: auto;
     min-height: calc(100vh - 24px);
     width: 100%;
+    max-width: 100%;
     border-radius: 12px;
     padding: 12px;
     overflow: visible;
@@ -73,6 +82,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  max-width: 100%;
 }
 
 /* When mobile stacked, show right below post and full width */
@@ -223,6 +233,7 @@
   flex-direction: column;
   gap: 12px;
   -webkit-overflow-scrolling: touch;
+  overflow-x: hidden;
 }
 
 /* Load more */
@@ -241,8 +252,8 @@
 .cm-comment-wrap { display:flex; gap:12px; align-items:flex-start; }
 .cm-comment { display:flex; gap:10px; width:100%; }
 .cm-comment-avatar { width:38px; height:38px; border-radius:999px; background-size:cover; background-position:center; }
-.cm-comment-body { flex:1; display:flex; flex-direction:column; gap:8px; }
-.cm-comment-bubble { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px 12px; border-radius:12px; position:relative; transition: max-height .28s ease, transform .18s ease; overflow:hidden; max-height: 220px; }
+.cm-comment-body { flex:1; display:flex; flex-direction:column; gap:8px; max-width: 100%; }
+.cm-comment-bubble { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px 12px; border-radius:12px; position:relative; transition: max-height .28s ease, transform .18s ease; overflow:hidden; max-height: 220px; width: fit-content; max-width: 92%; }
 .cm-comment-bubble.expanded { max-height: 2000px; }
 
 /* author row */
@@ -326,26 +337,28 @@
   border-top: 1px solid rgba(255,255,255,0.02);
   align-items:center;
   background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+  max-width: 100%;
+  overflow-x: hidden;
 }
 .cm-text-input { flex:1; min-width:0; background:#0d1620; border:1px solid rgba(255,255,255,0.03); color:#e6f1ff; padding:10px 12px; border-radius:12px; }
-.cm-send-btn { background:#2d7bff; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; }
-.cm-send-btn.small { padding:6px 10px; font-size:13px; }
+.cm-send-btn { background:#2d7bff; color:white; border:none; padding:8px 10px; border-radius:999px; cursor:pointer; min-width: 42px; width: auto; flex-shrink: 0; font-weight: 700; font-size: 13px; }
+.cm-send-btn.small { padding:6px 8px; font-size:12px; }
 
 @media (max-width: 520px) {
   .cm-input-bar {
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-wrap: nowrap;
+    gap: 8px;
   }
   .cm-upload-btn {
     flex-shrink: 0;
   }
   .cm-text-input {
-    flex-basis: 0;
+    flex: 1 1 auto;
     min-width: 0;
   }
   .cm-send-btn {
-    flex: 1 1 120px;
-    min-width: 120px;
+    padding: 8px 10px;
+    min-width: 44px;
   }
 }
 
