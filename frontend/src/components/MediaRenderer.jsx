@@ -10,6 +10,7 @@ import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
 const VIDEO_EXT = /(\.mp4|\.mov|\.webm|\.m4v|\.avi)$/i;
+const DEFAULT_VOLUME = 0.6;
 
 const getMediaType = ({ type, mimeType, url = "" }) => {
   const hint = type || mimeType || "";
@@ -41,13 +42,13 @@ export default function MediaRenderer({
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
-  const [volume, setVolume] = useState(muted ? 0 : 0.6);
+  const [volume, setVolume] = useState(muted ? 0 : DEFAULT_VOLUME);
   const [isPlaying, setIsPlaying] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(false);
   const hideControlsTimeout = useRef(null);
-  const lastVolumeRef = useRef(0.6);
+  const lastVolumeRef = useRef(DEFAULT_VOLUME);
   const videoRef = useRef(null);
   const progressRef = useRef(null);
 
@@ -64,11 +65,12 @@ export default function MediaRenderer({
   useEffect(() => {
     setLoaded(false);
     setErrored(false);
-    setIsMuted(true);
-    setVolume(0);
+    setIsMuted(Boolean(muted));
+    setVolume(muted ? 0 : DEFAULT_VOLUME);
+    lastVolumeRef.current = DEFAULT_VOLUME;
     setDuration(0);
     setCurrentTime(0);
-  }, [finalSrc, resolvedType]);
+  }, [finalSrc, resolvedType, muted]);
 
   useEffect(() => {
     if (!finalSrc || loaded) return undefined;
@@ -91,7 +93,7 @@ export default function MediaRenderer({
       setDuration(videoEl.duration || 0);
       setCurrentTime(videoEl.currentTime || 0);
       videoEl.muted = isMuted;
-      videoEl.volume = isMuted ? 0 : volume || 0.6;
+      videoEl.volume = isMuted ? 0 : volume || DEFAULT_VOLUME;
     };
 
     const handleTimeUpdate = () => {
@@ -117,7 +119,7 @@ export default function MediaRenderer({
     if (!videoEl) return;
 
     videoEl.muted = isMuted;
-    videoEl.volume = isMuted ? 0 : volume || 0.6;
+    videoEl.volume = isMuted ? 0 : volume || DEFAULT_VOLUME;
   }, [isMuted, volume]);
 
   const handleImageLoad = () => {
@@ -141,13 +143,13 @@ export default function MediaRenderer({
     if (!videoEl) return;
 
     if (isMuted) {
-      const nextVolume = volume === 0 ? lastVolumeRef.current || 0.6 : volume;
+      const nextVolume = volume === 0 ? lastVolumeRef.current || DEFAULT_VOLUME : volume;
       videoEl.muted = false;
       videoEl.volume = nextVolume;
       setVolume(nextVolume);
       setIsMuted(false);
     } else {
-      lastVolumeRef.current = volume || 0.6;
+      lastVolumeRef.current = volume || DEFAULT_VOLUME;
       videoEl.muted = true;
       videoEl.volume = 0;
       setVolume(0);
@@ -160,7 +162,7 @@ export default function MediaRenderer({
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
-    const nextVolume = Number(event.target.value);
+    const nextVolume = Math.min(Math.max(Number(event.target.value), 0), 1);
     setVolume(nextVolume);
 
     if (nextVolume === 0) {
