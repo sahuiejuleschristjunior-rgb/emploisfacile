@@ -142,6 +142,7 @@
   background: #000;
   overflow: hidden;
   position: relative;
+  display: block;
   line-height: 0;
 }
 
@@ -161,6 +162,13 @@
   background: #000;
   position: absolute;
   inset: 0;
+}
+
+.fb-feed .fb-post-media-video .media-element,
+.fb-feed .fb-post-media-video .media-skeleton {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .fbVideoWrap {
