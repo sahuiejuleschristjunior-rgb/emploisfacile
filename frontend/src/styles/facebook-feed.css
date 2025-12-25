@@ -147,10 +147,11 @@
 .fb-post-image,
 .fb-post-video {
   width: 100%;
+  max-height: 500px;
   height: auto;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
-  border-radius: 0; /* supprimé */
+  border-radius: 12px;
   background: #000;
 }
 
@@ -353,7 +354,7 @@
   max-width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  border-radius: 0 !important;
+  border-radius: 12px !important;
 }
 
 /* COMMENTAIRES FULL WIDTH */
