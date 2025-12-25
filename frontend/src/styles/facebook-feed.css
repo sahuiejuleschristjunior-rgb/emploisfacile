@@ -182,6 +182,27 @@
   margin: 4px -10px 0;
 }
 
+.fb-post-media-wrapper--video {
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+}
+
+.fb-post-media-wrapper--video .fb-post-media,
+.fb-post-media-wrapper--video .fb-post-media-video,
+.fb-post-media-wrapper--video .fbVideoWrap {
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  display: block;
+}
+
+.fb-post-media-wrapper--video video {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
 .fb-post-media {
   width: 100%;
   max-width: 100%;
