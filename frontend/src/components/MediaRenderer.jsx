@@ -43,6 +43,8 @@ export default function MediaRenderer({
   playsInline = true,
   preload = "metadata",
   onExpand,
+  onLoadedMetadata,
+  style,
 }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
@@ -279,6 +281,7 @@ export default function MediaRenderer({
     <div
       className={`media-renderer fb-media ${className}`.trim()}
       onClick={onClick}
+      style={style}
     >
       {!loaded && <div className="media-skeleton" aria-hidden="true" />}
 
@@ -296,6 +299,7 @@ export default function MediaRenderer({
           playsInline={playsInline}
           preload={preload}
           aria-label={alt}
+          onLoadedMetadata={onLoadedMetadata}
           onClick={showControlsTemporarily}
           onMouseEnter={showControlsTemporarily}
           onMouseMove={showControlsTemporarily}
