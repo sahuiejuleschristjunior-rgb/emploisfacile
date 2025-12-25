@@ -172,7 +172,6 @@
   display: block;
   border-radius: 12px;
   background: #000;
-  max-height: min(1350px, calc(100vw * 1.25));
   object-fit: contain;
 }
 
