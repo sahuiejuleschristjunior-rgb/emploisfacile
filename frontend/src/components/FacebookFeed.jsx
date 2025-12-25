@@ -70,14 +70,14 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
     }
   };
 
-  const containerStyle = aspectRatio ? { aspectRatio } : undefined;
+  const containerStyle = { aspectRatio: aspectRatio || "16 / 9" };
   const videoStyle = aspectRatio
-    ? { width: "100%", height: "100%", objectFit: "cover" }
+    ? { width: "100%", height: "100%" }
     : { width: "100%", height: "auto" };
 
   return (
     <div
-      className="fb-post-media fb-post-media-video"
+      className="fb-post-media fb-post-media-video fbVideoWrap"
       style={containerStyle}
       onClick={onClick}
     >
@@ -86,7 +86,7 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
         src={media.resolvedUrl}
         type={media.type}
         mimeType={media.mimeType}
-        mediaClassName="fb-post-video"
+        mediaClassName="fb-post-video fbVideo"
         className="fb-post-media-renderer"
         alt=""
         muted={false}

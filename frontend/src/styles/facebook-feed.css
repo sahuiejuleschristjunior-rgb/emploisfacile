@@ -140,13 +140,16 @@
   margin: 0;
   padding: 0;
   background: #000;
-  display: flex;
   overflow: hidden;
+  position: relative;
+  line-height: 0;
 }
 
 .fb-feed .fb-post-media-video .media-renderer {
   width: 100%;
   height: 100%;
+  position: relative;
+  line-height: 0;
 }
 
 .fb-feed .fb-post-video.media-element,
@@ -156,6 +159,32 @@
   object-fit: cover;
   display: block;
   background: #000;
+  position: absolute;
+  inset: 0;
+}
+
+.fbVideoWrap {
+  width: 100%;
+  max-width: 100%;
+  background: #000;
+  overflow: hidden;
+  position: relative;
+  line-height: 0;
+}
+
+.fbVideoWrap .media-renderer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.fbVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .fb-post-media-wrapper {
@@ -4769,6 +4798,7 @@
 /* Remove leftover blank space under videos in feed */
 .fb-feed .fb-post-media-video {
   align-items: stretch;
+  line-height: 0;
 }
 
 .fb-feed .fb-post-media-video .media-renderer,
