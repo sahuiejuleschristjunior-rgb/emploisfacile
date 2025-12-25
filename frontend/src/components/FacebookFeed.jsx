@@ -1153,6 +1153,11 @@ export default function FacebookFeed() {
                   ›
                 </button>
               )}
+
+              {/* Bouton de fermeture dédié au mobile */}
+              <div className="fb-media-viewer-mobile-close">
+                <button onClick={closeMediaViewer}>Fermer</button>
+              </div>
             </div>
           </div>
         );
