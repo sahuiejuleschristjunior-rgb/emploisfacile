@@ -792,6 +792,11 @@ export default function FacebookFeed() {
             (media) => media.resolvedUrl && !isImageMedia(media)
           );
 
+          const hasVideoMedia = otherMedia.some((media) =>
+            media.type?.startsWith("video") ||
+            /(mp4|webm|mov)$/i.test(media.resolvedUrl || media.url || "")
+          );
+
           const displayedImages =
             imageMedia.length > 4 ? imageMedia.slice(0, 4) : imageMedia;
           const mediaLayoutClass = imageMedia.length
@@ -873,7 +878,11 @@ export default function FacebookFeed() {
 
               {/* MEDIA */}
               {(imageMedia.length > 0 || otherMedia.length > 0) && (
-                <div className="fb-post-media-wrapper">
+                <div
+                  className={`fb-post-media-wrapper${
+                    hasVideoMedia ? " fb-post-media-wrapper--video" : ""
+                  }`}
+                >
                   {imageMedia.length > 0 &&
                     (imageMedia.length === 1 ? (
                       <div
