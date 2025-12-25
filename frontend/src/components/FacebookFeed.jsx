@@ -889,8 +889,8 @@ export default function FacebookFeed() {
                           mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
                           className="fb-post-media-renderer"
                           alt=""
-                          muted={isVideo}
-                          autoPlay={m.autoPlay}
+                          muted={false}
+                          autoPlay={m.autoPlay ?? true}
                           onExpand={() => openReels(post._id)}
                         />
                       </div>
