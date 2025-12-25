@@ -3,6 +3,9 @@ import { useLocation } from "react-router-dom";
 import "../styles/reels.css";
 import { getImageUrl } from "../utils/imageUtils";
 
+const MIN_GAIN = 5;
+const MAX_GAIN = 10;
+
 export default function ReelsPage() {
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
@@ -18,6 +21,30 @@ export default function ReelsPage() {
   const hasUnlockedSound = useRef(false);
   const activeIndexRef = useRef(0);
   const isScrollingRef = useRef(false);
+
+  const clampVideoGain = useCallback((videoEl) => {
+    if (!videoEl) return;
+
+    const currentGain = (videoEl.volume || 0) * 10;
+    const clampedGain = Math.min(MAX_GAIN, Math.max(MIN_GAIN, currentGain || MIN_GAIN));
+    videoEl.volume = clampedGain / 10;
+  }, []);
+
+  const registerVideoRef = useCallback(
+    (index) => (el) => {
+      videoRefs.current[index] = el;
+      clampVideoGain(el);
+    },
+    [clampVideoGain]
+  );
+
+  const pauseAllVideos = useCallback(() => {
+    videoRefs.current.forEach((video) => {
+      if (video && !video.paused) {
+        video.pause();
+      }
+    });
+  }, []);
 
   const selectedVideoId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -83,6 +110,7 @@ export default function ReelsPage() {
 
             videoEl.muted = !soundEnabled;
             videoEl.defaultMuted = !soundEnabled;
+            clampVideoGain(videoEl);
             videoEl.play().catch(() => {});
           } else {
             videoEl.pause();
@@ -100,16 +128,17 @@ export default function ReelsPage() {
     });
 
     return () => observer.disconnect();
-  }, [soundEnabled, videos]);
+  }, [clampVideoGain, soundEnabled, videos]);
 
   useEffect(() => {
     videoRefs.current.forEach((video) => {
       if (video) {
         video.muted = !soundEnabled;
         video.defaultMuted = !soundEnabled;
+        clampVideoGain(video);
       }
     });
-  }, [soundEnabled]);
+  }, [clampVideoGain, soundEnabled]);
 
   useEffect(() => {
     if (!videos.length) return;
@@ -123,6 +152,7 @@ export default function ReelsPage() {
     const el = videoRefs.current[targetIndex];
     if (el) {
       el.scrollIntoView({ behavior: "auto", block: "start" });
+      clampVideoGain(el);
       el.play().catch(() => {});
       activeIndexRef.current = targetIndex;
     }
@@ -133,10 +163,11 @@ export default function ReelsPage() {
       const target = videoRefs.current[index];
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "start" });
+        clampVideoGain(target);
         target.play().catch(() => {});
       }
     },
-    []
+    [clampVideoGain]
   );
 
   useEffect(() => {
@@ -146,6 +177,8 @@ export default function ReelsPage() {
     const handleWheel = (e) => {
       if (videos.length === 0) return;
       e.preventDefault();
+
+      pauseAllVideos();
 
       if (isScrollingRef.current) return;
 
@@ -168,7 +201,7 @@ export default function ReelsPage() {
     container.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [scrollToVideo, videos.length]);
+  }, [pauseAllVideos, scrollToVideo, videos.length]);
 
   const handleEnableSound = useCallback(
     (videoEl) => {
@@ -180,10 +213,11 @@ export default function ReelsPage() {
       if (videoEl) {
         videoEl.muted = false;
         videoEl.defaultMuted = false;
+        clampVideoGain(videoEl);
         videoEl.play().catch(() => {});
       }
     },
-    []
+    [clampVideoGain]
   );
 
   return (
@@ -200,9 +234,7 @@ export default function ReelsPage() {
           <section key={video._id} className="reels-item">
             <video
               data-index={index}
-              ref={(el) => {
-                videoRefs.current[index] = el;
-              }}
+              ref={registerVideoRef(index)}
               className="reels-video"
               muted={!soundEnabled}
               loop
