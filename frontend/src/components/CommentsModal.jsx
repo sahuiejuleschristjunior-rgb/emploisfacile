@@ -603,15 +603,21 @@ export default function CommentsModal({
               <input type="file" accept="image/*,video/*" style={{ display: "none" }} onChange={handleCommentMedia} />
             </label>
 
-            <input
+            <textarea
               className="cm-text-input"
               placeholder="Écrire un commentaire..."
               value={commentInput}
+              rows={1}
               onChange={(e) => setCommentInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submitComment()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  submitComment();
+                }
+              }}
             />
 
-            <button className="cm-send-btn" onClick={submitComment}>Envoyer</button>
+            <button className="cm-send-btn" onClick={submitComment} aria-label="Envoyer">➤</button>
           </div>
         </div>
       </div>
