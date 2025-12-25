@@ -516,15 +516,26 @@ export default function CommentsModal({
                             <input type="file" accept="image/*,video/*" style={{ display: "none" }} onChange={(e) => handleReplyMedia(e, c)} />
                           </label>
 
-                          <input
-                            value={replyInput[c._id] || ""}
-                            onChange={(e) => setReplyInput((p) => ({ ...p, [c._id]: e.target.value }))}
-                            onKeyDown={(e) => e.key === "Enter" && submitReply(c)}
-                            placeholder="Écrire une réponse..."
-                            className="cm-reply-input"
-                          />
+                          <div className="cm-input-wrapper cm-reply-input-wrapper">
+                            <input
+                              value={replyInput[c._id] || ""}
+                              onChange={(e) => setReplyInput((p) => ({ ...p, [c._id]: e.target.value }))}
+                              onKeyDown={(e) => e.key === "Enter" && submitReply(c)}
+                              placeholder="Écrire une réponse..."
+                              className="cm-reply-input"
+                            />
 
-                          <button className="cm-send-btn small" onClick={() => submitReply(c)}>Envoyer</button>
+                            <button
+                              type="button"
+                              className="cm-send-btn inside"
+                              aria-label="Envoyer la réponse"
+                              onClick={() => submitReply(c)}
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 2v.35l-8 5.33-8-5.33V6Zm0 12H4V9.32l7.38 4.92a1 1 0 0 0 1.24 0L20 9.32Z" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       )}
 
