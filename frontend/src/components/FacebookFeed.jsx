@@ -795,7 +795,7 @@ export default function FacebookFeed() {
           const displayedImages =
             imageMedia.length > 4 ? imageMedia.slice(0, 4) : imageMedia;
           const mediaLayoutClass = imageMedia.length
-            ? `fb-media-${Math.min(imageMedia.length, 5)}`
+            ? `fb-media-${Math.min(imageMedia.length, 4)}`
             : "";
 
           return (
@@ -903,7 +903,12 @@ export default function FacebookFeed() {
                                 openMediaViewer(post._id, media.originalIndex);
                               }}
                             >
-                              <FacebookImage src={media.resolvedUrl} alt="" />
+                              <FacebookImage
+                                src={media.resolvedUrl}
+                                alt=""
+                                objectFit="cover"
+                                height="100%"
+                              />
                               {shouldShowOverlay && (
                                 <div className="fb-media-overlay">
                                   +{imageMedia.length - 4}
