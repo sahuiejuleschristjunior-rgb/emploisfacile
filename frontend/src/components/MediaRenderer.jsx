@@ -10,9 +10,8 @@ import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
 const VIDEO_EXT = /(\.mp4|\.mov|\.webm|\.m4v|\.avi)$/i;
-const DEFAULT_ASPECT_RATIO = 1; // Default to Facebook's 1:1 square guidance
+const DEFAULT_ASPECT_RATIO = 16 / 9;
 const MIN_ASPECT_RATIO = 4 / 5; // Facebook max portrait ratio (width/height)
-const MAX_ASPECT_RATIO = 1.91; // Facebook landscape guidance (width/height)
 
 const getMediaType = ({ type, mimeType, url = "" }) => {
   const hint = type || mimeType || "";
@@ -90,7 +89,7 @@ export default function MediaRenderer({
       return DEFAULT_ASPECT_RATIO;
     }
 
-    return Math.min(Math.max(resolved, MIN_ASPECT_RATIO), MAX_ASPECT_RATIO);
+    return Math.max(resolved, MIN_ASPECT_RATIO);
   }, [aspectRatio, media?.height, media?.ratio, media?.width]);
 
   const showVideo = resolvedType === "video";
