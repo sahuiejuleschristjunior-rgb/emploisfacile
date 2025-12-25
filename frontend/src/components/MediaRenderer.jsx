@@ -81,9 +81,17 @@ export default function MediaRenderer({
   }, [finalSrc, resolvedType, muted]);
 
   useEffect(() => {
-    setLoaded(false);
-    setErrored(false);
-  }, [finalSrc, resolvedType]);
+    if (!finalSrc || loaded) return undefined;
+
+    const timeout = setTimeout(() => {
+      setLoaded(true);
+      if (showVideo && videoRef.current) {
+        videoRef.current.play().catch(() => {});
+      }
+    }, showVideo ? 2500 : 1500);
+
+    return () => clearTimeout(timeout);
+  }, [finalSrc, loaded, showVideo]);
 
   useEffect(() => {
     const videoEl = videoRef.current;
