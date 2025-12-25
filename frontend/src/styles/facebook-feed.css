@@ -4158,6 +4158,28 @@
   display: block;
 }
 
+/* IMAGE UNIQUE – COMME FACEBOOK */
+.fb-media-single {
+  width: 100%;
+  background: #000;
+  display: flex;
+  justify-content: center;
+}
+
+.fb-media-single img {
+  width: 100%;
+  height: auto;
+  max-height: 600px;
+  object-fit: contain;
+  background: #000;
+}
+
+@media (max-width: 768px) {
+  .fb-media-single img {
+    max-height: 420px;
+  }
+}
+
 .fb-media-grid {
   width: 100%;
   display: grid;
