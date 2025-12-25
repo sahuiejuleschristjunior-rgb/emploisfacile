@@ -18,6 +18,15 @@
   backdrop-filter: blur(5px);
 }
 
+/* On mobile, start at the top and allow scrolling so nothing gets cut off */
+@media (max-width: 880px) {
+  .cm-backdrop {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 12px;
+  }
+}
+
 /* Container */
 .cm-container {
   width: 94%;
@@ -33,17 +42,19 @@
   overflow: hidden;
   color: #e6eef9;
   position: relative;
+  box-sizing: border-box;
 }
 
 /* Mobile: single column stacked */
 @media (max-width: 880px) {
   .cm-container {
     display: block;
-    height: 100vh;
+    height: auto;
+    min-height: calc(100vh - 24px);
     width: 100%;
-    border-radius: 0;
+    border-radius: 12px;
     padding: 12px;
-    overflow-y: auto;
+    overflow: visible;
   }
 }
 
