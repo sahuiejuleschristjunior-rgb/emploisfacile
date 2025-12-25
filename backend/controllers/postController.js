@@ -47,7 +47,7 @@ async function pushNotification(userId, data) {
   return notif;
 }
 
-const VALID_REACTIONS = ["like", "love", "haha", "wow", "sad", "angry"];
+const VALID_REACTIONS = ["like", "love", "care", "haha", "wow", "sad", "angry"];
 
 function normalizeAvatarPath(avatar) {
   if (!avatar || typeof avatar !== "string") return "/default-avatar.png";

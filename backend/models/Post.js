@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+const reactionTypes = ["like", "love", "care", "haha", "wow", "sad", "angry"];
 
 const reactionSchema = new mongoose.Schema(
   {
