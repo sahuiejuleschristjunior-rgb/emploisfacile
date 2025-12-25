@@ -6,6 +6,7 @@ import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 const REACTION_CONFIG = {
   like: { label: "J’aime", emoji: "👍" },
   love: { label: "J’adore", emoji: "❤️" },
+  care: { label: "Solidaire", emoji: "🤗" },
   haha: { label: "Haha", emoji: "😂" },
   wow: { label: "Wouah", emoji: "😮" },
   sad: { label: "Triste", emoji: "😢" },
@@ -497,9 +498,15 @@ export default function CommentsModal({
                       {reactionMenu.open && reactionMenu.context === "comment" && reactionMenu.commentId === c._id && (
                         <div className="cm-reaction-picker">
                           {REACTION_TYPES.map((t) => (
-                            <button key={t} className="cm-reaction-pill" onClick={() => reactToComment(c, t)}>
-                              <span style={{ display: "inline-flex", alignItems: "center", fontSize: 16 }}>{REACTION_CONFIG[t].emoji}</span>
-                              <span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span>
+                            <button
+                              key={t}
+                              className="cm-reaction-pill"
+                              onClick={() => reactToComment(c, t)}
+                              aria-label={REACTION_CONFIG[t].label}
+                              title={REACTION_CONFIG[t].label}
+                            >
+                              <span className="cm-reaction-emoji">{REACTION_CONFIG[t].emoji}</span>
+                              <span className="cm-sr-only">{REACTION_CONFIG[t].label}</span>
                             </button>
                           ))}
                         </div>
@@ -599,11 +606,15 @@ export default function CommentsModal({
                               {reactionMenu.open && reactionMenu.context === "reply" && reactionMenu.commentId === c._id && reactionMenu.replyId === r._id && (
                                 <div className="cm-reaction-picker" style={{ marginTop: 6 }}>
                                   {REACTION_TYPES.map((t) => (
-                                    <button key={t} className="cm-reaction-pill" onClick={() => reactToReply(c, r, t)}>
-                                      <span style={{ display: "inline-flex", alignItems: "center", fontSize: 16 }}>
-                                        {REACTION_CONFIG[t].emoji}
-                                      </span>
-                                      <span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span>
+                                    <button
+                                      key={t}
+                                      className="cm-reaction-pill"
+                                      onClick={() => reactToReply(c, r, t)}
+                                      aria-label={REACTION_CONFIG[t].label}
+                                      title={REACTION_CONFIG[t].label}
+                                    >
+                                      <span className="cm-reaction-emoji">{REACTION_CONFIG[t].emoji}</span>
+                                      <span className="cm-sr-only">{REACTION_CONFIG[t].label}</span>
                                     </button>
                                   ))}
                                 </div>

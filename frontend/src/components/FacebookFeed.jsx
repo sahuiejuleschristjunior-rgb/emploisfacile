@@ -24,6 +24,7 @@ import "../styles/comments-modal.css";
 const REACTION_CONFIG = {
   like: { label: "J’aime", emoji: "👍" },
   love: { label: "J’adore", emoji: "❤️" },
+  care: { label: "Solidaire", emoji: "🤗" },
   haha: { label: "Haha", emoji: "😂" },
   wow: { label: "Wouah", emoji: "😮" },
   sad: { label: "Triste", emoji: "😢" },
