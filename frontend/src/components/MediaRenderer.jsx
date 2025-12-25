@@ -53,15 +53,6 @@ export default function MediaRenderer({
 
   const finalSrc = src || media?.url || media?.src;
   const finalPoster = poster || media?.poster || media?.thumbnail;
-  const resolvedAlt = useMemo(
-    () =>
-      (alt && alt.trim()) ||
-      media?.alt ||
-      media?.description ||
-      media?.title ||
-      "Image de la publication",
-    [alt, media?.alt, media?.description, media?.title]
-  );
 
   const resolvedType = useMemo(
     () => getMediaType({ type: type || media?.type, mimeType: mimeType || media?.mimeType, url: finalSrc }),
@@ -260,7 +251,7 @@ export default function MediaRenderer({
           controls={controls}
           playsInline={playsInline}
           preload={preload}
-          aria-label={resolvedAlt}
+          aria-label={alt}
           onClick={showControlsTemporarily}
           onMouseEnter={showControlsTemporarily}
           onMouseMove={showControlsTemporarily}
@@ -271,7 +262,7 @@ export default function MediaRenderer({
       ) : (
         <img
           src={finalSrc}
-          alt={resolvedAlt}
+          alt={alt}
           loading="lazy"
           className={`media-element ${mediaClassName} ${loaded ? "is-visible" : ""}`.trim()}
           onLoad={handleImageLoad}

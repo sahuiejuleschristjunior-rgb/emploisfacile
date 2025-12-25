@@ -794,66 +794,54 @@ export default function FacebookFeed() {
               {/* MEDIA */}
               {post.media?.length > 0 && (
                 <div
-                  className={(() => {
-                    const count = post.media.length;
-                    if (count === 1) return "fb-post-media-wrapper fb-post-media-wrapper--single";
-                    if (count === 2) return "fb-post-media-wrapper fb-post-media-wrapper--two";
-                    if (count === 3) return "fb-post-media-wrapper fb-post-media-wrapper--three";
-                    if (count === 4) return "fb-post-media-wrapper fb-post-media-wrapper--four";
-                    return "fb-post-media-wrapper fb-post-media-wrapper--five-plus";
-                  })()}
+                  className={
+                    post.media.length === 1
+                      ? "fb-post-media-wrapper fb-post-media-wrapper--single"
+                      : "fb-post-media-wrapper fb-post-media-wrapper--multi"
+                  }
                 >
-                  {post.media
-                    .slice(0, post.media.length > 4 ? 4 : post.media.length)
-                    .map((m, idx, visibleMedia) => {
-                      const mediaUrl = resolveMediaUrl(m);
-                      const isLocalMedia = Boolean(m.isLocal);
-                      const isVideo =
-                        (m.type && m.type.startsWith("video")) ||
-                        /(mp4|webm|mov)$/i.test(m.url || "");
+                  {post.media.map((m, idx) => {
+                    const mediaUrl = resolveMediaUrl(m);
+                    const isLocalMedia = Boolean(m.isLocal);
+                    const isVideo =
+                      (m.type && m.type.startsWith("video")) ||
+                      /(mp4|webm|mov)$/i.test(m.url || "");
 
-                      if (!mediaUrl) return null;
+                    if (!mediaUrl) return null;
 
-                      const overlayCount = post.media.length - visibleMedia.length;
-                      const showOverlay = overlayCount > 0 && idx === visibleMedia.length - 1;
+                    return (
+                      <div
+                        key={idx}
+                        className="fb-post-media"
+                        onClick={() => {
+                          if (isLocalMedia) return;
+                          return isVideo
+                            ? openReels(post._id)
+                            : openMediaViewer(post._id, idx);
+                        }}
+                      >
+                        <MediaRenderer
+                          media={m}
+                          src={mediaUrl}
+                          type={m.type}
+                          mimeType={m.mimeType}
+                          mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
+                          className="fb-post-media-renderer"
+                          alt=""
+                          muted={isVideo}
+                          autoPlay={m.autoPlay}
+                          onExpand={() => openReels(post._id)}
+                        />
 
-                      return (
-                        <div
-                          key={idx}
-                          className="fb-post-media"
-                          onClick={() => {
-                            if (isLocalMedia) return;
-                            if (isVideo) return openReels(post._id);
-                            return openMediaViewer(
-                              post._id,
-                              showOverlay ? visibleMedia.length - 1 : idx
-                            );
-                          }}
-                        >
-                          <MediaRenderer
-                            media={m}
-                            src={mediaUrl}
-                            type={m.type}
-                            mimeType={m.mimeType}
-                            mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
-                            className="fb-post-media-renderer"
-                            alt=""
-                            muted={isVideo}
-                            autoPlay={m.autoPlay}
-                            onExpand={() => openReels(post._id)}
-                          />
-
-                          {showOverlay && (
-                            <div
-                              className="fb-post-media-more"
-                              aria-label={`Afficher ${overlayCount} média(s) supplémentaire(s)`}
-                            >
-                              +{overlayCount}
+                        {post.media.length > 4 &&
+                          idx === 3 && (
+                            <div className="fb-post-media-more">
+                              +{post.media.length - 4}
                             </div>
                           )}
-                        </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
