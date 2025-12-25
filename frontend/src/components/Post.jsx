@@ -333,7 +333,9 @@ export default function Post({
             </button>
 
             {menuOpen && (
-              <div className="fb-post-menu-popup">
+              <div
+                className={`fb-post-menu-popup${menuOpen ? " open" : ""}`}
+              >
                 {canEdit && (
                   <button
                     onClick={() => {
