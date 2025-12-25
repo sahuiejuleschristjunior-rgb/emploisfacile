@@ -88,7 +88,7 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
         autoPlay={media.autoPlay ?? true}
         onExpand={onExpand}
         onLoadedMetadata={handleMetadata}
-        style={{ width: "100%" }}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
       />
     </div>
   );
