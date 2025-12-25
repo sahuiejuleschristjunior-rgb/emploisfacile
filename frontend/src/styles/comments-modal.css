@@ -30,7 +30,7 @@
 /* Container */
 .cm-container {
   width: 94%;
-  max-width: min(1180px, 100vw);
+  max-width: 1180px;
   height: calc(100vh - 40px);
   background: linear-gradient(180deg,#111217,#0f1316); /* un peu plus lumineux */
   border-radius: 14px;
@@ -45,23 +45,15 @@
   box-sizing: border-box;
 }
 
-.cm-container,
-.cm-container * {
-  box-sizing: border-box;
-}
-
 /* Mobile: single column stacked */
 @media (max-width: 880px) {
   .cm-container {
     display: block;
     height: auto;
     min-height: calc(100vh - 24px);
-    width: 100vw;
-    max-width: 100vw;
+    width: 100%;
     border-radius: 12px;
     padding: 12px;
-    padding-left: 0;
-    padding-right: 0;
     overflow: visible;
   }
 }
@@ -71,8 +63,6 @@
   overflow-y: auto;
   padding-right: 6px;
   -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: 100%;
 }
 
 /* Right (comments) */
@@ -83,8 +73,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  width: 100%;
-  max-width: 100%;
 }
 
 /* When mobile stacked, show right below post and full width */
@@ -230,14 +218,11 @@
 .cm-comments {
   flex:1;
   overflow-y: auto;
-  overflow-x: hidden;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: 100%;
 }
 
 /* Load more */
@@ -257,12 +242,8 @@
 .cm-comment { display:flex; gap:10px; width:100%; }
 .cm-comment-avatar { width:38px; height:38px; border-radius:999px; background-size:cover; background-position:center; }
 .cm-comment-body { flex:1; display:flex; flex-direction:column; gap:8px; }
-.cm-comment-bubble { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px 12px; border-radius:12px; position:relative; transition: max-height .28s ease, transform .18s ease; overflow:hidden; max-height: 220px; max-width: 92%; width: fit-content; overflow-wrap: break-word; word-break: break-word; }
+.cm-comment-bubble { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px 12px; border-radius:12px; position:relative; transition: max-height .28s ease, transform .18s ease; overflow:hidden; max-height: 220px; }
 .cm-comment-bubble.expanded { max-height: 2000px; }
-
-@media (max-width: 880px) {
-  .cm-comment-bubble { max-width: 90%; }
-}
 
 /* author row */
 .cm-comment-author-row { display:flex; gap:8px; align-items:center; margin-bottom:6px; }
@@ -324,7 +305,7 @@
 
 /* reply input */
 .cm-reply-input-row { display:flex; gap:8px; align-items:center; margin-top:8px; }
-.cm-upload-btn { background:none; border:none; cursor:pointer; color:#b7d0ff; padding:6px; font-size:18px; flex-shrink: 0; }
+.cm-upload-btn { background:none; border:none; cursor:pointer; color:#b7d0ff; padding:6px; font-size:18px; }
 .cm-reply-input { flex:1; background:#0d1620; border:1px solid rgba(255,255,255,0.03); padding:8px 10px; border-radius:8px; color:#e5f0ff; }
 
 /* reply list */
@@ -341,17 +322,32 @@
 .cm-input-bar {
   display:flex;
   gap:8px;
-  padding: 8px 10px;
+  padding: 12px;
   border-top: 1px solid rgba(255,255,255,0.02);
   align-items:center;
   background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
 }
-.cm-text-input { flex:1; min-width:0; background:#0d1620; border:1px solid rgba(255,255,255,0.03); color:#e6f1ff; padding:10px 12px; border-radius:18px; resize: none; font-size:14px; line-height:1.4; }
-.cm-send-btn { background:#2d7bff; color:white; border:none; padding:0; border-radius:50%; cursor:pointer; width:42px; height:42px; min-width:42px; max-width:42px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.cm-send-btn.small { padding:6px 10px; font-size:13px; width:auto; min-width:42px; max-width:none; height:auto; border-radius:10px; }
+.cm-text-input { flex:1; min-width:0; background:#0d1620; border:1px solid rgba(255,255,255,0.03); color:#e6f1ff; padding:10px 12px; border-radius:12px; }
+.cm-send-btn { background:#2d7bff; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; }
+.cm-send-btn.small { padding:6px 10px; font-size:13px; }
+
+@media (max-width: 520px) {
+  .cm-input-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .cm-upload-btn {
+    flex-shrink: 0;
+  }
+  .cm-text-input {
+    flex-basis: 0;
+    min-width: 0;
+  }
+  .cm-send-btn {
+    flex: 1 1 120px;
+    min-width: 120px;
+  }
+}
 
 /* preview media above input */
 .cm-comment-preview,
