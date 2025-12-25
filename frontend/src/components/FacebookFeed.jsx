@@ -792,10 +792,23 @@ export default function FacebookFeed() {
             (media) => media.resolvedUrl && !isImageMedia(media)
           );
 
+          const imageCount = imageMedia.length;
+          const layoutType =
+            imageCount === 1
+              ? "single"
+              : imageCount === 2
+                ? "two"
+                : imageCount === 3
+                  ? "three"
+                  : imageCount === 4
+                    ? "four"
+                    : imageCount > 0
+                      ? "five"
+                      : "";
           const displayedImages =
-            imageMedia.length > 4 ? imageMedia.slice(0, 4) : imageMedia;
-          const mediaLayoutClass = imageMedia.length
-            ? `fb-media-${Math.min(imageMedia.length, 4)}`
+            layoutType === "five" ? imageMedia.slice(0, 4) : imageMedia;
+          const mediaLayoutClass = layoutType
+            ? `fb-media-layout-${layoutType}`
             : "";
 
           return (
@@ -875,7 +888,7 @@ export default function FacebookFeed() {
               {(imageMedia.length > 0 || otherMedia.length > 0) && (
                 <div className="fb-post-media-wrapper">
                   {imageMedia.length > 0 &&
-                    (imageMedia.length === 1 ? (
+                    (layoutType === "single" ? (
                       <div
                         className="fb-media-single"
                         onClick={() => {
@@ -891,8 +904,7 @@ export default function FacebookFeed() {
                       >
                         {displayedImages.map((media, idx) => {
                           const shouldShowOverlay =
-                            imageMedia.length > 4 &&
-                            idx === displayedImages.length - 1;
+                            imageCount > 4 && idx === displayedImages.length - 1;
 
                           return (
                             <div
@@ -911,7 +923,7 @@ export default function FacebookFeed() {
                               />
                               {shouldShowOverlay && (
                                 <div className="fb-media-overlay">
-                                  +{imageMedia.length - 4}
+                                  +{imageCount - 4}
                                 </div>
                               )}
                             </div>
