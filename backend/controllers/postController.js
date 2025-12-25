@@ -265,8 +265,17 @@ exports.updatePost = async (req, res) => {
     const text = typeof req.body.text === "string" ? req.body.text : "";
 
     // ✅ Médias conservés (provenant du formulaire)
-    let existingMedia = [];
-    if (req.body.existingMedia) {
+    // Si aucun tableau n'est fourni, on conserve les médias actuels du post.
+    let existingMedia;
+    if (typeof req.body.existingMedia === "undefined") {
+      existingMedia = Array.isArray(post.media)
+        ? post.media.map((m) => ({
+            url: m.url,
+            type: m.type,
+            thumbnail: m.thumbnail,
+          }))
+        : [];
+    } else {
       try {
         existingMedia = Array.isArray(req.body.existingMedia)
           ? req.body.existingMedia
