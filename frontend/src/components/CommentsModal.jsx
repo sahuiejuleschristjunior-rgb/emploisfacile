@@ -3,49 +3,13 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import "../styles/comments-modal.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 
-/* ----------------------------
-   Inline SVG icons (small)
-   ---------------------------- */
-const Icon = {
-  Like: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M2 12c0 4.418 3.582 8 8 8h4.5c.92 0 1.75-.57 2.03-1.43L19.9 14.5c.2-.66.02-1.36-.47-1.87l-4.4-4.4A2.5 2.5 0 0 0 13.46 7H12V4.5A2.5 2.5 0 0 0 9.5 2 2.5 2.5 0 0 0 7 4.5V7H6c-3.866 0-4 0-4 5z" fill="#FFD54A"/>
-    </svg>
-  ),
-  Love: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 21s-6.716-4.816-9.04-7.04C-.033 10.98 1.084 6.5 4.404 5.11 6.465 4.2 9.5 6 12 8.5c2.5-2.5 5.535-4.3 7.596-3.39C22.916 6.5 24.033 10.98 21.04 13.96 18.716 16.184 12 21 12 21z" fill="#FF6B88"/>
-    </svg>
-  ),
-  Haha: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="#FFDD55"/><path d="M8 15c.8-1 1.7-1 2.5-1s1.7 0 2.5 1" stroke="#3b3b3b" strokeWidth="1.2" strokeLinecap="round"/><circle cx="9" cy="10" r="1" fill="#3b3b3b"/><circle cx="15" cy="10" r="1" fill="#3b3b3b"/>
-    </svg>
-  ),
-  Wow: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="#8BD8FF"/><path d="M12 8v4" stroke="#00334d" strokeWidth="1.2" strokeLinecap="round"/><circle cx="12" cy="16" r="1" fill="#00334d"/>
-    </svg>
-  ),
-  Sad: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="#9FB4FF"/><path d="M9 16s1-1 3-1 3 1 3 1" stroke="#05224a" strokeWidth="1.2" strokeLinecap="round"/>
-    </svg>
-  ),
-  Angry: () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="#FF9E9E"/><path d="M8 15s1-1 4-1 4 1 4 1" stroke="#5a160f" strokeWidth="1.2" strokeLinecap="round"/>
-    </svg>
-  )
-};
-
 const REACTION_CONFIG = {
-  like: { label: "J’aime", svg: <Icon.Like /> },
-  love: { label: "J’adore", svg: <Icon.Love /> },
-  haha: { label: "Haha", svg: <Icon.Haha /> },
-  wow: { label: "Wouah", svg: <Icon.Wow /> },
-  sad: { label: "Triste", svg: <Icon.Sad /> },
-  angry: { label: "Grrr", svg: <Icon.Angry /> },
+  like: { label: "J’aime", emoji: "👍" },
+  love: { label: "J’adore", emoji: "❤️" },
+  haha: { label: "Haha", emoji: "😂" },
+  wow: { label: "Wouah", emoji: "😮" },
+  sad: { label: "Triste", emoji: "😢" },
+  angry: { label: "Grrr", emoji: "😡" },
 };
 const REACTION_TYPES = Object.keys(REACTION_CONFIG);
 
@@ -477,7 +441,8 @@ export default function CommentsModal({
 
                       <div className="cm-comment-actions-row">
                         <button className="cm-action" onClick={() => toggleReactionMenu("comment", c._id)}>
-                          {REACTION_CONFIG.like.svg} {summary.total > 0 ? ` ${summary.total}` : ""}
+                          <span aria-hidden>{REACTION_CONFIG.like.emoji}</span>
+                          {summary.total > 0 ? ` ${summary.total}` : ""}
                         </button>
 
                         <button className="cm-action" onClick={() => setReplyOpen((p) => ({ ...p, [c._id]: !p[c._id] }))}>
@@ -494,7 +459,7 @@ export default function CommentsModal({
                         <div className="cm-reaction-picker">
                           {REACTION_TYPES.map((t) => (
                             <button key={t} className="cm-reaction-pill" onClick={() => reactToComment(c, t)}>
-                              <span style={{ display: "inline-flex", alignItems: "center" }}>{REACTION_CONFIG[t].svg}</span>
+                              <span style={{ display: "inline-flex", alignItems: "center", fontSize: 16 }}>{REACTION_CONFIG[t].emoji}</span>
                               <span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span>
                             </button>
                           ))}
@@ -567,13 +532,23 @@ export default function CommentsModal({
                               )}
 
                               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                                <button className="cm-action" onClick={() => toggleReactionMenu("reply", c._id, r._id)}>{REACTION_CONFIG.like.svg}{sum.total ? ` ${sum.total}` : ""}</button>
+                                <button className="cm-action" onClick={() => toggleReactionMenu("reply", c._id, r._id)}>
+                                  <span aria-hidden>{REACTION_CONFIG.like.emoji}</span>
+                                  {sum.total ? ` ${sum.total}` : ""}
+                                </button>
                                 {isOwner(r.user?._id) && <button className="cm-action" onClick={() => toggleActionMenu("reply", c._id, r._id)}>⋮</button>}
                               </div>
 
                               {reactionMenu.open && reactionMenu.context === "reply" && reactionMenu.commentId === c._id && reactionMenu.replyId === r._id && (
                                 <div className="cm-reaction-picker" style={{ marginTop: 6 }}>
-                                  {REACTION_TYPES.map((t) => <button key={t} className="cm-reaction-pill" onClick={() => reactToReply(c, r, t)}>{REACTION_CONFIG[t].svg}<span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span></button>)}
+                                  {REACTION_TYPES.map((t) => (
+                                    <button key={t} className="cm-reaction-pill" onClick={() => reactToReply(c, r, t)}>
+                                      <span style={{ display: "inline-flex", alignItems: "center", fontSize: 16 }}>
+                                        {REACTION_CONFIG[t].emoji}
+                                      </span>
+                                      <span style={{ marginLeft: 6 }}>{REACTION_CONFIG[t].label}</span>
+                                    </button>
+                                  ))}
                                 </div>
                               )}
 
