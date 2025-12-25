@@ -4256,50 +4256,25 @@
 .fb-media-grid {
   width: 100%;
   display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
   gap: 2px;
   background: #000;
-}
-
-.fb-media-1 {
-  grid-template-columns: 1fr;
-}
-
-.fb-media-1 img {
-  width: 100%;
-  object-fit: contain;
-}
-
-.fb-media-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.fb-media-3 {
-  grid-template-columns: 2fr 1fr;
-  grid-template-rows: repeat(2, 1fr);
-}
-
-.fb-media-3 .fb-media-item:first-child {
-  grid-row: span 2;
-}
-
-.fb-media-4,
-.fb-media-5 {
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, 1fr);
 }
 
 .fb-media-item {
   position: relative;
   background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding-top: 100%;
+  overflow: hidden;
 }
 
 .fb-media-item img {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Badge +X pour les nombreuses images */

@@ -5,6 +5,8 @@ export default function FacebookImage({
   alt = "",
   className = "",
   style = {},
+  objectFit = "contain",
+  height = "auto",
   onClick,
   ...rest
 }) {
@@ -19,8 +21,8 @@ export default function FacebookImage({
       className={finalClassName}
       style={{
         width: "100%",
-        height: "auto",
-        objectFit: "contain",
+        height,
+        objectFit,
         display: "block",
         background: "#000",
         ...style,
