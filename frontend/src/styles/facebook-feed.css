@@ -24,38 +24,13 @@
    CARTE DU POST (sans arrondis)
 ================================ */
 .fb-post {
-  background: #18191a;
-  border-radius: 5; /* supprimé */
-  padding: 10px 10px 8px;
-  margin-bottom: 14px;
+  background: #1c1e21;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
   color: #f5f5f5;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-}
-.fb-post {
-  background: #18191a;
-  border-radius: 0;
-  padding: 10px 10px 8px;
-  margin-bottom: 14px;
-  color: #f5f5f5;
-  box-shadow: none; /* ombre supprimée */
-}
-.fb-post {
-  background: #18191a;
-  border-radius: 0;
-  padding: 10px 10px 8px;
-  margin-bottom: 14px;
-  color: #f5f5f5;
-
-  /* Ombre portée élégante */
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
-}
-.fb-post {
-  background: #18191a;
-  border-radius: 0;
-  padding: 10px 10px 8px;
-  margin-bottom: 3px; /* rapproché (avant 14px) */
-  color: #f5f5f5;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+  border: 1px solid #3a3b3c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* HEADER */
@@ -391,50 +366,23 @@
 /* ========================================= */
 /*     FULLSCREEN FACEBOOK POST – NO LIMIT   */
 /* ========================================= */
-
+/* Réintroduit les marges et bordures pour éviter le rendu plein écran collé aux bords */
 .fb-feed {
-  padding: 0 !important;
-  margin: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important; /* Utilise toute la colonne centrale */
+  padding: 12px 8px 80px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 680px;
 }
 
 .fb-post-card {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  background: #1c1e21 !important; /* Fond Facebook */
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* HEADER + TEXTE + ACTIONS -> PADDING 0 */
-.fb-post-header,
-.fb-post-text,
-.fb-post-actions {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-/* MEDIA FULL SCREEN */
-.fb-post-media,
-.fb-post-media img,
-.fb-post-image,
-.fb-post-video {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-}
-
-/* COMMENTAIRES FULL WIDTH */
-.fb-comments-block {
-  width: 100% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #1c1e21;
+  border: 1px solid #3a3b3c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 @media (max-width: 900px) {
