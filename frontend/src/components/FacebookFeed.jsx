@@ -823,35 +823,46 @@ export default function FacebookFeed() {
               {/* MEDIA */}
               {(imageMedia.length > 0 || otherMedia.length > 0) && (
                 <div className="fb-post-media-wrapper">
-                  {imageMedia.length > 0 && (
-                    <div
-                      className={`fb-media-grid ${mediaLayoutClass}`.trim()}
-                    >
-                      {displayedImages.map((media, idx) => {
-                        const shouldShowOverlay =
-                          imageMedia.length > 4 &&
-                          idx === displayedImages.length - 1;
+                  {imageMedia.length > 0 &&
+                    (imageMedia.length === 1 ? (
+                      <div
+                        className="fb-media-single"
+                        onClick={() => {
+                          if (imageMedia[0].isLocal) return;
+                          openMediaViewer(post._id, imageMedia[0].originalIndex);
+                        }}
+                      >
+                        <img src={imageMedia[0].resolvedUrl} alt="" />
+                      </div>
+                    ) : (
+                      <div
+                        className={`fb-media-grid ${mediaLayoutClass}`.trim()}
+                      >
+                        {displayedImages.map((media, idx) => {
+                          const shouldShowOverlay =
+                            imageMedia.length > 4 &&
+                            idx === displayedImages.length - 1;
 
-                        return (
-                          <div
-                            key={media.originalIndex ?? idx}
-                            className="fb-media-item"
-                            onClick={() => {
-                              if (media.isLocal) return;
-                              openMediaViewer(post._id, media.originalIndex);
-                            }}
-                          >
-                            <img src={media.resolvedUrl} alt="" />
-                            {shouldShowOverlay && (
-                              <div className="fb-media-overlay">
-                                +{imageMedia.length - 4}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          return (
+                            <div
+                              key={media.originalIndex ?? idx}
+                              className="fb-media-item"
+                              onClick={() => {
+                                if (media.isLocal) return;
+                                openMediaViewer(post._id, media.originalIndex);
+                              }}
+                            >
+                              <img src={media.resolvedUrl} alt="" />
+                              {shouldShowOverlay && (
+                                <div className="fb-media-overlay">
+                                  +{imageMedia.length - 4}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
 
                   {otherMedia.map((m) => {
                     const isLocalMedia = Boolean(m.isLocal);
