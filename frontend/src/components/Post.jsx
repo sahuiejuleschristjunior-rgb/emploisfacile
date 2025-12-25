@@ -406,88 +406,52 @@ export default function Post({
 
         {/* MEDIAS */}
         {post.media?.length > 0 && (
-          <div
-            className={(() => {
-              const count = post.media.length;
-              if (count === 1) return "fb-post-media-wrapper fb-post-media-wrapper--single";
-              if (count === 2) return "fb-post-media-wrapper fb-post-media-wrapper--two";
-              if (count === 3) return "fb-post-media-wrapper fb-post-media-wrapper--three";
-              if (count === 4) return "fb-post-media-wrapper fb-post-media-wrapper--four";
-              return "fb-post-media-wrapper fb-post-media-wrapper--five-plus";
-            })()}
-          >
-            {(post.media || [])
-              .map((mediaItem, originIndex) => ({ ...mediaItem, originIndex }))
-              .slice(0, post.media.length > 4 ? 4 : post.media.length)
-              .map((m, index, visibleMedia) => {
-                const mediaUrl = fixUrl(m.url);
-                if (!mediaUrl) return null;
+          <div className="fb-post-media">
+            {post.media.map((m, index) => {
+              const mediaUrl = fixUrl(m.url);
+              if (!mediaUrl) return null;
+              const isImage = m.type
+                ? m.type.startsWith("image")
+                : /(png|jpe?g|webp|gif)$/i.test(m.url || "");
 
-                const isImage = m.type
-                  ? m.type.startsWith("image")
-                  : /(png|jpe?g|webp|gif)$/i.test(m.url || "");
-
-                const overlayCount = post.media.length - visibleMedia.length;
-                const showOverlay = overlayCount > 0 && index === visibleMedia.length - 1;
-                const altText = m.alt || m.description || "Image de la publication";
-
-                const handleMediaClick = () => {
-                  if (!isImage) return;
-
-                  const hiddenStartIndex = imageItems.findIndex(
-                    (item) => item.originIndex >= visibleMedia.length
-                  );
-                  const imageIndex = showOverlay && hiddenStartIndex >= 0
-                    ? hiddenStartIndex
-                    : imageIndexMap.get(m.originIndex) ?? 0;
-
-                  onMediaClick?.(imageItems, imageIndex);
-                };
-
-                const commonContent = (
-                  <>
+              if (isImage) {
+                const imageIndex = imageIndexMap.get(index) ?? 0;
+                return (
+                  <button
+                    type="button"
+                    key={index}
+                    className="fb-post-image-btn"
+                    onClick={() => onMediaClick?.(imageItems, imageIndex)}
+                    aria-label="Afficher les photos de la publication"
+                  >
                     <MediaRenderer
                       media={m}
                       src={mediaUrl}
                       type={m.type}
                       mimeType={m.mimeType}
-                      mediaClassName={isImage ? "fb-post-image" : "fb-post-video"}
-                      className="fb-post-media-renderer"
-                      alt={altText}
-                      controls={m.type === "video"}
-                      muted={m.type === "video"}
+                      mediaClassName="fb-post-image"
+                      alt="media"
                     />
-                    {showOverlay && (
-                      <div
-                        className="fb-post-media-more"
-                        aria-label={`Afficher ${overlayCount} média(s) supplémentaire(s)`}
-                      >
-                        +{overlayCount}
-                      </div>
-                    )}
-                  </>
+                  </button>
                 );
+              }
 
-                if (isImage) {
-                  return (
-                    <button
-                      type="button"
-                      key={m.originIndex}
-                      className="fb-post-media"
-                      onClick={handleMediaClick}
-                      aria-label="Afficher les photos de la publication"
-                    >
-                      {commonContent}
-                    </button>
-                  );
-                }
-
+              if (m.type === "video") {
                 return (
-                  <div key={m.originIndex} className="fb-post-media">
-                    {commonContent}
-                  </div>
+                  <MediaRenderer
+                    key={index}
+                    media={m}
+                    src={mediaUrl}
+                    type={m.type}
+                    mimeType={m.mimeType}
+                    mediaClassName="fb-post-video"
+                    controls
+                  />
                 );
-              })}
+              }
+
+              return null;
+            })}
           </div>
         )}
 
