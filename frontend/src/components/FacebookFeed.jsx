@@ -30,6 +30,56 @@ const REACTION_CONFIG = {
   angry: { label: "Grrr", emoji: "😡" },
 };
 
+const buildLayout = (count) => {
+  if (count <= 1) {
+    return {
+      template: ["a"],
+      columns: "1fr",
+      areas: ["a"],
+      visibleCount: 1,
+      rows: "1fr",
+    };
+  }
+
+  if (count === 2) {
+    return {
+      template: ["a b"],
+      columns: "repeat(2, 1fr)",
+      areas: ["a", "b"],
+      visibleCount: 2,
+      rows: "1fr",
+    };
+  }
+
+  if (count === 3) {
+    return {
+      template: ["a b", "a c"],
+      columns: "repeat(2, 1fr)",
+      areas: ["a", "b", "c"],
+      visibleCount: 3,
+      rows: "1fr 1fr",
+    };
+  }
+
+  if (count === 4) {
+    return {
+      template: ["a b", "c d"],
+      columns: "repeat(2, 1fr)",
+      areas: ["a", "b", "c", "d"],
+      visibleCount: 4,
+      rows: "1fr 1fr",
+    };
+  }
+
+  return {
+    template: ["a a a", "b c d"],
+    columns: "repeat(3, 1fr)",
+    areas: ["a", "b", "c", "d"],
+    visibleCount: 4,
+    rows: "2fr 1fr",
+  };
+};
+
 function getReactionSummary(reactions = []) {
   if (!reactions || reactions.length === 0) return { total: 0, types: [] };
 
@@ -793,56 +843,78 @@ export default function FacebookFeed() {
 
               {/* MEDIA */}
               {post.media?.length > 0 && (
-                <div
-                  className={
-                    post.media.length === 1
+                (() => {
+                  const mediaCount = post.media.length;
+                  const layout = buildLayout(mediaCount);
+                  const visibleMedia = post.media.slice(0, layout.visibleCount);
+                  const remaining = Math.max(mediaCount - layout.visibleCount, 0);
+                  const templateStyle = {
+                    gridTemplateAreas: layout.template
+                      .map((row) => `"${row}"`)
+                      .join(" "),
+                    gridTemplateColumns: layout.columns,
+                    gridTemplateRows: layout.rows,
+                  };
+                  const wrapperClassName =
+                    mediaCount === 1
                       ? "fb-post-media-wrapper fb-post-media-wrapper--single"
-                      : "fb-post-media-wrapper fb-post-media-wrapper--multi"
-                  }
-                >
-                  {post.media.map((m, idx) => {
-                    const mediaUrl = resolveMediaUrl(m);
-                    const isLocalMedia = Boolean(m.isLocal);
-                    const isVideo =
-                      (m.type && m.type.startsWith("video")) ||
-                      /(mp4|webm|mov)$/i.test(m.url || "");
+                      : "fb-post-media-wrapper fb-post-media-wrapper--multi";
 
-                    if (!mediaUrl) return null;
+                  return (
+                    <div className={wrapperClassName} style={templateStyle}>
+                      {visibleMedia.map((m, idx) => {
+                        const mediaUrl = resolveMediaUrl(m);
+                        const isLocalMedia = Boolean(m.isLocal);
+                        const isVideo =
+                          (m.type && m.type.startsWith("video")) ||
+                          /(mp4|webm|mov)$/i.test(m.url || "");
+                        const altText =
+                          m.alt || m.description || m.caption || "Média de la publication";
+                        const gridArea = layout.areas[idx];
 
-                    return (
-                      <div
-                        key={idx}
-                        className="fb-post-media"
-                        onClick={() => {
-                          if (isLocalMedia) return;
-                          return isVideo
-                            ? openReels(post._id)
-                            : openMediaViewer(post._id, idx);
-                        }}
-                      >
-                        <MediaRenderer
-                          media={m}
-                          src={mediaUrl}
-                          type={m.type}
-                          mimeType={m.mimeType}
-                          mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
-                          className="fb-post-media-renderer"
-                          alt=""
-                          muted={isVideo}
-                          autoPlay={m.autoPlay}
-                          onExpand={() => openReels(post._id)}
-                        />
+                        if (!mediaUrl) return null;
 
-                        {post.media.length > 4 &&
-                          idx === 3 && (
-                            <div className="fb-post-media-more">
-                              +{post.media.length - 4}
-                            </div>
-                          )}
-                      </div>
-                    );
-                  })}
-                </div>
+                        return (
+                          <div
+                            key={idx}
+                            className="fb-post-media"
+                            style={{ gridArea }}
+                            onClick={() => {
+                              if (isLocalMedia) return;
+                              return isVideo
+                                ? openReels(post._id)
+                                : openMediaViewer(post._id, idx);
+                            }}
+                          >
+                            <MediaRenderer
+                              media={m}
+                              src={mediaUrl}
+                              type={m.type}
+                              mimeType={m.mimeType}
+                              mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
+                              className="fb-post-media-renderer"
+                              alt={altText}
+                              muted={isVideo}
+                              autoPlay={m.autoPlay}
+                              onExpand={() => openReels(post._id)}
+                            />
+
+                            {remaining > 0 && idx === visibleMedia.length - 1 && (
+                              <div
+                                className="fb-post-media-more"
+                                aria-label={`Voir ${remaining} média${
+                                  remaining > 1 ? "s" : ""
+                                } supplémentaire${remaining > 1 ? "s" : ""}`}
+                              >
+                                +{remaining}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
               )}
 
               {/* STATS */}
