@@ -457,6 +457,11 @@ export default function FacebookFeed() {
     document.body.classList.add("fb-no-scroll");
   };
 
+  const openReels = (postId) => {
+    if (!postId) return;
+    nav(`/reels?videoId=${postId}`);
+  };
+
   const closeMediaViewer = () => {
     setMediaViewerOpen(false);
     setMediaViewer({ postId: null, index: 0 });
@@ -872,7 +877,9 @@ export default function FacebookFeed() {
                         className="fb-post-media"
                         onClick={() => {
                           if (isLocalMedia) return;
-                          return openMediaViewer(post._id, m.originalIndex);
+                          return isVideo
+                            ? openReels(post._id)
+                            : openMediaViewer(post._id, m.originalIndex);
                         }}
                       >
                         <MediaRenderer
@@ -885,7 +892,7 @@ export default function FacebookFeed() {
                           alt=""
                           muted={false}
                           autoPlay={m.autoPlay ?? true}
-                          onExpand={() => openMediaViewer(post._id, m.originalIndex)}
+                          onExpand={() => openReels(post._id)}
                         />
                       </div>
                     );
