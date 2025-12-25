@@ -253,7 +253,7 @@
 .cm-comment { display:flex; gap:10px; width:100%; }
 .cm-comment-avatar { width:38px; height:38px; border-radius:999px; background-size:cover; background-position:center; }
 .cm-comment-body { flex:1; display:flex; flex-direction:column; gap:8px; max-width: 100%; }
-.cm-comment-bubble { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px 12px; border-radius:12px; position:relative; transition: max-height .28s ease, transform .18s ease; overflow:hidden; max-height: 220px; width: fit-content; max-width: 92%; }
+.cm-comment-bubble { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px 12px 26px 12px; border-radius:12px; position:relative; transition: max-height .28s ease, transform .18s ease; overflow:hidden; max-height: 220px; width: fit-content; max-width: 92%; }
 .cm-comment-bubble.expanded { max-height: 2000px; }
 
 /* author row */
@@ -292,6 +292,10 @@
 /* reaction picker & pills */
 .cm-reaction-picker { display:flex; gap:8px; margin-top:6px; }
 .cm-reaction-pill { background:#112036; border:1px solid rgba(255,255,255,0.03); padding:8px 10px; border-radius:999px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.cm-reaction-badge { position:absolute; right:10px; bottom:6px; display:inline-flex; align-items:center; gap:6px; background: rgba(12,19,33,0.85); border:1px solid rgba(255,255,255,0.05); padding:4px 8px; border-radius:999px; font-size:13px; color:#dbeafe; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+.cm-reaction-icons { display:flex; gap:4px; }
+.cm-reaction-icon { font-size:14px; }
+.cm-reaction-count { font-weight:700; }
 
 /* small dropdown (delete) */
 .cm-dropdown {
@@ -339,7 +343,7 @@
 /* reply list */
 .cm-reply { display:flex; gap:8px; margin-top:10px; }
 .cm-reply-avatar { width:32px; height:32px; border-radius:999px; background-size:cover; background-position:center; }
-.cm-reply-body { flex:1; background: #0b1220; padding:8px 10px; border-radius:10px; }
+.cm-reply-body { flex:1; background: #0b1220; padding:8px 10px 28px 10px; border-radius:10px; position: relative; }
 .cm-reply-author { font-weight:700; color:#e8f3ff; }
 .cm-reply-text { color:#dbeafe; margin-top:4px; }
 

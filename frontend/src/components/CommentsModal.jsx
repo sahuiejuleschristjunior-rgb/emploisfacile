@@ -114,6 +114,7 @@ export default function CommentsModal({
 
   const commentsListRef = useRef(null);
   const commentsRefs = useRef({});
+  const longPressTimer = useRef(null);
 
   useEffect(() => {
     let abort = false;
@@ -159,12 +160,32 @@ export default function CommentsModal({
 
   const isOwner = useCallback((objUserId) => String(objUserId) === String(userId), [userId]);
 
+  const openReactionMenu = (context, commentId, replyId = null) => {
+    setReactionMenu({ open: true, context, commentId, replyId });
+    setActionMenu({ open: false, context: null, commentId: null, replyId: null });
+  };
+
   const toggleReactionMenu = (context, commentId, replyId = null) => {
     setReactionMenu((prev) => {
       const same = prev.open && prev.context === context && prev.commentId === commentId && prev.replyId === replyId;
       return same ? { open: false, context: null, commentId: null, replyId: null } : { open: true, context, commentId, replyId };
     });
     setActionMenu({ open: false, context: null, commentId: null, replyId: null });
+  };
+
+  const startLongPress = (callback) => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      longPressTimer.current = null;
+      callback();
+    }, 520);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const toggleActionMenu = (context, commentId, replyId = null) => {
@@ -417,7 +438,15 @@ export default function CommentsModal({
                     <div className="cm-comment-avatar" style={getAvatarStyle(c.user?.avatar)} />
 
                     <div className="cm-comment-body">
-                      <div className={`cm-comment-bubble ${expandedMap[c._id] ? "expanded" : ""}`}>
+                      <div
+                        className={`cm-comment-bubble ${expandedMap[c._id] ? "expanded" : ""}`}
+                        onMouseDown={() => startLongPress(() => openReactionMenu("comment", c._id))}
+                        onMouseUp={cancelLongPress}
+                        onMouseLeave={cancelLongPress}
+                        onTouchStart={() => startLongPress(() => openReactionMenu("comment", c._id))}
+                        onTouchEnd={cancelLongPress}
+                        onTouchMove={cancelLongPress}
+                      >
                         <div className="cm-comment-author-row">
                           <span className="cm-comment-author">{c.user?.name}</span>
                           <span className="cm-comment-date muted">{new Date(c.createdAt).toLocaleString()}</span>
@@ -437,12 +466,22 @@ export default function CommentsModal({
                             <MediaCarousel items={mediaItems} maxHeight="240px" />
                           </div>
                         )}
+
+                        {summary.total > 0 && (
+                          <div className="cm-reaction-badge" aria-label={`Réactions (${summary.total})`}>
+                            <div className="cm-reaction-icons">
+                              {summary.types.map((t) => (
+                                <span key={t} className="cm-reaction-icon">{REACTION_CONFIG[t]?.emoji || "👍"}</span>
+                              ))}
+                            </div>
+                            <span className="cm-reaction-count">{summary.total}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="cm-comment-actions-row">
                         <button className="cm-action" onClick={() => toggleReactionMenu("comment", c._id)}>
-                          <span aria-hidden>{REACTION_CONFIG.like.emoji}</span>
-                          {summary.total > 0 ? ` ${summary.total}` : ""}
+                          Réagir
                         </button>
 
                         <button className="cm-action" onClick={() => setReplyOpen((p) => ({ ...p, [c._id]: !p[c._id] }))}>
@@ -521,7 +560,15 @@ export default function CommentsModal({
                         return (
                           <div key={r._id} className="cm-reply">
                             <div className="cm-reply-avatar" style={getAvatarStyle(r.user?.avatar)} />
-                            <div className="cm-reply-body">
+                            <div
+                              className="cm-reply-body"
+                              onMouseDown={() => startLongPress(() => openReactionMenu("reply", c._id, r._id))}
+                              onMouseUp={cancelLongPress}
+                              onMouseLeave={cancelLongPress}
+                              onTouchStart={() => startLongPress(() => openReactionMenu("reply", c._id, r._id))}
+                              onTouchEnd={cancelLongPress}
+                              onTouchMove={cancelLongPress}
+                            >
                               <div className="cm-reply-author">{r.user?.name} <span className="muted small"> {new Date(r.createdAt).toLocaleString()}</span></div>
                               <div className="cm-reply-text">{r.text}</div>
 
@@ -531,10 +578,20 @@ export default function CommentsModal({
                                 </div>
                               )}
 
+                              {sum.total > 0 && (
+                                <div className="cm-reaction-badge" aria-label={`Réactions (${sum.total})`}>
+                                  <div className="cm-reaction-icons">
+                                    {sum.types.map((t) => (
+                                      <span key={t} className="cm-reaction-icon">{REACTION_CONFIG[t]?.emoji || "👍"}</span>
+                                    ))}
+                                  </div>
+                                  <span className="cm-reaction-count">{sum.total}</span>
+                                </div>
+                              )}
+
                               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                                 <button className="cm-action" onClick={() => toggleReactionMenu("reply", c._id, r._id)}>
-                                  <span aria-hidden>{REACTION_CONFIG.like.emoji}</span>
-                                  {sum.total ? ` ${sum.total}` : ""}
+                                  Réagir
                                 </button>
                                 {isOwner(r.user?._id) && <button className="cm-action" onClick={() => toggleActionMenu("reply", c._id, r._id)}>⋮</button>}
                               </div>
