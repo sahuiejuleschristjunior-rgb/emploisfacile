@@ -327,9 +327,27 @@
   align-items:center;
   background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
 }
-.cm-text-input { flex:1; background:#0d1620; border:1px solid rgba(255,255,255,0.03); color:#e6f1ff; padding:10px 12px; border-radius:12px; }
+.cm-text-input { flex:1; min-width:0; background:#0d1620; border:1px solid rgba(255,255,255,0.03); color:#e6f1ff; padding:10px 12px; border-radius:12px; }
 .cm-send-btn { background:#2d7bff; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; }
 .cm-send-btn.small { padding:6px 10px; font-size:13px; }
+
+@media (max-width: 520px) {
+  .cm-input-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .cm-upload-btn {
+    flex-shrink: 0;
+  }
+  .cm-text-input {
+    flex-basis: 0;
+    min-width: 0;
+  }
+  .cm-send-btn {
+    flex: 1 1 120px;
+    min-width: 120px;
+  }
+}
 
 /* preview media above input */
 .cm-comment-preview,
