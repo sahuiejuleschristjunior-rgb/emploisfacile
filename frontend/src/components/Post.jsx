@@ -137,6 +137,73 @@ export default function Post({
     imageIndexMap.set(item.originIndex, idx);
   });
 
+  const renderImageGrid = () => {
+    if (!imageItems.length) return null;
+
+    const totalImages = imageItems.length;
+    const displayedImages = totalImages > 4 ? imageItems.slice(0, 4) : imageItems;
+    const remaining = totalImages > 4 ? totalImages - 4 : 0;
+
+    const layoutClass =
+      totalImages === 1
+        ? "single"
+        : totalImages === 2
+          ? "two"
+          : totalImages === 3
+            ? "three"
+            : totalImages === 4
+              ? "four"
+              : "five-plus";
+
+    const getAreaClass = (index) => {
+      if (layoutClass === "three") {
+        if (index === 0) return "grid-area-a";
+        if (index === 1) return "grid-area-b";
+        return "grid-area-c";
+      }
+
+      if (layoutClass === "five-plus") {
+        if (index === 0) return "grid-area-a";
+        if (index === 1) return "grid-area-b";
+        if (index === 2) return "grid-area-c";
+        return "grid-area-d";
+      }
+
+      return "";
+    };
+
+    return (
+      <div className={`fb-post-media-grid ${layoutClass}`}>
+        {displayedImages.map((image, idx) => {
+          const imageIndex = imageIndexMap.get(image.originIndex) ?? idx;
+          const showOverlay = remaining > 0 && idx === displayedImages.length - 1;
+
+          return (
+            <button
+              type="button"
+              key={image.originIndex || idx}
+              className={`fb-post-image-btn ${getAreaClass(idx)}`}
+              onClick={() => onMediaClick?.(imageItems, imageIndex)}
+              aria-label="Afficher les photos de la publication"
+            >
+              <MediaRenderer
+                media={image}
+                src={image.url}
+                type={image.type}
+                mimeType={image.mimeType}
+                mediaClassName="fb-post-image fb-post-image-cover"
+                alt="media"
+              />
+              {showOverlay && (
+                <span className="fb-post-image-overlay">+{remaining}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   const trackAdEvent = async (type) => {
     if (!isSponsored || !sponsoredPostId || !token) return;
 
@@ -174,8 +241,8 @@ export default function Post({
           } catch (err) {}
 
           trackAdEvent("impression");
-          observer.disconnect();
-        });
+      observer.disconnect();
+    });
       },
       { threshold: 0.5 }
     );
@@ -200,6 +267,60 @@ export default function Post({
 
     clickSentRef.current = true;
     trackAdEvent("click");
+  };
+
+  const hasOnlyImages =
+    Boolean(post.media?.length) && imageItems.length === (post.media?.length || 0);
+
+  const renderMediaContent = () => {
+    if (!post.media?.length) return null;
+    if (hasOnlyImages) return renderImageGrid();
+
+    return post.media.map((m, index) => {
+      const mediaUrl = fixUrl(m.url);
+      if (!mediaUrl) return null;
+      const isImage = m.type
+        ? m.type.startsWith("image")
+        : /(png|jpe?g|webp|gif)$/i.test(m.url || "");
+
+      if (isImage) {
+        const imageIndex = imageIndexMap.get(index) ?? 0;
+        return (
+          <button
+            type="button"
+            key={index}
+            className="fb-post-image-btn"
+            onClick={() => onMediaClick?.(imageItems, imageIndex)}
+            aria-label="Afficher les photos de la publication"
+          >
+            <MediaRenderer
+              media={m}
+              src={mediaUrl}
+              type={m.type}
+              mimeType={m.mimeType}
+              mediaClassName="fb-post-image"
+              alt="media"
+            />
+          </button>
+        );
+      }
+
+      if (m.type === "video") {
+        return (
+          <MediaRenderer
+            key={index}
+            media={m}
+            src={mediaUrl}
+            type={m.type}
+            mimeType={m.mimeType}
+            mediaClassName="fb-post-video"
+            controls
+          />
+        );
+      }
+
+      return null;
+    });
   };
 
   const handleHidePost = () => {
@@ -406,53 +527,7 @@ export default function Post({
 
         {/* MEDIAS */}
         {post.media?.length > 0 && (
-          <div className="fb-post-media">
-            {post.media.map((m, index) => {
-              const mediaUrl = fixUrl(m.url);
-              if (!mediaUrl) return null;
-              const isImage = m.type
-                ? m.type.startsWith("image")
-                : /(png|jpe?g|webp|gif)$/i.test(m.url || "");
-
-              if (isImage) {
-                const imageIndex = imageIndexMap.get(index) ?? 0;
-                return (
-                  <button
-                    type="button"
-                    key={index}
-                    className="fb-post-image-btn"
-                    onClick={() => onMediaClick?.(imageItems, imageIndex)}
-                    aria-label="Afficher les photos de la publication"
-                  >
-                    <MediaRenderer
-                      media={m}
-                      src={mediaUrl}
-                      type={m.type}
-                      mimeType={m.mimeType}
-                      mediaClassName="fb-post-image"
-                      alt="media"
-                    />
-                  </button>
-                );
-              }
-
-              if (m.type === "video") {
-                return (
-                  <MediaRenderer
-                    key={index}
-                    media={m}
-                    src={mediaUrl}
-                    type={m.type}
-                    mimeType={m.mimeType}
-                    mediaClassName="fb-post-video"
-                    controls
-                  />
-                );
-              }
-
-              return null;
-            })}
-          </div>
+          <div className="fb-post-media">{renderMediaContent()}</div>
         )}
 
         {/* STATS */}

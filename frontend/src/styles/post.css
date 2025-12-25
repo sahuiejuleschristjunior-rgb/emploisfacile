@@ -142,11 +142,56 @@
   width: 100%;
   max-width: 100%;
   margin: 10px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #000;
+}
+
+.fb-post-media-grid {
+  display: grid;
+  gap: 4px;
+  width: 100%;
   overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+}
+
+.fb-post-media-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.fb-post-media-grid.two {
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: minmax(220px, 1fr);
+}
+
+.fb-post-media-grid.three {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "area-a area-b"
+    "area-a area-c";
+  min-height: 360px;
+}
+
+.fb-post-media-grid.four {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 360px;
+}
+
+.fb-post-media-grid.five-plus {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 2fr 1fr;
+  grid-template-areas:
+    "area-a area-a area-a"
+    "area-b area-c area-d";
+  min-height: 380px;
+}
+
+.fb-post-media-grid .fb-post-image-btn {
+  border-radius: 0;
+}
+
+.fb-post-media-grid.single .fb-post-image-btn {
+  border-radius: 12px;
 }
 
 .fb-post-image-btn {
@@ -156,8 +201,9 @@
   cursor: pointer;
   display: block;
   width: 100%;
-  border-radius: 12px;
+  height: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .fb-post-image-btn:focus-visible {
@@ -172,6 +218,41 @@
   border-radius: 12px;
   background: #000;
   object-fit: contain;
+}
+
+.fb-post-image-cover {
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.grid-area-a {
+  grid-area: area-a;
+}
+
+.grid-area-b {
+  grid-area: area-b;
+}
+
+.grid-area-c {
+  grid-area: area-c;
+}
+
+.grid-area-d {
+  grid-area: area-d;
+}
+
+.fb-post-image-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-weight: 700;
+  font-size: 26px;
+  border-radius: inherit;
 }
 
 /* STATS */
