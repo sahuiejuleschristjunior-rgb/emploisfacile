@@ -123,8 +123,8 @@
 .fb-media img,
 .fb-media video {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   display: block;
   background: #000;
 }
@@ -4162,6 +4162,47 @@
   grid-template-columns: repeat(2, 1fr);
 }
 
+.fb-media-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.fb-square {
+  aspect-ratio: 1 / 1;
+}
+
+.fb-portrait {
+  aspect-ratio: 4 / 5;
+}
+
+.fb-landscape {
+  aspect-ratio: 1.91 / 1;
+}
+
+.fb-video-landscape {
+  aspect-ratio: 16 / 9;
+}
+
+.fb-story {
+  aspect-ratio: 9 / 16;
+}
+
+.fb-safe-zone {
+  position: relative;
+}
+
+.fb-safe-zone::after {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
 .fb-post-media {
   position: relative;
   cursor: pointer;
@@ -4169,16 +4210,24 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  aspect-ratio: 1 / 1;
   background: #000;
+}
+
+.fb-post-media .media-renderer,
+.fb-post-media .media-element {
+  width: 100%;
+  height: 100%;
 }
 
 .fb-post-media img.fb-post-image,
 .fb-post-media video.fb-post-video {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
+
 
 /* Badge +X pour les nombreuses images */
 .fb-post-media-more {

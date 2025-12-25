@@ -30,6 +30,54 @@ const REACTION_CONFIG = {
   angry: { label: "Grrr", emoji: "😡" },
 };
 
+const RATIO_TOLERANCE = 0.08;
+
+const getMediaRatioClass = (mediaItem = {}, isVideo = false, isMulti = false) => {
+  const width =
+    mediaItem?.width ||
+    mediaItem?.w ||
+    mediaItem?.originalWidth ||
+    mediaItem?.dimensions?.width;
+  const height =
+    mediaItem?.height ||
+    mediaItem?.h ||
+    mediaItem?.originalHeight ||
+    mediaItem?.dimensions?.height;
+
+  if (width && height) {
+    const ratio = width / height;
+
+    if (Math.abs(ratio - 1) <= RATIO_TOLERANCE) return "fb-square";
+    if (ratio >= 1.7) return "fb-video-landscape";
+    if (ratio >= 1.5) return "fb-landscape";
+    if (ratio <= 0.7) return "fb-story";
+    return "fb-portrait";
+  }
+
+  const ratioHint = (
+    mediaItem?.ratio ||
+    mediaItem?.aspectRatio ||
+    mediaItem?.format ||
+    mediaItem?.orientation ||
+    mediaItem?.layout ||
+    ""
+  )
+    .toString()
+    .toLowerCase();
+
+  if (ratioHint.includes("story") || ratioHint.includes("9/16") || ratioHint.includes("vertical")) {
+    return "fb-story";
+  }
+
+  if (ratioHint.includes("4/5") || ratioHint.includes("portrait")) return "fb-portrait";
+  if (ratioHint.includes("1.91") || ratioHint.includes("landscape")) return "fb-landscape";
+  if (ratioHint.includes("16/9")) return "fb-video-landscape";
+
+  if (isVideo) return "fb-video-landscape";
+  if (isMulti) return "fb-square";
+  return "fb-portrait";
+};
+
 function getReactionSummary(reactions = []) {
   if (!reactions || reactions.length === 0) return { total: 0, types: [] };
 
@@ -806,13 +854,27 @@ export default function FacebookFeed() {
                     const isVideo =
                       (m.type && m.type.startsWith("video")) ||
                       /(mp4|webm|mov)$/i.test(m.url || "");
+                    const ratioClass = getMediaRatioClass(
+                      m,
+                      isVideo,
+                      post.media.length > 1
+                    );
+
+                    const mediaContainerClass = [
+                      "fb-post-media",
+                      "fb-media-frame",
+                      ratioClass,
+                      "fb-safe-zone",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
 
                     if (!mediaUrl) return null;
 
                     return (
                       <div
                         key={idx}
-                        className="fb-post-media"
+                        className={mediaContainerClass}
                         onClick={() => {
                           if (isLocalMedia) return;
                           return isVideo
