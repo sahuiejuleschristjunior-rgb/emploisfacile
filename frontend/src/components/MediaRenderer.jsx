@@ -10,7 +10,12 @@ import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
 const VIDEO_EXT = /(\.mp4|\.mov|\.webm|\.m4v|\.avi)$/i;
-const DEFAULT_VOLUME = 0.6;
+const MIN_GAIN = 5;
+const MAX_GAIN = 10;
+const DEFAULT_GAIN = 7;
+const MIN_VOLUME = MIN_GAIN / 10;
+const MAX_VOLUME = MAX_GAIN / 10;
+const DEFAULT_VOLUME = DEFAULT_GAIN / 10;
 
 const getMediaType = ({ type, mimeType, url = "" }) => {
   const hint = type || mimeType || "";
@@ -33,7 +38,7 @@ export default function MediaRenderer({
   alt = "",
   autoPlay = true,
   loop,
-  muted = true,
+  muted = false,
   controls,
   playsInline = true,
   preload = "metadata",
@@ -65,9 +70,10 @@ export default function MediaRenderer({
   useEffect(() => {
     setLoaded(false);
     setErrored(false);
+    const initialVolume = muted ? 0 : DEFAULT_VOLUME;
     setIsMuted(Boolean(muted));
-    setVolume(muted ? 0 : DEFAULT_VOLUME);
-    lastVolumeRef.current = DEFAULT_VOLUME;
+    setVolume(initialVolume);
+    lastVolumeRef.current = Math.min(Math.max(initialVolume, MIN_VOLUME), MAX_VOLUME);
     setDuration(0);
     setCurrentTime(0);
   }, [finalSrc, resolvedType, muted]);
@@ -93,7 +99,9 @@ export default function MediaRenderer({
       setDuration(videoEl.duration || 0);
       setCurrentTime(videoEl.currentTime || 0);
       videoEl.muted = isMuted;
-      videoEl.volume = isMuted ? 0 : volume || DEFAULT_VOLUME;
+      videoEl.volume = isMuted
+        ? 0
+        : Math.min(Math.max(volume || DEFAULT_VOLUME, MIN_VOLUME), MAX_VOLUME);
     };
 
     const handleTimeUpdate = () => {
@@ -119,7 +127,9 @@ export default function MediaRenderer({
     if (!videoEl) return;
 
     videoEl.muted = isMuted;
-    videoEl.volume = isMuted ? 0 : volume || DEFAULT_VOLUME;
+    videoEl.volume = isMuted
+      ? 0
+      : Math.min(Math.max(volume || DEFAULT_VOLUME, MIN_VOLUME), MAX_VOLUME);
   }, [isMuted, volume]);
 
   const handleImageLoad = () => {
@@ -143,13 +153,16 @@ export default function MediaRenderer({
     if (!videoEl) return;
 
     if (isMuted) {
-      const nextVolume = volume === 0 ? lastVolumeRef.current || DEFAULT_VOLUME : volume;
+      const nextVolume =
+        volume === 0
+          ? lastVolumeRef.current || DEFAULT_VOLUME
+          : Math.min(Math.max(volume, MIN_VOLUME), MAX_VOLUME);
       videoEl.muted = false;
       videoEl.volume = nextVolume;
       setVolume(nextVolume);
       setIsMuted(false);
     } else {
-      lastVolumeRef.current = volume || DEFAULT_VOLUME;
+      lastVolumeRef.current = Math.min(Math.max(volume || DEFAULT_VOLUME, MIN_VOLUME), MAX_VOLUME);
       videoEl.muted = true;
       videoEl.volume = 0;
       setVolume(0);
@@ -162,7 +175,9 @@ export default function MediaRenderer({
     const videoEl = videoRef.current;
     if (!videoEl) return;
 
-    const nextVolume = Math.min(Math.max(Number(event.target.value), 0), 1);
+    const gainValue = Math.min(Math.max(Number(event.target.value), MIN_GAIN), MAX_GAIN);
+    const nextVolume = gainValue / 10;
+
     setVolume(nextVolume);
 
     if (nextVolume === 0) {
@@ -170,10 +185,11 @@ export default function MediaRenderer({
       videoEl.muted = true;
       setIsMuted(true);
     } else {
-      videoEl.volume = nextVolume;
+      const clampedVolume = Math.min(Math.max(nextVolume, MIN_VOLUME), MAX_VOLUME);
+      videoEl.volume = clampedVolume;
       videoEl.muted = false;
       setIsMuted(false);
-      lastVolumeRef.current = nextVolume;
+      lastVolumeRef.current = clampedVolume;
     }
   };
 
@@ -203,6 +219,7 @@ export default function MediaRenderer({
   };
 
   const progressPercent = duration ? Math.min((currentTime / duration) * 100, 100) : 0;
+  const sliderValue = Math.max(isMuted ? lastVolumeRef.current : volume, MIN_VOLUME) * 10;
 
   const handleSeek = (event) => {
     event.stopPropagation();
@@ -228,6 +245,31 @@ export default function MediaRenderer({
     if (hideControlsTimeout.current) clearTimeout(hideControlsTimeout.current);
   }, []);
 
+  useEffect(() => {
+    if (!showVideo || !videoRef.current) return undefined;
+
+    const videoEl = videoRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            videoEl.pause();
+            setIsPlaying(false);
+          } else if (autoPlay !== false) {
+            videoEl.play().catch(() => {});
+          }
+        });
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(videoEl);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [showVideo, autoPlay, finalSrc]);
+
   const handleError = () => {
     setErrored(true);
     setLoaded(true);
@@ -249,7 +291,7 @@ export default function MediaRenderer({
           poster={finalPoster}
           autoPlay={autoPlay}
           loop={loop}
-          muted={muted}
+          muted={isMuted}
           controls={controls}
           playsInline={playsInline}
           preload={preload}
@@ -322,10 +364,10 @@ export default function MediaRenderer({
               >
                 <input
                   type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={volume}
+                  min={MIN_GAIN}
+                  max={MAX_GAIN}
+                  step="0.5"
+                  value={sliderValue}
                   onChange={handleVolumeChange}
                   aria-label="Volume"
                 />
