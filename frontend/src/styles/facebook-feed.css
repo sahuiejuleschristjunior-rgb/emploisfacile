@@ -4146,48 +4146,84 @@
 /* ===================================================== */
 
 .fb-post-media-wrapper {
-  margin-top: 8px;
-  border-radius: px;
-  overflow: hidden;
+  margin: 8px -10px 0;
   background: #000;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2px;
 }
 
-.fb-post-media-wrapper--single {
+.fb-post-media-wrapper--single,
+.fb-post-media-wrapper--multi {
   display: block;
 }
 
-.fb-post-media-wrapper--multi {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.fb-post-media {
-  position: relative;
-  cursor: pointer;
-  overflow: visible;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.fb-media-grid {
+  width: 100%;
+  display: grid;
+  gap: 2px;
   background: #000;
 }
 
-.fb-post-media img.fb-post-image,
-.fb-post-media video.fb-post-video {
+.fb-media-1 {
+  grid-template-columns: 1fr;
+}
+
+.fb-media-1 img {
   width: 100%;
-  height: auto;
+  max-height: 500px;
   object-fit: contain;
-  display: block;
+}
+
+.fb-media-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.fb-media-2 .fb-media-item {
+  height: 300px;
+}
+
+.fb-media-3 {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(2, 1fr);
+  height: 400px;
+}
+
+.fb-media-3 .fb-media-item:first-child {
+  grid-row: span 2;
+}
+
+.fb-media-4,
+.fb-media-5 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.fb-media-4 .fb-media-item,
+.fb-media-5 .fb-media-item {
+  height: 200px;
+}
+
+.fb-media-item {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.fb-media-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Badge +X pour les nombreuses images */
-.fb-post-media-more {
+.fb-media-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4321,48 +4357,84 @@
 /* ===================================================== */
 
 .fb-post-media-wrapper {
-  margin-top: 8px;
-  border-radius: px;
-  overflow: hidden;
+  margin: 8px -10px 0;
   background: #000;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 2px;
 }
 
-.fb-post-media-wrapper--single {
+.fb-post-media-wrapper--single,
+.fb-post-media-wrapper--multi {
   display: block;
 }
 
-.fb-post-media-wrapper--multi {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.fb-post-media {
-  position: relative;
-  cursor: pointer;
-  overflow: visible;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.fb-media-grid {
+  width: 100%;
+  display: grid;
+  gap: 2px;
   background: #000;
 }
 
-.fb-post-media img.fb-post-image,
-.fb-post-media video.fb-post-video {
+.fb-media-1 {
+  grid-template-columns: 1fr;
+}
+
+.fb-media-1 img {
   width: 100%;
-  height: auto;
+  max-height: 500px;
   object-fit: contain;
-  display: block;
+}
+
+.fb-media-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.fb-media-2 .fb-media-item {
+  height: 300px;
+}
+
+.fb-media-3 {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(2, 1fr);
+  height: 400px;
+}
+
+.fb-media-3 .fb-media-item:first-child {
+  grid-row: span 2;
+}
+
+.fb-media-4,
+.fb-media-5 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.fb-media-4 .fb-media-item,
+.fb-media-5 .fb-media-item {
+  height: 200px;
+}
+
+.fb-media-item {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.fb-media-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Badge +X pour les nombreuses images */
-.fb-post-media-more {
+.fb-media-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

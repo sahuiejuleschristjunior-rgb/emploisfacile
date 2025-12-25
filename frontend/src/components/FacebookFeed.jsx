@@ -514,6 +514,16 @@ export default function FacebookFeed() {
     return getImageUrl(candidate);
   };
 
+  const isImageMedia = (media) => {
+    if (!media) return false;
+
+    const mime = (media.type || media.mimeType || "").toLowerCase();
+    if (mime.startsWith("image")) return true;
+
+    const candidate = media.resolvedUrl || media.previewUrl || media.url || "";
+    return /\.(jpe?g|png|gif|webp|avif|heic|heif)$/i.test(candidate);
+  };
+
   const isPostPublic = (post) =>
     Boolean(
       post?.privacy === "public" ||
@@ -718,6 +728,25 @@ export default function FacebookFeed() {
           const permissions = getPostPermissions(post);
           const isMenuOpen = actionMenuPostId === post._id;
 
+          const resolvedMedia = (post.media || []).map((media, originalIndex) => ({
+            ...media,
+            originalIndex,
+            resolvedUrl: resolveMediaUrl(media),
+          }));
+
+          const imageMedia = resolvedMedia.filter(
+            (media) => media.resolvedUrl && isImageMedia(media)
+          );
+          const otherMedia = resolvedMedia.filter(
+            (media) => media.resolvedUrl && !isImageMedia(media)
+          );
+
+          const displayedImages =
+            imageMedia.length > 4 ? imageMedia.slice(0, 4) : imageMedia;
+          const mediaLayoutClass = imageMedia.length
+            ? `fb-media-${Math.min(imageMedia.length, 5)}`
+            : "";
+
           return (
             <article key={post._id} className="fb-post">
 
@@ -792,37 +821,58 @@ export default function FacebookFeed() {
               )}
 
               {/* MEDIA */}
-              {post.media?.length > 0 && (
-                <div
-                  className={
-                    post.media.length === 1
-                      ? "fb-post-media-wrapper fb-post-media-wrapper--single"
-                      : "fb-post-media-wrapper fb-post-media-wrapper--multi"
-                  }
-                >
-                  {post.media.map((m, idx) => {
-                    const mediaUrl = resolveMediaUrl(m);
+              {(imageMedia.length > 0 || otherMedia.length > 0) && (
+                <div className="fb-post-media-wrapper">
+                  {imageMedia.length > 0 && (
+                    <div
+                      className={`fb-media-grid ${mediaLayoutClass}`.trim()}
+                    >
+                      {displayedImages.map((media, idx) => {
+                        const shouldShowOverlay =
+                          imageMedia.length > 4 &&
+                          idx === displayedImages.length - 1;
+
+                        return (
+                          <div
+                            key={media.originalIndex ?? idx}
+                            className="fb-media-item"
+                            onClick={() => {
+                              if (media.isLocal) return;
+                              openMediaViewer(post._id, media.originalIndex);
+                            }}
+                          >
+                            <img src={media.resolvedUrl} alt="" />
+                            {shouldShowOverlay && (
+                              <div className="fb-media-overlay">
+                                +{imageMedia.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {otherMedia.map((m) => {
                     const isLocalMedia = Boolean(m.isLocal);
                     const isVideo =
                       (m.type && m.type.startsWith("video")) ||
-                      /(mp4|webm|mov)$/i.test(m.url || "");
-
-                    if (!mediaUrl) return null;
+                      /(mp4|webm|mov)$/i.test((m.resolvedUrl || m.url || ""));
 
                     return (
                       <div
-                        key={idx}
+                        key={m.originalIndex}
                         className="fb-post-media"
                         onClick={() => {
                           if (isLocalMedia) return;
                           return isVideo
                             ? openReels(post._id)
-                            : openMediaViewer(post._id, idx);
+                            : openMediaViewer(post._id, m.originalIndex);
                         }}
                       >
                         <MediaRenderer
                           media={m}
-                          src={mediaUrl}
+                          src={m.resolvedUrl}
                           type={m.type}
                           mimeType={m.mimeType}
                           mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
@@ -832,13 +882,6 @@ export default function FacebookFeed() {
                           autoPlay={m.autoPlay}
                           onExpand={() => openReels(post._id)}
                         />
-
-                        {post.media.length > 4 &&
-                          idx === 3 && (
-                            <div className="fb-post-media-more">
-                              +{post.media.length - 4}
-                            </div>
-                          )}
                       </div>
                     );
                   })}
