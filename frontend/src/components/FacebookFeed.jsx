@@ -57,6 +57,43 @@ const svgThumb = (
   </svg>
 );
 
+function FeedVideoMedia({ media, onClick, onExpand }) {
+  const [aspectRatio, setAspectRatio] = useState("9 / 16");
+
+  const handleMetadata = (event) => {
+    const videoEl = event?.target;
+    const videoWidth = videoEl?.videoWidth;
+    const videoHeight = videoEl?.videoHeight;
+
+    if (videoWidth && videoHeight) {
+      setAspectRatio(`${videoWidth} / ${videoHeight}`);
+    }
+  };
+
+  return (
+    <div
+      className="fb-post-media fb-post-media-video"
+      style={{ aspectRatio }}
+      onClick={onClick}
+    >
+      <MediaRenderer
+        media={media}
+        src={media.resolvedUrl}
+        type={media.type}
+        mimeType={media.mimeType}
+        mediaClassName="fb-post-video"
+        className="fb-post-media-renderer"
+        alt=""
+        muted={false}
+        autoPlay={media.autoPlay ?? true}
+        onExpand={onExpand}
+        onLoadedMetadata={handleMetadata}
+        style={{ width: "100%" }}
+      />
+    </div>
+  );
+}
+
 export default function FacebookFeed() {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -871,15 +908,23 @@ export default function FacebookFeed() {
                       (m.type && m.type.startsWith("video")) ||
                       /(mp4|webm|mov)$/i.test((m.resolvedUrl || m.url || ""));
 
-                    return (
+                    return isVideo ? (
+                      <FeedVideoMedia
+                        key={m.originalIndex}
+                        media={m}
+                        onClick={() => {
+                          if (isLocalMedia) return;
+                          return openReels(post._id);
+                        }}
+                        onExpand={() => openReels(post._id)}
+                      />
+                    ) : (
                       <div
                         key={m.originalIndex}
                         className="fb-post-media"
                         onClick={() => {
                           if (isLocalMedia) return;
-                          return isVideo
-                            ? openReels(post._id)
-                            : openMediaViewer(post._id, m.originalIndex);
+                          return openMediaViewer(post._id, m.originalIndex);
                         }}
                       >
                         <MediaRenderer
@@ -887,12 +932,11 @@ export default function FacebookFeed() {
                           src={m.resolvedUrl}
                           type={m.type}
                           mimeType={m.mimeType}
-                          mediaClassName={isVideo ? "fb-post-video" : "fb-post-image"}
+                          mediaClassName="fb-post-image"
                           className="fb-post-media-renderer"
                           alt=""
                           muted={false}
                           autoPlay={m.autoPlay ?? true}
-                          onExpand={() => openReels(post._id)}
                         />
                       </div>
                     );
