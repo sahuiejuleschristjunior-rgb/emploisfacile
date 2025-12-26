@@ -13,12 +13,14 @@ import {
   cancelFriendRequest,
 } from "../api/socialApi";
 import { getMyPages } from "../api/pagesApi";
+import { useNotifications } from "../context/NotificationContext";
 
 export default function FacebookLayout({ headerOnly = false, children }) {
   const location = useLocation();
   const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const { token: authToken, user: authUser, logout } = useAuth();
+  const { notifications: notifList = [] } = useNotifications() || {};
 
   const isFullLayout = location.pathname.startsWith("/fb");
   const isCompactLayout = headerOnly || !isFullLayout;
@@ -53,6 +55,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [lastUnreadConversationId, setLastUnreadConversationId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
@@ -105,6 +108,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     if (location.pathname.startsWith("/messages")) {
       setUnreadMessagesCount(0);
       messageIdsRef.current.clear();
+      setLastUnreadConversationId(null);
     }
   }, [location.pathname]);
 
@@ -231,6 +235,33 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       const msg = payload.message || payload.data || payload.msg || payload;
       const id = msg?._id || payload.messageId || payload.id;
 
+      const extractConversationId = () => {
+        const receiverId =
+          typeof msg?.receiver === "object" ? msg?.receiver?._id : msg?.receiver;
+        const toId = typeof msg?.to === "object" ? msg?.to?._id : msg?.to;
+        const fromId =
+          typeof msg?.from === "object" ? msg?.from?._id : msg?.from;
+        const senderId =
+          typeof msg?.sender === "object" ? msg?.sender?._id : msg?.sender;
+
+        const conversationId =
+          msg?.conversationId ||
+          (typeof msg?.conversation === "object"
+            ? msg?.conversation?._id
+            : msg?.conversation) ||
+          receiverId ||
+          toId ||
+          fromId;
+
+        if (conversationId === senderId && receiverId) {
+          return receiverId;
+        }
+
+        return typeof conversationId !== "undefined"
+          ? conversationId
+          : senderId;
+      };
+
       if (id) {
         if (messageIdsRef.current.has(id)) return;
         messageIdsRef.current.add(id);
@@ -239,6 +270,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       if (location.pathname.startsWith("/messages")) return;
 
       setUnreadMessagesCount((prev) => prev + 1);
+      const conversationId = extractConversationId();
+      if (conversationId) {
+        setLastUnreadConversationId(conversationId);
+      }
       showToast("Nouveau message reçu");
     },
     [location.pathname]
@@ -346,6 +381,29 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     }, 300);
     return () => clearTimeout(t);
   }, [searchTerm, performSearch]);
+
+  const resolveConversationId = useCallback((entry) => {
+    if (!entry) return null;
+    return (
+      entry.conversationId ||
+      (typeof entry.conversation === "object"
+        ? entry.conversation?._id
+        : entry.conversation) ||
+      entry.from?._id ||
+      entry.from ||
+      null
+    );
+  }, []);
+
+  const getPriorityConversationId = useCallback(() => {
+    if (lastUnreadConversationId) return lastUnreadConversationId;
+
+    const unreadMessageNotif = notifList.find(
+      (n) => n?.type === "message" && !n?.read
+    );
+
+    return resolveConversationId(unreadMessageNotif);
+  }, [lastUnreadConversationId, notifList, resolveConversationId]);
 
   useEffect(() => {
     const loadStatuses = async () => {
@@ -551,6 +609,17 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         window.location.href = "/login";
       }
     }, 150);
+  };
+
+  const handleMessagesIconClick = () => {
+    const highlightConversationId = getPriorityConversationId();
+
+    nav("/messages", {
+      state: {
+        source: "messages_icon",
+        highlightConversationId: highlightConversationId || undefined,
+      },
+    });
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
@@ -893,7 +962,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               <FBIcon name="friends" size={22} />
             </button>
 
-            <button className="fb-header-icon-btn" onClick={() => nav("/messages")}>
+            <button className="fb-header-icon-btn" onClick={handleMessagesIconClick}>
               <div style={{ position: "relative" }}>
                 <FBIcon name="messages" size={22} />
                 {unreadMessagesCount > 0 && (
