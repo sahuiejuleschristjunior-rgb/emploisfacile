@@ -366,7 +366,10 @@ export default function ProfilPage() {
               </>
             ) : (
               <>
-                <button className="profil-btn primary" onClick={() => nav(`/messages/${profileId}`)}>
+                <button
+                  className="profil-btn primary"
+                  onClick={() => nav(`/messages?userId=${profileId}`)}
+                >
                   Message
                 </button>
                 <button className="profil-btn ghost">Suivre</button>
