@@ -715,7 +715,7 @@ export default function Messages() {
       await loadFriends();
     } catch (err) {
       console.error("Erreur acceptation demande", err);
-      setRequestsError("Impossible d'accepter la demande.");
+      setRequestsError(err?.message || "Impossible d'accepter la demande.");
     }
   };
 
@@ -726,7 +726,7 @@ export default function Messages() {
       handleRequestRemoval(request._id);
     } catch (err) {
       console.error("Erreur refus demande", err);
-      setRequestsError("Impossible de refuser la demande.");
+      setRequestsError(err?.message || "Impossible de refuser la demande.");
     }
   };
 
@@ -737,7 +737,9 @@ export default function Messages() {
       handleRequestRemoval(request._id);
     } catch (err) {
       console.error("Erreur blocage demande", err);
-      setRequestsError("Impossible de bloquer l'utilisateur.");
+      setRequestsError(
+        err?.message || "Impossible de bloquer l'utilisateur."
+      );
     }
   };
 

@@ -24,7 +24,13 @@ export async function acceptMessageRequest(id) {
     method: "POST",
     headers: getAuthHeaders(),
   });
-  return res.json();
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "Impossible d'accepter la demande.");
+  }
+
+  return data;
 }
 
 export async function declineMessageRequest(id) {
@@ -32,7 +38,13 @@ export async function declineMessageRequest(id) {
     method: "POST",
     headers: getAuthHeaders(),
   });
-  return res.json();
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "Impossible de refuser la demande.");
+  }
+
+  return data;
 }
 
 export async function blockMessageRequest(id) {
@@ -40,7 +52,13 @@ export async function blockMessageRequest(id) {
     method: "POST",
     headers: getAuthHeaders(),
   });
-  return res.json();
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.message || "Impossible de bloquer l'utilisateur.");
+  }
+
+  return data;
 }
 
 export async function sendMessagePayload(payload) {
