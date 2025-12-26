@@ -1,21 +1,13 @@
-import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./notifications.css";
 import { useNotifications } from "../context/NotificationContext";
-import { useActiveConversation } from "../context/ActiveConversationContext";
 
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { activeConversationId, isUserTyping } = useActiveConversation() || {};
-  const { notifications = [], unreadCount = 0, markAllAsRead, removeNotifications } =
+  const { notifications = [], unreadCount = 0, markAllAsRead } =
     useNotifications() || {};
-
-  const isMessagesRoute = useMemo(
-    () => location.pathname.startsWith("/messages"),
-    [location.pathname]
-  );
 
   const getNotifConversationId = (notif) =>
     notif?.conversationId ||
@@ -42,12 +34,6 @@ export default function NotificationsBell() {
   =========================== */
   const handleNotifClick = (n) => {
     const notifConversationId = getNotifConversationId(n);
-    const matchesActiveConversation =
-      activeConversationId &&
-      notifConversationId &&
-      String(activeConversationId) === String(notifConversationId);
-    const shouldStayOnChat =
-      isMessagesRoute && (matchesActiveConversation || isUserTyping);
 
     if (n.type === "friend_request") {
       navigate("/fb/relations"); // 🔥 PAGE DEMANDES D’AMIS
@@ -55,22 +41,12 @@ export default function NotificationsBell() {
     }
 
     if (n.type === "message") {
-      if (shouldStayOnChat) {
-        if (matchesActiveConversation) {
-          removeNotifications?.(
-            (notif) =>
-              notif.type === "message" &&
-              String(getNotifConversationId(notif)) === String(notifConversationId)
-          );
-        }
-        return;
-      }
-
-      if (notifConversationId) {
-        navigate(`/messages?userId=${notifConversationId}`);
-      } else {
-        navigate("/messages");
-      }
+      navigate(
+        notifConversationId
+          ? `/messages?open=${notifConversationId}`
+          : "/messages",
+        { replace: true }
+      );
       setOpen(false);
       return;
     }
