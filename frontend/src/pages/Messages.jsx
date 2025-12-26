@@ -623,7 +623,12 @@ export default function Messages() {
   const loadConversation = async (user) => {
     if (!user?._id) return;
 
-    setActiveChat(user);
+    const sanitizedUser = { ...user, unreadCount: 0 };
+
+    setActiveChat(sanitizedUser);
+    setFriends((prev) =>
+      prev.map((f) => (f._id === user._id ? { ...f, unreadCount: 0 } : f))
+    );
     setMessages([]);
     setReplyTo(null);
     setEditingMessage(null);
