@@ -30,6 +30,11 @@ export default function NotificationsBell() {
       return;
     }
 
+    if (n.type === "message" && n.from?._id) {
+      navigate(`/messages?userId=${n.from._id}`);
+      return;
+    }
+
     if (n.post?._id) {
       navigate(`/fb/post/${n.post._id}`);
       return;

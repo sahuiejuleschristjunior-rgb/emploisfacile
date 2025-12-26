@@ -101,6 +101,11 @@ export default function NotificationItem({ notif, onHandled }) {
   const handleClick = () => {
     if (isFriendRequest) return;
 
+    if (notif.type === "message" && notif.from?._id) {
+      navigate(`/messages?userId=${notif.from._id}`);
+      return;
+    }
+
     if (notif.post?._id) {
       navigate(`/fb/post/${notif.post._id}`);
       return;
