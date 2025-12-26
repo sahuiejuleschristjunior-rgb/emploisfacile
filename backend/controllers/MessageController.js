@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Message = require("../models/Message");
 const User = require("../models/User");
+const Conversation = require("../models/Conversation");
 const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
 const path = require("path");
@@ -28,6 +29,28 @@ function populateMessage(message) {
   ]);
 }
 
+function getSenderId(req) {
+  return req?.user?._id || req?.user?.id || null;
+}
+
+async function findOrCreateConversation(senderId, receiverId) {
+  const senderObjectId = new mongoose.Types.ObjectId(senderId);
+  const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
+
+  let conversation = await Conversation.findOne({
+    participants: { $all: [senderObjectId, receiverObjectId] },
+    $expr: { $eq: [{ $size: "$participants" }, 2] },
+  });
+
+  if (!conversation) {
+    conversation = await Conversation.create({
+      participants: [senderObjectId, receiverObjectId],
+    });
+  }
+
+  return conversation;
+}
+
 /* ============================================================
 🔥 UTILITAIRE : PUSH NOTIF + SOCKET
 ============================================================ */
@@ -51,7 +74,11 @@ POST /api/messages
 ============================================================ */
 exports.sendMessage = async (req, res) => {
   try {
-    const sender = req.user.id;
+    const sender = getSenderId(req);
+    if (!sender) {
+      return res.status(401).json({ message: "Authentification requise." });
+    }
+
     const {
       receiver,
       content,
@@ -62,13 +89,29 @@ exports.sendMessage = async (req, res) => {
       replyTo,
     } = req.body;
 
-    if (!receiver || !content) {
+    const receiverId = receiver;
+
+    console.log("sendMessage auth:", { senderId: sender, receiverId });
+
+    if (!receiverId || !content) {
       return res
         .status(400)
         .json({ message: "Receiver et content sont requis." });
     }
 
-    const receiverUser = await User.findById(receiver);
+    if (receiverId === sender) {
+      return res
+        .status(400)
+        .json({ message: "Impossible d'envoyer un message à vous-même." });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res
+        .status(404)
+        .json({ message: "Destinataire introuvable." });
+    }
+
+    const receiverUser = await User.findById(receiverId);
     if (!receiverUser) {
       return res
         .status(404)
@@ -89,9 +132,12 @@ exports.sendMessage = async (req, res) => {
       }
     }
 
+    const conversation = await findOrCreateConversation(sender, receiverId);
+
     const message = await Message.create({
       sender,
-      receiver,
+      receiver: receiverId,
+      conversation: conversation._id,
       content,
       application: applicationId || null,
       job: jobId || null,
@@ -102,21 +148,24 @@ exports.sendMessage = async (req, res) => {
       isRead: false,
     });
 
+    conversation.lastMessage = message._id;
+    await conversation.save();
+
     /* 🔥 SOCKET.IO — MESSAGE TEMPS RÉEL */
-    getIO().to(receiver.toString()).emit("new_message", {
+    getIO().to(receiverId.toString()).emit("new_message", {
       from: sender,
-      to: receiver,
+      to: receiverId,
       message,
     });
 
     getIO().to(sender.toString()).emit("new_message", {
       from: sender,
-      to: receiver,
+      to: receiverId,
       message,
     });
 
     /* 🔥 NOTIFICATION */
-    await pushNotification(receiver, {
+    await pushNotification(receiverId, {
       from: sender,
       type: "message",
       text: "Nouveau message reçu",
@@ -234,18 +283,35 @@ exports.sendAudioMessage = async (req, res) => {
   try {
     ensureAudioDir();
 
-    const sender = req.user.id;
+    const sender = getSenderId(req);
+    if (!sender) {
+      return res.status(401).json({ message: "Authentification requise." });
+    }
+
     const { receiver, applicationId, jobId, content, clientTempId, replyTo } =
       req.body;
+    const receiverId = receiver;
     const file = req.file;
 
-    if (!receiver || !file) {
+    if (receiverId === sender) {
+      return res
+        .status(400)
+        .json({ message: "Impossible d'envoyer un message à vous-même." });
+    }
+
+    if (!receiverId || !file) {
       return res.status(400).json({
         message: "Receiver et audio sont requis.",
       });
     }
 
-    const receiverUser = await User.findById(receiver);
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res
+        .status(404)
+        .json({ message: "Destinataire introuvable." });
+    }
+
+    const receiverUser = await User.findById(receiverId);
     if (!receiverUser) {
       return res.status(404).json({ message: "Destinataire introuvable." });
     }
@@ -268,9 +334,12 @@ exports.sendAudioMessage = async (req, res) => {
       }
     }
 
+    const conversation = await findOrCreateConversation(sender, receiverId);
+
     const message = await Message.create({
       sender,
-      receiver,
+      receiver: receiverId,
+      conversation: conversation._id,
       content: content || "",
       application: applicationId || null,
       job: jobId || null,
@@ -282,24 +351,27 @@ exports.sendAudioMessage = async (req, res) => {
       isRead: false,
     });
 
-    getIO().to(receiver.toString()).emit("new_message", {
+    conversation.lastMessage = message._id;
+    await conversation.save();
+
+    getIO().to(receiverId.toString()).emit("new_message", {
       from: sender,
-      to: receiver,
+      to: receiverId,
       message,
     });
 
     getIO().to(sender.toString()).emit("new_message", {
       from: sender,
-      to: receiver,
+      to: receiverId,
       message,
     });
 
     getIO()
-      .to(receiver.toString())
+      .to(receiverId.toString())
       .to(sender.toString())
       .emit("audio_message", { message });
 
-    await pushNotification(receiver, {
+    await pushNotification(receiverId, {
       from: sender,
       type: "message",
       text: "Nouvelle note vocale",
