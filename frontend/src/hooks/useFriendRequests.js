@@ -7,6 +7,7 @@ export default function useFriendRequests() {
   const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
+  const authHeader = token?.startsWith("Bearer ") ? token : `Bearer ${token}`;
 
   /* ======================================================
      🔥 CHARGER DEMANDES D’AMIS (SOURCE UNIQUE)
@@ -17,7 +18,7 @@ export default function useFriendRequests() {
 
       const res = await fetch(`${API_URL}/social/requests`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: authHeader,
         },
       });
 
@@ -31,7 +32,7 @@ export default function useFriendRequests() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [authHeader]);
 
   useEffect(() => {
     loadRequests();
@@ -44,7 +45,7 @@ export default function useFriendRequests() {
     await fetch(`${API_URL}/social/friends/accept/${userId}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: authHeader,
       },
     });
 
@@ -56,7 +57,7 @@ export default function useFriendRequests() {
     await fetch(`${API_URL}/social/friends/reject/${userId}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: authHeader,
       },
     });
 
