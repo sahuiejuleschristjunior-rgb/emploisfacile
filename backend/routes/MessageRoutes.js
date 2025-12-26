@@ -181,6 +181,12 @@ router.patch(
 /* ============================================================
    DEMANDES DE MESSAGES
 ============================================================ */
+router.post(
+  "/request",
+  isAuthenticated,
+  MessageController.createMessageRequest
+);
+
 router.get(
   "/requests",
   isAuthenticated,
@@ -188,19 +194,19 @@ router.get(
 );
 
 router.post(
-  "/requests/:id/accept",
+  "/request/:id/accept",
   isAuthenticated,
   MessageController.acceptMessageRequest
 );
 
 router.post(
-  "/requests/:id/decline",
+  "/request/:id/reject",
   isAuthenticated,
   MessageController.declineMessageRequest
 );
 
 router.post(
-  "/requests/:id/block",
+  "/request/:id/block",
   isAuthenticated,
   MessageController.blockFromMessageRequest
 );
