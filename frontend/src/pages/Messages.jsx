@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import VideoCallOverlay from "../components/VideoCallOverlay";
@@ -219,6 +219,7 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const [highlightedConversationId, setHighlightedConversationId] = useState(null);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
     mode: "caller",
@@ -259,6 +260,16 @@ export default function Messages() {
   const messageRefs = useRef({});
   const [typingState, setTypingState] = useState({});
 
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const locationState = location.state || {};
+  const openConversationIdFromSearch = searchParams.get("open");
+  const openConversationId =
+    locationState.openConversationId || openConversationIdFromSearch || null;
+  const highlightConversationId = locationState.highlightConversationId || null;
+  const navigationSource =
+    locationState.source || (openConversationIdFromSearch ? "notification" : null);
+
   const { conversationId } = useParams();
   const isDirectConversation = Boolean(conversationId);
 
@@ -266,6 +277,8 @@ export default function Messages() {
   useEffect(() => {
     lockedConversationRef.current = lockedConversationId;
   }, [lockedConversationId]);
+
+  const navigationHandledRef = useRef(null);
 
   /* =====================================================
      HELPERS
@@ -638,6 +651,64 @@ export default function Messages() {
     return String(friend?._id || friend?.id || friend?.user?._id || "");
   }, []);
 
+  const scrollConversationIntoView = useCallback((conversationKey) => {
+    if (!conversationKey) return;
+
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-conv-id="${conversationKey}"]`);
+      if (el?.scrollIntoView) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+  }, []);
+
+  const applyHighlightNavigationState = useCallback(
+    (conversationKey) => {
+      if (!conversationKey) return false;
+
+      let updated = false;
+
+      setListTab("conversations");
+      setSearch("");
+      setActiveChat(null);
+      setMessages([]);
+      setReplyTo(null);
+      setEditingMessage(null);
+      setLoadingConversation(false);
+
+      setFriends((prev) => {
+        const idx = prev.findIndex((f) => getFriendId(f) === conversationKey);
+        if (idx === -1) return prev;
+
+        updated = true;
+        const target = prev[idx];
+        const unreadCount =
+          typeof target.unreadCount === "number" && target.unreadCount > 0
+            ? target.unreadCount
+            : 1;
+
+        const reordered = [
+          {
+            ...target,
+            unreadCount,
+            __uiNew: true,
+            hasNewBadge: true,
+            __uiHighlight: true,
+          },
+          ...prev.filter((_, i) => i !== idx),
+        ];
+
+        return reordered;
+      });
+
+      if (!updated) return false;
+
+      setHighlightedConversationId(conversationKey);
+      return true;
+    },
+    [getFriendId]
+  );
+
   /* =====================================================
      FILTER
   ===================================================== */
@@ -650,10 +721,35 @@ export default function Messages() {
   const displayedFriends = useMemo(() => {
     return filteredFriends.map((f) => ({
       ...f,
-      isHighlighted: false,
+      isHighlighted: Boolean(f.isHighlighted || f.__uiHighlight),
       hasNewBadge: f.__uiNew || f.hasNewBadge,
     }));
   }, [filteredFriends]);
+
+  useEffect(() => {
+    if (!highlightedConversationId) return undefined;
+
+    const scrollTimer = setTimeout(
+      () => scrollConversationIntoView(highlightedConversationId),
+      120
+    );
+
+    const resetTimer = setTimeout(() => {
+      setFriends((prev) =>
+        prev.map((f) =>
+          getFriendId(f) === highlightedConversationId
+            ? { ...f, __uiHighlight: false }
+            : f
+        )
+      );
+      setHighlightedConversationId(null);
+    }, 2600);
+
+    return () => {
+      clearTimeout(resetTimer);
+      clearTimeout(scrollTimer);
+    };
+  }, [getFriendId, highlightedConversationId, scrollConversationIntoView]);
 
   const pinnedMessages = useMemo(() => {
     const list = messages.filter((m) => isPinnedByMe(m));
@@ -885,7 +981,13 @@ export default function Messages() {
     setFriends((prev) =>
       prev.map((f) =>
         getFriendId(f) === clickedId
-          ? { ...f, unreadCount: 0, __uiNew: false, hasNewBadge: false }
+          ? {
+              ...f,
+              unreadCount: 0,
+              __uiNew: false,
+              hasNewBadge: false,
+              __uiHighlight: false,
+            }
           : f
       )
     );
@@ -985,6 +1087,95 @@ export default function Messages() {
       cancelled = true;
     };
   }, [conversationId, token, setActiveConversation]);
+
+  useEffect(() => {
+    const navigationSignature = `${navigationSource || "none"}|${openConversationId || ""}|${
+      highlightConversationId || ""
+    }|${location.key}`;
+
+    if (
+      !navigationSource &&
+      !openConversationId &&
+      !highlightConversationId
+    ) {
+      return;
+    }
+
+    if (navigationHandledRef.current === navigationSignature) return;
+
+    if (navigationSource === "notification" && openConversationId) {
+      if (loadingConversations) return;
+
+      navigationHandledRef.current = navigationSignature;
+      setListTab("conversations");
+      setSearch("");
+
+      const existing = friends.find((f) => getFriendId(f) === openConversationId);
+      if (existing) {
+        loadConversationRef.current?.(existing);
+        return;
+      }
+
+      (async () => {
+        try {
+          setLoadingConversation(true);
+          const { conversation, messages: convMessages } = await fetchConversationById(
+            openConversationId
+          );
+
+          const normalized = normalizeFriend(
+            conversation || {
+              _id: openConversationId,
+              name: conversation?.name || "Conversation",
+            }
+          );
+
+          if (normalized?._id) {
+            setActiveConversation((prev) =>
+              prev?._id === normalized._id ? prev : normalized
+            );
+            setFriends((prev) => {
+              if (prev.some((f) => getFriendId(f) === normalized._id)) return prev;
+              return [{ ...normalized, unreadCount: 0 }, ...prev];
+            });
+          }
+
+          if (Array.isArray(convMessages)) {
+            const sorted = [...convMessages].sort(
+              (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+            );
+            setMessages(sorted);
+          } else {
+            setMessages([]);
+          }
+        } catch (err) {
+          console.error("Erreur conversation depuis notification", err);
+        } finally {
+          setLoadingConversation(false);
+          setTimeout(() => scrollToBottom(true), 50);
+        }
+      })();
+
+      return;
+    }
+
+    if (navigationSource === "messages_icon" && highlightConversationId) {
+      if (loadingConversations) return;
+      const applied = applyHighlightNavigationState(highlightConversationId);
+      if (applied) {
+        navigationHandledRef.current = navigationSignature;
+      }
+    }
+  }, [
+    applyHighlightNavigationState,
+    friends,
+    getFriendId,
+    highlightConversationId,
+    loadingConversations,
+    location.key,
+    navigationSource,
+    openConversationId,
+  ]);
 
   useEffect(() => {
     if (!token || !activeConversationIdValue) return;
@@ -2003,11 +2194,14 @@ export default function Messages() {
                   const isActive =
                     activeChat?._id && getFriendId(activeChat) === convId;
                   const hasNewBadge = Boolean(friend.hasNewBadge || friend.__uiNew);
+                  const isHighlighted = Boolean(friend.isHighlighted || friend.__uiHighlight);
 
                   return (
                     <div
                       key={convId || friend._id}
-                      className={`conversation-item ${isActive ? "active" : ""}`}
+                      className={`conversation-item ${isActive ? "active" : ""} ${
+                        isHighlighted ? "is-highlighted" : ""
+                      }`}
                       data-conversation-id={friend._id}
                       data-conv-id={convId}
                       onClick={() => loadConversation(friend)}
@@ -2023,7 +2217,7 @@ export default function Messages() {
                         <div className="conversation-name">
                           {friend.name}
                           {hasNewBadge && (
-                            <span className="conv-badge-new">Nouveau</span>
+                            <span className="conv-badge-new">Nouveau message</span>
                           )}
                         </div>
                         <div className="conversation-last-message">

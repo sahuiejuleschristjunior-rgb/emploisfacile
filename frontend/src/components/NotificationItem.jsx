@@ -112,12 +112,13 @@ export default function NotificationItem({ notif, onHandled }) {
     const notifConversationId = getNotifConversationId(notif);
 
     if (notif.type === "message") {
-      navigate(
-        notifConversationId
-          ? `/messages?open=${notifConversationId}`
-          : "/messages",
-        { replace: true }
-      );
+      navigate("/messages", {
+        replace: true,
+        state: {
+          openConversationId: notifConversationId || null,
+          source: "notification",
+        },
+      });
       return;
     }
 
