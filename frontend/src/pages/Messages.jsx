@@ -185,6 +185,7 @@ export default function Messages() {
   const [requests, setRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [requestsError, setRequestsError] = useState("");
+  const [lockedConversationId, setLockedConversationId] = useState(null);
 
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -251,6 +252,11 @@ export default function Messages() {
   const messageRefs = useRef({});
   const [typingState, setTypingState] = useState({});
 
+  const lockedConversationRef = useRef(null);
+  useEffect(() => {
+    lockedConversationRef.current = lockedConversationId;
+  }, [lockedConversationId]);
+
   /* =====================================================
      HELPERS
   ===================================================== */
@@ -280,6 +286,15 @@ export default function Messages() {
     const senderId =
       typeof msg?.sender === "object" ? msg?.sender?._id : msg?.sender;
     return senderId === me?._id;
+  };
+
+  const isLocalConversationId = (id) =>
+    typeof id === "string" && id.startsWith("local_request_");
+
+  const getConversationTargetId = (chat = activeChat) => {
+    if (!chat) return null;
+    if (chat.pendingUserId) return chat.pendingUserId;
+    return chat._id;
   };
 
   const scrollToBottom = (force = false) => {
@@ -412,7 +427,10 @@ export default function Messages() {
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
     const receiverId =
       typeof msg.receiver === "object" ? msg.receiver?._id : msg.receiver;
+    const targetId = getConversationTargetId();
     return (
+      senderId === targetId ||
+      receiverId === targetId ||
       senderId === activeChat._id ||
       receiverId === activeChat._id ||
       (senderId === me?._id && receiverId === me?._id)
@@ -445,6 +463,34 @@ export default function Messages() {
       const safeTime = (m) => new Date(m?.createdAt || Date.now()).getTime();
       next.sort((a, b) => safeTime(a) - safeTime(b));
       return next;
+    });
+  };
+
+  const mergeConversationFromBackend = (incoming, tempId = null, pendingUserId = null) => {
+    if (!incoming?._id) return;
+    const normalized = normalizeFriend(incoming);
+
+    setFriends((prev) => {
+      const filtered = prev.filter(
+        (f) =>
+          f._id !== normalized._id &&
+          f._id !== tempId &&
+          f.pendingUserId !== (pendingUserId || normalized._id)
+      );
+      return [normalized, ...filtered];
+    });
+
+    setActiveChat((prev) => {
+      if (!prev) return prev;
+      const targetId = getConversationTargetId(prev);
+      if (
+        (tempId && prev._id === tempId) ||
+        targetId === normalized._id ||
+        (pendingUserId && targetId === pendingUserId)
+      ) {
+        return { ...normalized, unreadCount: 0 };
+      }
+      return prev;
     });
   };
 
@@ -620,8 +666,36 @@ export default function Messages() {
       );
     });
 
+    socket.on("conversation_created", (payload) => {
+      const conversation = payload?.conversation || payload?.data || payload;
+      if (!conversation?._id) return;
+
+      const targetId = getConversationTargetId();
+      const shouldMergeLocked = lockedConversationRef.current &&
+        (targetId === conversation._id ||
+          targetId ===
+            (typeof conversation?.user === "object"
+              ? conversation?.user?._id
+              : conversation?.user));
+
+      const pendingUserId =
+        typeof conversation?.user === "object"
+          ? conversation.user?._id
+          : conversation?.user;
+
+      mergeConversationFromBackend(
+        conversation,
+        shouldMergeLocked ? lockedConversationRef.current : null,
+        pendingUserId
+      );
+      setLockedConversationId((prev) =>
+        shouldMergeLocked && prev === lockedConversationRef.current ? null : prev
+      );
+    });
+
     socket.on("typing", ({ from, isTyping }) => {
-      if (!from || !activeChat || from !== activeChat._id) return;
+      const targetId = getConversationTargetId();
+      if (!from || !activeChat || from !== targetId) return;
       setTypingState((prev) => ({
         ...prev,
         [from]: { isTyping: isTyping !== false, at: Date.now() },
@@ -667,9 +741,20 @@ export default function Messages() {
     setEditingMessage(null);
     setInput("");
 
+    const targetUserId = getConversationTargetId(sanitizedUser);
+
+    if (
+      isLocalConversationId(sanitizedUser._id) ||
+      lockedConversationId === sanitizedUser._id
+    ) {
+      setLoadingConversation(false);
+      setTimeout(() => scrollToBottom(true), 50);
+      return;
+    }
+
     try {
       setLoadingConversation(true);
-      const res = await fetch(`${API_URL}/messages/conversation/${user._id}`, {
+      const res = await fetch(`${API_URL}/messages/conversation/${targetUserId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -677,7 +762,7 @@ export default function Messages() {
       list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setMessages(list);
 
-      fetch(`${API_URL}/messages/read-all/${user._id}`, {
+      fetch(`${API_URL}/messages/read-all/${targetUserId}`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
@@ -705,17 +790,44 @@ export default function Messages() {
 
   const handleAcceptRequest = async (request) => {
     if (!request?._id) return;
+
+    const tempConversationId = `local_request_${request._id}`;
+    const pendingUserId = request?.from?._id;
+    const tempConversation = {
+      ...normalizeFriend({ ...request.from, _id: tempConversationId }),
+      pendingUserId,
+    };
+
+    setLockedConversationId(tempConversationId);
+    handleRequestRemoval(request._id);
+    setListTab("conversations");
+    setFriends((prev) => {
+      const filtered = prev.filter(
+        (f) => f._id !== tempConversationId && f.pendingUserId !== pendingUserId
+      );
+      return [tempConversation, ...filtered];
+    });
+    setActiveChat(tempConversation);
+    setMessages([]);
+    setReplyTo(null);
+    setEditingMessage(null);
+    setInput("");
+
     try {
       const res = await acceptMessageRequest(request._id);
-      handleRequestRemoval(request._id);
-      if (res?.data && request?.from) {
-        attachAndOpenFriend(request.from);
-        setListTab("conversations");
+      const conversationData =
+        res?.data?.conversation ||
+        res?.data?.data ||
+        res?.data ||
+        res?.conversation;
+      if (conversationData?._id) {
+        mergeConversationFromBackend(conversationData, tempConversationId, pendingUserId);
       }
-      await loadFriends();
     } catch (err) {
       console.error("Erreur acceptation demande", err);
       setRequestsError(err?.message || "Impossible d'accepter la demande.");
+    } finally {
+      setLockedConversationId(null);
     }
   };
 
@@ -747,6 +859,7 @@ export default function Messages() {
      PRESELECT CHAT FROM URL
   ===================================================== */
   useEffect(() => {
+    if (lockedConversationId) return;
     const targetId = searchParams.get("userId");
     if (!targetId || !token) return;
 
@@ -785,14 +898,15 @@ export default function Messages() {
     };
 
     openFromParam();
-  }, [friends, searchParams, token]);
+  }, [friends, lockedConversationId, searchParams, token]);
 
   /* =====================================================
      SEND / EDIT MESSAGE
   ===================================================== */
   const sendMessage = async (contentOverride = null) => {
     const content = (contentOverride ?? input).trim();
-    if (!content || !activeChat) return;
+    const receiverId = getConversationTargetId();
+    if (!content || !activeChat || !receiverId) return;
     setInput("");
     setInfoBanner("");
     const { replyId, preview: replyPreview } = buildReplyData(replyTo);
@@ -801,7 +915,7 @@ export default function Messages() {
     const tempMessage = {
       _id: clientTempId,
       sender: me?._id,
-      receiver: activeChat._id,
+      receiver: receiverId,
       content,
       type: "text",
       clientTempId,
@@ -816,7 +930,7 @@ export default function Messages() {
 
     try {
       const { ok, data } = await sendMessagePayload({
-        receiver: activeChat._id,
+        receiver: receiverId,
         content,
         clientTempId,
         replyTo: replyId,
@@ -1204,7 +1318,8 @@ export default function Messages() {
   };
 
   const uploadAudio = async (blob, replyTarget = null) => {
-    if (!activeChat || !blob || blob.size === 0) return;
+    const receiverId = getConversationTargetId();
+    if (!activeChat || !receiverId || !blob || blob.size === 0) return;
     const fileName = `voice-${Date.now()}.webm`;
 
     const { replyId, preview: replyPreview } = buildReplyData(replyTarget);
@@ -1214,7 +1329,7 @@ export default function Messages() {
     const tempMessage = {
       _id: clientTempId,
       sender: me?._id,
-      receiver: activeChat._id,
+      receiver: receiverId,
       type: "audio",
       audioUrl: tempUrl,
       content: "",
@@ -1228,7 +1343,7 @@ export default function Messages() {
 
     const formData = new FormData();
     formData.append("audio", blob, fileName);
-    formData.append("receiver", activeChat._id);
+    formData.append("receiver", receiverId);
     formData.append("clientTempId", clientTempId);
     if (replyId) {
       formData.append("replyTo", replyId);
@@ -1433,15 +1548,16 @@ export default function Messages() {
      TYPING FLAG
   ===================================================== */
   const sendTypingFlag = (flag) => {
-    if (!activeChat) return;
-    socketRef.current?.emit("typing", { to: activeChat._id, isTyping: flag });
+    const targetId = getConversationTargetId();
+    if (!activeChat || !targetId) return;
+    socketRef.current?.emit("typing", { to: targetId, isTyping: flag });
     fetch(`${API_URL}/messages/typing`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ receiverId: activeChat._id, isTyping: flag }),
+      body: JSON.stringify({ receiverId: targetId, isTyping: flag }),
     }).catch(() => {});
   };
 
@@ -1794,7 +1910,9 @@ export default function Messages() {
               <div className="chat-user-info">
                 <div className="chat-username">{activeChat.name}</div>
                 <div className="chat-status">
-                  {typingState[activeChat._id]?.isTyping ? "En train d'écrire..." : "En ligne"}
+                  {typingState[getConversationTargetId()]?.isTyping
+                    ? "En train d'écrire..."
+                    : "En ligne"}
                 </div>
               </div>
 
