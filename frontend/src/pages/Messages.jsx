@@ -268,6 +268,7 @@ export default function Messages() {
   const swipeDataRef = useRef({});
   const inputRef = useRef(null);
   const messageRefs = useRef({});
+  const friendsRef = useRef([]);
   const [typingState, setTypingState] = useState({});
 
   const { conversationId } = useParams();
@@ -281,7 +282,7 @@ export default function Messages() {
   /* =====================================================
      HELPERS
   ===================================================== */
-  const normalizeFriend = (f) => {
+  const normalizeFriend = useCallback((f) => {
     const userObj =
       f && typeof f.user === "object" && f.user
         ? f.user
@@ -299,24 +300,42 @@ export default function Messages() {
       _id: userId,
       name: userObj?.name || f?.name || "Utilisateur",
       avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
+      lastMessage: f?.lastMessage || null,
+      updatedAt: f?.updatedAt || f?.lastMessage?.createdAt || null,
+      hasNewBadge: Boolean(f?.hasNewBadge),
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
     };
-  };
+  }, []);
 
-  const isMessageFromMe = (msg) => {
-    const senderId =
-      typeof msg?.sender === "object" ? msg?.sender?._id : msg?.sender;
-    return senderId === me?._id;
-  };
+  const getMessageConversationId = useCallback((msg) => {
+    if (!msg) return null;
+    if (msg.conversationId) return String(msg.conversationId);
+    if (typeof msg.conversation === "object" && msg.conversation?._id)
+      return String(msg.conversation._id);
+    if (typeof msg.conversation === "string") return String(msg.conversation);
+    return null;
+  }, []);
+
+  const isMessageFromMe = useCallback(
+    (msg) => {
+      const senderId =
+        typeof msg?.sender === "object" ? msg?.sender?._id : msg?.sender;
+      return senderId === me?._id;
+    },
+    [me?._id]
+  );
 
   const isLocalConversationId = (id) =>
     typeof id === "string" && id.startsWith("local_request_");
 
-  const getConversationTargetId = (chat = activeChat) => {
-    if (!chat) return null;
-    if (chat.pendingUserId) return chat.pendingUserId;
-    return chat._id;
-  };
+  const getConversationTargetId = useCallback(
+    (chat = activeChat) => {
+      if (!chat) return null;
+      if (chat.pendingUserId) return chat.pendingUserId;
+      return chat._id;
+    },
+    [activeChat]
+  );
 
   const scrollToBottom = (force = false) => {
     const container = chatBodyRef.current;
@@ -443,20 +462,24 @@ export default function Messages() {
     );
   };
 
-  const isMessageInActiveChat = (msg) => {
-    if (!activeChat || !msg) return false;
-    const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
-    const receiverId =
-      typeof msg.receiver === "object" ? msg.receiver?._id : msg.receiver;
-    const targetId = getConversationTargetId();
-    return (
-      senderId === targetId ||
-      receiverId === targetId ||
-      senderId === activeChat._id ||
-      receiverId === activeChat._id ||
-      (senderId === me?._id && receiverId === me?._id)
-    );
-  };
+  const isMessageInActiveChat = useCallback(
+    (msg) => {
+      if (!activeChat || !msg) return false;
+      const senderId =
+        typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
+      const receiverId =
+        typeof msg.receiver === "object" ? msg.receiver?._id : msg.receiver;
+      const targetId = getConversationTargetId();
+      return (
+        senderId === targetId ||
+        receiverId === targetId ||
+        senderId === activeChat._id ||
+        receiverId === activeChat._id ||
+        (senderId === me?._id && receiverId === me?._id)
+      );
+    },
+    [activeChat, getConversationTargetId, me?._id]
+  );
 
   const upsertMessage = (incoming) => {
     if (!incoming) return;
@@ -515,6 +538,37 @@ export default function Messages() {
     });
   };
 
+  const fetchInboxFromApi = useCallback(async () => {
+    const data = await fetchFriends();
+    const raw = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.friends)
+      ? data.friends
+      : [];
+
+    return raw
+      .map(normalizeFriend)
+      .filter((u) => u && u._id)
+      .reduce((acc, user) => {
+        if (!acc.some((u) => u._id === user._id)) {
+          acc.push(user);
+        }
+        return acc;
+      }, []);
+  }, [normalizeFriend]);
+
+  const refreshInbox = useCallback(async () => {
+    try {
+      const list = await fetchInboxFromApi();
+      setFriends(list);
+      setErrorFriends("");
+    } catch (err) {
+      console.error("Erreur chargement amis :", err);
+      setErrorFriends("Erreur chargement amis");
+      setFriends([]);
+    }
+  }, [fetchInboxFromApi]);
+
   /* =====================================================
      LOAD FRIENDS / CONVERSATIONS
   ===================================================== */
@@ -538,23 +592,7 @@ export default function Messages() {
       setErrorFriends("");
 
       try {
-        const data = await fetchFriends();
-        const raw = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.friends)
-          ? data.friends
-          : [];
-
-        const list = raw
-          .map(normalizeFriend)
-          .filter((u) => u && u._id)
-          .reduce((acc, user) => {
-            if (!acc.some((u) => u._id === user._id)) {
-              acc.push(user);
-            }
-            return acc;
-          }, []);
-
+        const list = await fetchInboxFromApi();
         if (!cancelled) {
           setFriends(list);
         }
@@ -576,7 +614,7 @@ export default function Messages() {
     return () => {
       cancelled = true;
     };
-  }, [token, isDirectConversation]);
+  }, [fetchInboxFromApi, isDirectConversation, token]);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -602,6 +640,10 @@ export default function Messages() {
   const getFriendId = useCallback((friend) => {
     return String(friend?._id || friend?.id || friend?.user?._id || "");
   }, []);
+
+  useEffect(() => {
+    friendsRef.current = friends;
+  }, [friends]);
 
   useEffect(() => {
     if (highlightFromQuery) {
@@ -667,8 +709,7 @@ export default function Messages() {
     if (autoOpenHighlightRef.current === key) return;
 
     const targetId = String(highlightFromQuery);
-    const targetConversation =
-      friends.find((c) => getFriendId(c) === targetId) || { _id: targetId };
+    const targetConversation = friends.find((c) => getFriendId(c) === targetId);
 
     if (!targetConversation?._id) return;
 
@@ -755,14 +796,53 @@ export default function Messages() {
 
     const handleMessage = (payload) => {
       const message = payload?.message || payload;
-      if (!isMessageInActiveChat(message)) return;
-      upsertMessage(message);
-      const senderId = typeof message.sender === "object" ? message.sender?._id : message.sender;
-      if (message?._id && senderId !== me?._id) {
-        fetch(`${API_URL}/messages/${message._id}/read`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
+      const conversationId = getMessageConversationId(message);
+      if (!conversationId) return;
+
+      const isActiveConversation =
+        activeConversationIdValue &&
+        String(getConversationTargetId()) === String(conversationId);
+
+      if (isActiveConversation) {
+        upsertMessage(message);
+        const senderId =
+          typeof message.sender === "object" ? message.sender?._id : message.sender;
+        if (message?._id && senderId !== me?._id) {
+          fetch(`${API_URL}/messages/${message._id}/read`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
+      }
+
+      const hasConversation = friendsRef.current.some(
+        (c) => String(getFriendId(c)) === String(conversationId)
+      );
+
+      if (hasConversation) {
+        setFriends((prev) => {
+          const idx = prev.findIndex(
+            (c) => String(getFriendId(c)) === String(conversationId)
+          );
+          if (idx === -1) return prev;
+
+          const target = prev[idx];
+          const isUnread = !isActiveConversation && !isMessageFromMe(message);
+
+          const updatedConversation = {
+            ...target,
+            lastMessage: message,
+            updatedAt: message?.updatedAt || message?.createdAt || new Date().toISOString(),
+            unreadCount: isUnread ? (target.unreadCount || 0) + 1 : 0,
+            hasNewBadge: target.hasNewBadge || isUnread,
+            __uiNew: isUnread,
+          };
+
+          const rest = prev.filter((_, i) => i !== idx);
+          return [updatedConversation, ...rest];
+        });
+      } else {
+        refreshInbox();
       }
     };
 
@@ -886,7 +966,17 @@ export default function Messages() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activeChat, friends, token]);
+  }, [
+    activeChat,
+    activeConversationIdValue,
+    getConversationTargetId,
+    getFriendId,
+    isMessageFromMe,
+    isMessageInActiveChat,
+    me,
+    refreshInbox,
+    token,
+  ]);
 
   /* =====================================================
      LOAD CONVERSATION
