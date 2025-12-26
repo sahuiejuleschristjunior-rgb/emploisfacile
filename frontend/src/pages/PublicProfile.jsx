@@ -180,12 +180,7 @@ export default function PublicProfile() {
         setMessageText("");
       } else {
         setMessageFeedback("Conversation ouverte dans Messages.");
-        navigate("/messages", {
-          state: {
-            openConversationId: user._id,
-            source: "new-message",
-          },
-        });
+        navigate(`/messages?userId=${user._id}`);
       }
     } catch (err) {
       setMessageError("Impossible d'envoyer le message.");
@@ -251,12 +246,7 @@ export default function PublicProfile() {
                     setMessageFeedback("");
                     setMessageError("");
                     if (isFriend) {
-                      navigate("/messages", {
-                        state: {
-                          openConversationId: user._id,
-                          source: "new-message",
-                        },
-                      });
+                      navigate(`/messages?userId=${user._id}`);
                     } else {
                       setMessageModalOpen(true);
                     }
