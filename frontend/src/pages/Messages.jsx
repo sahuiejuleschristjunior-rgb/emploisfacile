@@ -15,8 +15,6 @@ import {
 
 const API_HOST = API_URL?.replace(/\/?api$/, "");
 const SOCKET_URL = API_HOST || window.location.origin;
-const token = localStorage.getItem("token");
-const me = JSON.parse(localStorage.getItem("user"));
 const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
 const PlusIcon = () => (
@@ -179,7 +177,7 @@ export default function Messages() {
   ===================================================== */
   const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
-  const [loadingFriends, setLoadingFriends] = useState(true);
+  const [loadingConversations, setLoadingConversations] = useState(true);
   const [errorFriends, setErrorFriends] = useState("");
   const [listTab, setListTab] = useState("conversations");
   const [requests, setRequests] = useState([]);
@@ -204,6 +202,9 @@ export default function Messages() {
   const [editingMessage, setEditingMessage] = useState(null);
   const [messageActions, setMessageActions] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const token = localStorage.getItem("token");
+  const me = JSON.parse(localStorage.getItem("user"));
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRecording, setIsRecording] = useState(false);
@@ -495,43 +496,62 @@ export default function Messages() {
   };
 
   /* =====================================================
-     LOAD FRIENDS
+     LOAD FRIENDS / CONVERSATIONS
   ===================================================== */
-  const loadFriends = useCallback(async () => {
-    try {
-      setLoadingFriends(true);
+  useEffect(() => {
+    if (!token) {
+      setFriends([]);
+      setErrorFriends("");
+      setLoadingConversations(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadConversations = async () => {
+      setLoadingConversations(true);
       setErrorFriends("");
 
-      const data = await fetchFriends();
-      const raw = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.friends)
-        ? data.friends
-        : [];
+      try {
+        const data = await fetchFriends();
+        const raw = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.friends)
+          ? data.friends
+          : [];
 
-      const list = raw
-        .map(normalizeFriend)
-        .filter((u) => u && u._id)
-        .reduce((acc, user) => {
-          if (!acc.some((u) => u._id === user._id)) {
-            acc.push(user);
-          }
-          return acc;
-        }, []);
+        const list = raw
+          .map(normalizeFriend)
+          .filter((u) => u && u._id)
+          .reduce((acc, user) => {
+            if (!acc.some((u) => u._id === user._id)) {
+              acc.push(user);
+            }
+            return acc;
+          }, []);
 
-      setFriends(list);
-    } catch (err) {
-      console.error("Erreur chargement amis :", err);
-      setErrorFriends("Erreur chargement amis");
-      setFriends([]);
-    } finally {
-      setLoadingFriends(false);
-    }
-  }, []);
+        if (!cancelled) {
+          setFriends(list);
+        }
+      } catch (err) {
+        console.error("Erreur chargement amis :", err);
+        if (!cancelled) {
+          setErrorFriends("Erreur chargement amis");
+          setFriends([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingConversations(false);
+        }
+      }
+    };
 
-  useEffect(() => {
-    loadFriends();
-  }, [loadFriends]);
+    loadConversations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -1786,47 +1806,45 @@ export default function Messages() {
         <div className="messages-list">
           {listTab === "conversations" ? (
             <>
-              {loadingFriends && (
-                <div className="messages-empty">Chargement…</div>
-              )}
-
-              {!loadingFriends && errorFriends && (
-                <div className="messages-empty">{errorFriends}</div>
-              )}
-
-              {!loadingFriends &&
-                !errorFriends &&
-                filteredFriends.length === 0 && (
-                  <div className="messages-empty">Aucun ami pour le moment</div>
-                )}
-
-              {filteredFriends.map((friend) => (
-                <div
-                  key={friend._id}
-                  className={`conversation-item ${
-                    activeChat?._id === friend._id ? "active" : ""
-                  }`}
-                  onClick={() => loadConversation(friend)}
-                >
-                  <img
-                    src={resolveUrl(friend.avatar)}
-                    alt={friend.name}
-                    className="conversation-avatar"
-                    loading="lazy"
-                  />
-
-                  <div className="conversation-info">
-                    <div className="conversation-name">{friend.name}</div>
-                    <div className="conversation-last-message">
-                      Démarrer une conversation
-                    </div>
-                  </div>
-
-                  {friend.unreadCount > 0 && (
-                    <div className="conv-unread-badge">{friend.unreadCount}</div>
-                  )}
+              {loadingConversations ? (
+                <div className="messages-loading">
+                  Chargement des conversations…
                 </div>
-              ))}
+              ) : errorFriends ? (
+                <div className="messages-empty">{errorFriends}</div>
+              ) : filteredFriends.length === 0 ? (
+                <div className="messages-empty">
+                  Aucune conversation pour l’instant
+                </div>
+              ) : (
+                filteredFriends.map((friend) => (
+                  <div
+                    key={friend._id}
+                    className={`conversation-item ${
+                      activeChat?._id === friend._id ? "active" : ""
+                    }`}
+                    onClick={() => loadConversation(friend)}
+                  >
+                    <img
+                      src={resolveUrl(friend.avatar)}
+                      alt={friend.name}
+                      className="conversation-avatar"
+                      loading="lazy"
+                    />
+
+                    <div className="conversation-info">
+                      <div className="conversation-name">{friend.name}</div>
+                      <div className="conversation-last-message">
+                        Démarrer une conversation
+                      </div>
+                    </div>
+
+                    {friend.unreadCount > 0 && (
+                      <div className="conv-unread-badge">{friend.unreadCount}</div>
+                    )}
+                  </div>
+                ))
+              )}
             </>
           ) : (
             <>
