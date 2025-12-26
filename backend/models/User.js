@@ -135,7 +135,9 @@ UserSchema.pre("validate", function (next) {
     this.friends = this.friends.filter((friend) => friend && friend.user);
   }
 
-  next();
+  if (typeof next === "function") {
+    next();
+  }
 });
 
 module.exports = mongoose.model("User", UserSchema);
