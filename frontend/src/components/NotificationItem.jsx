@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import moment from "moment";
 import "moment/locale/fr";
 
@@ -8,6 +8,7 @@ import {
   rejectFriendRequest,
 } from "../api/socialApi";
 import { useNotifications } from "../context/NotificationContext";
+import { useActiveConversation } from "../context/ActiveConversationContext";
 
 moment.locale("fr");
 
@@ -15,7 +16,17 @@ const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
 
 export default function NotificationItem({ notif, onHandled }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { activeConversationId } = useActiveConversation() || {};
   const { removeNotifications } = useNotifications() || {};
+
+  const getNotifConversationId = (item) =>
+    item?.conversationId ||
+    (typeof item?.conversation === "object"
+      ? item.conversation?._id
+      : item?.conversation) ||
+    item?.from?._id ||
+    item?.from;
 
   const isFriendRequest = notif.type === "friend_request";
 
@@ -101,8 +112,28 @@ export default function NotificationItem({ notif, onHandled }) {
   const handleClick = () => {
     if (isFriendRequest) return;
 
-    if (notif.type === "message" && notif.from?._id) {
-      navigate(`/messages?userId=${notif.from._id}`);
+    const notifConversationId = getNotifConversationId(notif);
+    const matchesActiveConversation =
+      activeConversationId &&
+      notifConversationId &&
+      String(activeConversationId) === String(notifConversationId);
+    const isMessagesRoute = location.pathname.startsWith("/messages");
+
+    if (notif.type === "message") {
+      if (matchesActiveConversation && isMessagesRoute) {
+        removeNotifications?.(
+          (n) =>
+            n.type === "message" &&
+            String(getNotifConversationId(n)) === String(notifConversationId)
+        );
+        return;
+      }
+
+      if (notifConversationId) {
+        navigate(`/messages?userId=${notifConversationId}`);
+      } else {
+        navigate("/messages");
+      }
       return;
     }
 

@@ -1,13 +1,29 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./notifications.css";
 import { useNotifications } from "../context/NotificationContext";
+import { useActiveConversation } from "../context/ActiveConversationContext";
 
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { notifications = [], unreadCount = 0, markAllAsRead } =
+  const location = useLocation();
+  const { activeConversationId } = useActiveConversation() || {};
+  const { notifications = [], unreadCount = 0, markAllAsRead, removeNotifications } =
     useNotifications() || {};
+
+  const isMessagesRoute = useMemo(
+    () => location.pathname.startsWith("/messages"),
+    [location.pathname]
+  );
+
+  const getNotifConversationId = (notif) =>
+    notif?.conversationId ||
+    (typeof notif?.conversation === "object"
+      ? notif.conversation?._id
+      : notif?.conversation) ||
+    notif?.from?._id ||
+    notif?.from;
 
   /* ===========================
      4) OUVERTURE MENU
@@ -25,13 +41,34 @@ export default function NotificationsBell() {
      5) CLIC NOTIFICATION
   =========================== */
   const handleNotifClick = (n) => {
+    const notifConversationId = getNotifConversationId(n);
+    const matchesActiveConversation =
+      activeConversationId &&
+      notifConversationId &&
+      String(activeConversationId) === String(notifConversationId);
+    const shouldIgnoreAction = matchesActiveConversation && isMessagesRoute;
+
     if (n.type === "friend_request") {
       navigate("/fb/relations"); // 🔥 PAGE DEMANDES D’AMIS
       return;
     }
 
-    if (n.type === "message" && n.from?._id) {
-      navigate(`/messages?userId=${n.from._id}`);
+    if (n.type === "message") {
+      if (shouldIgnoreAction || matchesActiveConversation) {
+        removeNotifications?.(
+          (notif) =>
+            notif.type === "message" &&
+            String(getNotifConversationId(notif)) === String(notifConversationId)
+        );
+        return;
+      }
+
+      if (notifConversationId) {
+        navigate(`/messages?userId=${notifConversationId}`);
+      } else {
+        navigate("/messages");
+      }
+      setOpen(false);
       return;
     }
 
