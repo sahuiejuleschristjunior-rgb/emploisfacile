@@ -612,7 +612,15 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   };
 
   const handleMessagesIconClick = () => {
-    nav("/messages");
+    const highlightConversationId = getPriorityConversationId();
+    const nonce = Date.now();
+
+    nav(
+      `/messages?highlight=${highlightConversationId || ""}&n=${nonce}`,
+      {
+        replace: false,
+      }
+    );
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
