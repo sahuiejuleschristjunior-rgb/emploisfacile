@@ -6,14 +6,14 @@
 
 /* Carte du post */
 .fb-post-card {
-  /* Correspondance avec le fond de fb-layout.css */
-  background: #242526; 
-  padding: 15px;
+  background: #1c1e21;
+  padding: 12px;
   border-radius: 12px;
-  margin-bottom: 18px;
+  border: 1px solid #3a3b3c;
+  margin-bottom: 16px;
   color: #e4e6eb; /* Texte clair */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  max-width: 680px; /* S'assurer que le post ne s'étire pas trop */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  max-width: 600px; /* Alignement sur la largeur des cartes du feed */
   width: 100%;
 }
 
@@ -132,16 +132,22 @@
 
 /* TEXTE */
 .fb-post-text {
-  margin: 12px 0;
-  font-size: 15px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  white-space: pre-wrap;
   color: #e4e6eb;
 }
 
 .fb-post-media {
   width: 100%;
   max-width: 100%;
-  margin: 10px 0;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
+  margin-top: 4px;
 }
 
 .fb-post-media-grid {
@@ -218,13 +224,19 @@
   outline-offset: 4px;
 }
 
-.fb-post-image {
+
+.fb-post-image,
+.fb-post-video {
   width: 100%;
   height: auto;
-  display: block;
-  border-radius: 12px;
-  background: #000;
   object-fit: contain;
+  display: block;
+  border-radius: 0;
+  background: #000;
+}
+
+.fb-post-card video.fb-post-video {
+  border-radius: 0;
 }
 
 .fb-post-image-cover {
@@ -281,19 +293,21 @@
 .fb-post-stats {
   display: flex;
   justify-content: space-between;
-  margin: 10px 0;
-  /* Changé du noir opaque à un gris pour le thème sombre */
-  color: #b0b3b8; 
-  font-size: 13px;
+  align-items: center;
+  padding-top: 6px;
+  margin-top: 6px;
+  border-top: 1px solid #3a3b3c;
+  color: #b0b3b8;
+  font-size: 12px;
 }
 
 /* ACTIONS */
 .fb-post-actions {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
+  margin-top: 4px;
+  padding-top: 4px;
   border-top: 1px solid #3a3b3c; /* Thème sombre */
-  /* Suppression de la bordure du bas, car le CommentInput prend la suite */
 }
 
 .fb-action-btn {
@@ -301,9 +315,9 @@
   text-align: center;
   background: none;
   border: none;
-  color: #b0b3b8; /* Gris pour les icônes/texte */
-  font-size: 14px;
-  padding: 8px 0;
+  color: #e4e6eb;
+  font-size: 13px;
+  padding: 6px 0;
   cursor: pointer;
   display: flex;
   align-items: center;

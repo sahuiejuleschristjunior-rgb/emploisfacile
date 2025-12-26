@@ -47,10 +47,10 @@
 /* CONTENEUR CENTRAL */
 .postpage-center {
   /* Aligné avec la largeur maximale de la colonne centrale du layout */
-  max-width: 680px; 
+  max-width: 600px;
   margin: 0 auto;
-  /* Le composant Post.jsx a déjà un padding interne de 15px */
-  padding: 0; 
+  /* Le composant Post.jsx a déjà un padding interne de 12px */
+  padding: 0;
 }
 
 /* ÉTATS DE CHARGEMENT/ERREUR */
