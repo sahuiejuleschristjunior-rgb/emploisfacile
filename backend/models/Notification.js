@@ -54,6 +54,7 @@ const NotificationSchema = new mongoose.Schema(
         "read_receipt",
         "typing",
         "story_new",
+        "message_request",
         "page_follow",
       ],
     },
