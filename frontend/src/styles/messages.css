@@ -213,12 +213,10 @@
   margin-left: auto;
   background: #1877f2;
   color: #fff;
-  font-size: 11px;
-  padding: 3px 7px;
+  font-size: 12px;
+  padding: 3px 8px;
   border-radius: 999px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-weight: 700;
 }
 
 .conversation-last-message {
