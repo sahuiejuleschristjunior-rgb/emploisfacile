@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -210,6 +210,8 @@ export default function Messages() {
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
+  const location = useLocation();
+
   const [searchParams] = useSearchParams();
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
@@ -220,6 +222,14 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
+  const highlightFromNav =
+    location.state?.source === "messages_icon"
+      ? location.state?.highlightConversationId || null
+      : null;
+  const [highlightedConversationId, setHighlightedConversationId] = useState(
+    highlightFromNav
+  );
+  const highlightedItemRef = useRef(null);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
     mode: "caller",
@@ -593,6 +603,16 @@ export default function Messages() {
 
   const pendingRequestsCount = requests.length;
 
+  useEffect(() => {
+    if (location.state?.source === "messages_icon") {
+      setHighlightedConversationId(
+        location.state?.highlightConversationId || null
+      );
+    } else {
+      setHighlightedConversationId(null);
+    }
+  }, [location.state]);
+
   /* =====================================================
      FILTER
   ===================================================== */
@@ -601,6 +621,39 @@ export default function Messages() {
     if (!q) return friends;
     return friends.filter((f) => (f.name || "").toLowerCase().includes(q));
   }, [friends, search]);
+
+  useEffect(() => {
+    if (
+      highlightedConversationId &&
+      activeConversationIdValue &&
+      String(activeConversationIdValue) === String(highlightedConversationId)
+    ) {
+      setHighlightedConversationId(null);
+    }
+  }, [activeConversationIdValue, highlightedConversationId]);
+
+  const displayedFriends = useMemo(() => {
+    if (!highlightedConversationId) return filteredFriends;
+
+    const index = filteredFriends.findIndex(
+      (f) => String(f._id) === String(highlightedConversationId)
+    );
+    if (index === -1) return filteredFriends;
+
+    const target = { ...filteredFriends[index], isHighlighted: true };
+    const rest = filteredFriends.filter((_, i) => i !== index);
+    return [target, ...rest];
+  }, [filteredFriends, highlightedConversationId]);
+
+  useEffect(() => {
+    if (!highlightedConversationId) return;
+    if (highlightedItemRef.current) {
+      highlightedItemRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [displayedFriends, highlightedConversationId]);
 
   const pinnedMessages = useMemo(() => {
     const list = messages.filter((m) => isPinnedByMe(m));
@@ -1965,17 +2018,18 @@ export default function Messages() {
                 </div>
               ) : errorFriends ? (
                 <div className="messages-empty">{errorFriends}</div>
-              ) : filteredFriends.length === 0 && !isDirectConversation ? (
+              ) : displayedFriends.length === 0 && !isDirectConversation ? (
                 <div className="messages-empty">
                   Aucune conversation pour l’instant
                 </div>
               ) : (
-                filteredFriends.map((friend) => (
+                displayedFriends.map((friend) => (
                   <div
                     key={friend._id}
                     className={`conversation-item ${
                       activeChat?._id === friend._id ? "active" : ""
-                    }`}
+                    } ${friend.isHighlighted ? "highlighted" : ""}`}
+                    ref={friend.isHighlighted ? highlightedItemRef : null}
                     onClick={() => loadConversation(friend)}
                   >
                     <img
@@ -1986,7 +2040,12 @@ export default function Messages() {
                     />
 
                     <div className="conversation-info">
-                      <div className="conversation-name">{friend.name}</div>
+                      <div className="conversation-name">
+                        {friend.name}
+                        {friend.isHighlighted && (
+                          <span className="conversation-new-badge">Nouveau</span>
+                        )}
+                      </div>
                       <div className="conversation-last-message">
                         Démarrer une conversation
                       </div>
