@@ -1,6 +1,7 @@
 // src/context/NotificationContext.jsx
-import { createContext, useContext, useEffect, useState } from "react";
+import { useCallback, createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import { useActiveConversation } from "./ActiveConversationContext";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL; // 🔥 Correction propre
@@ -12,23 +13,53 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { activeConversationId } = useActiveConversation() || {};
 
-  const computeUnread = (items) =>
-    items.reduce((sum, n) => sum + (n.read ? 0 : 1), 0);
+  const computeUnread = useCallback(
+    (items) => items.reduce((sum, n) => sum + (n.read ? 0 : 1), 0),
+    []
+  );
 
-  const setNotificationsAndUnread = (updater) => {
-    setNotifications((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      setUnreadCount(computeUnread(next));
-      return next;
+  const setNotificationsAndUnread = useCallback(
+    (updater) => {
+      setNotifications((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        setUnreadCount(computeUnread(next));
+        return next;
+      });
+    },
+    [computeUnread]
+  );
+
+  const removeNotifications = useCallback(
+    (predicate) => {
+      setNotificationsAndUnread((prev) =>
+        prev.filter((n) => !predicate(n))
+      );
+    },
+    [setNotificationsAndUnread]
+  );
+
+  useEffect(() => {
+    if (!activeConversationId) return;
+
+    removeNotifications((n) => {
+      if (n.type !== "message") return false;
+
+      const notifConversationId =
+        n.conversationId ||
+        (typeof n.conversation === "object"
+          ? n.conversation?._id
+          : n.conversation) ||
+        n.from?._id ||
+        n.from;
+
+      return (
+        notifConversationId &&
+        String(notifConversationId) === String(activeConversationId)
+      );
     });
-  };
-
-  const removeNotifications = (predicate) => {
-    setNotificationsAndUnread((prev) =>
-      prev.filter((n) => !predicate(n))
-    );
-  };
+  }, [activeConversationId, removeNotifications]);
 
   /* ============================================================
      INIT SOCKET + FETCH NOTIFICATIONS 

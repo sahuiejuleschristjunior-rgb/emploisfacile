@@ -12,6 +12,7 @@ import {
   fetchMessageRequests,
   sendMessagePayload,
 } from "../api/messagesApi";
+import { useActiveConversation } from "../context/ActiveConversationContext";
 
 const API_HOST = API_URL?.replace(/\/?api$/, "");
 const SOCKET_URL = API_HOST || window.location.origin;
@@ -188,6 +189,7 @@ export default function Messages() {
   const [activeChat, setActiveChat] = useState(null);
   const activeConversation = activeChat;
   const setActiveConversation = setActiveChat;
+  const activeConversationIdValue = activeConversation?._id || null;
   const [messages, setMessages] = useState([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
 
@@ -207,6 +209,7 @@ export default function Messages() {
 
   const token = localStorage.getItem("token");
   const me = JSON.parse(localStorage.getItem("user"));
+  const { setActiveConversationId } = useActiveConversation() || {};
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRecording, setIsRecording] = useState(false);
@@ -243,8 +246,8 @@ export default function Messages() {
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
 
-  const hasLoadedConversationRef = useRef(false);
-  const hasMarkedReadRef = useRef(false);
+  const loadedConversationIdRef = useRef(null);
+  const lastReadConversationIdRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -803,6 +806,16 @@ export default function Messages() {
 
     const sanitizedUser = { ...user, unreadCount: 0 };
 
+    if (activeChat?._id === sanitizedUser._id) {
+      setFriends((prev) =>
+        prev.map((f) => (f._id === user._id ? { ...f, unreadCount: 0 } : f))
+      );
+      setActiveChat((prev) =>
+        prev?._id === sanitizedUser._id ? { ...prev, unreadCount: 0 } : sanitizedUser
+      );
+      return;
+    }
+
     setActiveChat(sanitizedUser);
     setFriends((prev) =>
       prev.map((f) => (f._id === user._id ? { ...f, unreadCount: 0 } : f))
@@ -844,8 +857,8 @@ export default function Messages() {
   useEffect(() => {
     if (!token || !conversationId) return;
 
-    if (hasLoadedConversationRef.current) return;
-    hasLoadedConversationRef.current = true;
+    if (loadedConversationIdRef.current === conversationId) return;
+    loadedConversationIdRef.current = conversationId;
 
     let cancelled = false;
 
@@ -900,13 +913,25 @@ export default function Messages() {
   }, [conversationId, token, setActiveConversation]);
 
   useEffect(() => {
-    if (!token || !activeConversation) return;
-    if (hasMarkedReadRef.current) return;
+    if (!token || !activeConversationIdValue) return;
 
-    hasMarkedReadRef.current = true;
+    if (lastReadConversationIdRef.current === activeConversationIdValue) return;
+    lastReadConversationIdRef.current = activeConversationIdValue;
 
-    markConversationAsRead(activeConversation._id);
-  }, [activeConversation, markConversationAsRead, token]);
+    markConversationAsRead(activeConversationIdValue);
+  }, [activeConversationIdValue, markConversationAsRead, token]);
+
+  useEffect(() => {
+    if (!setActiveConversationId) return;
+    setActiveConversationId(activeConversationIdValue);
+  }, [activeConversationIdValue, setActiveConversationId]);
+
+  useEffect(
+    () => () => {
+      setActiveConversationId?.(null);
+    },
+    [setActiveConversationId]
+  );
 
   const handleRequestRemoval = (requestId) => {
     setRequests((prev) => prev.filter((r) => r._id !== requestId));

@@ -51,6 +51,7 @@ import AdsLayout from "./pages/AdsLayout";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { SocketProvider } from "./context/SocketContext";
+import { ActiveConversationProvider } from "./context/ActiveConversationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoadingOverlay from "./components/AppLoadingOverlay";
 
@@ -103,9 +104,10 @@ export default function App() {
       <AppErrorBoundary>
         <AuthProvider>
           <SocketProvider>
-            <NotificationProvider>
-              <BrowserRouter>
-                <Routes>
+            <ActiveConversationProvider>
+              <NotificationProvider>
+                <BrowserRouter>
+                  <Routes>
                 {/* Landing */}
                 <Route
                   path="/"
@@ -213,11 +215,12 @@ export default function App() {
                 <Route path="/photo/:postId" element={<PhotoViewerPage />} />
               </Route>
             </Routes>
-          </BrowserRouter>
-        </NotificationProvider>
-      </SocketProvider>
-    </AuthProvider>
-        </AppErrorBoundary>
+                </BrowserRouter>
+              </NotificationProvider>
+            </ActiveConversationProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </AppErrorBoundary>
     </>
   );
 }
