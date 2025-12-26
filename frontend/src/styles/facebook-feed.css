@@ -127,6 +127,7 @@
   position: relative;
   display: block;
   line-height: 0;
+  border-radius: 0;
 }
 
 .fb-feed .fb-post-media-video .media-renderer {
@@ -134,6 +135,7 @@
   height: 100%;
   position: relative;
   line-height: 0;
+  border-radius: 0;
 }
 
 .fb-feed .fb-post-video.media-element,
@@ -145,6 +147,9 @@
   background: #000;
   position: absolute;
   inset: 0;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
 }
 
 .fb-feed .fb-post-media-video .media-element,
@@ -195,6 +200,7 @@
   padding: 0;
   line-height: 0;
   display: block;
+  border-radius: 0;
 }
 
 .fb-post-media-wrapper--video video {
