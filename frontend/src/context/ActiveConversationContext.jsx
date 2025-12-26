@@ -4,10 +4,16 @@ const ActiveConversationContext = createContext(null);
 
 export function ActiveConversationProvider({ children }) {
   const [activeConversationId, setActiveConversationId] = useState(null);
+  const [isUserTyping, setIsUserTyping] = useState(false);
 
   const value = useMemo(
-    () => ({ activeConversationId, setActiveConversationId }),
-    [activeConversationId]
+    () => ({
+      activeConversationId,
+      setActiveConversationId,
+      isUserTyping,
+      setIsUserTyping,
+    }),
+    [activeConversationId, isUserTyping]
   );
 
   return (
