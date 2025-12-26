@@ -17,7 +17,7 @@ const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
 export default function NotificationItem({ notif, onHandled }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeConversationId } = useActiveConversation() || {};
+  const { activeConversationId, isUserTyping } = useActiveConversation() || {};
   const { removeNotifications } = useNotifications() || {};
 
   const getNotifConversationId = (item) =>
@@ -118,9 +118,11 @@ export default function NotificationItem({ notif, onHandled }) {
       notifConversationId &&
       String(activeConversationId) === String(notifConversationId);
     const isMessagesRoute = location.pathname.startsWith("/messages");
+    const shouldStayOnChat =
+      isMessagesRoute && (matchesActiveConversation || isUserTyping);
 
     if (notif.type === "message") {
-      if (matchesActiveConversation && isMessagesRoute) {
+      if (shouldStayOnChat) {
         removeNotifications?.(
           (n) =>
             n.type === "message" &&

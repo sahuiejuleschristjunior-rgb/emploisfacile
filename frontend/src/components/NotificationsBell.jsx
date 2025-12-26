@@ -8,7 +8,7 @@ export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeConversationId } = useActiveConversation() || {};
+  const { activeConversationId, isUserTyping } = useActiveConversation() || {};
   const { notifications = [], unreadCount = 0, markAllAsRead, removeNotifications } =
     useNotifications() || {};
 
@@ -46,7 +46,8 @@ export default function NotificationsBell() {
       activeConversationId &&
       notifConversationId &&
       String(activeConversationId) === String(notifConversationId);
-    const shouldIgnoreAction = matchesActiveConversation && isMessagesRoute;
+    const shouldStayOnChat =
+      isMessagesRoute && (matchesActiveConversation || isUserTyping);
 
     if (n.type === "friend_request") {
       navigate("/fb/relations"); // 🔥 PAGE DEMANDES D’AMIS
@@ -54,12 +55,14 @@ export default function NotificationsBell() {
     }
 
     if (n.type === "message") {
-      if (shouldIgnoreAction || matchesActiveConversation) {
-        removeNotifications?.(
-          (notif) =>
-            notif.type === "message" &&
-            String(getNotifConversationId(notif)) === String(notifConversationId)
-        );
+      if (shouldStayOnChat) {
+        if (matchesActiveConversation) {
+          removeNotifications?.(
+            (notif) =>
+              notif.type === "message" &&
+              String(getNotifConversationId(notif)) === String(notifConversationId)
+          );
+        }
         return;
       }
 
