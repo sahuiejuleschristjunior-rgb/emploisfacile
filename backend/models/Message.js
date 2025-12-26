@@ -16,6 +16,13 @@ const messageSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Conversation de rattachement (1-to-1)
+    conversation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Conversation",
+      default: null,
+    },
+
     // Lien optionnel vers une candidature
     application: {
       type: mongoose.Schema.Types.ObjectId,
