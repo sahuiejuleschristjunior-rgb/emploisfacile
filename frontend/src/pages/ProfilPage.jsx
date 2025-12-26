@@ -249,6 +249,10 @@ export default function ProfilPage() {
     setViewerItems(photoItems);
   }, [photoItems]);
 
+  const thumbLimit = 9;
+  const displayPhotoItems = photoItems.slice(0, thumbLimit);
+  const remainingPhotos = Math.max(0, photoItems.length - displayPhotoItems.length);
+
   /* ================================================
      LOADING
   ================================================ */
@@ -448,15 +452,21 @@ export default function ProfilPage() {
                   <p className="profil-empty">Aucune photo pour le moment.</p>
                 ) : (
                   <div className="profil-photo-grid">
-                    {photoItems.slice(0, 9).map((m, idx) => (
-                      <button
-                        key={m.key}
-                        className="profil-photo-thumb"
-                        style={{ backgroundImage: `url(${m.url})` }}
-                        onClick={() => openPhotoViewer(photoItems, idx)}
-                        aria-label="Ouvrir la photo"
-                      />
-                    ))}
+                    {displayPhotoItems.map((m, idx) => {
+                      const showOverlay = remainingPhotos > 0 && idx === displayPhotoItems.length - 1;
+
+                      return (
+                        <button
+                          key={m.key}
+                          className="profil-photo-thumb"
+                          style={{ backgroundImage: `url(${m.url})` }}
+                          onClick={() => openPhotoViewer(photoItems, idx)}
+                          aria-label="Ouvrir la photo"
+                        >
+                          {showOverlay && <span className="profil-photo-overlay">+{remainingPhotos}</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
