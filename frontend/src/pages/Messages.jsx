@@ -225,6 +225,7 @@ export default function Messages() {
   const [highlightedConversationId, setHighlightedConversationId] = useState(null);
   const pendingHighlightRef = useRef(null);
   const highlightedItemRef = useRef(null);
+  const autoOpenHighlightRef = useRef(null);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
     mode: "caller",
@@ -656,6 +657,25 @@ export default function Messages() {
     pendingHighlightRef.current = null;
   }, [friends, getFriendId]);
 
+  useEffect(() => {
+    if (!highlightFromQuery) {
+      autoOpenHighlightRef.current = null;
+      return;
+    }
+
+    const key = `${highlightFromQuery}-${nonceFromQuery || ""}`;
+    if (autoOpenHighlightRef.current === key) return;
+
+    const targetId = String(highlightFromQuery);
+    const targetConversation =
+      friends.find((c) => getFriendId(c) === targetId) || { _id: targetId };
+
+    if (!targetConversation?._id) return;
+
+    autoOpenHighlightRef.current = key;
+    loadConversationRef.current?.(targetConversation);
+  }, [friends, getFriendId, highlightFromQuery, nonceFromQuery]);
+
   /* =====================================================
      FILTER
   ===================================================== */
@@ -970,6 +990,11 @@ export default function Messages() {
       setTimeout(() => scrollToBottom(true), 50);
     }
   };
+
+  const loadConversationRef = useRef(loadConversation);
+  useEffect(() => {
+    loadConversationRef.current = loadConversation;
+  }, [loadConversation]);
 
   useEffect(() => {
     if (!token || !conversationId) return;
