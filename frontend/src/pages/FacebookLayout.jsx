@@ -101,6 +101,13 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (location.pathname.startsWith("/messages")) {
+      setUnreadMessagesCount(0);
+      messageIdsRef.current.clear();
+    }
+  }, [location.pathname]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 4500);
