@@ -112,11 +112,11 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
-  followers: [
+    followers: [
       { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ],
 
-  following: [
+    following: [
       { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ],
 
@@ -127,5 +127,15 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Nettoie les entrées invalides dans les listes d'amis afin d'éviter les erreurs
+// de validation lorsque des objets sans champ `user` se glissent dans le tableau.
+UserSchema.pre("validate", function (next) {
+  if (Array.isArray(this.friends)) {
+    this.friends = this.friends.filter((friend) => friend && friend.user);
+  }
+
+  next();
+});
 
 module.exports = mongoose.model("User", UserSchema);
