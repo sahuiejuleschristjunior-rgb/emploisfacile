@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Message = require("../models/Message");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
+const MessageRequest = require("../models/MessageRequest");
 const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
 const path = require("path");
@@ -12,6 +13,9 @@ const { promisify } = require("util");
 const typingState = new Map();
 const execFileAsync = promisify(execFile);
 const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+const REQUEST_MESSAGE_MAX = 500;
+const REQUEST_COOLDOWN_MS = 15 * 60 * 1000;
+const requestRateMap = new Map();
 
 function isUserParticipant(message, userId) {
   if (!message || !userId) return false;
@@ -31,6 +35,34 @@ function populateMessage(message) {
 
 function getSenderId(req) {
   return req?.user?._id || req?.user?.id || null;
+}
+
+function areFriends(user, otherUserId) {
+  return Array.isArray(user?.friends)
+    ? user.friends.some((f) => String(f.user) === String(otherUserId))
+    : false;
+}
+
+function isBlocked(user, otherUserId) {
+  return Array.isArray(user?.blockedUsers)
+    ? user.blockedUsers.some((u) => String(u) === String(otherUserId))
+    : false;
+}
+
+function containsLink(text) {
+  if (!text) return false;
+  return /(https?:\/\/|www\.)/i.test(text);
+}
+
+function enforceRequestRateLimit(userId) {
+  if (!userId) return false;
+  const now = Date.now();
+  const last = requestRateMap.get(String(userId)) || 0;
+  if (now - last < REQUEST_COOLDOWN_MS) {
+    return true;
+  }
+  requestRateMap.set(String(userId), now);
+  return false;
 }
 
 async function findOrCreateConversation(senderId, receiverId) {
@@ -91,8 +123,6 @@ exports.sendMessage = async (req, res) => {
 
     const receiverId = receiver;
 
-    console.log("sendMessage auth:", { senderId: sender, receiverId });
-
     if (!receiverId || !content) {
       return res
         .status(400)
@@ -111,13 +141,103 @@ exports.sendMessage = async (req, res) => {
         .json({ message: "Destinataire introuvable." });
     }
 
-    const receiverUser = await User.findById(receiverId);
-    if (!receiverUser) {
+    const [receiverUser, senderUser] = await Promise.all([
+      User.findById(receiverId),
+      User.findById(sender),
+    ]);
+
+    if (!receiverUser || !senderUser) {
       return res
         .status(404)
         .json({ message: "Destinataire introuvable." });
     }
 
+    if (isBlocked(receiverUser, sender) || isBlocked(senderUser, receiverId)) {
+      return res.status(403).json({ message: "Interaction non autorisée." });
+    }
+
+    const isFriend =
+      areFriends(senderUser, receiverId) && areFriends(receiverUser, sender);
+
+    // =====================
+    // MESSAGE REQUEST FLOW
+    // =====================
+    if (!isFriend) {
+      if (enforceRequestRateLimit(sender)) {
+        return res.status(429).json({
+          message: "Trop de demandes. Réessayez dans quelques minutes.",
+        });
+      }
+
+      if (type && type !== "text") {
+        return res
+          .status(400)
+          .json({ message: "Seuls les messages textes sont autorisés." });
+      }
+
+      const trimmed = (content || "").trim();
+      if (!trimmed) {
+        return res
+          .status(400)
+          .json({ message: "Le message ne peut pas être vide." });
+      }
+
+      if (trimmed.length > REQUEST_MESSAGE_MAX) {
+        return res.status(400).json({
+          message: `Le message doit contenir au maximum ${REQUEST_MESSAGE_MAX} caractères.`,
+        });
+      }
+
+      if (containsLink(trimmed)) {
+        return res.status(400).json({
+          message: "Les liens sont désactivés dans les demandes de message.",
+        });
+      }
+
+      const existingByPair = await MessageRequest.findOne({
+        from: sender,
+        to: receiverId,
+      });
+
+      if (existingByPair) {
+        return res.status(403).json({ message: "Demande déjà envoyée." });
+      }
+
+      const pendingOutgoing = await MessageRequest.findOne({
+        from: sender,
+        status: "pending",
+      });
+
+      if (pendingOutgoing) {
+        return res.status(403).json({
+          message: "Vous avez déjà une demande en attente.",
+        });
+      }
+
+      const request = await MessageRequest.create({
+        from: sender,
+        to: receiverId,
+        firstMessage: trimmed,
+      });
+
+      getIO().to(receiverId.toString()).emit("message_request:new", request);
+      await pushNotification(receiverId, {
+        from: sender,
+        type: "message_request",
+        text: "Nouvelle demande de message",
+      });
+
+      return res.status(201).json({
+        success: true,
+        type: "request",
+        message: "Message envoyé comme demande.",
+        data: request,
+      });
+    }
+
+    // =====================
+    // DIRECT FRIEND MESSAGE
+    // =====================
     let replyPreview = null;
     let replyMessageId = null;
     if (replyTo) {
@@ -179,6 +299,187 @@ exports.sendMessage = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors de l'envoi du message.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+GET /api/messages/requests
+➤ Liste des demandes reçues
+============================================================ */
+exports.getMessageRequests = async (req, res) => {
+  try {
+    const userId = getSenderId(req);
+    const requests = await MessageRequest.find({
+      to: userId,
+      status: "pending",
+    })
+      .populate("from", "name avatar role")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ success: true, data: requests });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du chargement des demandes.",
+      details: error.message,
+    });
+  }
+};
+
+async function createFriendshipIfNeeded(userA, userB) {
+  const alreadyFriends =
+    areFriends(userA, userB._id) && areFriends(userB, userA._id);
+  if (alreadyFriends) return;
+
+  userA.friends = userA.friends || [];
+  userB.friends = userB.friends || [];
+
+  if (!areFriends(userA, userB._id)) {
+    userA.friends.push({ user: userB._id, category: "public" });
+  }
+
+  if (!areFriends(userB, userA._id)) {
+    userB.friends.push({ user: userA._id, category: "public" });
+  }
+
+  await Promise.all([userA.save(), userB.save()]);
+}
+
+/* ============================================================
+POST /api/messages/requests/:id/accept
+➤ Accepter une demande
+============================================================ */
+exports.acceptMessageRequest = async (req, res) => {
+  try {
+    const userId = getSenderId(req);
+    const { id } = req.params;
+
+    const request = await MessageRequest.findById(id);
+    if (!request || String(request.to) !== String(userId)) {
+      return res.status(404).json({ message: "Demande introuvable." });
+    }
+
+    const [receiver, sender] = await Promise.all([
+      User.findById(userId),
+      User.findById(request.from),
+    ]);
+
+    if (!receiver || !sender) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    if (isBlocked(receiver, sender._id)) {
+      await MessageRequest.findByIdAndDelete(id);
+      return res.status(403).json({ message: "Interaction bloquée." });
+    }
+
+    await createFriendshipIfNeeded(receiver, sender);
+
+    const conversation = await findOrCreateConversation(
+      sender._id,
+      receiver._id
+    );
+
+    const message = await Message.create({
+      sender: sender._id,
+      receiver: receiver._id,
+      conversation: conversation._id,
+      content: request.firstMessage,
+      type: "text",
+      isRead: false,
+    });
+
+    conversation.lastMessage = message._id;
+    await conversation.save();
+
+    await MessageRequest.findByIdAndDelete(id);
+
+    getIO().to(sender._id.toString()).emit("new_message", {
+      from: sender._id,
+      to: receiver._id,
+      message,
+    });
+
+    getIO().to(receiver._id.toString()).emit("new_message", {
+      from: sender._id,
+      to: receiver._id,
+      message,
+    });
+
+    await pushNotification(sender._id, {
+      from: receiver._id,
+      type: "message",
+      text: "Votre demande de message a été acceptée.",
+    });
+
+    return res.status(200).json({ success: true, data: message });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de l'acceptation de la demande.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+POST /api/messages/requests/:id/decline
+➤ Refuser une demande
+============================================================ */
+exports.declineMessageRequest = async (req, res) => {
+  try {
+    const userId = getSenderId(req);
+    const { id } = req.params;
+
+    const request = await MessageRequest.findById(id);
+    if (!request || String(request.to) !== String(userId)) {
+      return res.status(404).json({ message: "Demande introuvable." });
+    }
+
+    request.status = "declined";
+    await request.save();
+    await MessageRequest.findByIdAndDelete(id);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du refus de la demande.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+POST /api/messages/requests/:id/block
+➤ Bloquer un utilisateur suite à une demande
+============================================================ */
+exports.blockFromMessageRequest = async (req, res) => {
+  try {
+    const userId = getSenderId(req);
+    const { id } = req.params;
+
+    const request = await MessageRequest.findById(id);
+    if (!request || String(request.to) !== String(userId)) {
+      return res.status(404).json({ message: "Demande introuvable." });
+    }
+
+    const receiver = await User.findById(userId);
+    if (!receiver) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    receiver.blockedUsers = receiver.blockedUsers || [];
+    if (!isBlocked(receiver, request.from)) {
+      receiver.blockedUsers.push(request.from);
+      await receiver.save();
+    }
+
+    await MessageRequest.findByIdAndDelete(id);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du blocage de l'utilisateur.",
       details: error.message,
     });
   }

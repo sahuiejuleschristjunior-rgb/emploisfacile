@@ -7,6 +7,8 @@ import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
 import { useAuth } from "../context/AuthContext";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
+import useRelation from "../hooks/useRelation";
+import { sendMessagePayload } from "../api/messagesApi";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 
@@ -31,8 +33,13 @@ export default function PublicProfile() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const [viewerItems, setViewerItems] = useState([]);
+  const [messageModalOpen, setMessageModalOpen] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [messageError, setMessageError] = useState("");
+  const [messageFeedback, setMessageFeedback] = useState("");
 
   const viewerId = viewer?._id || authUser?._id;
+  const relation = useRelation(id);
 
   /* ============================================================
       LOAD CONNECTED USER
@@ -142,6 +149,44 @@ export default function PublicProfile() {
     setViewerItems(photoItems);
   }, [photoItems]);
 
+  const isFriend = relation?.status?.isFriend;
+
+  const sendProfileMessage = async () => {
+    if (!user?._id) return;
+    const trimmed = messageText.trim();
+
+    if (!trimmed) {
+      setMessageError("Le message ne peut pas être vide.");
+      return;
+    }
+
+    if (trimmed.length > 500) {
+      setMessageError("500 caractères maximum.");
+      return;
+    }
+
+    setMessageError("");
+    setMessageFeedback("");
+
+    try {
+      const { data } = await sendMessagePayload({
+        receiver: user._id,
+        content: trimmed,
+      });
+
+      if (data?.type === "request") {
+        setMessageFeedback("Message envoyé comme demande.");
+        setMessageModalOpen(false);
+        setMessageText("");
+      } else {
+        setMessageFeedback("Conversation ouverte dans Messages.");
+        navigate(`/messages?userId=${user._id}`);
+      }
+    } catch (err) {
+      setMessageError("Impossible d'envoyer le message.");
+    }
+  };
+
   const renderContent = () => {
     if (loading || !user || !viewer) {
       return <div className="profil-loading">Chargement…</div>;
@@ -197,11 +242,22 @@ export default function PublicProfile() {
               <div className="profil-hero-actions">
                 <button
                   className="profil-btn primary"
-                  onClick={() => navigate(`/messages?userId=${user._id}`)}
-                >
-                  Message
-                </button>
-                <RelationButton targetId={user._id} />
+                  onClick={() => {
+                    setMessageFeedback("");
+                    setMessageError("");
+                    if (isFriend) {
+                      navigate(`/messages?userId=${user._id}`);
+                    } else {
+                      setMessageModalOpen(true);
+                    }
+                  }}
+                  >
+                    Message
+                  </button>
+                  <RelationButton targetId={user._id} />
+                  {messageFeedback && (
+                    <div className="profil-toast">{messageFeedback}</div>
+                  )}
               </div>
             )}
           </div>
@@ -297,6 +353,50 @@ export default function PublicProfile() {
             onChangeIndex={setViewerIndex}
             onClose={() => setViewerOpen(false)}
           />
+        )}
+
+        {messageModalOpen && (
+          <div className="profil-modal-overlay" role="dialog" aria-modal="true">
+            <div className="profil-modal">
+              <div className="profil-modal-header">
+                <h3>Envoyer un message</h3>
+                <button
+                  type="button"
+                  className="profil-close"
+                  onClick={() => setMessageModalOpen(false)}
+                  aria-label="Fermer"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="profil-modal-hint">
+                Ce message sera envoyé comme demande. Aucun média n'est autorisé.
+              </p>
+              <textarea
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value.slice(0, 500))}
+                maxLength={500}
+                placeholder="Écrivez votre message (500 caractères max)"
+              />
+              {messageError && <div className="profil-modal-error">{messageError}</div>}
+              <div className="profil-modal-actions">
+                <button
+                  type="button"
+                  className="profil-btn ghost"
+                  onClick={() => setMessageModalOpen(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  className="profil-btn primary"
+                  onClick={sendProfileMessage}
+                >
+                  Envoyer
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );

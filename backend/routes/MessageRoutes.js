@@ -34,13 +34,46 @@ const audioUpload = multer({
   },
 });
 
+const sendRateTracker = new Map();
+const SEND_WINDOW_MS = 60 * 1000;
+const SEND_MAX = 15;
+
+function rateLimitSend(req, res, next) {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ message: "Authentification requise." });
+  }
+
+  const now = Date.now();
+  const history = sendRateTracker.get(userId) || [];
+  const recent = history.filter((ts) => now - ts < SEND_WINDOW_MS);
+
+  if (recent.length >= SEND_MAX) {
+    return res.status(429).json({
+      message: "Trop de messages envoyés. Réessayez dans une minute.",
+    });
+  }
+
+  recent.push(now);
+  sendRateTracker.set(userId, recent);
+  next();
+}
+
 /* ============================================================
    ENVOYER UN MESSAGE
-   POST /api/messages
+   POST /api/messages/send
 ============================================================ */
+router.post(
+  "/send",
+  isAuthenticated,
+  rateLimitSend,
+  MessageController.sendMessage
+);
+
 router.post(
   "/",
   isAuthenticated,
+  rateLimitSend,
   MessageController.sendMessage
 );
 
@@ -143,6 +176,33 @@ router.patch(
   "/read-all/:userId",
   isAuthenticated,
   MessageController.markAllAsReadForConversation
+);
+
+/* ============================================================
+   DEMANDES DE MESSAGES
+============================================================ */
+router.get(
+  "/requests",
+  isAuthenticated,
+  MessageController.getMessageRequests
+);
+
+router.post(
+  "/requests/:id/accept",
+  isAuthenticated,
+  MessageController.acceptMessageRequest
+);
+
+router.post(
+  "/requests/:id/decline",
+  isAuthenticated,
+  MessageController.declineMessageRequest
+);
+
+router.post(
+  "/requests/:id/block",
+  isAuthenticated,
+  MessageController.blockFromMessageRequest
 );
 
 module.exports = router;

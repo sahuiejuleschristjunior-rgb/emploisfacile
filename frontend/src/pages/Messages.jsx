@@ -1,11 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
 import VideoCallOverlay from "../components/VideoCallOverlay";
+import { API_URL } from "../api/config";
+import {
+  acceptMessageRequest,
+  blockMessageRequest,
+  declineMessageRequest,
+  fetchMessageRequests,
+  sendMessagePayload,
+} from "../api/messagesApi";
 
-const API_URL = import.meta.env.VITE_API_URL;
 const API_HOST = API_URL?.replace(/\/?api$/, "");
 const SOCKET_URL = API_HOST || window.location.origin;
 const token = localStorage.getItem("token");
@@ -174,6 +181,10 @@ export default function Messages() {
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [errorFriends, setErrorFriends] = useState("");
+  const [listTab, setListTab] = useState("conversations");
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [requestsError, setRequestsError] = useState("");
 
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -186,6 +197,7 @@ export default function Messages() {
     messageId: null,
     anchor: null,
   });
+  const [infoBanner, setInfoBanner] = useState("");
 
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
@@ -439,41 +451,62 @@ export default function Messages() {
   /* =====================================================
      LOAD FRIENDS
   ===================================================== */
-  useEffect(() => {
-    const loadFriends = async () => {
-      try {
-        setLoadingFriends(true);
-        setErrorFriends("");
+  const loadFriends = useCallback(async () => {
+    try {
+      setLoadingFriends(true);
+      setErrorFriends("");
 
-        const data = await fetchFriends();
-        const raw = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.friends)
-          ? data.friends
-          : [];
+      const data = await fetchFriends();
+      const raw = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.friends)
+        ? data.friends
+        : [];
 
-        const list = raw
-          .map(normalizeFriend)
-          .filter((u) => u && u._id)
-          .reduce((acc, user) => {
-            if (!acc.some((u) => u._id === user._id)) {
-              acc.push(user);
-            }
-            return acc;
-          }, []);
+      const list = raw
+        .map(normalizeFriend)
+        .filter((u) => u && u._id)
+        .reduce((acc, user) => {
+          if (!acc.some((u) => u._id === user._id)) {
+            acc.push(user);
+          }
+          return acc;
+        }, []);
 
-        setFriends(list);
-      } catch (err) {
-        console.error("Erreur chargement amis :", err);
-        setErrorFriends("Erreur chargement amis");
-        setFriends([]);
-      } finally {
-        setLoadingFriends(false);
-      }
-    };
-
-    loadFriends();
+      setFriends(list);
+    } catch (err) {
+      console.error("Erreur chargement amis :", err);
+      setErrorFriends("Erreur chargement amis");
+      setFriends([]);
+    } finally {
+      setLoadingFriends(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadFriends();
+  }, [loadFriends]);
+
+  const loadRequests = useCallback(async () => {
+    try {
+      setLoadingRequests(true);
+      setRequestsError("");
+      const list = await fetchMessageRequests();
+      setRequests(list || []);
+    } catch (err) {
+      console.error("Erreur chargement demandes", err);
+      setRequests([]);
+      setRequestsError("Impossible de charger les demandes");
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const pendingRequestsCount = requests.length;
 
   /* =====================================================
      FILTER
@@ -657,6 +690,57 @@ export default function Messages() {
     }
   };
 
+  const handleRequestRemoval = (requestId) => {
+    setRequests((prev) => prev.filter((r) => r._id !== requestId));
+  };
+
+  const attachAndOpenFriend = (user) => {
+    const normalized = normalizeFriend(user);
+    setFriends((prev) => {
+      if (prev.some((f) => f._id === normalized._id)) return prev;
+      return [...prev, normalized];
+    });
+    loadConversation(normalized);
+  };
+
+  const handleAcceptRequest = async (request) => {
+    if (!request?._id) return;
+    try {
+      const res = await acceptMessageRequest(request._id);
+      handleRequestRemoval(request._id);
+      if (res?.data && request?.from) {
+        attachAndOpenFriend(request.from);
+        setListTab("conversations");
+      }
+      await loadFriends();
+    } catch (err) {
+      console.error("Erreur acceptation demande", err);
+      setRequestsError("Impossible d'accepter la demande.");
+    }
+  };
+
+  const handleDeclineRequest = async (request) => {
+    if (!request?._id) return;
+    try {
+      await declineMessageRequest(request._id);
+      handleRequestRemoval(request._id);
+    } catch (err) {
+      console.error("Erreur refus demande", err);
+      setRequestsError("Impossible de refuser la demande.");
+    }
+  };
+
+  const handleBlockRequest = async (request) => {
+    if (!request?._id) return;
+    try {
+      await blockMessageRequest(request._id);
+      handleRequestRemoval(request._id);
+    } catch (err) {
+      console.error("Erreur blocage demande", err);
+      setRequestsError("Impossible de bloquer l'utilisateur.");
+    }
+  };
+
   /* =====================================================
      PRESELECT CHAT FROM URL
   ===================================================== */
@@ -708,6 +792,7 @@ export default function Messages() {
     const content = (contentOverride ?? input).trim();
     if (!content || !activeChat) return;
     setInput("");
+    setInfoBanner("");
     const { replyId, preview: replyPreview } = buildReplyData(replyTo);
 
     const clientTempId = `temp-${Date.now()}`;
@@ -728,25 +813,43 @@ export default function Messages() {
     setReplyTo(null);
 
     try {
-      const res = await fetch(`${API_URL}/messages`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          receiver: activeChat._id,
-          content,
-          clientTempId,
-          replyTo: replyId,
-        }),
+      const { ok, data } = await sendMessagePayload({
+        receiver: activeChat._id,
+        content,
+        clientTempId,
+        replyTo: replyId,
       });
-      const data = await res.json();
-      if (res.ok && data?.data) {
+
+      if (data?.type === "request") {
+        setMessages((prev) =>
+          prev.filter(
+            (m) =>
+              m.clientTempId !== clientTempId &&
+              m._id !== clientTempId &&
+              m.clientTempId !== tempMessage._id
+          )
+        );
+        setInfoBanner("Message envoyé comme demande");
+        setListTab("requests");
+        await loadRequests();
+        return;
+      }
+
+      if (ok && data?.data) {
         upsertMessage(data.data);
+      } else if (data?.message) {
+        setInfoBanner(data.message);
       }
     } catch (err) {
       console.error("Erreur envoi message", err);
+      setMessages((prev) =>
+        prev.filter(
+          (m) =>
+            m.clientTempId !== clientTempId &&
+            m._id !== clientTempId &&
+            m.clientTempId !== tempMessage._id
+        )
+      );
     }
   };
 
@@ -1531,46 +1634,133 @@ export default function Messages() {
           <h2>Messages</h2>
         </div>
 
-        <div className="messages-search">
-          <input
-            type="text"
-            placeholder="Rechercher un ami"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="messages-tabs">
+          <button
+            className={listTab === "conversations" ? "active" : ""}
+            onClick={() => setListTab("conversations")}
+          >
+            Conversations
+          </button>
+          <button
+            className={listTab === "requests" ? "active" : ""}
+            onClick={() => setListTab("requests")}
+          >
+            Demandes
+            {pendingRequestsCount > 0 && (
+              <span className="badge">{pendingRequestsCount}</span>
+            )}
+          </button>
         </div>
 
+        {listTab === "conversations" && (
+          <div className="messages-search">
+            <input
+              type="text"
+              placeholder="Rechercher un ami"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
+
+        {infoBanner && <div className="messages-banner">{infoBanner}</div>}
+
         <div className="messages-list">
-          {loadingFriends && <div className="messages-empty">Chargement…</div>}
-
-          {!loadingFriends && errorFriends && (
-            <div className="messages-empty">{errorFriends}</div>
-          )}
-
-          {!loadingFriends && !errorFriends && filteredFriends.length === 0 && (
-            <div className="messages-empty">Aucun ami pour le moment</div>
-          )}
-
-          {filteredFriends.map((friend) => (
-            <div
-              key={friend._id}
-              className={`conversation-item ${
-                activeChat?._id === friend._id ? "active" : ""
-              }`}
-              onClick={() => loadConversation(friend)}
-            >
-              <img src={friend.avatar} alt={friend.name} className="conversation-avatar" loading="lazy" />
-
-              <div className="conversation-info">
-                <div className="conversation-name">{friend.name}</div>
-                <div className="conversation-last-message">Démarrer une conversation</div>
-              </div>
-
-              {friend.unreadCount > 0 && (
-                <div className="conv-unread-badge">{friend.unreadCount}</div>
+          {listTab === "conversations" ? (
+            <>
+              {loadingFriends && (
+                <div className="messages-empty">Chargement…</div>
               )}
-            </div>
-          ))}
+
+              {!loadingFriends && errorFriends && (
+                <div className="messages-empty">{errorFriends}</div>
+              )}
+
+              {!loadingFriends &&
+                !errorFriends &&
+                filteredFriends.length === 0 && (
+                  <div className="messages-empty">Aucun ami pour le moment</div>
+                )}
+
+              {filteredFriends.map((friend) => (
+                <div
+                  key={friend._id}
+                  className={`conversation-item ${
+                    activeChat?._id === friend._id ? "active" : ""
+                  }`}
+                  onClick={() => loadConversation(friend)}
+                >
+                  <img
+                    src={resolveUrl(friend.avatar)}
+                    alt={friend.name}
+                    className="conversation-avatar"
+                    loading="lazy"
+                  />
+
+                  <div className="conversation-info">
+                    <div className="conversation-name">{friend.name}</div>
+                    <div className="conversation-last-message">
+                      Démarrer une conversation
+                    </div>
+                  </div>
+
+                  {friend.unreadCount > 0 && (
+                    <div className="conv-unread-badge">{friend.unreadCount}</div>
+                  )}
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              {loadingRequests && (
+                <div className="messages-empty">Chargement…</div>
+              )}
+              {!loadingRequests && requestsError && (
+                <div className="messages-empty">{requestsError}</div>
+              )}
+              {!loadingRequests && !requestsError && requests.length === 0 && (
+                <div className="messages-empty">Aucune demande reçue</div>
+              )}
+              {requests.map((req) => (
+                <div key={req._id} className="request-item">
+                  <div className="request-main">
+                    <img
+                      src={resolveUrl(req?.from?.avatar)}
+                      alt={req?.from?.name || "Utilisateur"}
+                      className="conversation-avatar"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "/default-avatar.png";
+                      }}
+                    />
+                    <div className="request-info">
+                      <div className="conversation-name">
+                        {req?.from?.name || "Utilisateur"}
+                      </div>
+                      <div className="request-message">{req.firstMessage}</div>
+                    </div>
+                  </div>
+                  <div className="request-actions">
+                    <button onClick={() => handleAcceptRequest(req)}>
+                      Accepter
+                    </button>
+                    <button
+                      className="ghost"
+                      onClick={() => handleDeclineRequest(req)}
+                    >
+                      Refuser
+                    </button>
+                    <button
+                      className="danger"
+                      onClick={() => handleBlockRequest(req)}
+                    >
+                      Bloquer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </aside>
 
