@@ -65,6 +65,53 @@
   transform: translateY(0);
 }
 
+.messages-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.messages-tabs button {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #3a3c3f;
+  background: #2d2f31;
+  color: #e4e6eb;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.messages-tabs button.active {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: #fff;
+}
+
+.messages-tabs .badge {
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.messages-banner {
+  margin: 0 16px 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #fcd34d;
+  border: 1px solid rgba(252, 211, 77, 0.4);
+  font-weight: 600;
+}
+
 .messages-search {
   padding: 0 16px 12px;
 }
@@ -160,6 +207,68 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.request-item {
+  background: #202124;
+  border: 1px solid #2f3031;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.request-main {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.request-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-message {
+  margin-top: 4px;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.request-actions button {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #3a3c3f;
+  background: #2d2f31;
+  color: #e4e6eb;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.request-actions button:hover {
+  background: #34363a;
+}
+
+.request-actions button.danger {
+  background: #3f1f1f;
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.request-actions button.ghost {
+  background: transparent;
+  border-color: #3a3c3f;
 }
 
 /* =========================
