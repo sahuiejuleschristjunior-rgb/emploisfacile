@@ -55,7 +55,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [, setLastUnreadConversationId] = useState(null);
+  const [lastUnreadConversationId, setLastUnreadConversationId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
@@ -589,7 +589,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   };
 
   const handleMessagesIconClick = () => {
-    nav("/messages");
+    const state = lastUnreadConversationId
+      ? {
+          highlightConversationId: lastUnreadConversationId,
+          source: "messages_icon",
+        }
+      : { source: "messages_icon" };
+
+    nav("/messages", { state });
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);

@@ -41,12 +41,13 @@ export default function NotificationsBell() {
     }
 
     if (n.type === "message") {
-      navigate(
-        notifConversationId
-          ? `/messages?open=${notifConversationId}`
-          : "/messages",
-        { replace: true }
-      );
+      navigate("/messages", {
+        replace: true,
+        state: {
+          openConversationId: notifConversationId || null,
+          source: "notification",
+        },
+      });
       setOpen(false);
       return;
     }
