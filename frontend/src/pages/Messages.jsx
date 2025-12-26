@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -211,7 +211,6 @@ export default function Messages() {
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
   const [searchParams] = useSearchParams();
-  const location = useLocation();
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -221,8 +220,6 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
-  const [highlightedConversationId, setHighlightedConversationId] = useState(null);
-  const [highlightAnimation, setHighlightAnimation] = useState(false);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
     mode: "caller",
@@ -266,7 +263,6 @@ export default function Messages() {
   const inputRef = useRef(null);
   const messageRefs = useRef({});
   const [typingState, setTypingState] = useState({});
-  const highlightedConversationRef = useRef(null);
 
   const { conversationId } = useParams();
   const isDirectConversation = Boolean(conversationId);
@@ -606,18 +602,6 @@ export default function Messages() {
     return friends.filter((f) => (f.name || "").toLowerCase().includes(q));
   }, [friends, search]);
 
-  const sortedFriends = useMemo(() => {
-    if (!highlightedConversationId) return filteredFriends;
-    const targetIndex = filteredFriends.findIndex(
-      (f) => f._id === highlightedConversationId
-    );
-    if (targetIndex === -1) return filteredFriends;
-
-    const target = { ...filteredFriends[targetIndex], isHighlighted: true };
-    const remaining = filteredFriends.filter((_, idx) => idx !== targetIndex);
-    return [target, ...remaining];
-  }, [filteredFriends, highlightedConversationId]);
-
   const pinnedMessages = useMemo(() => {
     const list = messages.filter((m) => isPinnedByMe(m));
     return list.sort(
@@ -626,37 +610,6 @@ export default function Messages() {
         new Date(a.lastPinnedAt || a.createdAt)
     );
   }, [messages]);
-
-  /* =====================================================
-     HIGHLIGHT CONVERSATION (INBOX)
-  ===================================================== */
-  useEffect(() => {
-    const incomingHighlightId = location.state?.highlightConversationId;
-    if (!incomingHighlightId) return;
-
-    setSearch("");
-    setHighlightedConversationId(incomingHighlightId);
-  }, [location.state?.highlightConversationId]);
-
-  useEffect(() => {
-    if (!highlightedConversationId) return undefined;
-
-    setHighlightAnimation(true);
-    const timer = setTimeout(() => setHighlightAnimation(false), 2400);
-    return () => clearTimeout(timer);
-  }, [highlightedConversationId]);
-
-  useEffect(() => {
-    if (!highlightedConversationId || !highlightedConversationRef.current) return;
-    const timer = setTimeout(() => {
-      highlightedConversationRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 150);
-
-    return () => clearTimeout(timer);
-  }, [highlightedConversationId, sortedFriends]);
 
   /* =====================================================
      SOCKET IO
@@ -855,11 +808,6 @@ export default function Messages() {
     if (!user?._id) return;
 
     const sanitizedUser = { ...user, unreadCount: 0 };
-
-    if (highlightedConversationId && sanitizedUser._id === highlightedConversationId) {
-      setHighlightedConversationId(null);
-      setHighlightAnimation(false);
-    }
 
     if (activeChat?._id === sanitizedUser._id) {
       setFriends((prev) =>
@@ -2022,17 +1970,12 @@ export default function Messages() {
                   Aucune conversation pour l’instant
                 </div>
               ) : (
-                sortedFriends.map((friend) => (
+                filteredFriends.map((friend) => (
                   <div
                     key={friend._id}
                     className={`conversation-item ${
                       activeChat?._id === friend._id ? "active" : ""
-                    } ${friend.isHighlighted ? "highlighted" : ""} ${
-                      highlightAnimation && friend.isHighlighted
-                        ? "highlighted-animate"
-                        : ""
                     }`}
-                    ref={friend.isHighlighted ? highlightedConversationRef : null}
                     onClick={() => loadConversation(friend)}
                   >
                     <img
@@ -2043,18 +1986,7 @@ export default function Messages() {
                     />
 
                     <div className="conversation-info">
-                      <div className="conversation-name-row">
-                        <div className="conversation-name">{friend.name}</div>
-                        {friend.isHighlighted && (
-                          <span
-                            className={`conversation-new-badge ${
-                              highlightAnimation ? "pulse" : ""
-                            }`}
-                          >
-                            Nouveau
-                          </span>
-                        )}
-                      </div>
+                      <div className="conversation-name">{friend.name}</div>
                       <div className="conversation-last-message">
                         Démarrer une conversation
                       </div>
