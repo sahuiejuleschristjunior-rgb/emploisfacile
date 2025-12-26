@@ -326,6 +326,7 @@ exports.sendMessage = async (req, res) => {
     });
 
     conversation.lastMessage = message._id;
+    conversation.updatedAt = new Date();
     await conversation.save();
 
     /* 🔥 SOCKET.IO — MESSAGE TEMPS RÉEL */
@@ -781,6 +782,7 @@ exports.sendAudioMessage = async (req, res) => {
     });
 
     conversation.lastMessage = message._id;
+    conversation.updatedAt = new Date();
     await conversation.save();
 
     getIO().to(receiverId.toString()).emit("new_message", {
@@ -862,57 +864,18 @@ GET /api/messages/inbox
 ============================================================ */
 exports.getInbox = async (req, res) => {
   try {
-    const myId = new mongoose.Types.ObjectId(req.user.id);
+    const userId = new mongoose.Types.ObjectId(req.user.id);
 
-    const messages = await Message.aggregate([
-      {
-        $match: {
-          $or: [{ sender: myId }, { receiver: myId }],
-          deletedForAll: { $ne: true },
-          deletedFor: { $ne: myId },
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      {
-        $group: {
-          _id: {
-            $cond: [
-              { $eq: ["$sender", myId] },
-              "$receiver",
-              "$sender",
-            ],
-          },
-          lastMessage: { $first: "$$ROOT" },
-          unreadCount: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ["$receiver", myId] },
-                    { $eq: ["$isRead", false] },
-                  ],
-                },
-                1,
-                0,
-              ],
-            },
-          },
-        },
-      },
-    ]);
-
-    const inbox = await Promise.all(
-      messages.map(async (item) => {
-        const user = await User.findById(item._id).select(
-          "name avatar role"
-        );
-        return {
-          user,
-          lastMessage: item.lastMessage,
-          unreadCount: item.unreadCount,
-        };
+    const inbox = await Conversation.find({ participants: userId })
+      .sort({ updatedAt: -1 })
+      .populate({
+        path: "lastMessage",
+        populate: [
+          { path: "sender", select: "name avatar role" },
+          { path: "receiver", select: "name avatar role" },
+        ],
       })
-    );
+      .populate("participants", "name avatar role");
 
     return res.status(200).json(inbox);
   } catch (error) {

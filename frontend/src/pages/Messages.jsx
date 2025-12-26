@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
-import { fetchFriends } from "../api/socialApi";
 import VideoCallOverlay from "../components/VideoCallOverlay";
 import { API_URL } from "../api/config";
 import {
@@ -10,6 +9,7 @@ import {
   blockMessageRequest,
   declineMessageRequest,
   fetchMessageRequests,
+  fetchInbox,
   sendMessagePayload,
 } from "../api/messagesApi";
 import { useActiveConversation } from "../context/ActiveConversationContext";
@@ -282,6 +282,34 @@ export default function Messages() {
      HELPERS
   ===================================================== */
   const normalizeFriend = (f) => {
+    if (!f) return null;
+
+    if (Array.isArray(f?.participants)) {
+      const participants = f.participants || [];
+      const other = participants.find(
+        (p) => String(p?._id || p) !== String(me?._id)
+      );
+
+      const target = other || participants[0] || null;
+      const targetId =
+        (typeof target === "object" ? target?._id : target) || null;
+
+      return {
+        _id: targetId,
+        name:
+          (typeof target === "object" ? target?.name : null) ||
+          f?.name ||
+          "Utilisateur",
+        avatar:
+          (typeof target === "object" ? target?.avatar : null) ||
+          f?.avatar ||
+          "/default-avatar.png",
+        unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
+        lastMessage: f?.lastMessage || null,
+        conversationId: f?._id || f?.conversationId || null,
+      };
+    }
+
     const userObj =
       f && typeof f.user === "object" && f.user
         ? f.user
@@ -300,6 +328,9 @@ export default function Messages() {
       name: userObj?.name || f?.name || "Utilisateur",
       avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
+      lastMessage: f?.lastMessage || null,
+      conversationId:
+        f?.conversationId || (f?.user ? f?._id || null : f?.conversationId) || null,
     };
   };
 
@@ -408,6 +439,21 @@ export default function Messages() {
     const duration = getAudioDurationSeconds(msg);
     const base = "Message vocal";
     return duration ? `${base} (${formatTime(duration)})` : base;
+  };
+
+  const getLastMessagePreview = (friend) => {
+    const msg = friend?.lastMessage;
+    if (!msg || typeof msg !== "object") return "Démarrer une conversation";
+
+    const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
+    const prefix = senderId === me?._id ? "Vous: " : "";
+
+    let content = msg.content || "";
+    if (!content && msg.type === "audio") content = "Message vocal";
+    if (!content && msg.fileUrl) content = "Fichier";
+    if (!content) content = "Message";
+
+    return `${prefix}${content}`;
   };
 
   const buildReplyData = (target) => {
@@ -538,11 +584,11 @@ export default function Messages() {
       setErrorFriends("");
 
       try {
-        const data = await fetchFriends();
+        const data = await fetchInbox();
         const raw = Array.isArray(data)
           ? data
-          : Array.isArray(data?.friends)
-          ? data.friends
+          : Array.isArray(data?.data)
+          ? data.data
           : [];
 
         const list = raw
@@ -561,7 +607,7 @@ export default function Messages() {
       } catch (err) {
         console.error("Erreur chargement amis :", err);
         if (!cancelled) {
-          setErrorFriends("Erreur chargement amis");
+          setErrorFriends("Erreur chargement conversations");
           setFriends([]);
         }
       } finally {
@@ -2148,7 +2194,7 @@ export default function Messages() {
                           )}
                         </div>
                         <div className="conversation-last-message">
-                          Démarrer une conversation
+                          {getLastMessagePreview(friend)}
                         </div>
                       </div>
 
