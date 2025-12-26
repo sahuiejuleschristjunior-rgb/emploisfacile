@@ -813,7 +813,7 @@ export default function Messages() {
       );
     });
 
-    socket.on("message_request:new", () => {
+    socket.on("message_request_received", () => {
       loadRequests();
     });
 
@@ -1101,9 +1101,9 @@ export default function Messages() {
     if (!request?._id) return;
 
     const tempConversationId = `local_request_${request._id}`;
-    const pendingUserId = request?.from?._id;
+    const pendingUserId = request?.fromUser?._id;
     const tempConversation = {
-      ...normalizeFriend({ ...request.from, _id: tempConversationId }),
+      ...normalizeFriend({ ...request.fromUser, _id: tempConversationId }),
       pendingUserId,
     };
 
@@ -2175,8 +2175,8 @@ export default function Messages() {
                 <div key={req._id} className="request-item">
                   <div className="request-main">
                     <img
-                      src={resolveUrl(req?.from?.avatar)}
-                      alt={req?.from?.name || "Utilisateur"}
+                      src={resolveUrl(req?.fromUser?.avatar)}
+                      alt={req?.fromUser?.name || "Utilisateur"}
                       className="conversation-avatar"
                       loading="lazy"
                       onError={(e) => {
@@ -2185,9 +2185,11 @@ export default function Messages() {
                     />
                     <div className="request-info">
                       <div className="conversation-name">
-                        {req?.from?.name || "Utilisateur"}
+                        {req?.fromUser?.name || "Utilisateur"}
                       </div>
-                      <div className="request-message">{req.firstMessage}</div>
+                      <div className="request-message">
+                        {req.message || "Nouvelle demande de message"}
+                      </div>
                     </div>
                   </div>
                   <div className="request-actions">

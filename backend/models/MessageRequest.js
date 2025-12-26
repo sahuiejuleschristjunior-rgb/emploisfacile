@@ -2,25 +2,24 @@ const mongoose = require("mongoose");
 
 const messageRequestSchema = new mongoose.Schema(
   {
-    from: {
+    fromUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    to: {
+    toUser: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    firstMessage: {
+    message: {
       type: String,
-      required: true,
       trim: true,
       maxlength: 500,
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "declined"],
+      enum: ["pending", "accepted", "rejected"],
       default: "pending",
     },
   },
@@ -28,8 +27,8 @@ const messageRequestSchema = new mongoose.Schema(
 );
 
 messageRequestSchema.index(
-  { from: 1, to: 1 },
-  { unique: true, background: true }
+  { fromUser: 1, toUser: 1, status: 1 },
+  { unique: true, partialFilterExpression: { status: "pending" }, background: true }
 );
 
 module.exports = mongoose.model("MessageRequest", messageRequestSchema);

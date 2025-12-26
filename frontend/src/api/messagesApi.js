@@ -19,8 +19,25 @@ export async function fetchMessageRequests() {
   return data?.data || [];
 }
 
+export async function sendMessageRequest(toUser, message) {
+  const res = await fetch(`${API_URL}/messages/request`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ toUser, message }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data?.message || data?.error || "Impossible d'envoyer la demande."
+    );
+  }
+
+  return data;
+}
+
 export async function acceptMessageRequest(id) {
-  const res = await fetch(`${API_URL}/messages/requests/${id}/accept`, {
+  const res = await fetch(`${API_URL}/messages/request/${id}/accept`, {
     method: "POST",
     headers: getAuthHeaders(),
   });
@@ -36,7 +53,7 @@ export async function acceptMessageRequest(id) {
 }
 
 export async function declineMessageRequest(id) {
-  const res = await fetch(`${API_URL}/messages/requests/${id}/decline`, {
+  const res = await fetch(`${API_URL}/messages/request/${id}/reject`, {
     method: "POST",
     headers: getAuthHeaders(),
   });
@@ -50,7 +67,7 @@ export async function declineMessageRequest(id) {
 }
 
 export async function blockMessageRequest(id) {
-  const res = await fetch(`${API_URL}/messages/requests/${id}/block`, {
+  const res = await fetch(`${API_URL}/messages/request/${id}/block`, {
     method: "POST",
     headers: getAuthHeaders(),
   });
