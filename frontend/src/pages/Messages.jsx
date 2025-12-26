@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -210,11 +210,9 @@ export default function Messages() {
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
-  const location = useLocation();
   const [searchParams] = useSearchParams();
   const highlightFromQuery = searchParams.get("highlight");
   const nonceFromQuery = searchParams.get("n");
-  const openConversationIdFromState = location.state?.openConversationId;
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -997,20 +995,6 @@ export default function Messages() {
   useEffect(() => {
     loadConversationRef.current = loadConversation;
   }, [loadConversation]);
-
-  useEffect(() => {
-    if (!openConversationIdFromState) return;
-    if (!Array.isArray(friends) || friends.length === 0) return;
-
-    const target = friends.find(
-      (c) => getFriendId(c) === String(openConversationIdFromState)
-    );
-    if (!target) return;
-
-    if (activeChat && getFriendId(activeChat) === getFriendId(target)) return;
-
-    loadConversationRef.current?.(target);
-  }, [activeChat, friends, getFriendId, openConversationIdFromState]);
 
   useEffect(() => {
     if (!token || !conversationId) return;

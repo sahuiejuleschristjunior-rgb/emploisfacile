@@ -249,11 +249,7 @@ export default function RecruiterAllApplications() {
             className="view-link"
             onClick={() =>
               nav("/messages", {
-                state: {
-                  openConversationId: candidate._id,
-                  openUserId: candidate._id,
-                  source: "new-message",
-                },
+                state: { openUserId: candidate._id },
               })
             }
           >

@@ -176,8 +176,6 @@ export default function CandidateDashboard() {
   const contactRecruiter = (recruiter) => {
     nav("/messages", {
       state: {
-        openConversationId: recruiter._id,
-        source: "new-message",
         userId: recruiter._id,
         name: recruiter.name || recruiter.companyName,
         avatar: recruiter.avatar,
