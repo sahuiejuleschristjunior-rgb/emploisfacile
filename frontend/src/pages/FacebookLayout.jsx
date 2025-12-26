@@ -55,7 +55,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [lastUnreadConversationId, setLastUnreadConversationId] = useState(null);
+  const [lastUnreadConversationId, setLastUnreadConversationId] = useState(() => {
+    try {
+      return localStorage.getItem("ef_last_unread_conv") || null;
+    } catch (err) {
+      console.error("Erreur lecture conversation récente", err);
+      return null;
+    }
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
@@ -109,6 +116,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       setUnreadMessagesCount(0);
       messageIdsRef.current.clear();
       setLastUnreadConversationId(null);
+      try {
+        localStorage.removeItem("ef_last_unread_conv");
+      } catch (err) {
+        console.error("Erreur purge conversation récente", err);
+      }
     }
   }, [location.pathname]);
 
@@ -273,6 +285,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       const conversationId = extractConversationId();
       if (conversationId) {
         setLastUnreadConversationId(conversationId);
+        try {
+          localStorage.setItem("ef_last_unread_conv", conversationId);
+        } catch (err) {
+          console.error("Erreur sauvegarde conversation récente", err);
+        }
       }
       showToast("Nouveau message reçu");
     },
