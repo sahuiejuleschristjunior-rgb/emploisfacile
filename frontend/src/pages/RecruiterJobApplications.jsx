@@ -99,6 +99,8 @@ export default function RecruiterJobApplications() {
   const contactCandidate = (candidate) => {
     nav("/messages", {
       state: {
+        openConversationId: candidate._id,
+        source: "new-message",
         userId: candidate._id,
         name: candidate.name,
         avatar: candidate.avatar,

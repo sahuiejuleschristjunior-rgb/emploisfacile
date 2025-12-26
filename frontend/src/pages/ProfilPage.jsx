@@ -368,7 +368,14 @@ export default function ProfilPage() {
               <>
                 <button
                   className="profil-btn primary"
-                  onClick={() => nav(`/messages?userId=${profileId}`)}
+                  onClick={() =>
+                    nav("/messages", {
+                      state: {
+                        openConversationId: profileId,
+                        source: "new-message",
+                      },
+                    })
+                  }
                 >
                   Message
                 </button>

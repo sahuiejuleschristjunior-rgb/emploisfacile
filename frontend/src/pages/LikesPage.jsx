@@ -165,7 +165,12 @@ function LikeCard({ user, isMe, onProfileClick, fixAvatar, navigate }) {
 
   const handleMessage = (e) => {
     e.stopPropagation();
-    navigate(`/messages?userId=${user._id}`);
+    navigate("/messages", {
+      state: {
+        openConversationId: user._id,
+        source: "new-message",
+      },
+    });
   };
 
   const handleAddFriend = (e) => {
