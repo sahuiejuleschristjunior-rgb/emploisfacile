@@ -55,7 +55,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [lastUnreadConversationId, setLastUnreadConversationId] = useState(null);
+  const [, setLastUnreadConversationId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
@@ -382,29 +382,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     return () => clearTimeout(t);
   }, [searchTerm, performSearch]);
 
-  const resolveConversationId = useCallback((entry) => {
-    if (!entry) return null;
-    return (
-      entry.conversationId ||
-      (typeof entry.conversation === "object"
-        ? entry.conversation?._id
-        : entry.conversation) ||
-      entry.from?._id ||
-      entry.from ||
-      null
-    );
-  }, []);
-
-  const getPriorityConversationId = useCallback(() => {
-    if (lastUnreadConversationId) return lastUnreadConversationId;
-
-    const unreadMessageNotif = notifList.find(
-      (n) => n?.type === "message" && !n?.read
-    );
-
-    return resolveConversationId(unreadMessageNotif);
-  }, [lastUnreadConversationId, notifList, resolveConversationId]);
-
   useEffect(() => {
     const loadStatuses = async () => {
       if (!searchResults.users || searchResults.users.length === 0) return;
@@ -612,15 +589,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   };
 
   const handleMessagesIconClick = () => {
-    const highlightConversationId = getPriorityConversationId();
-    const nonce = Date.now();
-
-    nav(
-      `/messages?highlight=${highlightConversationId || ""}&n=${nonce}`,
-      {
-        replace: false,
-      }
-    );
+    nav("/messages");
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
