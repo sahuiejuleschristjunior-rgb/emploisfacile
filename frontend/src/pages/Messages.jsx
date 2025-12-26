@@ -813,6 +813,10 @@ export default function Messages() {
       );
     });
 
+    socket.on("message_request:new", () => {
+      loadRequests();
+    });
+
     socket.on("message_read", ({ messageId, withUserId }) => {
       if (!messageId && !withUserId) return;
       setMessages((prev) =>
@@ -886,7 +890,7 @@ export default function Messages() {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activeChat, friends, token]);
+  }, [activeChat, friends, loadRequests, token]);
 
   /* =====================================================
      LOAD CONVERSATION
