@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import VideoCallOverlay from "../components/VideoCallOverlay";
@@ -210,9 +210,6 @@ export default function Messages() {
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
-  const [searchParams] = useSearchParams();
-  const highlightFromQuery = searchParams.get("highlight");
-  const nonceFromQuery = searchParams.get("n");
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -222,10 +219,6 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
-  const [highlightedConversationId, setHighlightedConversationId] = useState(null);
-  const pendingHighlightRef = useRef(null);
-  const highlightedItemRef = useRef(null);
-  const autoOpenHighlightRef = useRef(null);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
     mode: "caller",
@@ -253,10 +246,6 @@ export default function Messages() {
 
   const loadedConversationIdRef = useRef(null);
   const lastReadConversationIdRef = useRef(null);
-  const openedFromNotificationRef = useRef(
-    searchParams.get("open") || searchParams.get("userId")
-  );
-  const initialOpenHandledRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -649,79 +638,6 @@ export default function Messages() {
     return String(friend?._id || friend?.id || friend?.user?._id || "");
   }, []);
 
-  useEffect(() => {
-    if (highlightFromQuery) {
-      const id = String(highlightFromQuery);
-      pendingHighlightRef.current = id;
-      setHighlightedConversationId(id);
-    } else {
-      pendingHighlightRef.current = null;
-      setHighlightedConversationId(null);
-    }
-  }, [highlightFromQuery, nonceFromQuery]);
-
-  useEffect(() => {
-    const id = pendingHighlightRef.current;
-    if (!id) return;
-    if (!Array.isArray(friends) || friends.length === 0) return;
-
-    const exists = friends.some((c) => getFriendId(c) === id);
-    if (!exists) return;
-
-    setFriends((prev) => {
-      const pid = id;
-      const targetIndex = prev.findIndex((c) => getFriendId(c) === pid);
-      if (targetIndex === -1) return prev;
-
-      const target = prev[targetIndex];
-      const rest = prev.filter((_, i) => i !== targetIndex);
-
-      const boosted = {
-        ...target,
-        __uiNew: true,
-        __uiHighlighted: true,
-      };
-
-      return [boosted, ...rest];
-    });
-
-    setTimeout(() => {
-      const el = document.querySelector(`[data-conv-id="${id}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 120);
-
-    setTimeout(() => {
-      setFriends((prev) =>
-        prev.map((c) => {
-          const cid = getFriendId(c);
-          if (cid !== id) return c;
-          return { ...c, __uiHighlighted: false };
-        })
-      );
-    }, 2500);
-
-    pendingHighlightRef.current = null;
-  }, [friends, getFriendId]);
-
-  useEffect(() => {
-    if (!highlightFromQuery) {
-      autoOpenHighlightRef.current = null;
-      return;
-    }
-
-    const key = `${highlightFromQuery}-${nonceFromQuery || ""}`;
-    if (autoOpenHighlightRef.current === key) return;
-
-    const targetId = String(highlightFromQuery);
-    const targetConversation =
-      friends.find((c) => getFriendId(c) === targetId) || { _id: targetId };
-
-    if (!targetConversation?._id) return;
-
-    autoOpenHighlightRef.current = key;
-    loadConversationRef.current?.(targetConversation);
-  }, [friends, getFriendId, highlightFromQuery, nonceFromQuery]);
-
   /* =====================================================
      FILTER
   ===================================================== */
@@ -731,47 +647,13 @@ export default function Messages() {
     return friends.filter((f) => (f.name || "").toLowerCase().includes(q));
   }, [friends, search]);
 
-  useEffect(() => {
-    if (
-      highlightedConversationId &&
-      activeConversationIdValue &&
-      String(activeConversationIdValue) === String(highlightedConversationId)
-    ) {
-      setHighlightedConversationId(null);
-    }
-  }, [activeConversationIdValue, highlightedConversationId]);
-
   const displayedFriends = useMemo(() => {
-    const enhanced = filteredFriends.map((f) => {
-      const id = getFriendId(f);
-      const shouldHighlight =
-        f.__uiHighlighted ||
-        (highlightedConversationId && id === String(highlightedConversationId));
-
-      return {
-        ...f,
-        isHighlighted: shouldHighlight,
-        hasNewBadge: f.__uiNew || f.hasNewBadge,
-      };
-    });
-
-    const index = enhanced.findIndex((f) => f.isHighlighted);
-    if (index <= 0) return enhanced;
-
-    const target = enhanced[index];
-    const rest = enhanced.filter((_, i) => i !== index);
-    return [target, ...rest];
-  }, [filteredFriends, getFriendId, highlightedConversationId]);
-
-  useEffect(() => {
-    if (!highlightedConversationId) return;
-    if (highlightedItemRef.current) {
-      highlightedItemRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }
-  }, [displayedFriends, highlightedConversationId]);
+    return filteredFriends.map((f) => ({
+      ...f,
+      isHighlighted: false,
+      hasNewBadge: f.__uiNew || f.hasNewBadge,
+    }));
+  }, [filteredFriends]);
 
   const pinnedMessages = useMemo(() => {
     const list = messages.filter((m) => isPinnedByMe(m));
@@ -1209,49 +1091,6 @@ export default function Messages() {
       );
     }
   };
-
-  /* =====================================================
-     PRESELECT CHAT FROM URL
-  ===================================================== */
-  useEffect(() => {
-    if (initialOpenHandledRef.current) return;
-    if (lockedConversationId || activeConversationIdValue) return;
-
-    const targetId = openedFromNotificationRef.current;
-    if (!targetId || !token) return;
-
-    const existing = friends.find((f) => f._id === targetId);
-
-    const openFromParam = async () => {
-      initialOpenHandledRef.current = true;
-      let targetUser = existing;
-
-      if (!targetUser) {
-        try {
-          const res = await fetch(`${API_URL}/auth/user/${targetId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-          if (res.ok && data?._id) {
-            targetUser = normalizeFriend(data);
-            setFriends((prev) =>
-              prev.some((u) => u._id === targetUser._id)
-                ? prev
-                : [...prev, targetUser]
-            );
-          }
-        } catch (err) {
-          console.error("Erreur chargement utilisateur cible :", err);
-        }
-      }
-
-      if (targetUser) {
-        await loadConversation(targetUser);
-      }
-    };
-
-    openFromParam();
-  }, [activeConversationIdValue, friends, lockedConversationId, token]);
 
   /* =====================================================
      SEND / EDIT MESSAGE
@@ -2163,18 +2002,12 @@ export default function Messages() {
                   const convId = getFriendId(friend);
                   const isActive =
                     activeChat?._id && getFriendId(activeChat) === convId;
-                  const isHighlighted = Boolean(
-                    friend.isHighlighted || friend.__uiHighlighted
-                  );
                   const hasNewBadge = Boolean(friend.hasNewBadge || friend.__uiNew);
 
                   return (
                     <div
                       key={convId || friend._id}
-                      className={`conversation-item ${isActive ? "active" : ""} ${
-                        isHighlighted ? "highlighted is-highlighted" : ""
-                      }`}
-                      ref={isHighlighted ? highlightedItemRef : null}
+                      className={`conversation-item ${isActive ? "active" : ""}`}
                       data-conversation-id={friend._id}
                       data-conv-id={convId}
                       onClick={() => loadConversation(friend)}
@@ -2266,8 +2099,7 @@ export default function Messages() {
       <main className="messages-content">
         {!activeChat ? (
           <div className="messages-placeholder">
-            <h3>Sélectionne un ami</h3>
-            <p>Clique sur un ami pour commencer une conversation.</p>
+            <h3>Commence la conversation 👋</h3>
           </div>
         ) : (
           <div className="chat-panel">
