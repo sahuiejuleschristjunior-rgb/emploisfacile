@@ -360,6 +360,13 @@ exports.acceptMessageRequest = async (req, res) => {
       return res.status(404).json({ message: "Demande introuvable." });
     }
 
+    if (request.status !== "pending") {
+      await MessageRequest.findByIdAndDelete(id);
+      return res
+        .status(400)
+        .json({ message: "Cette demande a déjà été traitée." });
+    }
+
     const [receiver, sender] = await Promise.all([
       User.findById(userId),
       User.findById(request.from),
@@ -416,7 +423,7 @@ exports.acceptMessageRequest = async (req, res) => {
     return res.status(200).json({ success: true, data: message });
   } catch (error) {
     return res.status(500).json({
-      error: "Erreur lors de l'acceptation de la demande.",
+      message: "Impossible d'accepter la demande.",
       details: error.message,
     });
   }

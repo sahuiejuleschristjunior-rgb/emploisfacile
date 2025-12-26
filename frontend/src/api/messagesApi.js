@@ -27,7 +27,9 @@ export async function acceptMessageRequest(id) {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data?.message || "Impossible d'accepter la demande.");
+    throw new Error(
+      data?.message || data?.error || "Impossible d'accepter la demande."
+    );
   }
 
   return data;
