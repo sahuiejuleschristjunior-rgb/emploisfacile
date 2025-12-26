@@ -613,13 +613,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const handleMessagesIconClick = () => {
     const highlightConversationId = getPriorityConversationId();
+    const nonce = Date.now();
 
-    nav("/messages", {
-      state: {
-        source: "messages_icon",
-        highlightConversationId: highlightConversationId || undefined,
-      },
-    });
+    nav(
+      `/messages?highlight=${highlightConversationId || ""}&n=${nonce}`,
+      {
+        replace: false,
+      }
+    );
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);

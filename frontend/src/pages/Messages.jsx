@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -210,10 +210,9 @@ export default function Messages() {
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
-  const location = useLocation();
-  const highlightIdFromNav = location.state?.highlightConversationId;
-
   const [searchParams] = useSearchParams();
+  const highlightFromQuery = searchParams.get("highlight");
+  const nonceFromQuery = searchParams.get("n");
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -223,14 +222,8 @@ export default function Messages() {
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
-  const highlightFromNav =
-    location.state?.source === "messages_icon"
-      ? location.state?.highlightConversationId || null
-      : null;
-  const [highlightedConversationId, setHighlightedConversationId] = useState(
-    highlightFromNav
-  );
-  const [pendingHighlightId, setPendingHighlightId] = useState(null);
+  const [highlightedConversationId, setHighlightedConversationId] = useState(null);
+  const pendingHighlightRef = useRef(null);
   const highlightedItemRef = useRef(null);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
@@ -605,46 +598,63 @@ export default function Messages() {
 
   const pendingRequestsCount = requests.length;
 
-  useEffect(() => {
-    if (highlightIdFromNav) {
-      setPendingHighlightId(highlightIdFromNav);
-    }
-  }, [highlightIdFromNav]);
+  const getFriendId = useCallback((friend) => {
+    return String(friend?._id || friend?.id || friend?.user?._id || "");
+  }, []);
 
   useEffect(() => {
-    if (location.state?.source !== "messages_icon") {
+    if (highlightFromQuery) {
+      const id = String(highlightFromQuery);
+      pendingHighlightRef.current = id;
+      setHighlightedConversationId(id);
+    } else {
+      pendingHighlightRef.current = null;
       setHighlightedConversationId(null);
-      setPendingHighlightId(null);
     }
-  }, [location.state]);
+  }, [highlightFromQuery, nonceFromQuery]);
 
   useEffect(() => {
-    if (!pendingHighlightId) return;
+    const id = pendingHighlightRef.current;
+    if (!id) return;
     if (!Array.isArray(friends) || friends.length === 0) return;
 
-    setFriends((prev) => {
-      const target = prev.find(
-        (c) => String(c._id) === String(pendingHighlightId)
-      );
-      if (!target) return prev;
+    const exists = friends.some((c) => getFriendId(c) === id);
+    if (!exists) return;
 
-      return [
-        { ...target, isHighlighted: true, hasNewBadge: true },
-        ...prev.filter((c) => String(c._id) !== String(pendingHighlightId)),
-      ];
+    setFriends((prev) => {
+      const pid = id;
+      const targetIndex = prev.findIndex((c) => getFriendId(c) === pid);
+      if (targetIndex === -1) return prev;
+
+      const target = prev[targetIndex];
+      const rest = prev.filter((_, i) => i !== targetIndex);
+
+      const boosted = {
+        ...target,
+        __uiNew: true,
+        __uiHighlighted: true,
+      };
+
+      return [boosted, ...rest];
     });
 
-    setHighlightedConversationId(pendingHighlightId);
+    setTimeout(() => {
+      const el = document.querySelector(`[data-conv-id="${id}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
 
     setTimeout(() => {
-      const el = document.querySelector(
-        `[data-conversation-id="${pendingHighlightId}"]`
+      setFriends((prev) =>
+        prev.map((c) => {
+          const cid = getFriendId(c);
+          if (cid !== id) return c;
+          return { ...c, __uiHighlighted: false };
+        })
       );
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
+    }, 2500);
 
-    setPendingHighlightId(null);
-  }, [pendingHighlightId, friends]);
+    pendingHighlightRef.current = null;
+  }, [friends, getFriendId]);
 
   /* =====================================================
      FILTER
@@ -666,17 +676,26 @@ export default function Messages() {
   }, [activeConversationIdValue, highlightedConversationId]);
 
   const displayedFriends = useMemo(() => {
-    if (!highlightedConversationId) return filteredFriends;
+    const enhanced = filteredFriends.map((f) => {
+      const id = getFriendId(f);
+      const shouldHighlight =
+        f.__uiHighlighted ||
+        (highlightedConversationId && id === String(highlightedConversationId));
 
-    const index = filteredFriends.findIndex(
-      (f) => String(f._id) === String(highlightedConversationId)
-    );
-    if (index === -1) return filteredFriends;
+      return {
+        ...f,
+        isHighlighted: shouldHighlight,
+        hasNewBadge: f.__uiNew || f.hasNewBadge,
+      };
+    });
 
-    const target = { ...filteredFriends[index], isHighlighted: true };
-    const rest = filteredFriends.filter((_, i) => i !== index);
+    const index = enhanced.findIndex((f) => f.isHighlighted);
+    if (index <= 0) return enhanced;
+
+    const target = enhanced[index];
+    const rest = enhanced.filter((_, i) => i !== index);
     return [target, ...rest];
-  }, [filteredFriends, highlightedConversationId]);
+  }, [filteredFriends, getFriendId, highlightedConversationId]);
 
   useEffect(() => {
     if (!highlightedConversationId) return;
@@ -893,11 +912,16 @@ export default function Messages() {
   const loadConversation = async (user) => {
     if (!user?._id) return;
 
+    const clickedId = getFriendId(user);
     const sanitizedUser = { ...user, unreadCount: 0 };
 
     if (activeChat?._id === sanitizedUser._id) {
       setFriends((prev) =>
-        prev.map((f) => (f._id === user._id ? { ...f, unreadCount: 0 } : f))
+        prev.map((f) =>
+          getFriendId(f) === clickedId
+            ? { ...f, unreadCount: 0, __uiNew: false, hasNewBadge: false }
+            : f
+        )
       );
       setActiveChat((prev) =>
         prev?._id === sanitizedUser._id ? { ...prev, unreadCount: 0 } : sanitizedUser
@@ -907,7 +931,11 @@ export default function Messages() {
 
     setActiveChat(sanitizedUser);
     setFriends((prev) =>
-      prev.map((f) => (f._id === user._id ? { ...f, unreadCount: 0 } : f))
+      prev.map((f) =>
+        getFriendId(f) === clickedId
+          ? { ...f, unreadCount: 0, __uiNew: false, hasNewBadge: false }
+          : f
+      )
     );
     setMessages([]);
     setReplyTo(null);
@@ -2056,40 +2084,51 @@ export default function Messages() {
                   Aucune conversation pour l’instant
                 </div>
               ) : (
-                displayedFriends.map((friend) => (
-                  <div
-                    key={friend._id}
-                    className={`conversation-item ${
-                      activeChat?._id === friend._id ? "active" : ""
-                    } ${friend.isHighlighted ? "highlighted" : ""}`}
-                    ref={friend.isHighlighted ? highlightedItemRef : null}
-                    data-conversation-id={friend._id}
-                    onClick={() => loadConversation(friend)}
-                  >
-                    <img
-                      src={resolveUrl(friend.avatar)}
-                      alt={friend.name}
-                      className="conversation-avatar"
-                      loading="lazy"
-                    />
+                displayedFriends.map((friend) => {
+                  const convId = getFriendId(friend);
+                  const isActive =
+                    activeChat?._id && getFriendId(activeChat) === convId;
+                  const isHighlighted = Boolean(
+                    friend.isHighlighted || friend.__uiHighlighted
+                  );
+                  const hasNewBadge = Boolean(friend.hasNewBadge || friend.__uiNew);
 
-                    <div className="conversation-info">
-                      <div className="conversation-name">
-                        {friend.name}
-                        {friend.hasNewBadge && (
-                          <span className="conversation-new-badge">Nouveau</span>
-                        )}
+                  return (
+                    <div
+                      key={convId || friend._id}
+                      className={`conversation-item ${isActive ? "active" : ""} ${
+                        isHighlighted ? "highlighted is-highlighted" : ""
+                      }`}
+                      ref={isHighlighted ? highlightedItemRef : null}
+                      data-conversation-id={friend._id}
+                      data-conv-id={convId}
+                      onClick={() => loadConversation(friend)}
+                    >
+                      <img
+                        src={resolveUrl(friend.avatar)}
+                        alt={friend.name}
+                        className="conversation-avatar"
+                        loading="lazy"
+                      />
+
+                      <div className="conversation-info">
+                        <div className="conversation-name">
+                          {friend.name}
+                          {hasNewBadge && (
+                            <span className="conv-badge-new">Nouveau</span>
+                          )}
+                        </div>
+                        <div className="conversation-last-message">
+                          Démarrer une conversation
+                        </div>
                       </div>
-                      <div className="conversation-last-message">
-                        Démarrer une conversation
-                      </div>
+
+                      {friend.unreadCount > 0 && (
+                        <div className="conv-unread-badge">{friend.unreadCount}</div>
+                      )}
                     </div>
-
-                    {friend.unreadCount > 0 && (
-                      <div className="conv-unread-badge">{friend.unreadCount}</div>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </>
           ) : (
