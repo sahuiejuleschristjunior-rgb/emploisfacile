@@ -612,15 +612,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   };
 
   const handleMessagesIconClick = () => {
-    const highlightConversationId = getPriorityConversationId();
-    const nonce = Date.now();
-
-    nav(
-      `/messages?highlight=${highlightConversationId || ""}&n=${nonce}`,
-      {
-        replace: false,
-      }
-    );
+    nav("/messages", {
+      state: {
+        forceInboxRefresh: Date.now(),
+      },
+    });
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
@@ -1291,7 +1287,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <div>Recherche</div>
           </div>
 
-          <div className="fb-bottom-nav-item" onClick={() => nav("/messages")}>
+          <div className="fb-bottom-nav-item" onClick={handleMessagesIconClick}>
             <FBIcon name="messages" size={22} />
             <div>Messages</div>
           </div>
