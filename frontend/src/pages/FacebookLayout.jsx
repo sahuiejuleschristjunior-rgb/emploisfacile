@@ -615,16 +615,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     const highlightConversationId = getPriorityConversationId();
     const nonce = Date.now();
 
-    const params = new URLSearchParams({ n: nonce });
-
-    if (highlightConversationId) {
-      params.set("open", highlightConversationId);
-      params.set("highlight", highlightConversationId);
-    }
-
-    nav(`/messages?${params.toString()}`, {
-      replace: false,
-    });
+    nav(
+      `/messages?highlight=${highlightConversationId || ""}&n=${nonce}`,
+      {
+        replace: false,
+      }
+    );
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
