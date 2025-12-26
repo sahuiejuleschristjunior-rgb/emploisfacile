@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -176,7 +176,6 @@ export default function Messages() {
   /* =====================================================
      STATE
   ===================================================== */
-  const navigate = useNavigate();
   const [friends, setFriends] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [errorFriends, setErrorFriends] = useState("");
@@ -211,7 +210,7 @@ export default function Messages() {
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
   const [recordLocked, setRecordLocked] = useState(false);
@@ -248,6 +247,10 @@ export default function Messages() {
 
   const loadedConversationIdRef = useRef(null);
   const lastReadConversationIdRef = useRef(null);
+  const openedFromNotificationRef = useRef(
+    searchParams.get("open") || searchParams.get("userId")
+  );
+  const initialOpenHandledRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -1022,13 +1025,16 @@ export default function Messages() {
      PRESELECT CHAT FROM URL
   ===================================================== */
   useEffect(() => {
-    if (lockedConversationId) return;
-    const targetId = searchParams.get("userId");
+    if (initialOpenHandledRef.current) return;
+    if (lockedConversationId || activeConversationIdValue) return;
+
+    const targetId = openedFromNotificationRef.current;
     if (!targetId || !token) return;
 
     const existing = friends.find((f) => f._id === targetId);
 
     const openFromParam = async () => {
+      initialOpenHandledRef.current = true;
       let targetUser = existing;
 
       if (!targetUser) {
@@ -1052,16 +1058,11 @@ export default function Messages() {
 
       if (targetUser) {
         await loadConversation(targetUser);
-        setSearchParams((prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete("userId");
-          return next;
-        });
       }
     };
 
     openFromParam();
-  }, [friends, lockedConversationId, searchParams, token]);
+  }, [activeConversationIdValue, friends, lockedConversationId, token]);
 
   /* =====================================================
      SEND / EDIT MESSAGE

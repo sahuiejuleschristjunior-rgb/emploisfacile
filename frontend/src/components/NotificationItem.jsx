@@ -1,5 +1,5 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import "moment/locale/fr";
 
@@ -8,7 +8,6 @@ import {
   rejectFriendRequest,
 } from "../api/socialApi";
 import { useNotifications } from "../context/NotificationContext";
-import { useActiveConversation } from "../context/ActiveConversationContext";
 
 moment.locale("fr");
 
@@ -16,8 +15,6 @@ const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
 
 export default function NotificationItem({ notif, onHandled }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { activeConversationId, isUserTyping } = useActiveConversation() || {};
   const { removeNotifications } = useNotifications() || {};
 
   const getNotifConversationId = (item) =>
@@ -113,29 +110,14 @@ export default function NotificationItem({ notif, onHandled }) {
     if (isFriendRequest) return;
 
     const notifConversationId = getNotifConversationId(notif);
-    const matchesActiveConversation =
-      activeConversationId &&
-      notifConversationId &&
-      String(activeConversationId) === String(notifConversationId);
-    const isMessagesRoute = location.pathname.startsWith("/messages");
-    const shouldStayOnChat =
-      isMessagesRoute && (matchesActiveConversation || isUserTyping);
 
     if (notif.type === "message") {
-      if (shouldStayOnChat) {
-        removeNotifications?.(
-          (n) =>
-            n.type === "message" &&
-            String(getNotifConversationId(n)) === String(notifConversationId)
-        );
-        return;
-      }
-
-      if (notifConversationId) {
-        navigate(`/messages?userId=${notifConversationId}`);
-      } else {
-        navigate("/messages");
-      }
+      navigate(
+        notifConversationId
+          ? `/messages?open=${notifConversationId}`
+          : "/messages",
+        { replace: true }
+      );
       return;
     }
 
