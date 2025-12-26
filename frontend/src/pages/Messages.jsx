@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -210,6 +210,7 @@ export default function Messages() {
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const highlightFromQuery = searchParams.get("highlight");
   const nonceFromQuery = searchParams.get("n");
@@ -517,22 +518,26 @@ export default function Messages() {
   /* =====================================================
      LOAD FRIENDS / CONVERSATIONS
   ===================================================== */
-  useEffect(() => {
-    if (!token) {
-      setFriends([]);
-      setErrorFriends("");
-      setLoadingConversations(false);
-      return;
-    }
+  const fetchConversations = useCallback(
+    async (options = {}) => {
+      const { cancelledRef } = options;
+      const isCancelled = () => cancelledRef?.current;
 
-    if (isDirectConversation) {
-      setLoadingConversations(false);
-      return;
-    }
+      if (!token) {
+        if (isCancelled()) return;
+        setFriends([]);
+        setErrorFriends("");
+        setLoadingConversations(false);
+        return;
+      }
 
-    let cancelled = false;
+      if (isDirectConversation) {
+        if (isCancelled()) return;
+        setLoadingConversations(false);
+        return;
+      }
 
-    const loadConversations = async () => {
+      if (isCancelled()) return;
       setLoadingConversations(true);
       setErrorFriends("");
 
@@ -554,28 +559,39 @@ export default function Messages() {
             return acc;
           }, []);
 
-        if (!cancelled) {
+        if (!isCancelled()) {
           setFriends(list);
         }
       } catch (err) {
         console.error("Erreur chargement amis :", err);
-        if (!cancelled) {
+        if (!isCancelled()) {
           setErrorFriends("Erreur chargement amis");
           setFriends([]);
         }
       } finally {
-        if (!cancelled) {
+        if (!isCancelled()) {
           setLoadingConversations(false);
         }
       }
-    };
+    },
+    [isDirectConversation, token]
+  );
 
-    loadConversations();
+  useEffect(() => {
+    const cancelledRef = { current: false };
+
+    fetchConversations({ cancelledRef });
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
     };
-  }, [token, isDirectConversation]);
+  }, [fetchConversations]);
+
+  useEffect(() => {
+    if (location.state?.forceInboxRefresh) {
+      fetchConversations();
+    }
+  }, [location.state?.forceInboxRefresh, fetchConversations]);
 
   const loadRequests = useCallback(async () => {
     try {
