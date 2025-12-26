@@ -46,27 +46,38 @@ exports.sendFriendRequest = async (req, res) => {
     const userMe = await User.findById(me);
     const userOther = await User.findById(other);
 
-    if (!userOther)
+    if (!userMe || !userOther)
       return res.status(404).json({ error: "Utilisateur introuvable" });
 
-    if (userMe.blockedUsers.some((id) => id.toString() === other)) {
+    if ((userMe.blockedUsers || []).some((id) => id && id.toString() === other)) {
       return res.status(400).json({ error: "Utilisateur bloqué." });
     }
 
-    if (userOther.blockedUsers.some((id) => id.toString() === me)) {
+    if ((userOther.blockedUsers || []).some((id) => id && id.toString() === me)) {
       return res
         .status(400)
         .json({ error: "Vous avez été bloqué par cet utilisateur." });
     }
 
-    if (userMe.friends.some((f) => f.user.toString() === other))
+    if ((userMe.friends || []).some((f) => f?.user?.toString() === other))
       return res.status(400).json({ error: "Vous êtes déjà amis." });
 
-    if (userOther.friendRequestsReceived.some((id) => id.toString() === me))
+    if (
+      (userOther.friendRequestsReceived || []).some(
+        (id) => id && id.toString() === me
+      )
+    )
       return res.status(400).json({ error: "Demande déjà envoyée." });
 
-    if (userMe.friendRequestsSent.some((id) => id.toString() === other))
+    if (
+      (userMe.friendRequestsSent || []).some(
+        (id) => id && id.toString() === other
+      )
+    )
       return res.status(400).json({ error: "Demande déjà envoyée." });
+
+    userMe.friendRequestsSent = userMe.friendRequestsSent || [];
+    userOther.friendRequestsReceived = userOther.friendRequestsReceived || [];
 
     userMe.friendRequestsSent.push(other);
     userOther.friendRequestsReceived.push(me);
