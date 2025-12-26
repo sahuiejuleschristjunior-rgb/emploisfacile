@@ -209,7 +209,7 @@ export default function Messages() {
 
   const token = localStorage.getItem("token");
   const me = JSON.parse(localStorage.getItem("user"));
-  const { setActiveConversationId } = useActiveConversation() || {};
+  const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRecording, setIsRecording] = useState(false);
@@ -932,6 +932,11 @@ export default function Messages() {
     },
     [setActiveConversationId]
   );
+
+  useEffect(() => {
+    setIsUserTyping?.(false);
+    return () => setIsUserTyping?.(false);
+  }, [activeConversationIdValue, setIsUserTyping]);
 
   const handleRequestRemoval = (requestId) => {
     setRequests((prev) => prev.filter((r) => r._id !== requestId));
@@ -1706,6 +1711,7 @@ export default function Messages() {
      TYPING FLAG
   ===================================================== */
   const sendTypingFlag = (flag) => {
+    setIsUserTyping?.(Boolean(flag && activeChat));
     const targetId = getConversationTargetId();
     if (!activeChat || !targetId) return;
     socketRef.current?.emit("typing", { to: targetId, isTyping: flag });
