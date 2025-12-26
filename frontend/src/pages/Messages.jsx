@@ -211,6 +211,7 @@ export default function Messages() {
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
 
   const location = useLocation();
+  const highlightIdFromNav = location.state?.highlightConversationId;
 
   const [searchParams] = useSearchParams();
   const [isRecording, setIsRecording] = useState(false);
@@ -229,6 +230,7 @@ export default function Messages() {
   const [highlightedConversationId, setHighlightedConversationId] = useState(
     highlightFromNav
   );
+  const [pendingHighlightId, setPendingHighlightId] = useState(null);
   const highlightedItemRef = useRef(null);
   const [callOverlay, setCallOverlay] = useState({
     visible: false,
@@ -604,14 +606,45 @@ export default function Messages() {
   const pendingRequestsCount = requests.length;
 
   useEffect(() => {
-    if (location.state?.source === "messages_icon") {
-      setHighlightedConversationId(
-        location.state?.highlightConversationId || null
-      );
-    } else {
+    if (highlightIdFromNav) {
+      setPendingHighlightId(highlightIdFromNav);
+    }
+  }, [highlightIdFromNav]);
+
+  useEffect(() => {
+    if (location.state?.source !== "messages_icon") {
       setHighlightedConversationId(null);
+      setPendingHighlightId(null);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (!pendingHighlightId) return;
+    if (!Array.isArray(friends) || friends.length === 0) return;
+
+    setFriends((prev) => {
+      const target = prev.find(
+        (c) => String(c._id) === String(pendingHighlightId)
+      );
+      if (!target) return prev;
+
+      return [
+        { ...target, isHighlighted: true, hasNewBadge: true },
+        ...prev.filter((c) => String(c._id) !== String(pendingHighlightId)),
+      ];
+    });
+
+    setHighlightedConversationId(pendingHighlightId);
+
+    setTimeout(() => {
+      const el = document.querySelector(
+        `[data-conversation-id="${pendingHighlightId}"]`
+      );
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+
+    setPendingHighlightId(null);
+  }, [pendingHighlightId, friends]);
 
   /* =====================================================
      FILTER
@@ -2030,6 +2063,7 @@ export default function Messages() {
                       activeChat?._id === friend._id ? "active" : ""
                     } ${friend.isHighlighted ? "highlighted" : ""}`}
                     ref={friend.isHighlighted ? highlightedItemRef : null}
+                    data-conversation-id={friend._id}
                     onClick={() => loadConversation(friend)}
                   >
                     <img
@@ -2042,7 +2076,7 @@ export default function Messages() {
                     <div className="conversation-info">
                       <div className="conversation-name">
                         {friend.name}
-                        {friend.isHighlighted && (
+                        {friend.hasNewBadge && (
                           <span className="conversation-new-badge">Nouveau</span>
                         )}
                       </div>
