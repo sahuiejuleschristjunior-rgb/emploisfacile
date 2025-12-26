@@ -186,6 +186,8 @@ export default function Messages() {
   const [lockedConversationId, setLockedConversationId] = useState(null);
 
   const [activeChat, setActiveChat] = useState(null);
+  const activeConversation = activeChat;
+  const setActiveConversation = setActiveChat;
   const [messages, setMessages] = useState([]);
   const [loadingConversation, setLoadingConversation] = useState(false);
 
@@ -240,6 +242,9 @@ export default function Messages() {
   const audioRefs = useRef({});
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
+
+  const hasLoadedConversationRef = useRef(false);
+  const hasMarkedReadRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -781,6 +786,18 @@ export default function Messages() {
     return { conversation: conversationData, messages: messagesList };
   };
 
+  const markConversationAsRead = useCallback(
+    (id) => {
+      if (!id || !token || isLocalConversationId(id)) return;
+
+      fetch(`${API_URL}/messages/read-all/${id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    },
+    [token]
+  );
+
   const loadConversation = async (user) => {
     if (!user?._id) return;
 
@@ -815,11 +832,6 @@ export default function Messages() {
       const list = Array.isArray(data) ? data : [];
       list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setMessages(list);
-
-      fetch(`${API_URL}/messages/read-all/${targetUserId}`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
     } catch (err) {
       console.error("Erreur conversation", err);
       setMessages([]);
@@ -832,15 +844,15 @@ export default function Messages() {
   useEffect(() => {
     if (!token || !conversationId) return;
 
+    if (hasLoadedConversationRef.current) return;
+    hasLoadedConversationRef.current = true;
+
     let cancelled = false;
 
-    const loadDirectConversation = async () => {
-      try {
-        setLoadingConversation(true);
-        const { conversation, messages: convMessages } = await fetchConversationById(
-          conversationId
-        );
+    setLoadingConversation(true);
 
+    fetchConversationById(conversationId)
+      .then(({ conversation, messages: convMessages }) => {
         if (cancelled) return;
 
         const normalized = normalizeFriend(
@@ -848,7 +860,9 @@ export default function Messages() {
         );
 
         if (normalized?._id) {
-          setActiveChat((prev) => (prev?._id === normalized._id ? prev : normalized));
+          setActiveConversation((prev) =>
+            prev?._id === normalized._id ? prev : normalized
+          );
           setFriends((prev) => {
             if (prev.some((f) => f._id === normalized._id)) {
               return prev.map((f) =>
@@ -869,30 +883,30 @@ export default function Messages() {
         setReplyTo(null);
         setEditingMessage(null);
         setInput("");
-
-        const targetId = getConversationTargetId(normalized || conversation);
-        if (targetId) {
-          fetch(`${API_URL}/messages/read-all/${targetId}`, {
-            method: "PATCH",
-            headers: { Authorization: `Bearer ${token}` },
-          }).catch(() => {});
-        }
-      } catch (err) {
+      })
+      .catch((err) => {
         console.error("Erreur conversation directe", err);
-      } finally {
+      })
+      .finally(() => {
         if (!cancelled) {
           setLoadingConversation(false);
           setTimeout(() => scrollToBottom(true), 50);
         }
-      }
-    };
-
-    loadDirectConversation();
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [conversationId, token]);
+  }, [conversationId, token, setActiveConversation]);
+
+  useEffect(() => {
+    if (!token || !activeConversation) return;
+    if (hasMarkedReadRef.current) return;
+
+    hasMarkedReadRef.current = true;
+
+    markConversationAsRead(activeConversation._id);
+  }, [activeConversation, markConversationAsRead, token]);
 
   const handleRequestRemoval = (requestId) => {
     setRequests((prev) => prev.filter((r) => r._id !== requestId));
@@ -1866,7 +1880,7 @@ export default function Messages() {
   if (conversationId && loadingConversation) {
     return (
       <div className="messages-loading">
-        Ouverture de la conversation…
+        Chargement de la conversation…
       </div>
     );
   }
