@@ -6,6 +6,7 @@ import {
   IconVolumeOff,
   IconVolumeOn,
 } from "./icons/FbIcons";
+import FacebookImage from "./FacebookImage";
 import "../styles/media-renderer.css";
 
 const IMAGE_EXT = /(\.jpe?g|\.png|\.webp|\.gif|\.avif)$/i;
@@ -308,13 +309,13 @@ export default function MediaRenderer({
           {finalSrc ? <source src={finalSrc} type={mimeType || media?.mimeType} /> : null}
         </video>
       ) : (
-        <img
+        <FacebookImage
           src={finalSrc}
           alt={alt}
-          loading="lazy"
           className={`media-element ${mediaClassName} ${loaded ? "is-visible" : ""}`.trim()}
           onLoad={handleImageLoad}
           onError={handleError}
+          onClick={onClick}
         />
       )}
 
