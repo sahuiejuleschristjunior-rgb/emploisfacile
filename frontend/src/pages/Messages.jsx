@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import { fetchFriends } from "../api/socialApi";
@@ -252,6 +252,9 @@ export default function Messages() {
   const inputRef = useRef(null);
   const messageRefs = useRef({});
   const [typingState, setTypingState] = useState({});
+
+  const { conversationId } = useParams();
+  const isDirectConversation = Boolean(conversationId);
 
   const lockedConversationRef = useRef(null);
   useEffect(() => {
@@ -506,6 +509,11 @@ export default function Messages() {
       return;
     }
 
+    if (isDirectConversation) {
+      setLoadingConversations(false);
+      return;
+    }
+
     let cancelled = false;
 
     const loadConversations = async () => {
@@ -551,7 +559,7 @@ export default function Messages() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, isDirectConversation]);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -747,6 +755,32 @@ export default function Messages() {
   /* =====================================================
      LOAD CONVERSATION
   ===================================================== */
+  const fetchConversationById = async (id) => {
+    const res = await fetch(`${API_URL}/messages/conversation/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json().catch(() => ({}));
+
+    const conversationData =
+      data?.conversation ||
+      data?.data?.conversation ||
+      data?.user ||
+      data?.targetUser ||
+      null;
+
+    const messagesList = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.messages)
+      ? data.messages
+      : Array.isArray(data?.data?.messages)
+      ? data.data.messages
+      : Array.isArray(data?.data)
+      ? data.data
+      : [];
+
+    return { conversation: conversationData, messages: messagesList };
+  };
+
   const loadConversation = async (user) => {
     if (!user?._id) return;
 
@@ -794,6 +828,71 @@ export default function Messages() {
       setTimeout(() => scrollToBottom(true), 50);
     }
   };
+
+  useEffect(() => {
+    if (!token || !conversationId) return;
+
+    let cancelled = false;
+
+    const loadDirectConversation = async () => {
+      try {
+        setLoadingConversation(true);
+        const { conversation, messages: convMessages } = await fetchConversationById(
+          conversationId
+        );
+
+        if (cancelled) return;
+
+        const normalized = normalizeFriend(
+          conversation || { _id: conversationId, name: conversation?.name || "Conversation" }
+        );
+
+        if (normalized?._id) {
+          setActiveChat((prev) => (prev?._id === normalized._id ? prev : normalized));
+          setFriends((prev) => {
+            if (prev.some((f) => f._id === normalized._id)) {
+              return prev.map((f) =>
+                f._id === normalized._id ? { ...f, unreadCount: 0 } : f
+              );
+            }
+            return [...prev, { ...normalized, unreadCount: 0 }];
+          });
+        }
+
+        if (Array.isArray(convMessages)) {
+          const sorted = [...convMessages].sort(
+            (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+          );
+          setMessages(sorted);
+        }
+
+        setReplyTo(null);
+        setEditingMessage(null);
+        setInput("");
+
+        const targetId = getConversationTargetId(normalized || conversation);
+        if (targetId) {
+          fetch(`${API_URL}/messages/read-all/${targetId}`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error("Erreur conversation directe", err);
+      } finally {
+        if (!cancelled) {
+          setLoadingConversation(false);
+          setTimeout(() => scrollToBottom(true), 50);
+        }
+      }
+    };
+
+    loadDirectConversation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, token]);
 
   const handleRequestRemoval = (requestId) => {
     setRequests((prev) => prev.filter((r) => r._id !== requestId));
@@ -1764,6 +1863,14 @@ export default function Messages() {
   /* =====================================================
      UI
   ===================================================== */
+  if (conversationId && loadingConversation) {
+    return (
+      <div className="messages-loading">
+        Ouverture de la conversation…
+      </div>
+    );
+  }
+
   return (
     <div className={`messages-page ${activeChat ? "chat-open" : ""}`}>
       {/* ================= LEFT — AMIS ================= */}
@@ -1812,7 +1919,7 @@ export default function Messages() {
                 </div>
               ) : errorFriends ? (
                 <div className="messages-empty">{errorFriends}</div>
-              ) : filteredFriends.length === 0 ? (
+              ) : filteredFriends.length === 0 && !isDirectConversation ? (
                 <div className="messages-empty">
                   Aucune conversation pour l’instant
                 </div>
