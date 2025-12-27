@@ -264,9 +264,11 @@ export default function Messages() {
   const [searchParams] = useSearchParams();
   const locationState = location.state || {};
   const openConversationIdFromSearch = searchParams.get("open");
+  const highlightConversationIdFromSearch = searchParams.get("highlight");
   const openConversationId =
     locationState.openConversationId || openConversationIdFromSearch || null;
-  const highlightConversationId = locationState.highlightConversationId || null;
+  const highlightConversationId =
+    locationState.highlightConversationId || highlightConversationIdFromSearch || null;
   const navigationSource =
     locationState.source || (openConversationIdFromSearch ? "notification" : null);
 
@@ -678,10 +680,17 @@ export default function Messages() {
 
       setFriends((prev) => {
         const idx = prev.findIndex((f) => getFriendId(f) === conversationKey);
-        if (idx === -1) return prev;
+        const target =
+          idx !== -1
+            ? prev[idx]
+            : normalizeFriend({
+                _id: conversationKey,
+                name: "Conversation",
+              });
+
+        if (!target?._id) return prev;
 
         updated = true;
-        const target = prev[idx];
         const unreadCount =
           typeof target.unreadCount === "number" && target.unreadCount > 0
             ? target.unreadCount
@@ -706,7 +715,7 @@ export default function Messages() {
       setHighlightedConversationId(conversationKey);
       return true;
     },
-    [getFriendId]
+    [getFriendId, normalizeFriend]
   );
 
   /* =====================================================
@@ -2217,7 +2226,7 @@ export default function Messages() {
                         <div className="conversation-name">
                           {friend.name}
                           {hasNewBadge && (
-                            <span className="conv-badge-new">Nouveau message</span>
+                            <span className="conv-badge-new">Nouveau</span>
                           )}
                         </div>
                         <div className="conversation-last-message">
