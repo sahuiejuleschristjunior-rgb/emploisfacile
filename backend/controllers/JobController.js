@@ -72,22 +72,33 @@ exports.searchJobs = async (req, res) => {
             { isActive: { $ne: false } }
         ];
 
-        if (q?.trim()) {
-            const textRegex = buildRegex(q.trim());
+        const orConditions = [];
+        const normalizedQ = q?.trim();
+        const isNumeric = normalizedQ && !isNaN(Number(normalizedQ));
 
-            andConditions.push({
-                $or: [
-                    { title: textRegex },
-                    { description: textRegex },
-                    { city: textRegex },
-                    { country: textRegex },
-                    { category: textRegex },
-                    { location: textRegex },
-                    { "company.name": textRegex },
-                    { "recruiter.name": textRegex },
-                    { "recruiter.companyName": textRegex }
-                ]
-            });
+        if (normalizedQ) {
+            const textRegex = { $regex: normalizedQ, $options: "i" };
+
+            orConditions.push(
+                { title: textRegex },
+                { description: textRegex },
+                { city: textRegex },
+                { country: textRegex },
+                { category: textRegex },
+                { location: textRegex },
+                { "company.name": textRegex },
+                { "recruiter.name": textRegex },
+                { "recruiter.companyName": textRegex },
+                { contractType: { $regex: `^${escapeRegex(normalizedQ)}$`, $options: "i" } }
+            );
+
+            if (isNumeric) {
+                const salaryNumber = Number(normalizedQ);
+                orConditions.push({ salary: salaryNumber });
+                orConditions.push({ salary: { $gte: salaryNumber } });
+            }
+
+            andConditions.push({ $or: orConditions });
         }
 
         if (city?.trim()) {
