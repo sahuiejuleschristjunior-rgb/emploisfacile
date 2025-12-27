@@ -459,6 +459,25 @@ export default function Messages() {
     return `${prefix}${content}`;
   };
 
+  const conversationHasUnread = useCallback((conversation) => {
+    if (!conversation) return false;
+
+    const count =
+      typeof conversation.unreadCount === "number" ? conversation.unreadCount : 0;
+    const lastMessageUnread =
+      conversation?.lastMessage && conversation.lastMessage.isRead === false;
+
+    return count > 0 || Boolean(lastMessageUnread);
+  }, []);
+
+  const getReadLastMessage = useCallback((conversation) => {
+    if (!conversation?.lastMessage) return conversation?.lastMessage || null;
+
+    return conversation.lastMessage.isRead === false
+      ? { ...conversation.lastMessage, isRead: true }
+      : conversation.lastMessage;
+  }, []);
+
   const buildReplyData = (target) => {
     if (!target?._id) return { replyId: null, preview: null };
 
@@ -720,12 +739,21 @@ export default function Messages() {
   }, [friends, search]);
 
   const displayedFriends = useMemo(() => {
-    return filteredFriends.map((f) => ({
+    const mapped = filteredFriends.map((f, index) => ({
       ...f,
       isHighlighted: Boolean(f.isHighlighted || f.__uiHighlight),
       hasNewBadge: f.__uiNew || f.hasNewBadge,
+      hasUnread: conversationHasUnread(f),
+      __sortIndex: index,
     }));
-  }, [filteredFriends]);
+
+    mapped.sort((a, b) => {
+      if (a.hasUnread === b.hasUnread) return a.__sortIndex - b.__sortIndex;
+      return a.hasUnread ? -1 : 1;
+    });
+
+    return mapped.map(({ __sortIndex, ...rest }) => rest);
+  }, [conversationHasUnread, filteredFriends]);
 
   useEffect(() => {
     if (!highlightedConversationId) return undefined;
@@ -962,18 +990,30 @@ export default function Messages() {
     if (!user?._id) return;
 
     const clickedId = getFriendId(user);
-    const sanitizedUser = { ...user, unreadCount: 0 };
+    const sanitizedUser = {
+      ...user,
+      unreadCount: 0,
+      lastMessage: getReadLastMessage(user),
+    };
 
     if (activeChat?._id === sanitizedUser._id) {
       setFriends((prev) =>
         prev.map((f) =>
           getFriendId(f) === clickedId
-            ? { ...f, unreadCount: 0, __uiNew: false, hasNewBadge: false }
+            ? {
+                ...f,
+                unreadCount: 0,
+                lastMessage: getReadLastMessage(f),
+                __uiNew: false,
+                hasNewBadge: false,
+              }
             : f
         )
       );
       setActiveChat((prev) =>
-        prev?._id === sanitizedUser._id ? { ...prev, unreadCount: 0 } : sanitizedUser
+        prev?._id === sanitizedUser._id
+          ? { ...prev, unreadCount: 0, lastMessage: getReadLastMessage(prev) }
+          : sanitizedUser
       );
       return;
     }
@@ -985,6 +1025,7 @@ export default function Messages() {
           ? {
               ...f,
               unreadCount: 0,
+              lastMessage: getReadLastMessage(f),
               __uiNew: false,
               hasNewBadge: false,
               __uiHighlight: false,
@@ -2204,7 +2245,7 @@ export default function Messages() {
                   const convId = getFriendId(friend);
                   const isActive =
                     activeChat?._id && getFriendId(activeChat) === convId;
-                  const hasNewBadge = Boolean(friend.hasNewBadge || friend.__uiNew);
+                  const hasUnread = friend.hasUnread ?? conversationHasUnread(friend);
                   const isHighlighted = Boolean(friend.isHighlighted || friend.__uiHighlight);
 
                   return (
@@ -2227,9 +2268,7 @@ export default function Messages() {
                       <div className="conversation-info">
                         <div className="conversation-name">
                           {friend.name}
-                          {hasNewBadge && (
-                            <span className="conv-badge-new">Nouveau message</span>
-                          )}
+                          {hasUnread && <span className="inbox-badge-new">Nouveau</span>}
                         </div>
                         <div className="conversation-last-message">
                           {getLastMessagePreview(friend)}
