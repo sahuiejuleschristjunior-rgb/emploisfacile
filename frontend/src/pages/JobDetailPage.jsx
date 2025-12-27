@@ -12,7 +12,7 @@ export default function JobDetailPage() {
   const [feedback, setFeedback] = useState("");
 
   const token = localStorage.getItem("token");
-  const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const {
     appliedSet,
@@ -33,7 +33,6 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     fetchJob();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   const formatDate = (value) => {
@@ -63,24 +62,38 @@ export default function JobDetailPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+
+      const res = await fetch(`${API_URL}/jobs`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || "Erreur lors du chargement de l'offre.");
+        throw new Error("Impossible de charger l'offre");
       }
 
       const data = await res.json();
-      const loadedJob = data.job || data.data || data;
-      setJob(loadedJob || null);
-      registerAppliedFromJobs(loadedJob ? [loadedJob] : []);
+      let jobList = [];
+
+      if (Array.isArray(data)) jobList = data;
+      else if (Array.isArray(data.jobs)) jobList = data.jobs;
+      else if (Array.isArray(data.data)) jobList = data.data;
+
+      const foundJob = jobList.find((item) => item?._id === jobId || item?.id === jobId);
+
+      if (!foundJob) {
+        setError("Offre introuvable");
+        setJob(null);
+        return;
+      }
+
+      setJob(foundJob);
+      registerAppliedFromJobs([foundJob]);
     } catch (e) {
       console.log("Erreur récupération job :", e);
-      setError("Erreur lors du chargement de l'offre.");
+      setError("Impossible de charger l'offre");
+      setJob(null);
     } finally {
       setLoading(false);
     }
@@ -108,7 +121,7 @@ export default function JobDetailPage() {
             ← Retour
           </button>
           <h1 className="job-detail-title" style={{ marginTop: 20 }}>
-            {error || "Aucune offre trouvée"}
+            {error || "Offre introuvable"}
           </h1>
         </div>
       </div>
