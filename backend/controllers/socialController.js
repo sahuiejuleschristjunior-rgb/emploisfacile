@@ -91,6 +91,9 @@ exports.sendFriendRequest = async (req, res) => {
       text: "Vous avez reçu une demande d’ami.",
     });
 
+    // 🔔 Notifier immédiatement l’autre utilisateur pour mettre à jour son icône Relations
+    getIO().to(String(other)).emit("friend:update", { friend: me });
+
     res.json({ success: true, message: "Demande d'ami envoyée." });
   } catch (err) {
     console.error("sendFriendRequest:", err);
