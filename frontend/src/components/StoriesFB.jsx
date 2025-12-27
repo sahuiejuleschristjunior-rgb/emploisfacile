@@ -152,18 +152,17 @@ export default function StoriesFB() {
         />
         
         {/* 2. CARTE CRÉATRICE */}
-        <div 
+        <div
           className={`fb-story fb-story-create ${isUploading ? 'is-uploading' : ''}`}
           onClick={handleCreateStoryClick}
         >
-          <div
-            className="fb-story-create-img"
-            style={{
-              backgroundImage: currentUser.avatar
-                ? `url(${getImageUrl(currentUser.avatar)})`
-                : undefined,
-            }}
-          ></div>
+          <div className="story-circle create-story-circle">
+            <img
+              src={getImageUrl(currentUser?.avatar) || "/default-avatar.png"}
+              alt="Votre avatar"
+              loading="lazy"
+            />
+          </div>
           <div className="fb-story-create-btn">
             {isUploading ? "Envoi..." : "Créer"}
           </div>
@@ -177,24 +176,40 @@ export default function StoriesFB() {
                 <div className="fb-story-skeleton-text" />
               </div>
             ))
-          : stories.map((s, index) => (
-              <div
-                key={s._id}
-                className="fb-story"
-                onClick={(e) => openStory(index, e)}
-              >
-                {/* 💥 CORRECTION DE L'IMAGE : Utilisation de getImageUrl */}
-                <img
-                    src={getImageUrl(s.media.url)}
-                    className="fb-story-img"
-                    alt={s.user.name || "Story"}
-                    loading="lazy"
-                />
-                {/* ⚠️ NOTE : Si vous avez un avatar de l'auteur dans 's.user.avatar',
-                   vous devriez l'afficher ici en utilisant getAvatarStyle comme icône */}
-                <div className="fb-story-user">{s.user.name || "Utilisateur"}</div>
-              </div>
-            ))}
+          : stories.map((s, index) => {
+              const mediaType = s?.media?.type;
+              const mediaUrl =
+                mediaType === "image"
+                  ? s?.media?.url
+                  : mediaType === "video"
+                    ? s?.media?.thumbnail || s?.media?.url
+                    : s?.media?.url;
+
+              const avatarUrl = s?.user?.avatar;
+              const hasStoryMedia = Boolean(mediaUrl);
+              const circleImage = hasStoryMedia
+                ? getImageUrl(mediaUrl)
+                : getImageUrl(avatarUrl) || "/default-avatar.png";
+
+              return (
+                <div
+                  key={s._id}
+                  className="fb-story"
+                  onClick={(e) => openStory(index, e)}
+                >
+                  <div
+                    className={`story-circle ${hasStoryMedia ? "has-story" : "no-story"}`}
+                  >
+                    <img
+                      src={circleImage}
+                      alt={s?.user?.name || "Story"}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="fb-story-user">{s.user.name || "Utilisateur"}</div>
+                </div>
+              );
+            })}
 
       </div>
       
