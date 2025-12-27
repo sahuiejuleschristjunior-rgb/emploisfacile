@@ -97,52 +97,62 @@
 /* === STORIES === */
 
 .stories-row {
-  width: 100%;
-  max-width: 720px;
   display: flex;
-  overflow-x: auto;
   gap: 10px;
-  padding: 6px 2px 12px;
-  margin-bottom: 10px;
+  overflow-x: auto;
+  padding: 10px 12px;
+  scrollbar-width: none;
 }
+
 .stories-row::-webkit-scrollbar {
-  height: 4px;
-}
-.stories-row::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
-  border-radius: 999px;
+  display: none;
 }
 
 .story-card {
-  min-width: 72px;
-  max-width: 72px;
+  width: 96px;
+  height: 96px;
+  background: #18191a;
+  border-radius: 10px;
+  flex-shrink: 0;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #e5e7eb;
+  justify-content: center;
+  position: relative;
 }
 
 .story-avatar-wrap {
-  padding: 2px;
-  border-radius: 999px;
-  background: conic-gradient(from 180deg, #f97316, #ec4899, #6366f1, #22c55e, #f97316);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .story-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid #1877f2;
+  object-fit: cover;
   background-size: cover;
   background-position: center;
-  border: 2px solid #020617;
+  background-repeat: no-repeat;
 }
+
 .story-user {
-  max-width: 72px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e4e6eb;
   text-align: center;
-  white-space: nowrap;
+  max-width: 90%;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-story .story-avatar {
+  border-style: dashed;
 }
 
 /* === POSTS === */
