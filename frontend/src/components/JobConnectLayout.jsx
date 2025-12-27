@@ -45,41 +45,43 @@ export default function JobConnectLayout({ user, onLogout, children }) {
 
       <main className="cd-main">
         <header className="cd-topbar">
-          <div className="topbar-left">
-            <div className="topbar-nav">
-              <button
-                className="topbar-icon"
-                aria-label="Aller à l'accueil"
-                onClick={() => nav("/fb")}
-                type="button"
-              >
-                🏠
-              </button>
-              <button
-                className="topbar-icon"
-                aria-label="Voir les offres"
-                onClick={() => nav("/emplois")}
-                type="button"
-              >
-                💼
-              </button>
-            </div>
+          <div className="cd-topbar-content">
+            <div className="topbar-left">
+              <div className="topbar-nav">
+                <button
+                  className="topbar-icon"
+                  aria-label="Aller à l'accueil"
+                  onClick={() => nav("/fb")}
+                  type="button"
+                >
+                  🏠
+                </button>
+                <button
+                  className="topbar-icon"
+                  aria-label="Voir les offres"
+                  onClick={() => nav("/emplois")}
+                  type="button"
+                >
+                  💼
+                </button>
+              </div>
 
-            <p className="eyebrow">Espace candidat</p>
-            <h2>Bonjour {user?.name || "!"}</h2>
-          </div>
-          <div className="topbar-actions">
-            <button
-              className="notif-btn mobile-only"
-              aria-label="Ouvrir le menu"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-              ☰
-            </button>
-            <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
-              🔔
-            </button>
-            <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "C"}</div>
+              <p className="eyebrow">Espace candidat</p>
+              <h2>Bonjour {user?.name || "!"}</h2>
+            </div>
+            <div className="topbar-actions">
+              <button
+                className="notif-btn mobile-only"
+                aria-label="Ouvrir le menu"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                ☰
+              </button>
+              <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
+                🔔
+              </button>
+              <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "C"}</div>
+            </div>
           </div>
         </header>
 
