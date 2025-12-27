@@ -267,10 +267,8 @@ export default function Messages() {
   const openConversationId =
     locationState.openConversationId || openConversationIdFromSearch || null;
   const highlightConversationId = locationState.highlightConversationId || null;
-  const navigationSourceRaw =
-    locationState.source || (openConversationIdFromSearch ? "notification" : null);
   const navigationSource =
-    navigationSourceRaw === "messages_icon" ? "message-icon" : navigationSourceRaw;
+    locationState.source || (openConversationIdFromSearch ? "notification" : null);
 
   const { conversationId } = useParams();
   const isDirectConversation = Boolean(conversationId);
@@ -745,7 +743,7 @@ export default function Messages() {
         )
       );
       setHighlightedConversationId(null);
-    }, 2800);
+    }, 2600);
 
     return () => {
       clearTimeout(resetTimer);
@@ -1161,7 +1159,7 @@ export default function Messages() {
       return;
     }
 
-    if (navigationSource === "message-icon" && highlightConversationId) {
+    if (navigationSource === "messages_icon" && highlightConversationId) {
       if (loadingConversations) return;
       const applied = applyHighlightNavigationState(highlightConversationId);
       if (applied) {
@@ -2219,7 +2217,7 @@ export default function Messages() {
                         <div className="conversation-name">
                           {friend.name}
                           {hasNewBadge && (
-                            <span className="conv-badge-new">Nouveau</span>
+                            <span className="conv-badge-new">Nouveau message</span>
                           )}
                         </div>
                         <div className="conversation-last-message">
