@@ -266,7 +266,7 @@ body {
 }
 
 .content {
-  padding: calc(var(--candidate-header-height) + 12px) 32px 44px;
+  padding: var(--candidate-header-height) 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -1001,6 +1001,10 @@ body {
 
   .content {
     padding: var(--candidate-header-height) 16px 16px;
+  }
+
+  .hero {
+    background: var(--card);
   }
 
   .cd-topbar {
