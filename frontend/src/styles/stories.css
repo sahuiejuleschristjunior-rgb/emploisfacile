@@ -21,7 +21,7 @@
   width: 96px;
   height: 96px;
   min-width: 96px;
-  background: #111318;
+  background: var(--fb-bg-card); /* copied from FacebookFeed card bg */
   border-radius: 14px;
   border: 1px solid #262933;
   display: flex;
@@ -83,6 +83,53 @@
 
 /* 🧼 EMPÊCHE L’ANCIEN STYLE */
 .fb-story > img,
-.fb-story > span {
-  display: block;
+  .fb-story > span {
+    display: block;
+  }
+
+/* Skeleton loader (stories) */
+.fb-story-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.fb-story-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0)
+  );
+  transform: translateX(-100%);
+  animation: fb-story-shimmer 1.5s infinite;
+}
+
+.fb-story-skeleton-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2a2d33;
+  border: 3px solid #2f3338;
+}
+
+.fb-story-skeleton-text {
+  width: 60%;
+  height: 12px;
+  border-radius: 6px;
+  background: #2a2d33;
+}
+
+@keyframes fb-story-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }

@@ -1,5 +1,5 @@
 
-:root { --fb-bg-card: #242526; }
+:root { --fb-bg-card: #1c1e21; }
 /* ================================
    WRAPPER GLOBAL DU FEED
 ================================ */
@@ -24,7 +24,7 @@
    CARTE DU POST (sans arrondis)
 ================================ */
 .fb-post {
-  background: #1c1e21;
+  background: var(--fb-bg-card);
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 16px;
