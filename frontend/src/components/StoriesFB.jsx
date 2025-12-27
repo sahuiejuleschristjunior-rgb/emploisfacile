@@ -1,16 +1,25 @@
 // src/components/StoriesFB.jsx (VERSION INTÉGRALE ET CORRIGÉE)
 
-import { useState, useRef, useEffect } from "react"; 
-import StoriesViewer from "./StoriesViewer"; 
-import "./../styles/stories.css"; 
+import { useState, useRef, useEffect } from "react";
+import StoriesViewer from "./StoriesViewer";
+import "./../styles/stories.css";
 // 💥 NOUVEL IMPORT : La fonction pour générer l'URL complète
-import { getImageUrl } from "../utils/imageUtils"; 
+import { getImageUrl } from "../utils/imageUtils";
 
 export default function StoriesFB() {
   const [isUploading, setIsUploading] = useState(false);
   const [stories, setStories] = useState([]);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [startIndex, setStartIndex] = useState(0); 
+  const [startIndex, setStartIndex] = useState(0);
+
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user")) || {};
+    } catch (e) {
+      console.warn("Impossible de parser l'utilisateur depuis le localStorage", e);
+      return {};
+    }
+  })();
   
   const fileInputRef = useRef(null); 
 
@@ -142,12 +151,16 @@ export default function StoriesFB() {
         {/* 2. CARTE CRÉATRICE */}
         <div 
           className={`fb-story fb-story-create ${isUploading ? 'is-uploading' : ''}`}
-          onClick={handleCreateStoryClick} 
+          onClick={handleCreateStoryClick}
         >
-          <div className="fb-story-create-img">
-            {/* Si l'utilisateur a un avatar, vous pourriez l'afficher ici pour la carte "Créer" */}
-            {/* ... */}
-          </div>
+          <div
+            className="fb-story-create-img"
+            style={{
+              backgroundImage: currentUser.avatar
+                ? `url(${getImageUrl(currentUser.avatar)})`
+                : undefined,
+            }}
+          ></div>
           <div className="fb-story-create-btn">
             {isUploading ? "Envoi..." : "Créer"}
           </div>

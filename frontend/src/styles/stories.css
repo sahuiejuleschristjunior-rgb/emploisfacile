@@ -2,12 +2,14 @@
 
 .fb-stories-container {
   display: flex;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 12px 14px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  align-items: stretch;
 }
 
 .fb-stories-container::-webkit-scrollbar {
@@ -19,15 +21,23 @@
   width: 96px;
   height: 96px;
   min-width: 96px;
-  background: #18191a;
-  border-radius: 12px;
+  background: #111318;
+  border-radius: 14px;
+  border: 1px solid #262933;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   flex-shrink: 0;
   position: relative;
   cursor: pointer;
+  overflow: hidden;
+}
+
+.fb-story-create {
+  border-style: dashed;
+  border-color: #1877f2;
 }
 
 /* 🔥 AVATAR CENTRÉ */
@@ -43,6 +53,7 @@
   background-position: center;
   background-size: cover;
   flex-shrink: 0;
+  display: block;
 }
 
 .fb-story-create-img {
@@ -61,6 +72,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 /* 🔵 STORY CRÉER */
