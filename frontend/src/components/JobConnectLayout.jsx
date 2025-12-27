@@ -19,12 +19,15 @@ export default function JobConnectLayout({ user, onLogout, children }) {
   ];
 
   useEffect(() => {
-    document.body.style.overflow = sidebarOpen ? "hidden" : "";
+    document.documentElement.classList.add("dashboard-locked");
+    document.body.classList.add("dashboard-locked");
 
     return () => {
-      document.body.style.overflow = "";
+      document.documentElement.classList.remove("dashboard-locked");
+      document.body.classList.remove("dashboard-locked");
+      document.body.style.removeProperty("overflow");
     };
-  }, [sidebarOpen]);
+  }, []);
 
   return (
     <div className="candidate-dashboard">

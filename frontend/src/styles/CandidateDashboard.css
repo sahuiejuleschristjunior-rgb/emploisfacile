@@ -25,6 +25,12 @@ body {
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+html.dashboard-locked,
+body.dashboard-locked {
+  height: 100%;
+  overflow: hidden;
+}
+
 .candidate-dashboard {
   min-height: 100vh;
   background: var(--bg);
@@ -266,13 +272,16 @@ body {
 }
 
 .content {
-  padding: var(--candidate-header-height) 32px 44px;
+  position: relative;
+  margin-top: var(--candidate-header-height);
+  padding: 16px 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   flex: 1;
+  height: calc(100vh - var(--candidate-header-height));
   overflow-y: auto;
-  height: 100%;
+  overflow-x: hidden;
 }
 
 .hero {
@@ -1000,7 +1009,9 @@ body {
   }
 
   .content {
-    padding: var(--candidate-header-height) 16px 16px;
+    margin-top: var(--candidate-header-height);
+    padding: 12px 16px 16px;
+    height: calc(100vh - var(--candidate-header-height));
   }
 
   .hero {
