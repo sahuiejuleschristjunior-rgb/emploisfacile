@@ -11,6 +11,11 @@ html {
     sans-serif;
 }
 
+:root {
+  --feed-card-bg: #0b0b0b;
+  --feed-card-border: #1f2933;
+}
+
 .feed-wrapper {
   min-height: 100vh;
   background: #000;
@@ -538,9 +543,9 @@ html {
 }
 
 .feed-post-card {
-  background: #0b0b0b;
+  background: var(--feed-card-bg);
   border-radius: 18px;
-  border: 1px solid #1f2933;
+  border: 1px solid var(--feed-card-border);
   padding: 12px 14px;
   margin-bottom: 14px;
   box-shadow: 0 18px 35px rgba(0, 0, 0, 0.6);
