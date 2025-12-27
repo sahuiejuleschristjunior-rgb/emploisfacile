@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Toast from "./Toast";
+import GlobalFeedbackModal from "./GlobalFeedbackModal";
 import "../styles/JobFeed.css";
 
 export default function JobFeed() {
@@ -9,7 +9,8 @@ export default function JobFeed() {
   const [error, setError] = useState(null);
   const [applyingJobId, setApplyingJobId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [toast, setToast] = useState({ visible: false, message: "", type: "info" });
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("jobfeed-dark-mode") === "true";
   });
@@ -71,11 +72,10 @@ export default function JobFeed() {
     localStorage.setItem("jobfeed-dark-mode", darkMode);
   }, [darkMode]);
 
-  const showToast = (message, type = "info") => {
-    setToast({ visible: true, message, type });
+  const openFeedback = (message) => {
+    setFeedbackMessage(message);
+    setFeedbackOpen(true);
   };
-
-  const hideToast = () => setToast((prev) => ({ ...prev, visible: false }));
 
   const loadJobs = async () => {
     setLoading(true);
@@ -112,10 +112,15 @@ export default function JobFeed() {
      POSTULER À UNE OFFRE
   ====================================================== */
   const handleApply = async (jobId, jobTitle) => {
+    const targetJob = jobs.find((job) => job._id === jobId);
+    if (targetJob?.hasApplied) {
+      openFeedback("Vous avez déjà postulé à cette offre");
+      return;
+    }
+
     if (!window.confirm(`Voulez-vous postuler pour "${jobTitle}" ?`)) return;
 
     setApplyingJobId(jobId);
-    hideToast();
 
     try {
       const res = await fetch(`${API_URL}/applications`, {
@@ -141,7 +146,7 @@ export default function JobFeed() {
         )
       );
 
-      showToast("Votre candidature a bien été envoyée", "success");
+      openFeedback("Votre candidature a bien été envoyée");
     } catch (err) {
       console.error("APPLY ERROR:", err);
       const alreadyApplied =
@@ -153,11 +158,11 @@ export default function JobFeed() {
             job._id === jobId ? { ...job, hasApplied: true } : job
           )
         );
-        showToast("Vous avez déjà postulé à cette offre", "info");
+        openFeedback("Vous avez déjà postulé à cette offre");
         return;
       }
 
-      showToast(err.message || "Erreur lors de l'envoi de la candidature.", "error");
+      openFeedback(err.message || "Erreur lors de l'envoi de la candidature.");
     } finally {
       setApplyingJobId(null);
     }
@@ -397,11 +402,10 @@ export default function JobFeed() {
         </aside>
       </div>
 
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        visible={toast.visible}
-        onClose={hideToast}
+      <GlobalFeedbackModal
+        open={feedbackOpen}
+        message={feedbackMessage}
+        onClose={() => setFeedbackOpen(false)}
       />
     </div>
   );
