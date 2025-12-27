@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from "../api/config";
 
 export default function useFriendRequests() {
   const [requests, setRequests] = useState([]);

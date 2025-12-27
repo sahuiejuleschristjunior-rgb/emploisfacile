@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { API_URL } from "../api/config";
 import useFriendRequests from "../hooks/useFriendRequests";
 import { changeFriendCategory } from "../api/socialApi";
 import "../styles/relations.css";
-
-const API_URL = import.meta.env.VITE_API_URL;
 
 /* ======================================================
    🔥 FIX AVATAR (SÉCURISÉ)
