@@ -247,6 +247,7 @@ export default function Messages() {
 
   const loadedConversationIdRef = useRef(null);
   const lastReadConversationIdRef = useRef(null);
+  const userInteractedRef = useRef(false);
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
@@ -1025,6 +1026,11 @@ export default function Messages() {
     }
   };
 
+  const handleConversationClick = (user) => {
+    userInteractedRef.current = true;
+    loadConversation(user);
+  };
+
   const loadConversationRef = useRef(loadConversation);
   useEffect(() => {
     loadConversationRef.current = loadConversation;
@@ -1088,10 +1094,16 @@ export default function Messages() {
     };
   }, [conversationId, token, setActiveConversation]);
 
-  useEffect(() => {
-    const navigationSignature = `${navigationSource || "none"}|${openConversationId || ""}|${
+  const initialNavigationSignatureRef = useRef(
+    `${navigationSource || "none"}|${openConversationId || ""}|${
       highlightConversationId || ""
-    }|${location.key}`;
+    }`
+  );
+
+  useEffect(() => {
+    if (userInteractedRef.current) return;
+
+    const navigationSignature = initialNavigationSignatureRef.current;
 
     if (
       !navigationSource &&
@@ -1172,7 +1184,6 @@ export default function Messages() {
     getFriendId,
     highlightConversationId,
     loadingConversations,
-    location.key,
     navigationSource,
     openConversationId,
   ]);
@@ -2204,7 +2215,7 @@ export default function Messages() {
                       }`}
                       data-conversation-id={friend._id}
                       data-conv-id={convId}
-                      onClick={() => loadConversation(friend)}
+                      onClick={() => handleConversationClick(friend)}
                     >
                       <img
                         src={resolveUrl(friend.avatar)}
