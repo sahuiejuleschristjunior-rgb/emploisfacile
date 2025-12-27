@@ -694,8 +694,6 @@ export default function Messages() {
             __uiNew: true,
             hasNewBadge: true,
             __uiHighlight: true,
-            isHighlighted: true,
-            isNew: true,
           },
           ...prev.filter((_, i) => i !== idx),
         ];
@@ -724,7 +722,7 @@ export default function Messages() {
     return filteredFriends.map((f) => ({
       ...f,
       isHighlighted: Boolean(f.isHighlighted || f.__uiHighlight),
-      hasNewBadge: f.__uiNew || f.hasNewBadge || f.isNew,
+      hasNewBadge: f.__uiNew || f.hasNewBadge,
     }));
   }, [filteredFriends]);
 
@@ -740,12 +738,12 @@ export default function Messages() {
       setFriends((prev) =>
         prev.map((f) =>
           getFriendId(f) === highlightedConversationId
-            ? { ...f, __uiHighlight: false, isHighlighted: false }
+            ? { ...f, __uiHighlight: false }
             : f
         )
       );
       setHighlightedConversationId(null);
-    }, 2800);
+    }, 2600);
 
     return () => {
       clearTimeout(resetTimer);
@@ -969,14 +967,7 @@ export default function Messages() {
       setFriends((prev) =>
         prev.map((f) =>
           getFriendId(f) === clickedId
-            ? {
-                ...f,
-                unreadCount: 0,
-                __uiNew: false,
-                hasNewBadge: false,
-                isNew: false,
-                isHighlighted: false,
-              }
+            ? { ...f, unreadCount: 0, __uiNew: false, hasNewBadge: false }
             : f
         )
       );
@@ -996,8 +987,6 @@ export default function Messages() {
               __uiNew: false,
               hasNewBadge: false,
               __uiHighlight: false,
-              isNew: false,
-              isHighlighted: false,
             }
           : f
       )
@@ -1170,7 +1159,7 @@ export default function Messages() {
       return;
     }
 
-    if (navigationSource === "header_messages_icon" && highlightConversationId) {
+    if (navigationSource === "messages_icon" && highlightConversationId) {
       if (loadingConversations) return;
       const applied = applyHighlightNavigationState(highlightConversationId);
       if (applied) {
@@ -2204,9 +2193,7 @@ export default function Messages() {
                   const convId = getFriendId(friend);
                   const isActive =
                     activeChat?._id && getFriendId(activeChat) === convId;
-                  const hasNewBadge = Boolean(
-                    friend.hasNewBadge || friend.__uiNew || friend.isNew
-                  );
+                  const hasNewBadge = Boolean(friend.hasNewBadge || friend.__uiNew);
                   const isHighlighted = Boolean(friend.isHighlighted || friend.__uiHighlight);
 
                   return (
@@ -2230,7 +2217,7 @@ export default function Messages() {
                         <div className="conversation-name">
                           {friend.name}
                           {hasNewBadge && (
-                            <span className="conv-badge-new">Nouveau</span>
+                            <span className="conv-badge-new">Nouveau message</span>
                           )}
                         </div>
                         <div className="conversation-last-message">

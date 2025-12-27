@@ -592,9 +592,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     const state = lastUnreadConversationId
       ? {
           highlightConversationId: lastUnreadConversationId,
-          source: "header_messages_icon",
+          source: "messages_icon",
         }
-      : { source: "header_messages_icon" };
+      : { source: "messages_icon" };
 
     nav("/messages", { state });
   };
