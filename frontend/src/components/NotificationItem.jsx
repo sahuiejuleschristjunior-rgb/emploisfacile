@@ -115,7 +115,7 @@ export default function NotificationItem({ notif, onHandled }) {
       navigate("/messages", {
         replace: true,
         state: {
-          openConversationId: notifConversationId || null,
+          highlightConversationId: notifConversationId || null,
           source: "notification",
         },
       });

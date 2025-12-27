@@ -687,14 +687,17 @@ export default function Messages() {
             ? target.unreadCount
             : 1;
 
+        const highlightedConversation = {
+          ...target,
+          unreadCount,
+          __uiNew: true,
+          hasNewBadge: true,
+          __uiHighlight: true,
+          isHighlighted: true,
+        };
+
         const reordered = [
-          {
-            ...target,
-            unreadCount,
-            __uiNew: true,
-            hasNewBadge: true,
-            __uiHighlight: true,
-          },
+          highlightedConversation,
           ...prev.filter((_, i) => i !== idx),
         ];
 
@@ -738,7 +741,7 @@ export default function Messages() {
       setFriends((prev) =>
         prev.map((f) =>
           getFriendId(f) === highlightedConversationId
-            ? { ...f, __uiHighlight: false }
+            ? { ...f, __uiHighlight: false, isHighlighted: false }
             : f
         )
       );
@@ -967,7 +970,14 @@ export default function Messages() {
       setFriends((prev) =>
         prev.map((f) =>
           getFriendId(f) === clickedId
-            ? { ...f, unreadCount: 0, __uiNew: false, hasNewBadge: false }
+            ? {
+                ...f,
+                unreadCount: 0,
+                __uiNew: false,
+                hasNewBadge: false,
+                __uiHighlight: false,
+                isHighlighted: false,
+              }
             : f
         )
       );
@@ -986,6 +996,7 @@ export default function Messages() {
               unreadCount: 0,
               __uiNew: false,
               hasNewBadge: false,
+              isHighlighted: false,
               __uiHighlight: false,
             }
           : f
@@ -1103,6 +1114,15 @@ export default function Messages() {
 
     if (navigationHandledRef.current === navigationSignature) return;
 
+    if (highlightConversationId) {
+      if (loadingConversations) return;
+      const applied = applyHighlightNavigationState(highlightConversationId);
+      if (applied) {
+        navigationHandledRef.current = navigationSignature;
+      }
+      return;
+    }
+
     if (navigationSource === "notification" && openConversationId) {
       if (loadingConversations) return;
 
@@ -1157,14 +1177,6 @@ export default function Messages() {
       })();
 
       return;
-    }
-
-    if (navigationSource === "messages_icon" && highlightConversationId) {
-      if (loadingConversations) return;
-      const applied = applyHighlightNavigationState(highlightConversationId);
-      if (applied) {
-        navigationHandledRef.current = navigationSignature;
-      }
     }
   }, [
     applyHighlightNavigationState,
@@ -2217,7 +2229,7 @@ export default function Messages() {
                         <div className="conversation-name">
                           {friend.name}
                           {hasNewBadge && (
-                            <span className="conv-badge-new">Nouveau message</span>
+                            <span className="conv-badge-new">Nouveau</span>
                           )}
                         </div>
                         <div className="conversation-last-message">
