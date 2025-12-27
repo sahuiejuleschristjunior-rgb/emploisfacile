@@ -56,6 +56,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [lastUnreadConversationId, setLastUnreadConversationId] = useState(null);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
@@ -204,6 +205,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       setNotifications((prev) => [notif, ...prev]);
       setUnreadCount((prev) => prev + 1);
       showToast("Nouvelle notification");
+
+      if (notif.type === "friend_request") {
+        setPendingRequestsCount((prev) => prev + 1);
+      }
     },
     []
   );
@@ -274,9 +279,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       if (conversationId) {
         setLastUnreadConversationId(conversationId);
       }
-      showToast("Nouveau message reçu");
-    },
-    [location.pathname]
+    showToast("Nouveau message reçu");
+  },
+  [location.pathname]
   );
 
   useEffect(() => {
@@ -295,6 +300,27 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       } catch {}
     };
   }, [pushRealtimeMessage]);
+
+  /* ============================================================
+     🔥 REALTIME FRIEND REQUESTS (SOCKET)
+  ============================================================ */
+  useEffect(() => {
+    const s = socketRef.current;
+    if (!s) return;
+
+    const handleFriendRequest = () => {
+      setPendingRequestsCount((prev) => prev + 1);
+      showToast("Nouvelle demande d'ami");
+    };
+
+    s.on("friend_request", handleFriendRequest);
+
+    return () => {
+      try {
+        s.off("friend_request", handleFriendRequest);
+      } catch {}
+    };
+  }, [showToast]);
 
   /* ============================================================
      🔍 SEARCH
@@ -559,6 +585,38 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     }
   }, [API_URL]);
 
+  /* ============================================================
+     🔥 FRIEND REQUESTS BADGE
+  ============================================================ */
+  const fetchPendingRequests = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/social/requests`, {
+        headers: makeHeaders(),
+      });
+
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.requests)) {
+        setPendingRequestsCount(data.requests.length);
+      }
+    } catch (err) {
+      console.error("Erreur demandes d'amis :", err);
+    }
+  }, [API_URL]);
+
+  useEffect(() => {
+    fetchPendingRequests();
+    const interval = setInterval(fetchPendingRequests, 60000);
+    return () => clearInterval(interval);
+  }, [fetchPendingRequests]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/fb/relations")) {
+      setPendingRequestsCount(0);
+      window.dispatchEvent(new CustomEvent("friendRequestsViewed"));
+    }
+  }, [location.pathname]);
+
   useEffect(() => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 60000);
@@ -568,6 +626,24 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   useEffect(() => {
     setCurrentUser(authUser);
   }, [authUser]);
+
+  useEffect(() => {
+    const handleViewed = () => setPendingRequestsCount(0);
+    const handleCountUpdate = (e) => {
+      const nextCount = Number(e.detail?.count);
+      if (!Number.isNaN(nextCount)) {
+        setPendingRequestsCount(Math.max(0, nextCount));
+      }
+    };
+
+    window.addEventListener("friendRequestsViewed", handleViewed);
+    window.addEventListener("friendRequestsCount", handleCountUpdate);
+
+    return () => {
+      window.removeEventListener("friendRequestsViewed", handleViewed);
+      window.removeEventListener("friendRequestsCount", handleCountUpdate);
+    };
+  }, []);
 
   /* ============================================================
      🔥 LOGOUT
@@ -935,8 +1011,22 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               <FBIcon name="home" size={22} />
             </button>
 
-            <button className="fb-header-icon-btn" onClick={() => nav("/fb/relations")}>
-              <FBIcon name="friends" size={22} />
+            <button
+              className="fb-header-icon-btn"
+              onClick={() =>
+                nav("/fb/relations", {
+                  state: { highlightRequest: true, source: "relations-icon" },
+                })
+              }
+            >
+              <div style={{ position: "relative" }}>
+                <FBIcon name="friends" size={22} />
+                {pendingRequestsCount > 0 && (
+                  <span className="notif-badge" aria-label="Nouvelles demandes">
+                    {pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}
+                  </span>
+                )}
+              </div>
             </button>
 
             <button className="fb-header-icon-btn" onClick={handleMessagesIconClick}>
