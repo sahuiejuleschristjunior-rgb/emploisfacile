@@ -9,6 +9,9 @@ export default function JobFeed() {
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [darkMode, setDarkMode] = useState(() => {
@@ -244,6 +247,20 @@ export default function JobFeed() {
     navigate("/fb/dashboard");
   };
 
+  const renderSearchBar = (extraClass = "") => (
+    <div className={`job-feed-search ${extraClass}`.trim()}>
+      <span role="img" aria-hidden>
+        🔍
+      </span>
+      <input
+        type="search"
+        placeholder="Rechercher un poste, une ville..."
+        value={searchQuery}
+        onChange={handleSearchChange}
+      />
+    </div>
+  );
+
   return (
     <div className={`job-feed-screen ${darkMode ? "dark-mode" : ""}`}>
       <div className="jobfeed-grid">
@@ -277,40 +294,33 @@ export default function JobFeed() {
           </div>
         </aside>
 
-        <main className="jobfeed-center">
-          <header className="job-feed-hero">
-            <div>
-              <p className="job-feed-kicker">Offres d'emploi</p>
-              <h2>Un fil d'emplois inspiré des réseaux</h2>
-              <p className="job-feed-subtitle">
-                Explorez les dernières opportunités publiées par nos
-                recruteurs et postulez en un clic.
-              </p>
-            </div>
-            <div className="job-feed-actions">
-              <div className="job-feed-search">
-                <span role="img" aria-hidden>
-                  🔍
-                </span>
-                <input
-                  placeholder="Rechercher un poste, une ville..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          <main className="jobfeed-center">
+            <header className="job-feed-hero">
+              <div>
+                <p className="job-feed-kicker">Offres d'emploi</p>
+                <h2>Un fil d'emplois inspiré des réseaux</h2>
+                <p className="job-feed-subtitle">
+                  Explorez les dernières opportunités publiées par nos
+                  recruteurs et postulez en un clic.
+                </p>
               </div>
-              <button
-                type="button"
-                className="theme-toggle"
-                onClick={() => setDarkMode((prev) => !prev)}
-                aria-pressed={darkMode}
-              >
-                <span className="theme-label">{darkMode ? "Mode sombre" : "Mode clair"}</span>
-                <span className={`toggle-switch ${darkMode ? "on" : ""}`}>
-                  <span className="toggle-handle" />
-                </span>
-              </button>
-            </div>
-          </header>
+              <div className="job-feed-actions">
+                {renderSearchBar()}
+                <button
+                  type="button"
+                  className="theme-toggle"
+                  onClick={() => setDarkMode((prev) => !prev)}
+                  aria-pressed={darkMode}
+                >
+                  <span className="theme-label">{darkMode ? "Mode sombre" : "Mode clair"}</span>
+                  <span className={`toggle-switch ${darkMode ? "on" : ""}`}>
+                    <span className="toggle-handle" />
+                  </span>
+                </button>
+              </div>
+            </header>
+
+          <div className="job-feed-mobile-search">{renderSearchBar("mobile")}</div>
 
           {loading && <div className="loader">Chargement des offres...</div>}
 
