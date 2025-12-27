@@ -45,7 +45,26 @@ export default function JobConnectLayout({ user, onLogout, children }) {
 
       <main className="cd-main">
         <header className="cd-topbar">
-          <div>
+          <div className="topbar-left">
+            <div className="topbar-nav">
+              <button
+                className="topbar-icon"
+                aria-label="Aller à l'accueil"
+                onClick={() => nav("/fb")}
+                type="button"
+              >
+                🏠
+              </button>
+              <button
+                className="topbar-icon"
+                aria-label="Voir les offres"
+                onClick={() => nav("/emplois")}
+                type="button"
+              >
+                💼
+              </button>
+            </div>
+
             <p className="eyebrow">Espace candidat</p>
             <h2>Bonjour {user?.name || "!"}</h2>
           </div>

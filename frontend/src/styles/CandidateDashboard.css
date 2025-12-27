@@ -13,6 +13,7 @@
   --gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
   --candidate-shell-padding: 18px;
   --candidate-sidebar-width: 260px;
+  --candidate-header-height: 88px;
 }
 
 body {
@@ -25,6 +26,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   padding: 0 var(--candidate-shell-padding);
+  position: relative;
 }
 
 .cd-side {
@@ -41,7 +43,7 @@ body {
   width: var(--candidate-sidebar-width);
   height: 100vh;
   overflow-y: auto;
-  z-index: 30;
+  z-index: 35;
 }
 
 .cd-side-open {
@@ -130,29 +132,66 @@ body {
 .cd-main {
   display: flex;
   flex-direction: column;
-  padding: 0 6px 18px;
+  padding: var(--candidate-header-height) 0 18px;
   margin-left: calc(var(--candidate-sidebar-width) + var(--candidate-shell-padding));
-  width: calc(100% - var(--candidate-sidebar-width) - var(--candidate-shell-padding));
+  width: calc(100% - var(--candidate-sidebar-width) - (var(--candidate-shell-padding) * 2));
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 .cd-topbar {
   background: rgba(12, 17, 31, 0.8);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  padding: 20px 32px;
+  padding: 16px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 25;
+  left: calc(var(--candidate-sidebar-width) + var(--candidate-shell-padding));
+  right: var(--candidate-shell-padding);
+  height: var(--candidate-header-height);
+  z-index: 45;
 }
 
 .cd-topbar h2 {
   margin: 4px 0;
   font-size: 22px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.topbar-icon:hover {
+  background: var(--card-muted);
+  color: var(--text);
+  border-color: rgba(124, 58, 237, 0.5);
 }
 
 .eyebrow {
@@ -905,13 +944,13 @@ body {
   .cd-main {
     margin-left: 0;
     height: auto;
-    padding: 0 0 18px;
+    padding: var(--candidate-header-height) 0 18px;
     width: 100%;
   }
 
   .cd-topbar {
-    position: sticky;
-    top: 0;
+    left: 0;
+    right: 0;
   }
 
   .mobile-only {
