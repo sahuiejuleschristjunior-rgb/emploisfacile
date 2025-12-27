@@ -20,6 +20,9 @@ router.post('/', auth, isRecruiter, JobController.createJob);
 // GET /api/jobs/my-jobs - Offres publiées par le recruteur connecté
 router.get('/my-jobs', auth, isRecruiter, JobController.getMyJobs);
 
+// GET /api/jobs/search - Recherche backend (tous profils)
+router.get('/search', auth, JobController.searchJobs);
+
 // GET /api/jobs - Toutes les offres (feed général)
 router.get('/', auth, JobController.getAllJobs);
 
