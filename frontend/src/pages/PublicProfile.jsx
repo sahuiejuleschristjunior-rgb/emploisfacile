@@ -239,7 +239,7 @@ export default function PublicProfile() {
             </div>
 
             {!isMe && (
-              <div className="profil-hero-actions">
+              <div className="profil-hero-actions profile-actions">
                 <button
                   className="profil-btn primary"
                   onClick={() => {
