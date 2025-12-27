@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useJobApplication from "../hooks/useJobApplication";
 import GlobalFeedbackModal from "./GlobalFeedbackModal";
@@ -9,17 +9,10 @@ export default function JobFeed() {
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  const normalize = (value = "") =>
-    value
-      .toString()
-      .toLowerCase()
-      .trim()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "");
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
+  const [cityFilter, setCityFilter] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [contractFilter, setContractFilter] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [darkMode, setDarkMode] = useState(() => {
@@ -29,6 +22,11 @@ export default function JobFeed() {
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
   const navigate = useNavigate();
+  const searchAbortRef = useRef(null);
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
 
   const {
     appliedSet,
@@ -84,10 +82,6 @@ export default function JobFeed() {
      CHARGER LES OFFRES
   ====================================================== */
   useEffect(() => {
-    loadJobs();
-  }, []);
-
-  useEffect(() => {
     registerAppliedFromJobs(jobs);
   }, [jobs, registerAppliedFromJobs]);
 
@@ -95,36 +89,68 @@ export default function JobFeed() {
     localStorage.setItem("jobfeed-dark-mode", darkMode);
   }, [darkMode]);
 
-  const loadJobs = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`${API_URL}/jobs`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) throw new Error("Échec du chargement des offres.");
-
-      const data = await res.json();
-
-      let jobList = [];
-
-      if (Array.isArray(data)) jobList = data;
-      else if (Array.isArray(data.jobs)) jobList = data.jobs;
-      else if (Array.isArray(data.data)) jobList = data.data;
-
-      setJobs(jobList);
-    } catch (err) {
-      console.error("JOB FEED ERROR:", err);
-      setError(err.message || "Erreur lors de la récupération des offres.");
-      setJobs([]);
+  useEffect(() => {
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
     }
 
-    setLoading(false);
-  };
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
+    const timeoutId = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams();
+
+        if (searchQuery.trim()) params.append("q", searchQuery.trim());
+        if (cityFilter.trim()) params.append("city", cityFilter.trim());
+        if (countryFilter.trim()) params.append("country", countryFilter.trim());
+        if (categoryFilter.trim()) params.append("category", categoryFilter.trim());
+        if (contractFilter.trim()) params.append("contract", contractFilter.trim());
+
+        const queryString = params.toString();
+        const url = `${API_URL}/jobs/search${queryString ? `?${queryString}` : ""}`;
+
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!res.ok) throw new Error("Échec de la récupération des offres.");
+
+        const data = await res.json();
+
+        let jobList = [];
+
+        if (Array.isArray(data?.data)) jobList = data.data;
+        else if (Array.isArray(data?.jobs)) jobList = data.jobs;
+        else if (Array.isArray(data)) jobList = data;
+
+        if (!controller.signal.aborted) {
+          setJobs(jobList);
+        }
+      } catch (err) {
+        if (err.name === "AbortError") return;
+
+        console.error("JOB FEED ERROR:", err);
+        setError(err.message || "Erreur lors de la récupération des offres.");
+        setJobs([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [API_URL, token, searchQuery, cityFilter, countryFilter, categoryFilter, contractFilter]);
 
   /* ======================================================
      TEMPLATE CARTE OFFRE
@@ -214,30 +240,7 @@ export default function JobFeed() {
   /* ======================================================
      RENDU GLOBAL
   ====================================================== */
-  const filteredJobs = useMemo(() => {
-    const query = normalize(searchQuery);
-
-    if (!query) return jobs;
-
-    return jobs.filter((job) => {
-      const recruiterName = job.company?.name || job.recruiter?.companyName || job.recruiter?.name;
-
-      return [
-        job.title,
-        job.category,
-        job.city,
-        job.country,
-        recruiterName,
-        job.contractType,
-        job.description,
-        job.salary,
-        job.salaryRange,
-      ]
-        .filter(Boolean)
-        .map((field) => normalize(field))
-        .some((field) => field.includes(query));
-    });
-  }, [jobs, searchQuery]);
+  const filteredJobs = jobs;
 
   const featuredJobs = filteredJobs.slice(0, 3);
 
@@ -267,6 +270,49 @@ export default function JobFeed() {
         value={searchQuery}
         onChange={handleSearchChange}
       />
+    </div>
+  );
+
+  const renderFilterBar = (variant = "desktop") => (
+    <div className={`job-filter-bar ${variant}`.trim()}>
+      {renderSearchBar(variant === "mobile" ? "mobile" : "")}
+
+      <input
+        type="text"
+        className="job-filter-input"
+        placeholder="Ville"
+        value={cityFilter}
+        onChange={(event) => setCityFilter(event.target.value)}
+      />
+
+      <input
+        type="text"
+        className="job-filter-input"
+        placeholder="Pays"
+        value={countryFilter}
+        onChange={(event) => setCountryFilter(event.target.value)}
+      />
+
+      <input
+        type="text"
+        className="job-filter-input"
+        placeholder="Catégorie"
+        value={categoryFilter}
+        onChange={(event) => setCategoryFilter(event.target.value)}
+      />
+
+      <select
+        className="job-filter-input select"
+        value={contractFilter}
+        onChange={(event) => setContractFilter(event.target.value)}
+      >
+        <option value="">Tous les contrats</option>
+        <option value="CDI">CDI</option>
+        <option value="CDD">CDD</option>
+        <option value="Alternance">Alternance</option>
+        <option value="Stage">Stage</option>
+        <option value="Freelance">Freelance</option>
+      </select>
     </div>
   );
 
@@ -314,7 +360,7 @@ export default function JobFeed() {
                 </p>
               </div>
               <div className="job-feed-actions">
-                {renderSearchBar()}
+                {renderFilterBar("desktop")}
                 <button
                   type="button"
                   className="theme-toggle"
@@ -329,7 +375,7 @@ export default function JobFeed() {
               </div>
             </header>
 
-          <div className="job-feed-mobile-search">{renderSearchBar("mobile")}</div>
+          <div className="job-feed-mobile-search">{renderFilterBar("mobile")}</div>
 
           {loading && <div className="loader">Chargement des offres...</div>}
 

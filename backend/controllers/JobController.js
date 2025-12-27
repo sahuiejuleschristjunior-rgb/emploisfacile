@@ -1,6 +1,9 @@
 const Job = require('../models/Job');
 const Application = require('../models/Application');
 
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const buildRegex = (value = "") => new RegExp(escapeRegex(value), "i");
+
 /* ============================================================
    POST /api/jobs
    ➤ Créer une nouvelle offre (Recruteur)
@@ -52,6 +55,77 @@ exports.getAllJobs = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             error: "Erreur serveur lors de la récupération des offres.",
+            details: error.message,
+        });
+    }
+};
+
+/* ============================================================
+   GET /api/jobs/search
+   ➤ Recherche d'offres (backend source of truth)
+============================================================ */
+exports.searchJobs = async (req, res) => {
+    try {
+        const { q, city, country, category, recruiter, contract } = req.query;
+
+        const andConditions = [
+            { isActive: { $ne: false } }
+        ];
+
+        if (q?.trim()) {
+            const textRegex = buildRegex(q.trim());
+
+            andConditions.push({
+                $or: [
+                    { title: textRegex },
+                    { description: textRegex },
+                    { city: textRegex },
+                    { country: textRegex },
+                    { category: textRegex },
+                    { location: textRegex },
+                    { "company.name": textRegex },
+                    { "recruiter.name": textRegex },
+                    { "recruiter.companyName": textRegex }
+                ]
+            });
+        }
+
+        if (city?.trim()) {
+            const cityRegex = buildRegex(city.trim());
+            andConditions.push({ $or: [{ city: cityRegex }, { location: cityRegex }] });
+        }
+
+        if (country?.trim()) {
+            const countryRegex = buildRegex(country.trim());
+            andConditions.push({ $or: [{ country: countryRegex }, { location: countryRegex }] });
+        }
+
+        if (category?.trim()) {
+            const categoryRegex = buildRegex(category.trim());
+            andConditions.push({ category: categoryRegex });
+        }
+
+        if (recruiter?.trim()) {
+            andConditions.push({ recruiter: recruiter.trim() });
+        }
+
+        if (contract?.trim()) {
+            andConditions.push({ contractType: contract.trim() });
+        }
+
+        const query = andConditions.length > 1 ? { $and: andConditions } : andConditions[0];
+
+        const jobs = await Job.find(query)
+            .populate("recruiter", "companyName name email avatar")
+            .sort({ createdAt: -1 });
+
+        return res.json({ ok: true, data: jobs });
+
+    } catch (error) {
+        console.error("Erreur recherche offres:", error);
+        return res.status(500).json({
+            ok: false,
+            error: "Erreur serveur lors de la recherche d'offres.",
             details: error.message,
         });
     }
