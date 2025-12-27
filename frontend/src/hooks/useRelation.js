@@ -90,10 +90,16 @@ export default function useRelation(targetId) {
   /* ======================================================
      🔥 Exécuteur d’actions sécurisé
   ====================================================== */
-  const run = async (fn) => {
+  const run = async (fn, optimisticUpdate = null) => {
     if (!targetId || typeof fn !== "function") return;
 
     setLoading(true);
+
+    // ⚡ Optimistic update pour refléter immédiatement l’action
+    if (optimisticUpdate && typeof optimisticUpdate === "object") {
+      setStatus((prev) => ({ ...(prev || {}), ...optimisticUpdate }));
+    }
+
     try {
       await fn(targetId);
       await refresh();
@@ -110,17 +116,28 @@ export default function useRelation(targetId) {
     status,
     loading,
 
-    sendRequest: () => run(sendFriendRequest),
-    acceptRequest: () => run(acceptFriendRequest),
-    rejectRequest: () => run(rejectFriendRequest),
-    cancelRequest: () => run(cancelFriendRequest),
-    removeFriend: () => run(removeFriend),
+    sendRequest: () =>
+      run(sendFriendRequest, {
+        requestSent: true,
+        requestReceived: false,
+        isFriend: false,
+      }),
+    acceptRequest: () =>
+      run(acceptFriendRequest, { requestReceived: false, isFriend: true }),
+    rejectRequest: () => run(rejectFriendRequest, { requestReceived: false }),
+    cancelRequest: () => run(cancelFriendRequest, { requestSent: false }),
+    removeFriend: () =>
+      run(removeFriend, {
+        isFriend: false,
+        requestSent: false,
+        requestReceived: false,
+      }),
 
-    follow: () => run(followUser),
-    unfollow: () => run(unfollowUser),
+    follow: () => run(followUser, { isFollowing: true }),
+    unfollow: () => run(unfollowUser, { isFollowing: false }),
 
-    block: () => run(blockUser),
-    unblock: () => run(unblockUser),
+    block: () => run(blockUser, { isBlocked: true }),
+    unblock: () => run(unblockUser, { isBlocked: false }),
 
     // 🔁 utile pour socket / refresh manuel
     refresh,
