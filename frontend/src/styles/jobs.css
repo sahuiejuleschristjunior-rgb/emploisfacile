@@ -1,0 +1,173 @@
+/* ======================= */
+/* PAGE GLOBALE            */
+/* ======================= */
+
+.jobs-page {
+  background: #000;
+  min-height: 100vh;
+  padding: 20px;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+}
+
+.jobs-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* ======================= */
+/* FILTRES                 */
+/* ======================= */
+
+.job-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  overflow-x: auto;
+}
+
+/* Ajusté mobile */
+.job-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-btn {
+  padding: 10px 18px;
+  border-radius: 30px;
+  background: #222;
+  border: 1px solid #333;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: 0.2s ease;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+  background: #1877f2;
+  border-color: #1877f2;
+}
+
+/* ======================= */
+/* LISTE DES OFFRES        */
+/* ======================= */
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.job-card {
+  background: #111;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid #222;
+  transition: transform 0.15s ease, background 0.3s ease;
+}
+
+.job-card:hover {
+  transform: translateY(-3px);
+  background: #151515;
+}
+
+.job-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.job-company {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.job-location {
+  font-size: 14px;
+  color: #999;
+  margin: 5px 0 10px;
+}
+
+.job-desc {
+  font-size: 15px;
+  margin-bottom: 15px;
+  opacity: 0.9;
+}
+
+/* ======================= */
+/* BOUTON POSTULER         */
+/* ======================= */
+
+.apply-btn {
+  width: 100%;
+  padding: 12px;
+  background: #1877f2;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: 0.2s;
+}
+
+.apply-btn:hover {
+  opacity: 0.85;
+}
+
+/* ======================= */
+/* PAGE DÉTAIL             */
+/* ======================= */
+
+.job-detail-container {
+  margin-top: 20px;
+}
+
+.job-detail-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.job-detail-section-title {
+  font-size: 20px;
+  margin-top: 25px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.job-detail-text {
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+/* ======================= */
+/* CHARGEMENT & VIDE       */
+/* ======================= */
+
+.loading,
+.no-jobs {
+  text-align: center;
+  margin-top: 40px;
+  font-size: 17px;
+  color: #777;
+}
+
+/* ======================= */
+/* RESPONSIVE MOBILE       */
+/* ======================= */
+
+@media (max-width: 600px) {
+  .jobs-title {
+    font-size: 22px;
+  }
+
+  .job-card {
+    padding: 15px;
+  }
+
+  .job-title {
+    font-size: 18px;
+  }
+}

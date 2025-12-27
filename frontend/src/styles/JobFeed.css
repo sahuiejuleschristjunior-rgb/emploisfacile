@@ -197,12 +197,6 @@
     cursor: not-allowed;
 }
 
-.featured-cta.secondary {
-    background: #e5e7eb;
-    color: #111827;
-    border: 1px solid #d1d5db;
-}
-
 /* ----------------------------------
    Job Feed Hero
 ----------------------------------- */
@@ -463,37 +457,6 @@
     background: #dfe3e8;
 }
 
-.cta-button.primary {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: #fff;
-    box-shadow: 0 12px 30px -12px rgba(37, 99, 235, 0.6);
-}
-
-.cta-button.primary:hover {
-    background: #1d4ed8;
-}
-
-.cta-button.applied,
-.cta-button.neutral {
-    background: #f3f4f6;
-    color: #6b7280;
-    border-color: #e5e7eb;
-}
-
-.job-cta-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    align-items: center;
-}
-
-.job-cta-helper {
-    margin: 8px 0 0;
-    color: #6b7280;
-    font-size: 13px;
-}
-
 .cta-button.applied {
     background: #f3f4f6;
     color: #6b7280;
@@ -733,18 +696,6 @@
     background: #111827;
 }
 
-.job-feed-screen.dark-mode .cta-button.primary {
-    background: #2563eb;
-    border-color: #2563eb;
-    color: #e5edff;
-}
-
-.job-feed-screen.dark-mode .cta-button.neutral {
-    background: #0f172a;
-    color: #cbd5e1;
-    border-color: #1f2937;
-}
-
 .job-feed-screen.dark-mode .cta-button.applied {
     background: #111827;
     color: #9ca3af;
@@ -758,12 +709,6 @@
 .job-feed-screen.dark-mode .featured-cta {
     background: #2563eb;
     color: white;
-}
-
-.job-feed-screen.dark-mode .featured-cta.secondary {
-    background: #0f172a;
-    color: #e5e7eb;
-    border: 1px solid #1f2937;
 }
 
 .job-feed-screen.dark-mode .action-btn:hover {

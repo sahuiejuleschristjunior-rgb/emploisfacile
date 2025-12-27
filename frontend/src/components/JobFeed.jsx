@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GlobalFeedbackModal from "./GlobalFeedbackModal";
-import useJobApplications from "../hooks/useJobApplications";
 import "../styles/JobFeed.css";
 
 export default function JobFeed() {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
+  const [applyingJobId, setApplyingJobId] = useState(null);
+  const [appliedSet, setAppliedSet] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -29,20 +30,35 @@ export default function JobFeed() {
   })();
 
   const userId = currentUser?._id || currentUser?.id;
-  const normalizedRole = (currentUser.role || "").toLowerCase();
-  const isRecruiter = normalizedRole === "recruiter" || normalizedRole === "recruteur";
 
-  const openFeedback = (message) => {
-    setFeedbackMessage(message);
-    setFeedbackOpen(true);
+  const getAppliedKey = (user) => `appliedJobs:${user}`;
+
+  const readApplied = (user) => {
+    if (!user) return [];
+
+    try {
+      const raw = localStorage.getItem(getAppliedKey(user));
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
   };
 
-  const { appliedSet, applyingJobId, applyToJob, syncAppliedFromJobs } = useJobApplications(
-    currentUser,
-    {
-      onFeedback: openFeedback,
-    },
-  );
+  const writeApplied = (user, jobIds) => {
+    if (!user) return;
+    localStorage.setItem(getAppliedKey(user), JSON.stringify([...new Set(jobIds)]));
+  };
+
+  const markApplied = (user, jobId) => {
+    if (!user || !jobId) return [];
+    const current = readApplied(user);
+    if (!current.includes(jobId)) {
+      current.push(jobId);
+      writeApplied(user, current);
+    }
+    return current;
+  };
 
   /* ======================================================
      UTILITAIRES D'AFFICHAGE
@@ -85,12 +101,37 @@ export default function JobFeed() {
   }, []);
 
   useEffect(() => {
+    if (!userId) return;
+    const ids = readApplied(userId);
+    setAppliedSet(new Set(ids));
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const stored = new Set(readApplied(userId));
+    jobs.forEach((job) => {
+      if (job?.hasApplied) stored.add(job._id);
+    });
+
+    setAppliedSet((prev) => {
+      const sameSize = prev.size === stored.size;
+      const unchanged = sameSize && [...prev].every((id) => stored.has(id));
+      if (unchanged) return prev;
+      return new Set(stored);
+    });
+
+    writeApplied(userId, [...stored]);
+  }, [jobs, userId]);
+
+  useEffect(() => {
     localStorage.setItem("jobfeed-dark-mode", darkMode);
   }, [darkMode]);
 
-  useEffect(() => {
-    syncAppliedFromJobs(jobs);
-  }, [jobs, syncAppliedFromJobs]);
+  const openFeedback = (message) => {
+    setFeedbackMessage(message);
+    setFeedbackOpen(true);
+  };
 
   const loadJobs = async () => {
     setLoading(true);
@@ -124,6 +165,61 @@ export default function JobFeed() {
   };
 
   /* ======================================================
+     POSTULER À UNE OFFRE
+  ====================================================== */
+  const handleApply = async (jobId, jobTitle) => {
+    const alreadyApplied = appliedSet.has(jobId);
+
+    if (alreadyApplied) {
+      openFeedback("Vous avez déjà postulé à cette offre");
+      return;
+    }
+
+    if (!window.confirm(`Voulez-vous postuler pour "${jobTitle}" ?`)) return;
+
+    setApplyingJobId(jobId);
+
+    try {
+      const res = await fetch(`${API_URL}/applications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ jobId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const error = new Error(data?.message || "Échec de la candidature.");
+        error.status = res.status;
+        throw error;
+      }
+
+      const updated = markApplied(userId, jobId);
+      setAppliedSet(new Set(updated));
+
+      openFeedback("Votre candidature a bien été envoyée");
+    } catch (err) {
+      console.error("APPLY ERROR:", err);
+      const alreadyApplied =
+        err.status === 400 || err.message?.toLowerCase().includes("déjà postulé");
+
+      if (alreadyApplied) {
+        const updated = markApplied(userId, jobId);
+        setAppliedSet(new Set(updated));
+        openFeedback("Vous avez déjà postulé à cette offre");
+        return;
+      }
+
+      openFeedback(err.message || "Erreur lors de l'envoi de la candidature.");
+    } finally {
+      setApplyingJobId(null);
+    }
+  };
+
+  /* ======================================================
      TEMPLATE CARTE OFFRE
   ====================================================== */
   const renderJobCard = (job) => {
@@ -133,6 +229,7 @@ export default function JobFeed() {
     const hasApplied = appliedSet.has(job._id);
     const salary = getSalary(job);
     const cover = job.coverImage || job.bannerUrl || job.image;
+
     return (
       <article key={job._id} className="job-post-card">
         <header className="job-post-header">
@@ -166,35 +263,19 @@ export default function JobFeed() {
               <p className="job-extra">{salary ? `💰 ${salary}` : "Postulez maintenant pour en savoir plus"}</p>
               <p className="job-date">Publiée le {formatDate(job.createdAt)}</p>
             </div>
-            <div className="job-cta-actions">
-              <button
-                className="cta-button neutral"
-                onClick={() => navigate(`/emplois/${job._id}`)}
-              >
-                Voir les détails
+
+            {hasApplied ? (
+              <button className="cta-button applied" disabled>
+                Déjà postulé
               </button>
-
-              {!isRecruiter && (
-                <>
-                  {hasApplied ? (
-                    <button className="cta-button applied" disabled>
-                      Déjà postulé
-                    </button>
-                  ) : (
-                    <button
-                      className="cta-button primary"
-                      onClick={() => applyToJob(job._id, job.title)}
-                      disabled={applyingJobId === job._id}
-                    >
-                      {applyingJobId === job._id ? "Envoi..." : "Postuler"}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-
-            {isRecruiter && (
-              <p className="job-cta-helper">Les recruteurs peuvent consulter les offres.</p>
+            ) : (
+              <button
+                className="cta-button"
+                onClick={() => handleApply(job._id, job.title)}
+                disabled={applyingJobId === job._id}
+              >
+                {applyingJobId === job._id ? "Envoi..." : "Postuler"}
+              </button>
             )}
           </div>
         </div>
@@ -355,26 +436,17 @@ export default function JobFeed() {
                 <p className="featured-meta">
                   {getLocation(job)} • {getContract(job)}
                 </p>
-                {isRecruiter ? (
-                  <button
-                    className="featured-cta secondary"
-                    onClick={() => navigate(`/emplois/${job._id}`)}
-                  >
-                    Voir les détails
-                  </button>
-                ) : (
-                  <button
-                    className="featured-cta"
-                    onClick={() => applyToJob(job._id, job.title)}
-                    disabled={applyingJobId === job._id || appliedSet.has(job._id)}
-                  >
-                    {appliedSet.has(job._id)
-                      ? "Déjà postulé"
-                      : applyingJobId === job._id
-                      ? "Envoi..."
-                      : "Postuler"}
-                  </button>
-                )}
+                <button
+                  className="featured-cta"
+                  onClick={() => handleApply(job._id, job.title)}
+                  disabled={applyingJobId === job._id || appliedSet.has(job._id)}
+                >
+                  {appliedSet.has(job._id)
+                    ? "Déjà postulé"
+                    : applyingJobId === job._id
+                    ? "Envoi..."
+                    : "Postuler"}
+                </button>
               </div>
             ))}
           </div>
