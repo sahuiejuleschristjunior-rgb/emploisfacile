@@ -11,6 +11,8 @@
   --amber: #f59e0b;
   --rose: #fb7185;
   --gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
+  --candidate-shell-padding: 18px;
+  --candidate-sidebar-width: 260px;
 }
 
 body {
@@ -20,12 +22,9 @@ body {
 }
 
 .candidate-dashboard {
-  display: grid;
-  grid-template-columns: 260px 1fr;
   min-height: 100vh;
   background: var(--bg);
-  column-gap: 18px;
-  padding: 0 18px;
+  padding: 0 var(--candidate-shell-padding);
 }
 
 .cd-side {
@@ -36,7 +35,12 @@ body {
   flex-direction: column;
   gap: 16px;
   border-right: 1px solid var(--border);
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: var(--candidate-shell-padding);
+  width: var(--candidate-sidebar-width);
+  height: 100vh;
+  overflow-y: auto;
   z-index: 30;
 }
 
@@ -127,6 +131,10 @@ body {
   display: flex;
   flex-direction: column;
   padding: 0 6px 18px;
+  margin-left: calc(var(--candidate-sidebar-width) + var(--candidate-shell-padding));
+  width: calc(100% - var(--candidate-sidebar-width) - var(--candidate-shell-padding));
+  height: 100vh;
+  overflow: hidden;
 }
 
 .cd-topbar {
@@ -199,6 +207,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .hero {
@@ -876,14 +886,13 @@ body {
 
 @media (max-width: 1024px) {
   .candidate-dashboard {
-    grid-template-columns: 1fr;
     padding: 0;
   }
 
   .cd-side {
-    position: fixed;
+    left: 0;
     inset: 0;
-    width: 260px;
+    width: var(--candidate-sidebar-width);
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: 20;
@@ -891,6 +900,13 @@ body {
 
   .cd-side.cd-side-open {
     transform: translateX(0);
+  }
+
+  .cd-main {
+    margin-left: 0;
+    height: auto;
+    padding: 0 0 18px;
+    width: 100%;
   }
 
   .cd-topbar {

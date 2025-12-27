@@ -25,6 +25,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const isFullLayout = location.pathname.startsWith("/fb");
   const isCompactLayout = headerOnly || !isFullLayout;
   const isPagesFeed = location.pathname.startsWith("/fb/pages-feed");
+  const isCandidateSpace = [
+    "/dashboard",
+    "/jobconnect",
+    "/espace-candidat",
+    "/candidate",
+  ].some((path) => location.pathname.startsWith(path));
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -963,7 +969,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  const header = (
+  const header = isCandidateSpace ? null : (
     <header
       className="fb-header"
     >
