@@ -161,10 +161,11 @@ body {
   height: 100vh;
   overflow: hidden;
   position: relative;
+  background: var(--bg);
 }
 
 .cd-topbar {
-  background: rgba(12, 17, 31, 0.8);
+  background: rgba(12, 17, 31, 0.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
   padding: 16px 28px;
@@ -265,7 +266,7 @@ body {
 }
 
 .content {
-  padding: calc(var(--candidate-header-height) + 26px) 32px 44px;
+  padding: calc(var(--candidate-header-height) + 12px) 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -995,11 +996,12 @@ body {
 
 @media (max-width: 720px) {
   .content {
-    padding: calc(var(--candidate-header-height) + 16px) 16px 16px;
+    padding: calc(var(--candidate-header-height) + 6px) 16px 16px;
   }
 
   .cd-topbar {
-    padding: 16px;
+    padding: 14px 16px;
+    background: var(--bg);
   }
 
   .cd-topbar h2 {
