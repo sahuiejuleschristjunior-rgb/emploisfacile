@@ -6,7 +6,7 @@ html, body, #root {
   width: 100% !important;
   max-width: 100% !important;
   min-height: 100vh;
-  background: #020617;
+  background: #0f172a;
   box-sizing: border-box !important;
   overflow-x: hidden;
   overflow-y: auto;
@@ -16,7 +16,7 @@ html, body, #root {
 
 #root {
   text-align: left !important;
-  background: #020617;
+  background: #0f172a;
 }
 
 /* ——————— Basic global styles ——————— */
