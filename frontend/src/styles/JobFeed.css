@@ -197,6 +197,16 @@
     cursor: not-allowed;
 }
 
+.featured-cta.neutral {
+    background: #e5e7eb;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+}
+
+.featured-cta.neutral:hover {
+    background: #dfe3e8;
+}
+
 /* ----------------------------------
    Job Feed Hero
 ----------------------------------- */
@@ -455,6 +465,16 @@
 
 .cta-button:hover {
     background: #dfe3e8;
+}
+
+.cta-button.neutral {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #1f2937;
+}
+
+.cta-button.neutral:hover {
+    background: #e5e7eb;
 }
 
 .cta-button.applied {
