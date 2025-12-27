@@ -74,7 +74,6 @@ exports.searchJobs = async (req, res) => {
 
         const orConditions = [];
         const normalizedQ = q?.trim();
-        const isNumeric = normalizedQ && !isNaN(Number(normalizedQ));
 
         if (normalizedQ) {
             const textRegex = { $regex: normalizedQ, $options: "i" };
@@ -89,13 +88,25 @@ exports.searchJobs = async (req, res) => {
                 { "company.name": textRegex },
                 { "recruiter.name": textRegex },
                 { "recruiter.companyName": textRegex },
-                { contractType: { $regex: `^${escapeRegex(normalizedQ)}$`, $options: "i" } }
+                { contractType: textRegex },
+                { salaryRange: textRegex },
             );
 
-            if (isNumeric) {
-                const salaryNumber = Number(normalizedQ);
-                orConditions.push({ salary: salaryNumber });
-                orConditions.push({ salary: { $gte: salaryNumber } });
+            const normalizedLower = normalizedQ.toLowerCase();
+            const contractKeywords = ["cdi", "cdd", "alternance", "stage", "freelance"];
+
+            contractKeywords.forEach((keyword) => {
+                if (normalizedLower.includes(keyword)) {
+                    orConditions.push({ contractType: { $regex: `^${escapeRegex(keyword)}$`, $options: "i" } });
+                }
+            });
+
+            const numericTokens = normalizedQ.match(/\d+(?:[.,]\d+)?/g);
+            if (numericTokens?.length) {
+                numericTokens.forEach((token) => {
+                    const numericRegex = { $regex: escapeRegex(token), $options: "i" };
+                    orConditions.push({ salaryRange: numericRegex });
+                });
             }
 
             andConditions.push({ $or: orConditions });
