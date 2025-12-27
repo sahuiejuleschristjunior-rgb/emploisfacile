@@ -269,6 +269,11 @@
     background: transparent;
 }
 
+.job-feed-mobile-search {
+    margin: 12px 0 4px;
+    display: none;
+}
+
 .theme-toggle {
     display: inline-flex;
     align-items: center;
@@ -744,6 +749,14 @@
     .job-feed-actions {
         width: 100%;
         justify-content: space-between;
+    }
+
+    .job-feed-actions .job-feed-search {
+        display: none;
+    }
+
+    .job-feed-mobile-search {
+        display: block;
     }
 
     .theme-toggle {
