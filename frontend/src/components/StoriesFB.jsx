@@ -9,6 +9,7 @@ import { getImageUrl } from "../utils/imageUtils";
 export default function StoriesFB() {
   const [isUploading, setIsUploading] = useState(false);
   const [stories, setStories] = useState([]);
+  const [storiesLoading, setStoriesLoading] = useState(true);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
 
@@ -58,6 +59,7 @@ export default function StoriesFB() {
   }, []);
 
   const loadStories = async () => {
+    setStoriesLoading(true);
     try {
       const res = await fetch(`${API}/api/stories`, {
         headers: {
@@ -74,6 +76,7 @@ export default function StoriesFB() {
     } catch (error) {
       console.error("Erreur réseau/serveur lors du chargement des stories:", error);
     }
+    setStoriesLoading(false);
   };
   
   /* =======================================
@@ -167,24 +170,31 @@ export default function StoriesFB() {
         </div>
 
         {/* 3. STORIES EXISTANTES (Cliquables) */}
-        {stories.map((s, index) => (
-          <div 
-            key={s._id} 
-            className="fb-story"
-            onClick={(e) => openStory(index, e)} 
-          >
-            {/* 💥 CORRECTION DE L'IMAGE : Utilisation de getImageUrl */}
-            <img
-                src={getImageUrl(s.media.url)}
-                className="fb-story-img"
-                alt={s.user.name || "Story"}
-                loading="lazy"
-            />
-            {/* ⚠️ NOTE : Si vous avez un avatar de l'auteur dans 's.user.avatar', 
-               vous devriez l'afficher ici en utilisant getAvatarStyle comme icône */}
-            <div className="fb-story-user">{s.user.name || "Utilisateur"}</div>
-          </div>
-        ))}
+        {storiesLoading
+          ? Array.from({ length: 5 }).map((_, index) => (
+              <div key={`story-skeleton-${index}`} className="fb-story fb-story-skeleton">
+                <div className="fb-story-skeleton-avatar" />
+                <div className="fb-story-skeleton-text" />
+              </div>
+            ))
+          : stories.map((s, index) => (
+              <div
+                key={s._id}
+                className="fb-story"
+                onClick={(e) => openStory(index, e)}
+              >
+                {/* 💥 CORRECTION DE L'IMAGE : Utilisation de getImageUrl */}
+                <img
+                    src={getImageUrl(s.media.url)}
+                    className="fb-story-img"
+                    alt={s.user.name || "Story"}
+                    loading="lazy"
+                />
+                {/* ⚠️ NOTE : Si vous avez un avatar de l'auteur dans 's.user.avatar',
+                   vous devriez l'afficher ici en utilisant getAvatarStyle comme icône */}
+                <div className="fb-story-user">{s.user.name || "Utilisateur"}</div>
+              </div>
+            ))}
 
       </div>
       
