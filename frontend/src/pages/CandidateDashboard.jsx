@@ -1,176 +1,28 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/CandidateDashboard.css";
+import JobConnectLayout from "../components/JobConnectLayout";
+import useJobConnectData from "../hooks/useJobConnectData";
+import {
+  ApplicationCard,
+  ApplicationPipeline,
+  JobMiniCard,
+} from "../components/jobconnect/JobConnectWidgets";
 
 export default function CandidateDashboard() {
   const nav = useNavigate();
+  const data = useJobConnectData();
 
-  const [user, setUser] = useState(null);
-  const [applications, setApplications] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [recommendedJobs, setRecommendedJobs] = useState([]);
-  const [loadingApps, setLoadingApps] = useState(true);
-  const [loadingSaved, setLoadingSaved] = useState(true);
-  const [loadingReco, setLoadingReco] = useState(true);
-  const [error, setError] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL;
-  const token = localStorage.getItem("token");
-
-  /* ===========================================
-     0) Logout
-  ============================================*/
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     nav("/login");
   };
 
-  /* ===========================================
-     1) Charger l'utilisateur
-  ============================================*/
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored));
-      } catch (error) {
-        console.error("Erreur chargement user:", error);
-      }
-    }
-  }, []);
-
-  const commonHeaders = {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  };
-
-  /* ===========================================
-     2) Charger candidatures + favoris + reco
-  ============================================*/
-  useEffect(() => {
-    if (!token) return;
-    fetchApplications();
-    fetchSavedJobs();
-    fetchRecommended();
-  }, [token]);
-
-  /* ===========================================
-     MES CANDIDATURES
-  ============================================*/
-  const fetchApplications = async () => {
-    setLoadingApps(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/applications/my-applications`, {
-        headers: commonHeaders,
-      });
-
-      if (!res.ok) throw new Error("Impossible de charger vos candidatures.");
-
-      const data = await res.json();
-      setApplications(Array.isArray(data) ? data : data.applications || []);
-    } catch (err) {
-      setError(err.message || "Erreur réseau.");
-      setApplications([]);
-    } finally {
-      setLoadingApps(false);
-    }
-  };
-
-  /* ===========================================
-     FAVORIS
-  ============================================*/
-  const fetchSavedJobs = async () => {
-    setLoadingSaved(true);
-    try {
-      const res = await fetch(`${API_URL}/saved-jobs`, {
-        headers: commonHeaders,
-      });
-
-      const data = await res.json();
-      setSavedJobs(Array.isArray(data) ? data : data.savedJobs || []);
-    } catch (err) {
-      setSavedJobs([]);
-    }
-    setLoadingSaved(false);
-  };
-
-  const saveJob = async (jobId) => {
-    await fetch(`${API_URL}/saved-jobs`, {
-      method: "POST",
-      headers: commonHeaders,
-      body: JSON.stringify({ jobId }),
-    });
-    fetchSavedJobs();
-  };
-
-  const unsaveJob = async (jobId) => {
-    await fetch(`${API_URL}/saved-jobs/${jobId}`, {
-      method: "DELETE",
-      headers: commonHeaders,
-    });
-    fetchSavedJobs();
-  };
-
-  /* ===========================================
-     RECOMMANDATIONS
-  ============================================*/
-  const fetchRecommended = async () => {
-    setLoadingReco(true);
-    try {
-      const res = await fetch(`${API_URL}/jobs`, {
-        headers: commonHeaders,
-      });
-
-      const data = await res.json();
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.jobs)
-        ? data.jobs
-        : data.data || [];
-
-      setRecommendedJobs(arr.slice(0, 5));
-    } catch (err) {
-      setRecommendedJobs([]);
-    }
-    setLoadingReco(false);
-  };
-
-  /* ===========================================
-     GROUPEMENT PAR STATUT
-  ============================================*/
-  const groupedApps = useMemo(() => {
-    const groups = {
-      applied: [],
-      inReview: [],
-      interview: [],
-      offer: [],
-      rejected: [],
-    };
-
-    for (const app of applications) {
-      const status = (app.status || "Pending").toLowerCase();
-      if (status === "pending") groups.applied.push(app);
-      else if (status === "reviewing") groups.inReview.push(app);
-      else if (status === "interview") groups.interview.push(app);
-      else if (status === "accepted") groups.offer.push(app);
-      else if (status === "rejected") groups.rejected.push(app);
-      else groups.applied.push(app);
-    }
-    return groups;
-  }, [applications]);
-
-  const totalApplications = applications.length;
-  const upcomingInterviews = groupedApps.interview.length;
   const goToJob = (jobId) => {
     if (jobId) nav(`/emplois/${jobId}`);
   };
 
-  /* ===========================================
-     CONTACTER & APPEL VIDÉO
-  ============================================*/
   const contactRecruiter = (recruiter) => {
     nav("/messages", {
       state: {
@@ -192,42 +44,9 @@ export default function CandidateDashboard() {
     });
   };
 
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
-  const statusConfig = {
-    pending: { label: "Envoyée", color: "blue" },
-    reviewing: { label: "En revue", color: "amber" },
-    interview: { label: "Entretien", color: "indigo" },
-    accepted: { label: "Offre reçue", color: "emerald" },
-    rejected: { label: "Refusée", color: "rose" },
-  };
-
-  const profileCompletion = Math.min(
-    Math.max(Number(user?.profileCompletion || user?.completion || 0), 0),
-    100,
-  );
-
-  const profileViews = user?.profileViews || 0;
-  const messagesCount = user?.unreadMessages || 0;
-
-  const recentApplications = useMemo(() => {
-    return [...applications]
-      .sort((a, b) => {
-        const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-        const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-        return dateB - dateA;
-      })
-      .slice(0, 5);
-  }, [applications]);
-
   const nextAction = useMemo(() => {
-    if (upcomingInterviews > 0) {
-      const soonestInterview = groupedApps.interview
+    if (data.upcomingInterviews > 0) {
+      const soonestInterview = data.groupedApps.interview
         .map((app) => new Date(app.interviewDate || app.updatedAt || app.createdAt))
         .sort((a, b) => a.getTime() - b.getTime())[0];
 
@@ -237,25 +56,25 @@ export default function CandidateDashboard() {
           ? `Planifié le ${soonestInterview.toLocaleDateString()} à ${soonestInterview.toLocaleTimeString()}`
           : "Consolidez vos notes et relisez l'offre",
         ctaLabel: "Ouvrir l'agenda",
-        ctaAction: () => scrollToSection("agenda"),
+        ctaAction: () => nav("/jobconnect/agenda"),
       };
     }
 
-    if (recommendedJobs.length > 0) {
+    if (data.recommendedJobs.length > 0) {
       return {
         title: "Postulez à une offre recommandée",
-        subtitle: recommendedJobs[0].title,
+        subtitle: data.recommendedJobs[0].title,
         ctaLabel: "Voir l'offre",
-        ctaAction: () => goToJob(recommendedJobs[0]._id),
+        ctaAction: () => goToJob(data.recommendedJobs[0]._id),
       };
     }
 
-    if (savedJobs.length > 0) {
+    if (data.savedJobs.length > 0) {
       return {
         title: "Finalisez vos favoris",
-        subtitle: `${savedJobs.length} offre(s) en attente dans vos favoris`,
+        subtitle: `${data.savedJobs.length} offre(s) en attente dans vos favoris`,
         ctaLabel: "Ouvrir les favoris",
-        ctaAction: () => scrollToSection("favoris"),
+        ctaAction: () => nav("/jobconnect/favoris"),
       };
     }
 
@@ -265,377 +84,230 @@ export default function CandidateDashboard() {
       ctaLabel: "Accéder au flux",
       ctaAction: () => nav("/fb/dashboard"),
     };
-  }, [upcomingInterviews, groupedApps.interview, recommendedJobs, savedJobs, nav]);
+  }, [data.upcomingInterviews, data.groupedApps.interview, data.recommendedJobs, data.savedJobs, nav]);
 
   const upcomingAgenda = useMemo(() => {
-    return groupedApps.interview.slice(0, 3).map((app) => ({
+    return data.groupedApps.interview.slice(0, 3).map((app) => ({
       title: app.job?.title || "Entretien prévu",
       company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
       when: app.interviewDate || app.updatedAt || app.createdAt,
       recruiter: app.job?.recruiter,
     }));
-  }, [groupedApps.interview]);
-
-  const renderStatusPill = (status) => {
-    const key = (status || "pending").toLowerCase();
-    const cfg = statusConfig[key] || statusConfig.pending;
-
-    return <span className={`status-pill status-${cfg.color}`}>{cfg.label}</span>;
-  };
-
-  const renderApplicationCard = (app) => {
-    const job = app.job || {};
-    const recruiter = job.recruiter || {};
-    const company = recruiter.companyName || recruiter.name || "Entreprise";
-    const status = (app.status || "pending").toLowerCase();
-
-    return (
-      <div key={app._id} className="application-card" onClick={() => goToJob(job._id)}>
-        <div className="application-card__header">
-          <div>
-            <p className="application-title">{job.title || "Poste"}</p>
-            <p className="application-sub">{company}</p>
-          </div>
-          {renderStatusPill(status)}
-        </div>
-
-        <div className="application-meta">
-          <span>
-            Dernière mise à jour :
-            {" "}
-            {app.updatedAt || app.createdAt
-              ? new Date(app.updatedAt || app.createdAt).toLocaleDateString()
-              : "-"}
-          </span>
-          <span className="muted">
-            {job.location || job.city || "Localisation non renseignée"}
-          </span>
-        </div>
-
-        <div className="application-actions">
-          <button
-            className="ghost-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              contactRecruiter(recruiter);
-            }}
-          >
-            Contacter
-          </button>
-          <button
-            className="ghost-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              callRecruiter(recruiter);
-            }}
-          >
-            Appel vidéo
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderJobMiniCard = (job) => {
-    if (!job) return null;
-    const recruiterName =
-      job.recruiter?.companyName || job.recruiter?.name || "Entreprise";
-
-    const isFav = savedJobs.some((s) => s.job?._id === job._id);
-
-    return (
-      <div key={job._id} className="mini-card" onClick={() => goToJob(job._id)}>
-        <div className="mini-card-top">
-          <div>
-            <p className="mini-title">{job.title}</p>
-            <p className="mini-sub">{recruiterName}</p>
-          </div>
-          <button
-            className={`fav-toggle ${isFav ? "fav-active" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              isFav ? unsaveJob(job._id) : saveJob(job._id);
-            }}
-          >
-            {isFav ? "♥" : "♡"}
-          </button>
-        </div>
-        <p className="mini-meta">{job.location || "Localisation"}</p>
-      </div>
-    );
-  };
+  }, [data.groupedApps.interview]);
 
   return (
-    <div className="candidate-dashboard">
-      <aside className={`cd-side ${sidebarOpen ? "cd-side-open" : ""}`}>
-        <div className="side-brand">JobConnect</div>
-        <nav className="side-nav">
-          <button className="side-link active">Dashboard</button>
-          <button className="side-link" onClick={() => scrollToSection("recent")}>
-            Mes Candidatures
-          </button>
-          <button className="side-link" onClick={() => nav("/messages")}>
-            Messages
-          </button>
-          <button className="side-link" onClick={() => scrollToSection("favoris")}>
-            Favoris
-          </button>
-          <button className="side-link" onClick={() => nav("/profil")}>
-            Mon Profil
-          </button>
-        </nav>
-        <div className="side-footer">© 2025 JobConnect Inc.</div>
-      </aside>
-
-      <main className="cd-main">
-        <header className="topbar">
-          <div className="topbar__titles">
-            <div className="eyebrow">Tableau de bord candidat</div>
-            <h2>Bienvenue, {user?.name || "Candidat"} 👋</h2>
-            <p className="topbar-sub">
-              Suivez vos candidatures, vos entretiens et vos prochaines actions en un coup d'œil.
-            </p>
-          </div>
-          <div className="topbar-actions">
-            <button
-              className="notif-btn mobile-only"
-              aria-label="Ouvrir le menu"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-              ☰
+    <JobConnectLayout user={data.user} onLogout={logout}>
+      <section className="hero" id="recent">
+        <div className="hero__info">
+          <p className="eyebrow">Prochaine étape</p>
+          <h3>{nextAction.title}</h3>
+          <p className="hero__subtitle">{nextAction.subtitle}</p>
+          <div className="hero__actions">
+            <button className="primary-btn" onClick={nextAction.ctaAction}>
+              {nextAction.ctaLabel}
             </button>
-            <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
-              🔔
-            </button>
-            <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "C"}</div>
-          </div>
-        </header>
-
-        <div className="content">
-          <section className="hero" id="recent">
-            <div className="hero__info">
-              <p className="eyebrow">Prochaine étape</p>
-              <h3>{nextAction.title}</h3>
-              <p className="hero__subtitle">{nextAction.subtitle}</p>
-              <div className="hero__actions">
-                <button className="primary-btn" onClick={nextAction.ctaAction}>
-                  {nextAction.ctaLabel}
-                </button>
-                <button className="ghost-link" onClick={() => nav("/fb/dashboard")}>Parcourir les offres</button>
-              </div>
-            </div>
-            <div className="hero__highlights">
-              <div className="hero-chip">
-                <span>Profil</span>
-                <strong>{profileCompletion}%</strong>
-              </div>
-              <div className="hero-chip">
-                <span>Entretiens</span>
-                <strong>{upcomingInterviews}</strong>
-              </div>
-              <div className="hero-chip">
-                <span>Favoris</span>
-                <strong>{savedJobs.length}</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="stats-grid">
-            <div className="stat-card">
-              <p className="stat-label">Candidatures envoyées</p>
-              <p className="stat-value text-indigo">{totalApplications}</p>
-              <p className="stat-hint">Continuez à postuler régulièrement pour rester visible.</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Entretiens prévus</p>
-              <p className="stat-value text-orange">{upcomingInterviews}</p>
-              <p className="stat-hint">Préparez vos réponses et consultez le profil du recruteur.</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Vues du profil</p>
-              <p className="stat-value text-emerald">{profileViews}</p>
-              <p className="stat-hint">Ajoutez des projets pour augmenter l'intérêt.</p>
-            </div>
-            <div className="stat-card">
-              <p className="stat-label">Messages reçus</p>
-              <p className="stat-value text-purple">{messagesCount}</p>
-              <p className="stat-hint">Répondez rapidement pour ne rien manquer.</p>
-            </div>
-          </section>
-
-          <div className="grid-two">
-            <section className="card pipeline" aria-label="Pipeline de candidatures">
-              <div className="card-header">
-                <h3>Suivi des candidatures</h3>
-                <button className="ghost-link" onClick={() => nav("/candidatures")}>
-                  Voir tout
-                </button>
-              </div>
-
-              <div className="lanes">
-                {[
-                  { key: "applied", label: "Envoyée", color: "blue" },
-                  { key: "inReview", label: "En revue", color: "amber" },
-                  { key: "interview", label: "Entretien", color: "indigo" },
-                  { key: "offer", label: "Offre", color: "emerald" },
-                  { key: "rejected", label: "Refusée", color: "rose" },
-                ].map((lane) => (
-                  <div key={lane.key} className="lane">
-                    <div className="lane-header">
-                      <span className={`lane-dot lane-${lane.color}`}></span>
-                      <div>
-                        <p className="lane-title">{lane.label}</p>
-                        <p className="lane-count">{groupedApps[lane.key].length} offre(s)</p>
-                      </div>
-                    </div>
-                    <div className="lane-body">
-                      {groupedApps[lane.key].length === 0 && (
-                        <p className="empty-state small">Aucune offre dans cette étape.</p>
-                      )}
-                      {groupedApps[lane.key].slice(0, 3).map((app) => (
-                        <div key={app._id} className="lane-card" onClick={() => goToJob(app.job?._id)}>
-                          <p className="lane-card__title">{app.job?.title || "Poste"}</p>
-                          <p className="lane-card__subtitle">
-                            {app.job?.recruiter?.companyName || app.job?.recruiter?.name || "Entreprise"}
-                          </p>
-                          <div className="lane-card__footer">
-                            <span>
-                              {app.updatedAt || app.createdAt
-                                ? new Date(app.updatedAt || app.createdAt).toLocaleDateString()
-                                : "-"}
-                            </span>
-                            <span className="ghost-link">Ouvrir</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="card agenda-card" id="agenda">
-              <div className="card-header">
-                <h3>Agenda à venir</h3>
-                <button className="ghost-link" onClick={() => scrollToSection("favoris")}>Préparer</button>
-              </div>
-
-              <div className="agenda-list">
-                {upcomingAgenda.length === 0 && (
-                  <p className="empty-state small">Aucun entretien programmé pour le moment.</p>
-                )}
-
-                {upcomingAgenda.map((event, idx) => (
-                  <div key={`${event.title}-${idx}`} className="agenda-item">
-                    <div>
-                      <p className="agenda-title">{event.title}</p>
-                      {event.company && <p className="agenda-sub">{event.company}</p>}
-                      {event.when && <p className="agenda-date">{new Date(event.when).toLocaleString()}</p>}
-                    </div>
-                    <div className="agenda-actions">
-                      <button
-                        className="ghost-btn"
-                        onClick={() => contactRecruiter(event.recruiter || {})}
-                      >
-                        Contacter
-                      </button>
-                      <button
-                        className="ghost-btn"
-                        onClick={() => callRecruiter(event.recruiter || {})}
-                      >
-                        Appel vidéo
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="progress-block">
-                <div className="progress-header">
-                  <span>Profil complété à {profileCompletion}%</span>
-                  <span className="progress-tip">Ajoutez votre portfolio pour atteindre 100% !</span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${profileCompletion}%` }}></div>
-                </div>
-              </div>
-
-              <div className="quick-actions">
-                <button className="primary-btn ghost" onClick={() => nav("/profil")}>
-                  Mettre à jour mon profil
-                </button>
-                <button className="primary-btn ghost" onClick={logout}>
-                  Se déconnecter
-                </button>
-              </div>
-            </section>
-          </div>
-
-          <div className="grid-two">
-            <section className="card" aria-label="Candidatures récentes">
-              <div className="card-header">
-                <div>
-                  <p className="eyebrow">Chronologie</p>
-                  <h3>Vos dernières activités</h3>
-                </div>
-                <button className="ghost-link" onClick={() => nav("/candidatures")}>
-                  Tout voir
-                </button>
-              </div>
-
-              {loadingApps && <div className="loader">Chargement de vos candidatures…</div>}
-              {error && <div className="error-message">{error}</div>}
-              {!loadingApps && recentApplications.length === 0 && !error && (
-                <div className="empty-state">Aucune candidature pour le moment.</div>
-              )}
-
-              <div className="applications-list">
-                {recentApplications.map(renderApplicationCard)}
-              </div>
-            </section>
-
-            <section className="card" id="favoris">
-              <div className="card-header">
-                <div>
-                  <p className="eyebrow">Opportunités</p>
-                  <h3>Favoris & Recommandations</h3>
-                </div>
-                <button className="ghost-link" onClick={() => nav("/fb/dashboard")}>
-                  Continuer à postuler
-                </button>
-              </div>
-
-              <div className="mini-section">
-                <div className="mini-section-header">
-                  <h4>Vos favoris</h4>
-                  <span className="mini-count">{savedJobs.length}</span>
-                </div>
-                {loadingSaved && <div className="loader">Chargement…</div>}
-                {!loadingSaved && savedJobs.length === 0 && (
-                  <div className="empty-state small">Aucun favori pour le moment.</div>
-                )}
-                <div className="mini-grid">
-                  {savedJobs.slice(0, 4).map((fav) => renderJobMiniCard(fav.job))}
-                </div>
-              </div>
-
-              <div className="mini-section">
-                <div className="mini-section-header">
-                  <h4>Recommandé pour vous</h4>
-                  <span className="mini-count">{recommendedJobs.length}</span>
-                </div>
-                {loadingReco && <div className="loader">Chargement des recommandations…</div>}
-                {!loadingReco && recommendedJobs.length === 0 && (
-                  <div className="empty-state small">Aucune recommandation pour le moment.</div>
-                )}
-                <div className="mini-grid">
-                  {recommendedJobs.slice(0, 4).map(renderJobMiniCard)}
-                </div>
-              </div>
-            </section>
+            <button className="ghost-link" onClick={() => nav("/fb/dashboard")}>Parcourir les offres</button>
           </div>
         </div>
-      </main>
-    </div>
+        <div className="hero__highlights">
+          <div className="hero-chip">
+            <span>Profil</span>
+            <strong>{data.profileCompletion}%</strong>
+          </div>
+          <div className="hero-chip">
+            <span>Entretiens</span>
+            <strong>{data.upcomingInterviews}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>Favoris</span>
+            <strong>{data.savedJobs.length}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="stats-grid">
+        <div className="stat-card">
+          <p className="stat-label">Candidatures envoyées</p>
+          <p className="stat-value text-indigo">{data.totalApplications}</p>
+          <p className="stat-hint">Continuez à postuler régulièrement pour rester visible.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Entretiens prévus</p>
+          <p className="stat-value text-orange">{data.upcomingInterviews}</p>
+          <p className="stat-hint">Préparez vos réponses et consultez le profil du recruteur.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Vues du profil</p>
+          <p className="stat-value text-emerald">{data.profileViews}</p>
+          <p className="stat-hint">Ajoutez des projets pour augmenter l'intérêt.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Messages reçus</p>
+          <p className="stat-value text-purple">{data.messagesCount}</p>
+          <p className="stat-hint">Répondez rapidement pour ne rien manquer.</p>
+        </div>
+      </section>
+
+      <div className="grid-two">
+        <section className="card pipeline" aria-label="Pipeline de candidatures">
+          <div className="card-header">
+            <h3>Suivi des candidatures</h3>
+            <button className="ghost-link" onClick={() => nav("/jobconnect/candidatures")}>Voir tout</button>
+          </div>
+
+          <ApplicationPipeline
+            groupedApps={{
+              applied: data.groupedApps.applied.slice(0, 3),
+              inReview: data.groupedApps.inReview.slice(0, 3),
+              interview: data.groupedApps.interview.slice(0, 3),
+              offer: data.groupedApps.offer.slice(0, 3),
+              rejected: data.groupedApps.rejected.slice(0, 3),
+            }}
+            onOpen={goToJob}
+          />
+        </section>
+
+        <section className="card agenda-card" id="agenda">
+          <div className="card-header">
+            <h3>Agenda à venir</h3>
+            <button className="ghost-link" onClick={() => nav("/jobconnect/agenda")}>Voir l'agenda</button>
+          </div>
+
+          <div className="agenda-list">
+            {upcomingAgenda.length === 0 && (
+              <p className="empty-state small">Aucun entretien programmé pour le moment.</p>
+            )}
+
+            {upcomingAgenda.map((event, idx) => (
+              <div key={`${event.title}-${idx}`} className="agenda-item">
+                <div>
+                  <p className="agenda-title">{event.title}</p>
+                  {event.company && <p className="agenda-sub">{event.company}</p>}
+                  {event.when && <p className="agenda-date">{new Date(event.when).toLocaleString()}</p>}
+                </div>
+                <div className="agenda-actions">
+                  <button
+                    className="ghost-btn"
+                    onClick={() => contactRecruiter(event.recruiter || {})}
+                  >
+                    Contacter
+                  </button>
+                  <button className="ghost-btn" onClick={() => callRecruiter(event.recruiter || {})}>
+                    Appel vidéo
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="progress-block">
+            <div className="progress-header">
+              <span>Profil complété à {data.profileCompletion}%</span>
+              <span className="progress-tip">Ajoutez votre portfolio pour atteindre 100% !</span>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${data.profileCompletion}%` }}></div>
+            </div>
+          </div>
+
+          <div className="quick-actions">
+            <button className="primary-btn ghost" onClick={() => nav("/jobconnect/profil")}>Mettre à jour mon profil</button>
+            <button className="primary-btn ghost" onClick={logout}>Se déconnecter</button>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid-two">
+        <section className="card" aria-label="Candidatures récentes">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">Chronologie</p>
+              <h3>Vos dernières activités</h3>
+            </div>
+            <button className="ghost-link" onClick={() => nav("/jobconnect/candidatures")}>
+              Tout voir
+            </button>
+          </div>
+
+          {data.loadingApps && <div className="loader">Chargement de vos candidatures…</div>}
+          {data.error && <div className="error-message">{data.error}</div>}
+          {!data.loadingApps && data.recentApplications.length === 0 && !data.error && (
+            <div className="empty-state">Aucune candidature pour le moment.</div>
+          )}
+
+          <div className="applications-list">
+            {data.recentApplications.map((app) => (
+              <ApplicationCard
+                key={app._id}
+                app={app}
+                onOpen={goToJob}
+                onContact={contactRecruiter}
+                onCall={callRecruiter}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="card" id="favoris">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">Opportunités</p>
+              <h3>Favoris & Recommandations</h3>
+            </div>
+            <button className="ghost-link" onClick={() => nav("/jobconnect/favoris")}>
+              Voir tout
+            </button>
+          </div>
+
+          <div className="mini-section">
+            <div className="mini-section-header">
+              <h4>Vos favoris</h4>
+              <span className="mini-count">{data.savedJobs.length}</span>
+            </div>
+            {data.loadingSaved && <div className="loader">Chargement…</div>}
+            {!data.loadingSaved && data.savedJobs.length === 0 && (
+              <div className="empty-state small">Aucun favori pour le moment.</div>
+            )}
+            <div className="mini-grid">
+              {data.savedJobs.slice(0, 4).map((fav) => (
+                <JobMiniCard
+                  key={fav._id}
+                  job={fav.job}
+                  isFavorite
+                  onOpen={goToJob}
+                  onToggleFavorite={(jobId, isFav) =>
+                    isFav ? data.unsaveJob(jobId) : data.saveJob(jobId)
+                  }
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mini-section">
+            <div className="mini-section-header">
+              <h4>Recommandé pour vous</h4>
+              <span className="mini-count">{data.recommendedJobs.length}</span>
+            </div>
+            {data.loadingReco && <div className="loader">Chargement des recommandations…</div>}
+            {!data.loadingReco && data.recommendedJobs.length === 0 && (
+              <div className="empty-state small">Aucune recommandation pour le moment.</div>
+            )}
+            <div className="mini-grid">
+              {data.recommendedJobs.slice(0, 4).map((job) => (
+                <JobMiniCard
+                  key={job._id}
+                  job={job}
+                  isFavorite={data.savedJobs.some((s) => s.job?._id === job._id)}
+                  onOpen={goToJob}
+                  onToggleFavorite={(jobId, isFav) =>
+                    isFav ? data.unsaveJob(jobId) : data.saveJob(jobId)
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </JobConnectLayout>
   );
 }

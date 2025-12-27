@@ -35,6 +35,12 @@ import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import RecruiterJobApplications from "./pages/RecruiterJobApplications";
 import RecruiterAllApplications from "./pages/RecruiterAllApplications";
+import JobConnectApplications from "./pages/JobConnectApplications";
+import JobConnectInterviews from "./pages/JobConnectInterviews";
+import JobConnectMessages from "./pages/JobConnectMessages";
+import JobConnectFavorites from "./pages/JobConnectFavorites";
+import JobConnectAgenda from "./pages/JobConnectAgenda";
+import JobConnectProfile from "./pages/JobConnectProfile";
 
 import FacebookFeed from "./components/FacebookFeed";
 
@@ -207,8 +213,25 @@ export default function App() {
                 />
 
                 <Route
+                  path="/jobconnect"
+                  element={
+                    <ProtectedRoute>
+                      <Outlet />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="dashboard" element={<CandidateDashboard />} />
+                  <Route path="candidatures" element={<JobConnectApplications />} />
+                  <Route path="entretiens" element={<JobConnectInterviews />} />
+                  <Route path="messages" element={<JobConnectMessages />} />
+                  <Route path="favoris" element={<JobConnectFavorites />} />
+                  <Route path="agenda" element={<JobConnectAgenda />} />
+                  <Route path="profil" element={<JobConnectProfile />} />
+                </Route>
+
+                <Route
                   path="/candidate/dashboard"
-                  element={<CandidateDashboard />}
+                  element={<Navigate to="/jobconnect/dashboard" replace />}
                 />
 
                 <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />
@@ -233,7 +256,7 @@ function DashboardRouter() {
   if (!user) return <Navigate to="/fb" replace />;
 
   if (user.role === "recruiter") return <RecruiterDashboard />;
-  if (user.role === "candidate") return <CandidateDashboard />;
+  if (user.role === "candidate") return <Navigate to="/jobconnect/dashboard" replace />;
 
   return <Navigate to="/fb" replace />;
 }
