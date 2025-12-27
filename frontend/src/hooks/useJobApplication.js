@@ -72,8 +72,12 @@ export default function useJobApplication({ apiUrl, token, onFeedback }) {
       if (!userId) return;
 
       const stored = new Set(readApplied(userId));
+
+      // Persister uniquement côté front : on marque les offres présentes dans
+      // le localStorage, sans dépendre d'un éventuel hasApplied envoyé par le backend.
       jobs.forEach((job) => {
-        if (job?.hasApplied) stored.add(job._id);
+        if (stored.has(job?._id)) return;
+        if (appliedSet.has(job?._id)) stored.add(job._id);
       });
 
       setAppliedSet((prev) => {
@@ -85,7 +89,7 @@ export default function useJobApplication({ apiUrl, token, onFeedback }) {
 
       writeApplied(userId, [...stored]);
     },
-    [userId]
+    [appliedSet, userId]
   );
 
   const handleApply = useCallback(

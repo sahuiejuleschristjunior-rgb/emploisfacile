@@ -160,24 +160,20 @@ export default function JobFeed() {
               <p className="job-date">Publiée le {formatDate(job.createdAt)}</p>
             </div>
 
-            {isRecruiter ? (
+            {isCandidate && !hasApplied ? (
+              <button
+                className="cta-button"
+                onClick={() => handleApply(job._id, job.title)}
+                disabled={applyingJobId === job._id}
+              >
+                {applyingJobId === job._id ? "Envoi..." : "Postuler"}
+              </button>
+            ) : (
               <button
                 className="cta-button neutral"
                 onClick={() => navigate(`/emplois/${job._id}`)}
               >
                 Voir les détails
-              </button>
-            ) : hasApplied ? (
-              <button className="cta-button applied" disabled>
-                Déjà postulé
-              </button>
-            ) : (
-              <button
-                className="cta-button"
-                onClick={() => handleApply(job._id, job.title)}
-                disabled={applyingJobId === job._id || !isCandidate}
-              >
-                {applyingJobId === job._id ? "Envoi..." : "Postuler"}
               </button>
             )}
           </div>
@@ -339,24 +335,20 @@ export default function JobFeed() {
                 <p className="featured-meta">
                   {getLocation(job)} • {getContract(job)}
                 </p>
-                {isRecruiter ? (
+                {isCandidate && !appliedSet.has(job._id) ? (
+                  <button
+                    className="featured-cta"
+                    onClick={() => handleApply(job._id, job.title)}
+                    disabled={applyingJobId === job._id}
+                  >
+                    {applyingJobId === job._id ? "Envoi..." : "Postuler"}
+                  </button>
+                ) : (
                   <button
                     className="featured-cta neutral"
                     onClick={() => navigate(`/emplois/${job._id}`)}
                   >
                     Voir les détails
-                  </button>
-                ) : (
-                  <button
-                    className="featured-cta"
-                    onClick={() => handleApply(job._id, job.title)}
-                    disabled={applyingJobId === job._id || appliedSet.has(job._id) || !isCandidate}
-                  >
-                    {appliedSet.has(job._id)
-                      ? "Déjà postulé"
-                      : applyingJobId === job._id
-                      ? "Envoi..."
-                      : "Postuler"}
                   </button>
                 )}
               </div>
