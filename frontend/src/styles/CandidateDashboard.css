@@ -12,15 +12,8 @@
   --rose: #fb7185;
   --gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
   --candidate-shell-padding: 0px;
-  --dashboard-sidebar-width: 260px;
-  --dashboard-header-height: 64px;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  padding: 0;
+  --candidate-sidebar-width: 260px;
+  --candidate-header-height: 88px;
 }
 
 body {
@@ -47,7 +40,7 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: var(--dashboard-sidebar-width);
+  width: var(--candidate-sidebar-width);
   height: 100vh;
   overflow-y: auto;
   z-index: 35;
@@ -139,35 +132,28 @@ body {
 .cd-main {
   display: flex;
   flex-direction: column;
+  margin-top: var(--candidate-header-height);
+  margin-left: var(--candidate-sidebar-width);
+  width: calc(100% - var(--candidate-sidebar-width));
+  height: calc(100vh - var(--candidate-header-height));
+  overflow: hidden;
   position: relative;
-  margin-top: var(--dashboard-header-height);
-  margin-left: var(--dashboard-sidebar-width);
-  width: calc(100% - var(--dashboard-sidebar-width));
-  height: calc(100vh - var(--dashboard-header-height));
-  padding-top: 0;
-  overflow-y: auto;
 }
 
 .cd-topbar {
   background: rgba(12, 17, 31, 0.8);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  position: fixed;
-  top: 0;
-  left: var(--dashboard-sidebar-width);
-  right: 0;
-  height: var(--dashboard-header-height);
-  z-index: 45;
-  margin: 0;
-  padding: 0;
-}
-
-.cd-topbar-content {
   padding: 16px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
+  position: fixed;
+  top: 0;
+  left: var(--candidate-sidebar-width);
+  right: 0;
+  height: var(--candidate-header-height);
+  z-index: 45;
 }
 
 .cd-topbar h2 {
@@ -946,7 +932,7 @@ body {
   .cd-side {
     left: 0;
     inset: 0;
-    width: var(--dashboard-sidebar-width);
+    width: var(--candidate-sidebar-width);
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: 20;
@@ -959,7 +945,7 @@ body {
   .cd-main {
     margin-left: 0;
     width: 100%;
-    height: calc(100vh - var(--dashboard-header-height));
+    height: calc(100vh - var(--candidate-header-height));
   }
 
   .cd-topbar {
