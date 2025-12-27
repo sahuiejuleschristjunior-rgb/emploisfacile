@@ -3,6 +3,7 @@ export default function ConversationItem({
   avatar,
   name,
   last,
+  lastMessage = null,
   lastTime,
   unreadCount = 0,
   isOnline = false,
@@ -17,6 +18,8 @@ export default function ConversationItem({
       minute: "2-digit",
     });
   };
+
+  const hasUnread = unreadCount > 0 || lastMessage?.isRead === false;
 
   return (
     <div className="conversation-item" onClick={onClick}>
@@ -34,7 +37,10 @@ export default function ConversationItem({
           {lastTime && <div className="conv-time">{formatTime(lastTime)}</div>}
         </div>
         <div className="conv-bottom-row">
-          <div className="conv-last-msg">{last}</div>
+          <div className="conv-last-msg">
+            {last}
+            {hasUnread && <span className="inbox-badge-new">Nouveau</span>}
+          </div>
           {unreadCount > 0 && (
             <span className="conv-unread-badge">{unreadCount}</span>
           )}
