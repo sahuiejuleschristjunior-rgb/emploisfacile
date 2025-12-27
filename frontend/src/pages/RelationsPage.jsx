@@ -173,33 +173,34 @@ export default function RelationsPage() {
               className={`relation-card ${isHighlighted ? "relation-card-highlight" : ""}`}
               ref={idx === 0 ? firstRequestRef : null}
             >
-            <img
-              src={fixAvatar(u.avatar)}
-              alt={u.name}
-              className="relation-avatar"
-              loading="lazy"
-            />
+              <img
+                src={fixAvatar(u.avatar)}
+                alt={u.name}
+                className="relation-avatar"
+                loading="lazy"
+              />
 
-            <div className="relation-info">
-              <strong>{u.name}</strong>
-              <span>{u.email}</span>
-            </div>
+              <div className="relation-info">
+                <strong>{u.name}</strong>
+                <span>{u.email}</span>
+              </div>
 
-            <div className="relation-actions">
-              {isHighlighted && <span className="relation-new-badge">Nouvelle demande</span>}
-              <button
-                className="btn-accept"
-                onClick={() => handleAccept(u._id)}
-              >
-                Accepter
-              </button>
+              <div className="relation-actions">
+                {isHighlighted && <span className="relation-new-badge">Nouvelle demande</span>}
+                <button
+                  className="btn-accept"
+                  onClick={() => handleAccept(u._id)}
+                >
+                  Accepter
+                </button>
 
-              <button
-                className="btn-reject"
-                onClick={() => handleReject(u._id)}
-              >
-                Refuser
-              </button>
+                <button
+                  className="btn-reject"
+                  onClick={() => handleReject(u._id)}
+                >
+                  Refuser
+                </button>
+              </div>
             </div>
           );
         })}
