@@ -11,7 +11,7 @@
   --amber: #f59e0b;
   --rose: #fb7185;
   --gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
-  --candidate-shell-padding: 18px;
+  --candidate-shell-padding: 0px;
   --candidate-sidebar-width: 260px;
   --candidate-header-height: 88px;
 }
@@ -25,7 +25,7 @@ body {
 .candidate-dashboard {
   min-height: 100vh;
   background: var(--bg);
-  padding: 0 var(--candidate-shell-padding);
+  padding: 0;
   position: relative;
 }
 
@@ -39,7 +39,7 @@ body {
   border-right: 1px solid var(--border);
   position: fixed;
   top: 0;
-  left: var(--candidate-shell-padding);
+  left: 0;
   width: var(--candidate-sidebar-width);
   height: 100vh;
   overflow-y: auto;
@@ -132,10 +132,10 @@ body {
 .cd-main {
   display: flex;
   flex-direction: column;
-  padding: var(--candidate-header-height) 0 18px;
-  margin-left: calc(var(--candidate-sidebar-width) + var(--candidate-shell-padding));
-  width: calc(100% - var(--candidate-sidebar-width) - (var(--candidate-shell-padding) * 2));
-  height: 100vh;
+  margin-top: var(--candidate-header-height);
+  margin-left: var(--candidate-sidebar-width);
+  width: calc(100% - var(--candidate-sidebar-width));
+  height: calc(100vh - var(--candidate-header-height));
   overflow: hidden;
   position: relative;
 }
@@ -150,8 +150,8 @@ body {
   justify-content: space-between;
   position: fixed;
   top: 0;
-  left: calc(var(--candidate-sidebar-width) + var(--candidate-shell-padding));
-  right: var(--candidate-shell-padding);
+  left: var(--candidate-sidebar-width);
+  right: 0;
   height: var(--candidate-header-height);
   z-index: 45;
 }
@@ -248,6 +248,7 @@ body {
   gap: 18px;
   flex: 1;
   overflow-y: auto;
+  height: 100%;
 }
 
 .hero {
@@ -943,9 +944,8 @@ body {
 
   .cd-main {
     margin-left: 0;
-    height: auto;
-    padding: var(--candidate-header-height) 0 18px;
     width: 100%;
+    height: calc(100vh - var(--candidate-header-height));
   }
 
   .cd-topbar {
