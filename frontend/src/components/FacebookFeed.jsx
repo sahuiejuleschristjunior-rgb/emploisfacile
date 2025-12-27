@@ -58,11 +58,14 @@ const svgThumb = (
   </svg>
 );
 
+let activeVideoRef = null;
+
 function FeedVideoMedia({ media, onClick, onExpand }) {
   const MIN_FEED_VIDEO_RATIO = 4 / 5; // Empêche les vidéos trop hautes
   const MAX_FEED_VIDEO_RATIO = 16 / 9; // Empêche les bandes noires horizontales
 
   const [aspectRatio, setAspectRatio] = useState(1);
+  const videoRef = useRef(null);
 
   const handleMetadata = (event) => {
     const videoEl = event?.target;
@@ -79,6 +82,64 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
       setAspectRatio(clampedRatio);
     }
   };
+
+  const pauseVideo = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    videoEl.pause();
+    if (activeVideoRef === videoEl) {
+      activeVideoRef = null;
+    }
+  }, []);
+
+  const playVideo = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    if (activeVideoRef && activeVideoRef !== videoEl) {
+      activeVideoRef.pause();
+    }
+
+    videoEl.muted = true;
+    videoEl.play().catch(() => {});
+    activeVideoRef = videoEl;
+  }, []);
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio >= 0.5) {
+            playVideo();
+          } else {
+            pauseVideo();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(videoEl);
+
+    const handleUserPlay = () => {
+      if (activeVideoRef && activeVideoRef !== videoEl) {
+        activeVideoRef.pause();
+      }
+      activeVideoRef = videoEl;
+    };
+
+    videoEl.addEventListener("play", handleUserPlay);
+
+    return () => {
+      videoEl.removeEventListener("play", handleUserPlay);
+      observer.disconnect();
+      pauseVideo();
+    };
+  }, [pauseVideo, playVideo]);
 
   const containerStyle = { aspectRatio };
   const videoStyle = { width: "100%", height: "100%", objectFit: "cover" };
@@ -97,8 +158,12 @@ function FeedVideoMedia({ media, onClick, onExpand }) {
         mediaClassName="fb-post-video fbVideo"
         className="fb-post-media-renderer"
         alt=""
-        muted={false}
-        autoPlay={media.autoPlay ?? true}
+        muted
+        autoPlay={false}
+        playsInline
+        externalVideoRef={videoRef}
+        enableIntersectionObserver={false}
+        autoPlayOnLoad={false}
         onExpand={onExpand}
         onLoadedMetadata={handleMetadata}
         style={videoStyle}

@@ -46,18 +46,22 @@ export default function MediaRenderer({
   onExpand,
   onLoadedMetadata,
   style,
+  externalVideoRef,
+  enableIntersectionObserver = true,
+  autoPlayOnLoad = true,
 }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [isMuted, setIsMuted] = useState(muted);
   const [volume, setVolume] = useState(muted ? 0 : DEFAULT_VOLUME);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(false);
   const hideControlsTimeout = useRef(null);
   const lastVolumeRef = useRef(DEFAULT_VOLUME);
-  const videoRef = useRef(null);
+  const internalVideoRef = useRef(null);
+  const videoRef = externalVideoRef || internalVideoRef;
   const progressRef = useRef(null);
 
   const finalSrc = src || media?.url || media?.src;
@@ -86,13 +90,13 @@ export default function MediaRenderer({
 
     const timeout = setTimeout(() => {
       setLoaded(true);
-      if (showVideo && videoRef.current) {
+      if (showVideo && videoRef.current && autoPlayOnLoad) {
         videoRef.current.play().catch(() => {});
       }
     }, showVideo ? 2500 : 1500);
 
     return () => clearTimeout(timeout);
-  }, [finalSrc, loaded, showVideo]);
+  }, [finalSrc, loaded, showVideo, autoPlayOnLoad, videoRef]);
 
   useEffect(() => {
     const videoEl = videoRef.current;
@@ -145,7 +149,9 @@ export default function MediaRenderer({
     if (videoEl) {
       setDuration(videoEl.duration || 0);
       setCurrentTime(videoEl.currentTime || 0);
-      videoEl.play().catch(() => {});
+      if (autoPlayOnLoad) {
+        videoEl.play().catch(() => {});
+      }
       setIsPlaying(!videoEl.paused);
     }
   };
@@ -249,7 +255,8 @@ export default function MediaRenderer({
   }, []);
 
   useEffect(() => {
-    if (!showVideo || !videoRef.current) return undefined;
+    if (!showVideo || !videoRef.current || !enableIntersectionObserver)
+      return undefined;
 
     const videoEl = videoRef.current;
     const observer = new IntersectionObserver(
@@ -271,7 +278,7 @@ export default function MediaRenderer({
     return () => {
       observer.disconnect();
     };
-  }, [showVideo, autoPlay, finalSrc]);
+  }, [showVideo, autoPlay, finalSrc, enableIntersectionObserver, videoRef]);
 
   const handleError = () => {
     setErrored(true);
