@@ -9,6 +9,14 @@ export default function JobFeed() {
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const normalize = (value = "") =>
+    value
+      .toString()
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
@@ -207,7 +215,7 @@ export default function JobFeed() {
      RENDU GLOBAL
   ====================================================== */
   const filteredJobs = useMemo(() => {
-    const query = searchQuery.toLowerCase().trim();
+    const query = normalize(searchQuery);
 
     if (!query) return jobs;
 
@@ -226,7 +234,8 @@ export default function JobFeed() {
         job.salaryRange,
       ]
         .filter(Boolean)
-        .some((field) => field.toString().toLowerCase().includes(query));
+        .map((field) => normalize(field))
+        .some((field) => field.includes(query));
     });
   }, [jobs, searchQuery]);
 
