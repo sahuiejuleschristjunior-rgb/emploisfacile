@@ -995,8 +995,12 @@ body {
 }
 
 @media (max-width: 720px) {
+  :root {
+    --candidate-header-height: 72px;
+  }
+
   .content {
-    padding: calc(var(--candidate-header-height) + 6px) 16px 16px;
+    padding: var(--candidate-header-height) 16px 16px;
   }
 
   .cd-topbar {
