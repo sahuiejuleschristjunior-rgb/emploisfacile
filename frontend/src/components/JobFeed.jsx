@@ -242,19 +242,19 @@ export default function JobFeed() {
   ====================================================== */
   const filteredJobs = jobs;
 
-    const featuredJobs = filteredJobs.slice(0, 3);
+  const featuredJobs = filteredJobs.slice(0, 3);
 
-    const handleDashboardNavigation = () => {
-      const role = (currentUser.role || "").toLowerCase();
-      if (role === "recruiter" || role === "recruteur") {
-        navigate("/recruteur/dashboard");
-        return;
-      }
+  const handleDashboardNavigation = () => {
+    const role = (currentUser.role || "").toLowerCase();
+    if (role === "recruiter" || role === "recruteur") {
+      navigate("/recruiter/dashboard");
+      return;
+    }
 
-      if (role === "candidate" || role === "candidat") {
-        navigate("/jobconnect/dashboard");
-        return;
-      }
+    if (role === "candidate" || role === "candidat") {
+      navigate("/candidate/dashboard");
+      return;
+    }
 
     navigate("/fb/dashboard");
   };

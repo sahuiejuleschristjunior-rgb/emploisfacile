@@ -31,22 +31,16 @@ import MyPages from "./pages/MyPages";
 import PageProfile from "./pages/PageProfile";
 import LikesPage from "./pages/LikesPage";
 
+import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import RecruiterJobApplications from "./pages/RecruiterJobApplications";
+import RecruiterAllApplications from "./pages/RecruiterAllApplications";
 import JobConnectApplications from "./pages/JobConnectApplications";
 import JobConnectInterviews from "./pages/JobConnectInterviews";
 import JobConnectMessages from "./pages/JobConnectMessages";
 import JobConnectFavorites from "./pages/JobConnectFavorites";
 import JobConnectAgenda from "./pages/JobConnectAgenda";
 import JobConnectProfile from "./pages/JobConnectProfile";
-
-import RecruiterLayout from "./layouts/RecruiterLayout";
-import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard";
-import RecruiterJobs from "./pages/recruiter/RecruiterJobs";
-import RecruiterApplications from "./pages/recruiter/RecruiterApplications";
-import RecruiterMessages from "./pages/recruiter/RecruiterMessages";
-import RecruiterCompany from "./pages/recruiter/RecruiterCompany";
-import RecruiterSettings from "./pages/recruiter/RecruiterSettings";
 
 import FacebookFeed from "./components/FacebookFeed";
 
@@ -150,42 +144,20 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 >
-                <Route path="/ads" element={<Outlet />}>
-                  <Route index element={<AdsDashboard />} />
-                  <Route path="create" element={<AdsCreate />} />
-                  <Route path="pay/:campaignId" element={<AdsPayment />} />
-                  <Route path="archives" element={<AdsDashboard view="archives" />} />
-                  <Route path=":id" element={<AdsDetails />} />
+                  <Route path="/ads" element={<Outlet />}>
+                    <Route index element={<AdsDashboard />} />
+                    <Route path="create" element={<AdsCreate />} />
+                    <Route path="pay/:campaignId" element={<AdsPayment />} />
+                    <Route path="archives" element={<AdsDashboard view="archives" />} />
+                    <Route path=":id" element={<AdsDetails />} />
+                  </Route>
                 </Route>
-              </Route>
 
-              {/* ================= DASHBOARD RECRUTEUR ================= */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <RecruiterLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/recruteur/dashboard" element={<RecruiterDashboard />} />
-                <Route path="/recruteur/offres" element={<RecruiterJobs />} />
-                <Route path="/recruteur/candidatures" element={<RecruiterApplications />} />
-                <Route path="/recruteur/messages" element={<RecruiterMessages />} />
-                <Route path="/recruteur/entreprise" element={<RecruiterCompany />} />
-                <Route path="/recruteur/parametres" element={<RecruiterSettings />} />
-                <Route path="/recruteur/job/:jobId" element={<RecruiterJobApplications />} />
-              </Route>
-
-              <Route
-                path="/recruiter/*"
-                element={<Navigate to="/recruteur/dashboard" replace />}
-              />
-
-              {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <FacebookLayout />
+                {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <FacebookLayout />
                     </ProtectedRoute>
                   }
                 >
@@ -226,6 +198,19 @@ export default function App() {
                 <Route path="/emplois/:id" element={<JobDetailPage />} />
                 <Route path="/likes/:postId" element={<LikesPage />} />
                 <Route path="/reels" element={<ReelsPage />} />
+
+                <Route
+                  path="/recruiter/dashboard"
+                  element={<RecruiterDashboard />}
+                />
+                <Route
+                  path="/recruiter/candidatures"
+                  element={<RecruiterAllApplications />}
+                />
+                <Route
+                  path="/recruiter/job/:jobId"
+                  element={<RecruiterJobApplications />}
+                />
 
                 <Route
                   path="/jobconnect"
@@ -270,7 +255,7 @@ function DashboardRouter() {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/fb" replace />;
 
-  if (user.role === "recruiter") return <Navigate to="/recruteur/dashboard" replace />;
+  if (user.role === "recruiter") return <RecruiterDashboard />;
   if (user.role === "candidate") return <Navigate to="/jobconnect/dashboard" replace />;
 
   return <Navigate to="/fb" replace />;
