@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useJobApplication from "../hooks/useJobApplication";
 import GlobalFeedbackModal from "./GlobalFeedbackModal";
@@ -8,7 +8,7 @@ export default function JobFeed() {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [darkMode, setDarkMode] = useState(() => {
@@ -203,13 +203,29 @@ export default function JobFeed() {
   /* ======================================================
      RENDU GLOBAL
   ====================================================== */
-  const filteredJobs = jobs.filter((job) => {
-    if (!searchTerm.trim()) return true;
-    const q = searchTerm.toLowerCase();
-    return [job.title, job.description, job.location, job.contractType]
-      .filter(Boolean)
-      .some((field) => field.toLowerCase().includes(q));
-  });
+  const filteredJobs = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+
+    if (!query) return jobs;
+
+    return jobs.filter((job) => {
+      const recruiterName = job.company?.name || job.recruiter?.companyName || job.recruiter?.name;
+
+      return [
+        job.title,
+        job.category,
+        job.city,
+        job.country,
+        recruiterName,
+        job.contractType,
+        job.description,
+        job.salary,
+        job.salaryRange,
+      ]
+        .filter(Boolean)
+        .some((field) => field.toString().toLowerCase().includes(query));
+    });
+  }, [jobs, searchQuery]);
 
   const featuredJobs = filteredJobs.slice(0, 3);
 
@@ -278,8 +294,8 @@ export default function JobFeed() {
                 </span>
                 <input
                   placeholder="Rechercher un poste, une ville..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <button
@@ -302,7 +318,7 @@ export default function JobFeed() {
 
           {!loading && filteredJobs.length === 0 && !error && (
             <div className="empty-state">
-              Aucune offre ne correspond à votre recherche pour le moment.
+              Aucune offre ne correspond à votre recherche.
             </div>
           )}
 
