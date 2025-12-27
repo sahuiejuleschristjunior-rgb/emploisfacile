@@ -4,7 +4,7 @@ import useJobApplication from "../hooks/useJobApplication";
 import "../styles/jobs.css";
 
 export default function JobDetailPage() {
-  const { id } = useParams();
+  const { id: jobIdParam } = useParams();
   const nav = useNavigate();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,12 +27,14 @@ export default function JobDetailPage() {
     onFeedback: setFeedback,
   });
 
+  const jobId = jobIdParam;
+
   const hasApplied = useMemo(() => job && appliedSet.has(job._id), [appliedSet, job]);
 
   useEffect(() => {
     fetchJob();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [jobId]);
 
   const formatDate = (value) => {
     if (!value) return "Date inconnue";
@@ -61,15 +63,21 @@ export default function JobDetailPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_URL}/jobs/${id}`, {
+      const res = await fetch(`${API_URL}/jobs/${jobId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || "Erreur lors du chargement de l'offre.");
+      }
+
       const data = await res.json();
-      setJob(data.job || null);
-      registerAppliedFromJobs(data.job ? [data.job] : []);
+      const loadedJob = data.job || data.data || data;
+      setJob(loadedJob || null);
+      registerAppliedFromJobs(loadedJob ? [loadedJob] : []);
     } catch (e) {
       console.log("Erreur récupération job :", e);
       setError("Erreur lors du chargement de l'offre.");
@@ -153,17 +161,20 @@ export default function JobDetailPage() {
             <span className="detail-cta-title">Vous êtes recruteur</span>
             <span className="detail-cta-sub">Les recruteurs ne peuvent pas postuler aux offres</span>
           </div>
-        ) : hasApplied ? (
-          <button className="detail-cta applied" disabled>
-            Déjà postulé
-          </button>
-        ) : (
+        ) : isCandidate && !hasApplied ? (
           <button
             className="detail-cta primary"
             onClick={() => handleApply(job._id, job.title)}
-            disabled={applyingJobId === job._id || !isCandidate}
+            disabled={applyingJobId === job._id}
           >
             {applyingJobId === job._id ? "Envoi..." : "Postuler"}
+          </button>
+        ) : (
+          <button
+            className="detail-cta neutral"
+            onClick={() => nav(`/emplois/${job._id}`)}
+          >
+            Voir les détails
           </button>
         )}
       </div>
