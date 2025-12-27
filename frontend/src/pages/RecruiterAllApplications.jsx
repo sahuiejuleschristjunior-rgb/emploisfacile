@@ -264,7 +264,7 @@ export default function RecruiterAllApplications() {
     <div className="recruiter-dashboard">
       <header className="rd-header">
         <div className="rd-header-left">
-            <button className="rd-burger" onClick={() => nav("/recruteur/dashboard")}>
+          <button className="rd-burger" onClick={() => nav("/recruiter/dashboard")}>
             ←
           </button>
           <div className="rd-brand">

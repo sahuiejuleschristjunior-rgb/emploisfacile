@@ -120,7 +120,7 @@ export default function RecruiterDashboard() {
         <span>{job.applications?.length || 0} candidatures</span>
         <button
           className="view-link"
-          onClick={() => nav(`/recruteur/job/${job._id}`)}
+          onClick={() => nav(`/recruiter/job/${job._id}`)}
         >
           Voir les candidats →
         </button>
@@ -190,7 +190,7 @@ export default function RecruiterDashboard() {
 
             <div
               className="rd-menu-item"
-              onClick={() => nav("/recruteur/candidatures")}
+              onClick={() => nav("/recruiter/candidatures")}
             >
               📥 Candidatures
             </div>
