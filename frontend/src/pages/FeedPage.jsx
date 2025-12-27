@@ -27,8 +27,6 @@ const storiesData = Array.from({ length: 50 }).map((_, i) => ({
   media: `https://images.pexels.com/photos/${1181671 + i}/pexels-photo-${
     1181671 + i
   }.jpeg`,
-  hasStory: true,
-  isViewed: i % 4 === 0,
 }));
 
 /* ========================================================= */
@@ -73,53 +71,19 @@ const demoPosts = Array.from({ length: 10 }).map((_, i) => ({
 /* ========================================================= */
 /* STORIES BAR */
 /* ========================================================= */
-function StoriesBar({ stories, onOpen, loading, currentUser }) {
-  const skeletons = Array.from({ length: 5 });
-
-  if (loading) {
-    return (
-      <div className="stories-bar">
-        {skeletons.map((_, index) => (
-          <div key={index} className="story-skeleton" />
-        ))}
-      </div>
-    );
-  }
-
+function StoriesBar({ stories, onOpen }) {
   return (
     <div className="stories-bar">
-      <div className="story-card create-story">
-        <div className="story-avatar no-story">
-          <img
-            src={currentUser?.avatar || "/assets/default-avatar.png"}
-            alt="Votre story"
-            loading="lazy"
-          />
+      {stories.map((story, index) => (
+        <div
+          key={story.id}
+          className="story-item"
+          onClick={() => onOpen(index)}
+        >
+          <img src={story.avatar} className="story-avatar" alt={story.name} loading="lazy" />
+          <p className="story-name">{story.name}</p>
         </div>
-        <p className="story-user">Créer</p>
-      </div>
-
-      {stories.map((story, index) => {
-        const hasStory = story.hasStory !== false;
-        const isViewed = !!story.isViewed;
-
-        return (
-          <div
-            key={story.id}
-            className="story-card"
-            onClick={() => onOpen(index)}
-          >
-            <div
-              className={`story-avatar ${
-                hasStory && !isViewed ? "has-story" : "no-story"
-              }`}
-            >
-              <img src={story.avatar} alt={story.name} loading="lazy" />
-            </div>
-            <p className="story-user">{story.name}</p>
-          </div>
-        );
-      })}
+      ))}
     </div>
   );
 }
@@ -228,7 +192,6 @@ export default function FeedPage() {
   const [storyIndex, setStoryIndex] = useState(0);
   const [showPostModal, setShowPostModal] = useState(false);
   const [sharingPostIds, setSharingPostIds] = useState({});
-  const [storiesLoading, setStoriesLoading] = useState(true);
 
   const textButtonStyle = {
     background: "none",
@@ -322,11 +285,6 @@ export default function FeedPage() {
   useEffect(() => {
     postsRef.current = posts;
   }, [posts]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setStoriesLoading(false), 900);
-    return () => clearTimeout(timer);
-  }, []);
   /* ========================================================= */
   /* ACTIONS : CREATE / DELETE / LIKE / COMMENT FIXÉES         */
   /* ========================================================= */
@@ -713,8 +671,6 @@ export default function FeedPage() {
       <main className="feed-main-mobile">
         <StoriesBar
           stories={storiesData}
-          loading={storiesLoading}
-          currentUser={currentUser}
           onOpen={(i) => {
             setStoryIndex(i);
             setShowStory(true);
@@ -732,8 +688,6 @@ export default function FeedPage() {
         <div className="desktop-center">
           <StoriesBar
             stories={storiesData}
-            loading={storiesLoading}
-            currentUser={currentUser}
             onOpen={(i) => {
               setStoryIndex(i);
               setShowStory(true);
