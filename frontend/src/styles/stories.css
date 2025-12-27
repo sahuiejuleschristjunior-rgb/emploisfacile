@@ -3,86 +3,75 @@
 .fb-stories-container {
   display: flex;
   gap: 10px;
+  padding: 10px 12px;
   overflow-x: auto;
-  padding: 10px 0;
   scrollbar-width: none;
 }
+
 .fb-stories-container::-webkit-scrollbar {
   display: none;
 }
 
 .fb-story {
-  min-width: 110px;
-  height: 200px;
-  border-radius: 12px;
-  background: #242526;
-  overflow: hidden;
-  position: relative;
-  cursor: pointer;
+  width: 96px;
+  height: 96px;
+  background: #18191a;
+  border-radius: 10px;
   flex-shrink: 0;
-  border: 1px solid #3a3b3c;
-  
-  /* --- CORRECTION DÉFINITIVE DU CONTOUR BLEU/GRIS --- */
-  outline: none !important;
-  box-shadow: none !important;
-  border: 1px solid #3a3b3c; /* Rétablit la bordure initiale */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
 }
-
-/* CIBLE LES ÉTATS ACTIFS ET DE FOCUS POUR SUPPRIMER TOUT CONTOUR/HIGHLIGHT */
-.fb-story:focus,
-.fb-story:active {
-    /* 1. Élimine le tap-highlight spécifique aux navigateurs mobiles (WebKit/Chrome/Android) */
-    -webkit-tap-highlight-color: transparent !important;
-    
-    /* 2. Supprime tout contour résiduel (plus fort) */
-    outline: none !important;
-    box-shadow: none !important;
-    border: 1px solid #3a3b3c; /* Assure que la bordure reste */
-}
-/* ------------------------------------------------ */
-
 
 .fb-story-img {
-  width: 100%;
-  height: 100%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid #1877f2;
   object-fit: cover;
 }
 
 .fb-story-user {
-  position: absolute;
-  bottom: 10px;
-  left: 8px;
-  color: #fff;
-  font-size: 13px;
+  margin-top: 6px;
+  font-size: 12px;
   font-weight: 600;
-  text-shadow: 1px 1px 2px #000;
+  color: #e4e6eb;
+  text-align: center;
+  max-width: 90%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* Styles pour la carte de création */
 .fb-story-create {
-  background: #3a3b3c;
+  background: #18191a;
 }
+
 .fb-story-create-img {
-  width: 100%;
-  height: 140px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px dashed #1877f2;
   background: url("/default-avatar.png");
   background-size: cover;
   background-position: center;
-}
-.fb-story-create-btn {
-  background: #1877f2;
-  color: white;
-  text-align: center;
-  margin: 8px auto;
-  padding: 6px 0;
-  width: 70%;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* CLASSE AJOUTÉE pour l'état d'upload */
+.fb-story-create-btn {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e4e6eb;
+  text-align: center;
+}
+
 .fb-story-create.is-uploading {
-    opacity: 0.6; /* Assombrir pour indiquer le chargement */
-    cursor: wait; /* Curseur d'attente */
+  opacity: 0.6;
+  cursor: wait;
 }
