@@ -589,14 +589,17 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   };
 
   const handleMessagesIconClick = () => {
-    const state = lastUnreadConversationId
-      ? {
+    if (unreadMessagesCount > 0 && lastUnreadConversationId) {
+      nav("/messages", {
+        state: {
           highlightConversationId: lastUnreadConversationId,
-          source: "messages_icon",
-        }
-      : { source: "messages_icon" };
+          source: "message-icon",
+        },
+      });
+      return;
+    }
 
-    nav("/messages", { state });
+    nav("/messages");
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
