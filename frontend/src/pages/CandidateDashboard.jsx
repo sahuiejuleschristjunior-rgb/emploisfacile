@@ -57,6 +57,7 @@ export default function CandidateDashboard() {
           : "Consolidez vos notes et relisez l'offre",
         ctaLabel: "Ouvrir l'agenda",
         ctaAction: () => nav("/jobconnect/agenda"),
+        hint: "Révisez la fiche de poste et notez 3 questions à poser.",
       };
     }
 
@@ -66,6 +67,7 @@ export default function CandidateDashboard() {
         subtitle: data.recommendedJobs[0].title,
         ctaLabel: "Voir l'offre",
         ctaAction: () => goToJob(data.recommendedJobs[0]._id),
+        hint: "Personnalisez votre note d'intention avant d'envoyer.",
       };
     }
 
@@ -75,6 +77,7 @@ export default function CandidateDashboard() {
         subtitle: `${data.savedJobs.length} offre(s) en attente dans vos favoris`,
         ctaLabel: "Ouvrir les favoris",
         ctaAction: () => nav("/jobconnect/favoris"),
+        hint: "Priorisez 2 offres et préparez un message rapide.",
       };
     }
 
@@ -83,6 +86,7 @@ export default function CandidateDashboard() {
       subtitle: "Découvrez de nouvelles opportunités aujourd'hui",
       ctaLabel: "Accéder au flux",
       ctaAction: () => nav("/fb/dashboard"),
+      hint: "Filtrez par rôle ou niveau d'expérience pour gagner du temps.",
     };
   }, [data.upcomingInterviews, data.groupedApps.interview, data.recommendedJobs, data.savedJobs, nav]);
 
@@ -99,14 +103,17 @@ export default function CandidateDashboard() {
     <JobConnectLayout user={data.user} onLogout={logout}>
       <section className="hero" id="recent">
         <div className="hero__info">
-          <p className="eyebrow">Prochaine étape</p>
+          <div className="hero__badge">Action prioritaire</div>
           <h3>{nextAction.title}</h3>
           <p className="hero__subtitle">{nextAction.subtitle}</p>
+          <p className="hero__hint">{nextAction.hint}</p>
           <div className="hero__actions">
             <button className="primary-btn" onClick={nextAction.ctaAction}>
               {nextAction.ctaLabel}
             </button>
-            <button className="ghost-link" onClick={() => nav("/fb/dashboard")}>Parcourir les offres</button>
+            <button className="ghost-link subtle" onClick={() => nav("/fb/dashboard")}>
+              Parcourir les offres
+            </button>
           </div>
         </div>
         <div className="hero__highlights">

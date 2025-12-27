@@ -20,6 +20,47 @@ export function ApplicationCard({ app, onOpen, onContact, onCall }) {
   const company = recruiter.companyName || recruiter.name || "Entreprise";
   const status = (app.status || "pending").toLowerCase();
 
+  const actionConfig = {
+    interview: {
+      label: "Préparer l'entretien",
+      hint: "Revoyez la fiche de poste avant l'échange.",
+      action: () => onOpen(job._id),
+    },
+    inreview: {
+      label: "Relancer le recruteur",
+      hint: "Envoyez un message cordial pour demander un retour.",
+      action: () => onContact(recruiter),
+    },
+    reviewing: {
+      label: "Relancer le recruteur",
+      hint: "Envoyez un message cordial pour demander un retour.",
+      action: () => onContact(recruiter),
+    },
+    accepted: {
+      label: "Répondre à l'offre",
+      hint: "Clarifiez les détails avant d'accepter.",
+      action: () => onCall(recruiter),
+    },
+    offer: {
+      label: "Répondre à l'offre",
+      hint: "Clarifiez les détails avant d'accepter.",
+      action: () => onCall(recruiter),
+    },
+    rejected: {
+      label: "Voir le feedback",
+      hint: "Identifiez les points à améliorer pour la prochaine.",
+      action: () => onOpen(job._id),
+    },
+    default: {
+      label: "Relancer le recruteur",
+      hint: "Un court message suffit pour se rappeler à lui.",
+      action: () => onContact(recruiter),
+    },
+  };
+
+  const { label, hint, action } =
+    actionConfig[status] || actionConfig.default;
+
   return (
     <div key={app._id} className="application-card" onClick={() => onOpen(job._id)}>
       <div className="application-card__header">
@@ -42,23 +83,15 @@ export function ApplicationCard({ app, onOpen, onContact, onCall }) {
       </div>
 
       <div className="application-actions">
+        <div className="application-hint">{hint}</div>
         <button
-          className="ghost-btn"
+          className="primary-btn ghost"
           onClick={(e) => {
             e.stopPropagation();
-            onContact(recruiter);
+            action();
           }}
         >
-          Contacter
-        </button>
-        <button
-          className="ghost-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCall(recruiter);
-          }}
-        >
-          Appel vidéo
+          {label}
         </button>
       </div>
     </div>

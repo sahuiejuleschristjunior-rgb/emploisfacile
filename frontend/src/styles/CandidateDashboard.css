@@ -170,11 +170,30 @@ body {
     var(--card);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 18px;
+  padding: 20px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1.35fr auto;
   gap: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.hero__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero__badge {
+  align-self: flex-start;
+  padding: 6px 10px;
+  background: rgba(124, 58, 237, 0.15);
+  color: #c4b5fd;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  text-transform: uppercase;
 }
 
 .hero__info h3 {
@@ -186,6 +205,12 @@ body {
   margin: 0;
   color: var(--muted);
   max-width: 560px;
+}
+
+.hero__hint {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
 }
 
 .hero__actions {
@@ -213,6 +238,7 @@ body {
   flex-direction: column;
   gap: 4px;
   text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 .hero-chip span {
@@ -234,25 +260,53 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 14px;
+  padding: 14px 16px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 30px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.1), rgba(6, 182, 212, 0.05));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
 }
 
 .stat-label {
   color: var(--muted);
   font-size: 13px;
+  z-index: 1;
 }
 
 .stat-value {
   margin: 4px 0 2px;
   font-size: 26px;
   font-weight: 800;
+  z-index: 1;
 }
 
 .stat-hint {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
+  z-index: 1;
 }
 
 .text-indigo {
@@ -368,12 +422,13 @@ body {
   border-radius: 12px;
   padding: 10px;
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .lane-card:hover {
   border-color: rgba(99, 102, 241, 0.6);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
 }
 
 .lane-card__title {
@@ -493,12 +548,13 @@ body {
   padding: 12px;
   background: var(--card-muted);
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .application-card:hover {
   border-color: rgba(59, 130, 246, 0.6);
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
 }
 
 .application-card__header {
@@ -531,8 +587,16 @@ body {
 
 .application-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.application-hint {
+  color: #cbd5e1;
+  font-size: 12px;
+  max-width: 480px;
 }
 
 .status-pill {
@@ -613,6 +677,10 @@ body {
   box-shadow: none;
 }
 
+.primary-btn.ghost:hover {
+  border-color: rgba(124, 58, 237, 0.6);
+}
+
 .ghost-link {
   border: none;
   background: transparent;
@@ -627,6 +695,15 @@ body {
 .ghost-link::after {
   content: "→";
   font-size: 12px;
+}
+
+.ghost-link.subtle {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ghost-link.subtle::after {
+  color: #a5b4fc;
 }
 
 .mini-section {
@@ -661,12 +738,13 @@ body {
   padding: 12px;
   background: var(--card-muted);
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mini-card:hover {
   border-color: rgba(124, 58, 237, 0.5);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
 }
 
 .mini-card-top {
