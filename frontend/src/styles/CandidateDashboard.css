@@ -53,6 +53,13 @@ body {
   left: 0;
 }
 
+.side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .side-brand {
   font-size: 22px;
   font-weight: 800;
@@ -71,11 +78,23 @@ body {
   box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.15);
 }
 
+.side-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-muted);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
 .side-nav {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
 }
 
 .side-link {
@@ -99,7 +118,9 @@ body {
 }
 
 .side-bottom {
-  margin-top: auto;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 12px;
