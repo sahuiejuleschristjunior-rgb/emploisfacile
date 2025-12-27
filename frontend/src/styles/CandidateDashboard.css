@@ -24,12 +24,14 @@ body {
   grid-template-columns: 260px 1fr;
   min-height: 100vh;
   background: var(--bg);
+  column-gap: 18px;
+  padding: 0 18px;
 }
 
 .cd-side {
   background: #0b1221;
   color: var(--text);
-  padding: 24px 18px;
+  padding: 28px 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -77,6 +79,7 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  text-decoration: none;
 }
 
 .side-link.active,
@@ -86,22 +89,51 @@ body {
   border-color: var(--border);
 }
 
+.side-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.side-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.side-logout:hover {
+  color: var(--text);
+  border-color: rgba(124, 58, 237, 0.6);
+  transform: translateY(-1px);
+}
+
 .side-footer {
   font-size: 12px;
   color: var(--muted);
-  margin-top: auto;
+  padding-left: 2px;
 }
 
 .cd-main {
   display: flex;
   flex-direction: column;
+  padding: 0 6px 18px;
 }
 
-.topbar {
+.cd-topbar {
   background: rgba(12, 17, 31, 0.8);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  padding: 18px 28px;
+  padding: 20px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,7 +142,7 @@ body {
   z-index: 25;
 }
 
-.topbar__titles h2 {
+.cd-topbar h2 {
   margin: 4px 0;
   font-size: 22px;
 }
@@ -132,7 +164,7 @@ body {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .notif-btn {
@@ -144,6 +176,10 @@ body {
   cursor: pointer;
   font-size: 18px;
   color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .avatar {
@@ -152,13 +188,14 @@ body {
   border-radius: 50%;
   background: var(--gradient);
   color: white;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
 }
 
 .content {
-  padding: 24px 28px 40px;
+  padding: 26px 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -658,8 +695,9 @@ body {
   background: var(--gradient);
   color: white;
   border: none;
-  padding: 10px 16px;
-  border-radius: 12px;
+  padding: 9px 14px;
+  min-height: 40px;
+  border-radius: 11px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
@@ -839,6 +877,7 @@ body {
 @media (max-width: 1024px) {
   .candidate-dashboard {
     grid-template-columns: 1fr;
+    padding: 0;
   }
 
   .cd-side {
@@ -854,7 +893,7 @@ body {
     transform: translateX(0);
   }
 
-  .topbar {
+  .cd-topbar {
     position: sticky;
     top: 0;
   }
@@ -871,11 +910,11 @@ body {
     padding: 16px;
   }
 
-  .topbar {
+  .cd-topbar {
     padding: 16px;
   }
 
-  .topbar__titles h2 {
+  .cd-topbar h2 {
     font-size: 18px;
   }
 

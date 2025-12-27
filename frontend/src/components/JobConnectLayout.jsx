@@ -19,7 +19,7 @@ export default function JobConnectLayout({ user, onLogout, children }) {
   return (
     <div className="candidate-dashboard">
       <aside className={`cd-side ${sidebarOpen ? "cd-side-open" : ""}`}>
-        <div className="side-brand">JobConnect</div>
+        <div className="side-brand">EmploisFacile</div>
         <nav className="side-nav">
           {menuItems.map((item) => {
             const active = location.pathname.startsWith(item.path);
@@ -35,7 +35,12 @@ export default function JobConnectLayout({ user, onLogout, children }) {
             );
           })}
         </nav>
-        <div className="side-footer">© 2025 JobConnect Inc.</div>
+        <div className="side-bottom">
+          <button className="side-logout" onClick={onLogout}>
+            ⏻ Se déconnecter
+          </button>
+          <div className="side-footer">© 2025 EmploisFacile</div>
+        </div>
       </aside>
 
       <main className="cd-main">
@@ -56,9 +61,6 @@ export default function JobConnectLayout({ user, onLogout, children }) {
               🔔
             </button>
             <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "C"}</div>
-            <button className="ghost-link" onClick={onLogout}>
-              Se déconnecter
-            </button>
           </div>
         </header>
 

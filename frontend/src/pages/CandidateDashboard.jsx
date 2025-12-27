@@ -219,7 +219,6 @@ export default function CandidateDashboard() {
 
           <div className="quick-actions">
             <button className="primary-btn ghost" onClick={() => nav("/jobconnect/profil")}>Mettre à jour mon profil</button>
-            <button className="primary-btn ghost" onClick={logout}>Se déconnecter</button>
           </div>
         </section>
       </div>
