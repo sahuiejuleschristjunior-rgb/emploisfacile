@@ -166,13 +166,13 @@
 
 .conversation-item.highlighted,
 .conversation-item.is-highlighted {
-  background: rgba(24, 119, 242, 0.14);
-  animation: highlightFade 2.8s ease-in-out forwards;
+  background: rgba(24, 119, 242, 0.1);
+  animation: highlightFade 2.5s ease-in-out;
 }
 
 .conversation-item.highlighted:hover,
 .conversation-item.is-highlighted:hover {
-  background: rgba(24, 119, 242, 0.2);
+  background: rgba(24, 119, 242, 0.16);
 }
 
 .conversation-avatar {
@@ -213,12 +213,10 @@
   margin-left: auto;
   background: #1877f2;
   color: #fff;
-  font-size: 11px;
-  padding: 2px 9px;
+  font-size: 12px;
+  padding: 3px 8px;
   border-radius: 999px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-weight: 700;
 }
 
 .conversation-last-message {
@@ -1594,15 +1592,12 @@
 
 @keyframes highlightFade {
   0% {
-    background: rgba(24, 119, 242, 0.18);
-    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.12);
+    transform: scale(1);
   }
-  45% {
-    background: rgba(24, 119, 242, 0.12);
-    box-shadow: 0 0 0 4px rgba(24, 119, 242, 0.08);
+  20% {
+    transform: scale(1.01);
   }
   100% {
-    background: transparent;
-    box-shadow: none;
+    transform: scale(1);
   }
 }
