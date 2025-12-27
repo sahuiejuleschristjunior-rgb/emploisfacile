@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function JobConnectLayout({ user, onLogout, children }) {
@@ -15,6 +15,14 @@ export default function JobConnectLayout({ user, onLogout, children }) {
     { key: "agenda", label: "Agenda", path: "/jobconnect/agenda" },
     { key: "profil", label: "Profil", path: "/jobconnect/profil" },
   ];
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen]);
 
   return (
     <div className="candidate-dashboard">
@@ -42,6 +50,8 @@ export default function JobConnectLayout({ user, onLogout, children }) {
           <div className="side-footer">© 2025 EmploisFacile</div>
         </div>
       </aside>
+
+      {sidebarOpen && <div className="cd-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
       <main className="cd-main">
         <header className="cd-topbar">
