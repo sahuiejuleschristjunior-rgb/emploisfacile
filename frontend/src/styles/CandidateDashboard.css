@@ -156,10 +156,9 @@ body {
 .cd-main {
   display: flex;
   flex-direction: column;
-  margin-top: var(--candidate-header-height);
   margin-left: var(--candidate-sidebar-width);
   width: calc(100% - var(--candidate-sidebar-width));
-  height: calc(100vh - var(--candidate-header-height));
+  height: 100vh;
   overflow: hidden;
   position: relative;
 }
@@ -266,7 +265,7 @@ body {
 }
 
 .content {
-  padding: 26px 32px 44px;
+  padding: calc(var(--candidate-header-height) + 26px) 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -979,7 +978,7 @@ body {
   .cd-main {
     margin-left: 0;
     width: 100%;
-    height: calc(100vh - var(--candidate-header-height));
+    height: 100vh;
   }
 
   .cd-topbar {
@@ -996,7 +995,7 @@ body {
 
 @media (max-width: 720px) {
   .content {
-    padding: 16px;
+    padding: calc(var(--candidate-header-height) + 16px) 16px 16px;
   }
 
   .cd-topbar {
