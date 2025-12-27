@@ -8,6 +8,7 @@ export default function JobFeed() {
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
   const [applyingJobId, setApplyingJobId] = useState(null);
+  const [appliedSet, setAppliedSet] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
@@ -27,6 +28,37 @@ export default function JobFeed() {
       return {};
     }
   })();
+
+  const userId = currentUser?._id || currentUser?.id;
+
+  const getAppliedKey = (user) => `appliedJobs:${user}`;
+
+  const readApplied = (user) => {
+    if (!user) return [];
+
+    try {
+      const raw = localStorage.getItem(getAppliedKey(user));
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const writeApplied = (user, jobIds) => {
+    if (!user) return;
+    localStorage.setItem(getAppliedKey(user), JSON.stringify([...new Set(jobIds)]));
+  };
+
+  const markApplied = (user, jobId) => {
+    if (!user || !jobId) return [];
+    const current = readApplied(user);
+    if (!current.includes(jobId)) {
+      current.push(jobId);
+      writeApplied(user, current);
+    }
+    return current;
+  };
 
   /* ======================================================
      UTILITAIRES D'AFFICHAGE
@@ -67,6 +99,30 @@ export default function JobFeed() {
   useEffect(() => {
     loadJobs();
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const ids = readApplied(userId);
+    setAppliedSet(new Set(ids));
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const stored = new Set(readApplied(userId));
+    jobs.forEach((job) => {
+      if (job?.hasApplied) stored.add(job._id);
+    });
+
+    setAppliedSet((prev) => {
+      const sameSize = prev.size === stored.size;
+      const unchanged = sameSize && [...prev].every((id) => stored.has(id));
+      if (unchanged) return prev;
+      return new Set(stored);
+    });
+
+    writeApplied(userId, [...stored]);
+  }, [jobs, userId]);
 
   useEffect(() => {
     localStorage.setItem("jobfeed-dark-mode", darkMode);
@@ -112,8 +168,9 @@ export default function JobFeed() {
      POSTULER À UNE OFFRE
   ====================================================== */
   const handleApply = async (jobId, jobTitle) => {
-    const targetJob = jobs.find((job) => job._id === jobId);
-    if (targetJob?.hasApplied) {
+    const alreadyApplied = appliedSet.has(jobId);
+
+    if (alreadyApplied) {
       openFeedback("Vous avez déjà postulé à cette offre");
       return;
     }
@@ -140,11 +197,8 @@ export default function JobFeed() {
         throw error;
       }
 
-      setJobs((prev) =>
-        prev.map((job) =>
-          job._id === jobId ? { ...job, hasApplied: true } : job
-        )
-      );
+      const updated = markApplied(userId, jobId);
+      setAppliedSet(new Set(updated));
 
       openFeedback("Votre candidature a bien été envoyée");
     } catch (err) {
@@ -153,11 +207,8 @@ export default function JobFeed() {
         err.status === 400 || err.message?.toLowerCase().includes("déjà postulé");
 
       if (alreadyApplied) {
-        setJobs((prev) =>
-          prev.map((job) =>
-            job._id === jobId ? { ...job, hasApplied: true } : job
-          )
-        );
+        const updated = markApplied(userId, jobId);
+        setAppliedSet(new Set(updated));
         openFeedback("Vous avez déjà postulé à cette offre");
         return;
       }
@@ -175,7 +226,7 @@ export default function JobFeed() {
     const recruiterName =
       job.recruiter?.companyName || job.recruiter?.name || "Entreprise inconnue";
 
-    const hasApplied = job.hasApplied === true;
+    const hasApplied = appliedSet.has(job._id);
     const salary = getSalary(job);
     const cover = job.coverImage || job.bannerUrl || job.image;
 
@@ -388,9 +439,9 @@ export default function JobFeed() {
                 <button
                   className="featured-cta"
                   onClick={() => handleApply(job._id, job.title)}
-                  disabled={applyingJobId === job._id || job.hasApplied}
+                  disabled={applyingJobId === job._id || appliedSet.has(job._id)}
                 >
-                  {job.hasApplied
+                  {appliedSet.has(job._id)
                     ? "Déjà postulé"
                     : applyingJobId === job._id
                     ? "Envoi..."
