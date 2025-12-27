@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { API_URL } from "../api/config";
 import useFriendRequests from "../hooks/useFriendRequests";
 import { changeFriendCategory } from "../api/socialApi";
@@ -14,6 +15,7 @@ const fixAvatar = (avatar) => {
 };
 
 export default function RelationsPage() {
+  const location = useLocation();
   const {
     requests,
     loading,
@@ -27,6 +29,8 @@ export default function RelationsPage() {
   ===================================================== */
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(true);
+  const [highlightRequest, setHighlightRequest] = useState(false);
+  const firstRequestRef = useRef(null);
 
   /* ======================================================
        🔥 LOAD FRIENDS (RÉUTILISABLE)
@@ -57,6 +61,37 @@ export default function RelationsPage() {
     loadFriends();
   }, [loadFriends]);
 
+  useEffect(() => {
+    if (!loading) {
+      window.dispatchEvent(new CustomEvent("friendRequestsViewed"));
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    const shouldHighlight = Boolean(location.state?.highlightRequest);
+    if (shouldHighlight) {
+      setHighlightRequest(true);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!highlightRequest || loading || requests.length === 0) return;
+
+    const timer = setTimeout(() => setHighlightRequest(false), 3000);
+    const target = firstRequestRef.current;
+    if (target) {
+      setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    }
+
+    return () => clearTimeout(timer);
+  }, [highlightRequest, loading, requests.length]);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("friendRequestsCount", { detail: { count: requests.length } })
+    );
+  }, [requests.length]);
+
   /* ======================================================
        🔥 ACCEPT / REJECT (SYNC PROPRE)
   ===================================================== */
@@ -70,6 +105,15 @@ export default function RelationsPage() {
     await reject(userId);
     await refreshRequests();
   };
+
+  const sortedRequests = useMemo(
+    () =>
+      [...requests].sort(
+        (a, b) =>
+          new Date(b?.createdAt || 0).getTime() - new Date(a?.createdAt || 0).getTime()
+      ),
+    [requests]
+  );
 
   /* ======================================================
        🔥 CHANGEMENT DE CATÉGORIE
@@ -120,8 +164,15 @@ export default function RelationsPage() {
       )}
 
       <div className="relations-list">
-        {requests.map((u) => (
-          <div key={u._id} className="relation-card">
+        {sortedRequests.map((u, idx) => {
+          const isHighlighted = highlightRequest && idx === 0;
+
+          return (
+            <div
+              key={u._id}
+              className={`relation-card ${isHighlighted ? "relation-card-highlight" : ""}`}
+              ref={idx === 0 ? firstRequestRef : null}
+            >
             <img
               src={fixAvatar(u.avatar)}
               alt={u.name}
@@ -135,6 +186,7 @@ export default function RelationsPage() {
             </div>
 
             <div className="relation-actions">
+              {isHighlighted && <span className="relation-new-badge">Nouvelle demande</span>}
               <button
                 className="btn-accept"
                 onClick={() => handleAccept(u._id)}
@@ -149,8 +201,8 @@ export default function RelationsPage() {
                 Refuser
               </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ======================================================
