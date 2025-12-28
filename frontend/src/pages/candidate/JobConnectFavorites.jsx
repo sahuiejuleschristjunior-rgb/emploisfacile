@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
-import { JobMiniCard } from "../../components/candidate/JobConnectWidgets";
+import { JobMiniCard } from "../../components/jobconnect/JobConnectWidgets";
 
 export default function JobConnectFavorites() {
   const nav = useNavigate();

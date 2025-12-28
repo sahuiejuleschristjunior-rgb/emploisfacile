@@ -7,7 +7,7 @@ import {
   ApplicationCard,
   ApplicationPipeline,
   JobMiniCard,
-} from "../../components/candidate/JobConnectWidgets";
+} from "../../components/jobconnect/JobConnectWidgets";
 
 export default function CandidateDashboard() {
   const nav = useNavigate();
