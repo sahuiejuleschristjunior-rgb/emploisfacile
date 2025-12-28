@@ -210,26 +210,18 @@ export default function App() {
                 <Route path="/reels" element={<ReelsPage />} />
 
                 <Route
-                  element={
-                    <ProtectedRoute roles={["recruiter"]}>
-                      <Outlet />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route
-                    path="/recruiter/dashboard"
-                    element={<RecruiterDashboard />}
-                  />
-                  <Route path="/recruiter/offres" element={<RecruiterOffers />} />
-                  <Route
-                    path="/recruiter/candidatures"
-                    element={<RecruiterAllApplications />}
-                  />
-                  <Route
-                    path="/recruiter/job/:jobId"
-                    element={<RecruiterJobApplications />}
-                  />
-                </Route>
+                  path="/recruiter/dashboard"
+                  element={<RecruiterDashboard />}
+                />
+                <Route path="/recruiter/offres" element={<RecruiterOffers />} />
+                <Route
+                  path="/recruiter/candidatures"
+                  element={<RecruiterAllApplications />}
+                />
+                <Route
+                  path="/recruiter/job/:jobId"
+                  element={<RecruiterJobApplications />}
+                />
 
                 <Route
                   path="/jobconnect"
