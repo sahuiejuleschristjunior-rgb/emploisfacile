@@ -84,7 +84,7 @@ export default function RecruiterDashboard() {
       title: "Boostez la visibilité de vos offres",
       subtitle: `${data.activeJobs} offre(s) en ligne actuellement`,
       ctaLabel: "Gérer mes offres",
-      ctaAction: () => nav("/recruiter/candidatures"),
+      ctaAction: () => nav("/recruiter/offres"),
       hint: "Ajoutez des tags et une description concise.",
     };
   }, [data.activeJobs, data.pendingReview, data.upcomingInterviews, nav]);
@@ -97,9 +97,9 @@ export default function RecruiterDashboard() {
       titlePrefix="Bonjour"
       avatarFallback="R"
       menuItems={[
-        { key: "home", label: "🏠 Accueil", path: "/fb/dashboard" },
+        { key: "create", label: "➕ Créer une nouvelle offre", path: "/create-job" },
         { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
-        { key: "offers", label: "Mes offres", path: "/recruiter/candidatures" },
+        { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
         { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
         { key: "messages", label: "Messages", path: "/messages" },
         { key: "profil", label: "Entreprise", path: "/profil" },
@@ -243,43 +243,57 @@ export default function RecruiterDashboard() {
           <div className="applications-list">
             {data.recentApplications.map((app) => (
               <div key={app._id} className="application-card" onClick={() => openJob(app.job?._id)}>
-                <div className="application-card__header">
-                  <div>
-                    <p className="application-title">{app.candidate?.name || "Candidat"}</p>
-                    <p className="application-sub">{app.job?.title || "Poste"}</p>
+                <div className="application-card__profile">
+                  <div className="application-avatar">
+                    {app.candidate?.avatar ? (
+                      <img src={app.candidate.avatar} alt={app.candidate?.name || "Candidat"} loading="lazy" />
+                    ) : (
+                      <div className="application-avatar__fallback">
+                        {(app.candidate?.name || "?").charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                  <span className="status-pill status-blue">{app.status || "Pending"}</span>
-                </div>
 
-                <div className="application-meta">
-                  <span>
-                    Reçue le {" "}
-                    {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "-"}
-                  </span>
-                  <span className="muted">{app.candidate?.email || "Email non renseigné"}</span>
-                </div>
+                  <div className="application-details">
+                    <div className="application-card__header">
+                      <div>
+                        <p className="application-title">{app.candidate?.name || "Candidat"}</p>
+                        <p className="application-sub">{app.job?.title || "Poste"}</p>
+                      </div>
+                      <span className="status-pill status-blue">{app.status || "Pending"}</span>
+                    </div>
 
-                <div className="application-actions">
-                  <div className="application-hint">{app.candidate?.experience || "Profil en attente"}</div>
-                  <div className="inline-actions">
-                    <button
-                      className="primary-btn ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        contactCandidate(app.candidate);
-                      }}
-                    >
-                      Contacter
-                    </button>
-                    <button
-                      className="primary-btn ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        callCandidate(app.candidate);
-                      }}
-                    >
-                      Appel vidéo
-                    </button>
+                    <div className="application-meta">
+                      <span>
+                        Reçue le {" "}
+                        {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "-"}
+                      </span>
+                      <span className="muted">{app.candidate?.email || "Email non renseigné"}</span>
+                    </div>
+
+                    <div className="application-actions">
+                      <div className="application-hint">{app.candidate?.experience || "Profil en attente"}</div>
+                      <div className="inline-actions">
+                        <button
+                          className="primary-btn ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            contactCandidate(app.candidate);
+                          }}
+                        >
+                          Contacter
+                        </button>
+                        <button
+                          className="primary-btn ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            callCandidate(app.candidate);
+                          }}
+                        >
+                          Appel vidéo
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
