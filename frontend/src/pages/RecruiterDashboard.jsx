@@ -1,333 +1,333 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import PostJobForm from "../components/PostJobForm";
-import "../styles/Dashboard.css";
+import JobConnectLayout from "../components/JobConnectLayout";
+import useRecruiterDashboardData from "../hooks/useRecruiterDashboardData";
+import "../styles/CandidateDashboard.css";
+import { RecruiterPipeline } from "../components/jobconnect/JobConnectWidgets";
 
 export default function RecruiterDashboard() {
   const nav = useNavigate();
+  const data = useRecruiterDashboardData();
 
-  const [user, setUser] = useState(null);
-  const [myJobs, setMyJobs] = useState([]);
-  const [loadingJobs, setLoadingJobs] = useState(true);
-  const [error, setError] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const API_URL = import.meta.env.VITE_API_URL;
-  const token = localStorage.getItem("token");
-
-  /* ============================================================
-     Logout
-  ============================================================ */
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     nav("/login");
   };
 
-  /* ============================================================
-     Charger l'utilisateur
-  ============================================================ */
-  useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
-  }, []);
+  const openJob = (jobId) => {
+    if (jobId) nav(`/recruiter/job/${jobId}`);
+  };
 
-  /* ============================================================
-     Charger mes offres
-  ============================================================ */
-  useEffect(() => {
-    if (token && user) fetchMyJobs();
-  }, [token, user]);
+  const openCandidate = (jobId) => {
+    if (jobId) nav(`/recruiter/job/${jobId}`);
+  };
 
-  const fetchMyJobs = async () => {
-    setLoadingJobs(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_URL}/jobs/my-jobs`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  const contactCandidate = (candidate) => {
+    if (!candidate?._id) return;
+    nav("/messages", {
+      state: {
+        userId: candidate._id,
+        name: candidate.name,
+        avatar: candidate.avatar,
+      },
+    });
+  };
 
-      const data = await res.json();
+  const callCandidate = (candidate) => {
+    if (!candidate?._id) return;
+    nav("/video-call", {
+      state: {
+        userId: candidate._id,
+        name: candidate.name,
+        avatar: candidate.avatar,
+        role: "recruiter",
+      },
+    });
+  };
 
-      if (!res.ok) throw new Error(data.error || "Impossible de charger vos offres.");
-
-      // Sécurisation : data peut être {jobs: [...]}, {data: [...]}, ou [...]
-      const jobs = Array.isArray(data)
-        ? data
-        : data.jobs
-        ? data.jobs
-        : data.data || [];
-
-      setMyJobs(jobs);
-    } catch (err) {
-      setError(err.message);
-      setMyJobs([]);
-    } finally {
-      setLoadingJobs(false);
+  const nextAction = useMemo(() => {
+    if (data.pendingReview > 0) {
+      return {
+        title: "Traitez vos nouvelles candidatures",
+        subtitle: `${data.pendingReview} en attente de revue`,
+        ctaLabel: "Ouvrir les candidatures",
+        ctaAction: () => nav("/recruiter/candidatures"),
+        hint: "Répondez sous 48h pour améliorer votre taux de réponse.",
+      };
     }
-  };
 
-  /* ============================================================
-     Lorsqu'une offre est publiée
-  ============================================================ */
-  const handleJobPosted = (newJob) => {
-    setMyJobs((prev) => [newJob, ...prev]);
-  };
+    if (data.upcomingInterviews.length > 0) {
+      const next = data.upcomingInterviews[0];
+      return {
+        title: "Préparez votre prochain entretien",
+        subtitle: `${next.candidate?.name || "Candidat"} - ${
+          next.job?.title || "Poste"
+        }`,
+        ctaLabel: "Voir l'agenda",
+        ctaAction: () => nav("/jobconnect/agenda"),
+        hint: "Partagez l'ordre du jour et les participants à l'avance.",
+      };
+    }
 
-  /* ============================================================
-     Stats
-  ============================================================ */
-  const { activeJobs, totalApplications } = useMemo(() => {
-    const active = myJobs.length;
-    const totalApps = myJobs.reduce(
-      (sum, job) => sum + (job.applications?.length || 0),
-      0
-    );
-    return { activeJobs: active, totalApplications: totalApps };
-  }, [myJobs]);
+    if (data.activeJobs === 0) {
+      return {
+        title: "Publiez votre première offre",
+        subtitle: "Attirez vos premiers talents dès aujourd'hui",
+        ctaLabel: "Créer une offre",
+        ctaAction: () => nav("/create-job"),
+        hint: "Une description claire augmente le nombre de candidatures qualifiées.",
+      };
+    }
 
-  /* ============================================================
-     Scroll vers formulaire
-  ============================================================ */
-  const handleScrollToForm = () => {
-    const form = document.getElementById("job-form-panel");
-    if (form) form.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+    return {
+      title: "Boostez la visibilité de vos offres",
+      subtitle: `${data.activeJobs} offre(s) en ligne actuellement`,
+      ctaLabel: "Gérer mes offres",
+      ctaAction: () => nav("/recruiter/candidatures"),
+      hint: "Ajoutez des tags et une description concise.",
+    };
+  }, [data.activeJobs, data.pendingReview, data.upcomingInterviews, nav]);
 
-  /* ============================================================
-     Scroll utilitaire pour sidebar
-  ============================================================ */
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  /* ============================================================
-     Render job card
-  ============================================================ */
-  const renderJobCard = (job) => (
-    <div key={job._id} className="job-item">
-      <div className="job-item-header">
-        <h4>{job.title}</h4>
-        <span className="job-pill">{job.contractType}</span>
-      </div>
-
-      <div className="job-meta">
-        {job.location} • Publiée le {new Date(job.createdAt).toLocaleDateString()}
-      </div>
-
-      <div className="job-stats">
-        <span>{job.applications?.length || 0} candidatures</span>
-        <button
-          className="view-link"
-          onClick={() => nav(`/recruiter/job/${job._id}`)}
-        >
-          Voir les candidats →
-        </button>
-      </div>
-    </div>
-  );
-
-  /* ============================================================
-     Render global
-  ============================================================ */
   return (
-    <div className="recruiter-dashboard">
-      {/* ===================================================== */}
-      {/* HEADER FIXE */}
-      {/* ===================================================== */}
-      <header className="rd-header">
-        <div className="rd-header-left">
-          <button
-            className="rd-burger"
-            onClick={() => setSidebarOpen((prev) => !prev)}
-          >
-            ☰
-          </button>
+    <JobConnectLayout
+      user={data.user}
+      onLogout={logout}
+      eyebrow="Espace recruteur"
+      titlePrefix="Bonjour"
+      avatarFallback="R"
+      menuItems={[
+        { key: "home", label: "🏠 Accueil", path: "/fb/dashboard" },
+        { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
+        { key: "offers", label: "Mes offres", path: "/recruiter/candidatures" },
+        { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
+        { key: "messages", label: "Messages", path: "/messages" },
+        { key: "profil", label: "Entreprise", path: "/profil" },
+        { key: "settings", label: "Paramètres", path: "/settings" },
+      ]}
+    >
+      <section className="hero" id="recent">
+        <div className="hero__info">
+          <div className="hero__badge">Action prioritaire</div>
+          <h3>{nextAction.title}</h3>
+          <p className="hero__subtitle">{nextAction.subtitle}</p>
+          <p className="hero__hint">{nextAction.hint}</p>
+          <div className="hero__actions">
+            <button className="primary-btn" onClick={nextAction.ctaAction}>
+              {nextAction.ctaLabel}
+            </button>
+            <button className="ghost-link subtle" onClick={() => nav("/create-job")}>
+              Publier une offre
+            </button>
+          </div>
+        </div>
+        <div className="hero__highlights">
+          <div className="hero-chip">
+            <span>Offres actives</span>
+            <strong>{data.activeJobs}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>Candidatures</span>
+            <strong>{data.totalApplications}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>En revue</span>
+            <strong>{data.pendingReview}</strong>
+          </div>
+        </div>
+      </section>
 
-          <div className="rd-brand">
-            <div className="rd-logo">EF</div>
-            <div className="rd-brand-text">
-              <div className="rd-brand-title">EmploisFacile · Recruteur</div>
-              <div className="rd-brand-sub">
-                Bienvenue, {user?.companyName || user?.name || "Recruteur"}
+      <section className="stats-grid">
+        <div className="stat-card">
+          <p className="stat-label">Offres actives</p>
+          <p className="stat-value text-indigo">{data.activeJobs}</p>
+          <p className="stat-hint">Gardez-les à jour pour rester visibles.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Candidatures reçues</p>
+          <p className="stat-value text-orange">{data.totalApplications}</p>
+          <p className="stat-hint">Répondez sous 48h pour améliorer l'expérience.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Entretiens planifiés</p>
+          <p className="stat-value text-emerald">{data.upcomingInterviews.length}</p>
+          <p className="stat-hint">Préparez un plan d'évaluation commun.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Messages non lus</p>
+          <p className="stat-value text-purple">{data.messagesCount}</p>
+          <p className="stat-hint">Répondez vite pour ne pas perdre de talents.</p>
+        </div>
+      </section>
+
+      <div className="grid-two">
+        <section className="card pipeline" aria-label="Pipeline de candidatures">
+          <div className="card-header">
+            <h3>Pipeline candidats</h3>
+            <button className="ghost-link" onClick={() => nav("/recruiter/candidatures")}>
+              Voir tout
+            </button>
+          </div>
+
+          <RecruiterPipeline groupedApps={data.groupedApps} onOpen={openCandidate} />
+        </section>
+
+        <section className="card agenda-card" id="agenda">
+          <div className="card-header">
+            <h3>Entretiens à venir</h3>
+            <button className="ghost-link" onClick={() => nav("/jobconnect/agenda")}>
+              Voir l'agenda
+            </button>
+          </div>
+
+          <div className="agenda-list">
+            {data.upcomingInterviews.length === 0 && (
+              <p className="empty-state small">Aucun entretien planifié.</p>
+            )}
+
+            {data.upcomingInterviews.map((event) => (
+              <div key={event._id} className="agenda-item">
+                <div>
+                  <p className="agenda-title">{event.candidate?.name || "Candidat"}</p>
+                  <p className="agenda-sub">{event.job?.title || "Poste"}</p>
+                  {event.when && <p className="agenda-date">{new Date(event.when).toLocaleString()}</p>}
+                </div>
+                <div className="agenda-actions">
+                  <button className="ghost-btn" onClick={() => contactCandidate(event.candidate)}>
+                    Contacter
+                  </button>
+                  <button className="ghost-btn" onClick={() => callCandidate(event.candidate)}>
+                    Appel vidéo
+                  </button>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        </div>
 
-        <div className="rd-header-right">
-          <button className="rd-btn" onClick={handleScrollToForm}>
-            Nouvelle offre
-          </button>
-        </div>
-      </header>
-
-      {/* ===================================================== */}
-      {/* SHELL */}
-      {/* ===================================================== */}
-      <div className="rd-shell">
-        {/* ===================================================== */}
-        {/* SIDEBAR */}
-        {/* ===================================================== */}
-        <aside className={`rd-sidebar ${sidebarOpen ? "rd-sidebar--open" : ""}`}>
-          <div className="rd-sidebar-section">
-            <div className="rd-sidebar-title">Navigation</div>
-
-            <div
-              className="rd-menu-item rd-menu-item--active"
-              onClick={() => scrollToSection("rd-top")}
-            >
-              📊 Tableau de bord
+          <div className="progress-block">
+            <div className="progress-header">
+              <span>Taux de réponse rapide</span>
+              <span className="progress-tip">Objectif : répondre en 24h</span>
             </div>
-
-            <div
-              className="rd-menu-item"
-              onClick={() => scrollToSection("rd-jobs-section")}
-            >
-              💼 Offres publiées
-            </div>
-
-            <div
-              className="rd-menu-item"
-              onClick={() => nav("/recruiter/candidatures")}
-            >
-              📥 Candidatures
-            </div>
-
-            <div className="rd-menu-item" onClick={() => nav("/messages")}>
-              💬 Messages
-            </div>
-
-            <div className="rd-menu-item" onClick={() => nav("/profil")}>
-              👥 Entreprise
-            </div>
-
-            <div className="rd-menu-item" onClick={() => nav("/settings")}>
-              ⚙️ Paramètres
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: "64%" }}></div>
             </div>
           </div>
 
-          <div className="rd-sidebar-section rd-sidebar-section-bottom">
-            <div className="rd-sidebar-title">Compte</div>
-            <div className="rd-menu-item" onClick={logout}>
-              🔓 Se déconnecter
-            </div>
+          <div className="quick-actions">
+            <button className="primary-btn ghost" onClick={() => nav("/messages")}>
+              Ouvrir la messagerie
+            </button>
           </div>
-        </aside>
-
-        {/* ===================================================== */}
-        {/* MAIN */}
-        {/* ===================================================== */}
-        <main className="rd-main">
-          <div className="rd-container" id="rd-top">
-            {/* ------------------------------------------------ */}
-            {/* KPI */}
-            {/* ------------------------------------------------ */}
-            <div className="rd-center">
-              <section className="rd-card rd-card-kpi">
-                <div className="rd-kpi-grid">
-                  <div className="rd-kpi">
-                    <div className="num">{activeJobs}</div>
-                    <div className="label">Offres actives</div>
-                  </div>
-                  <div className="rd-kpi">
-                    <div className="num">{totalApplications}</div>
-                    <div className="label">Total candidatures</div>
-                  </div>
-                  <div className="rd-kpi">
-                    <div className="num">0</div>
-                    <div className="label">En attente</div>
-                  </div>
-                </div>
-              </section>
-
-              {/* ------------------------------------------------ */}
-              {/* ANALYTICS */}
-              {/* ------------------------------------------------ */}
-              <section className="rd-card rd-analytics">
-                <div className="rd-card-header">
-                  <h3>Tendance des candidatures</h3>
-                  <span className="rd-chip">7 derniers jours</span>
-                </div>
-
-                <div className="rd-analytics-grid">
-                  <div className="rd-analytics-chart">
-                    <div className="rd-bar-row">
-                      <div className="rd-bar" style={{ width: "40%" }} />
-                      <span>Lun</span>
-                    </div>
-                    <div className="rd-bar-row">
-                      <div className="rd-bar" style={{ width: "70%" }} />
-                      <span>Mar</span>
-                    </div>
-                    <div className="rd-bar-row">
-                      <div className="rd-bar" style={{ width: "55%" }} />
-                      <span>Mer</span>
-                    </div>
-                    <div className="rd-bar-row">
-                      <div className="rd-bar" style={{ width: "80%" }} />
-                      <span>Jeu</span>
-                    </div>
-                    <div className="rd-bar-row">
-                      <div className="rd-bar" style={{ width: "30%" }} />
-                      <span>Ven</span>
-                    </div>
-                  </div>
-
-                  <div className="rd-analytics-side">
-                    <div className="rd-analytics-stat">
-                      <div className="label">Taux de réponse</div>
-                      <div className="value">64%</div>
-                      <div className="hint">+12% vs semaine dernière</div>
-                    </div>
-                    <div className="rd-analytics-stat">
-                      <div className="label">Candidatures / offre</div>
-                      <div className="value">
-                        {activeJobs > 0
-                          ? Math.round(totalApplications / activeJobs)
-                          : 0}
-                      </div>
-                      <div className="hint">Objectif : 15</div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* ------------------------------------------------ */}
-              {/* OFFRES PUBLIÉES */}
-              {/* ------------------------------------------------ */}
-              <section className="rd-card" id="rd-jobs-section">
-                <div className="rd-card-header">
-                  <h3>Vos offres publiées ({myJobs.length})</h3>
-                </div>
-
-                {error && <div className="error-message">{error}</div>}
-                {loadingJobs && (
-                  <div className="loader">Chargement de vos offres…</div>
-                )}
-
-                {!loadingJobs && myJobs.length === 0 && !error && (
-                  <div className="empty-state">Vous n’avez pas encore publié d’offre.</div>
-                )}
-
-                <div className="job-list-dashboard">
-                  {myJobs.map(renderJobCard)}
-                </div>
-              </section>
-            </div>
-
-            {/* ------------------------------------------------ */}
-            {/* FORMULAIRE DE CRÉATION D'OFFRE */}
-            {/* ------------------------------------------------ */}
-            <div className="rd-right" id="job-form-panel">
-              <section className="rd-card rd-form-card">
-                <PostJobForm onJobPosted={handleJobPosted} />
-              </section>
-            </div>
-          </div>
-        </main>
+        </section>
       </div>
-    </div>
+
+      <div className="grid-two">
+        <section className="card" aria-label="Candidatures récentes">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">Chronologie</p>
+              <h3>Dernières candidatures</h3>
+            </div>
+            <button className="ghost-link" onClick={() => nav("/recruiter/candidatures")}>
+              Tout voir
+            </button>
+          </div>
+
+          {data.loadingJobs && <div className="loader">Chargement…</div>}
+          {data.error && <div className="error-message">{data.error}</div>}
+          {!data.loadingJobs && data.recentApplications.length === 0 && !data.error && (
+            <div className="empty-state">Aucune candidature reçue pour le moment.</div>
+          )}
+
+          <div className="applications-list">
+            {data.recentApplications.map((app) => (
+              <div key={app._id} className="application-card" onClick={() => openJob(app.job?._id)}>
+                <div className="application-card__header">
+                  <div>
+                    <p className="application-title">{app.candidate?.name || "Candidat"}</p>
+                    <p className="application-sub">{app.job?.title || "Poste"}</p>
+                  </div>
+                  <span className="status-pill status-blue">{app.status || "Pending"}</span>
+                </div>
+
+                <div className="application-meta">
+                  <span>
+                    Reçue le {" "}
+                    {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "-"}
+                  </span>
+                  <span className="muted">{app.candidate?.email || "Email non renseigné"}</span>
+                </div>
+
+                <div className="application-actions">
+                  <div className="application-hint">{app.candidate?.experience || "Profil en attente"}</div>
+                  <div className="inline-actions">
+                    <button
+                      className="primary-btn ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        contactCandidate(app.candidate);
+                      }}
+                    >
+                      Contacter
+                    </button>
+                    <button
+                      className="primary-btn ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        callCandidate(app.candidate);
+                      }}
+                    >
+                      Appel vidéo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="card" id="rd-jobs">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">Offres</p>
+              <h3>Vos offres publiées</h3>
+            </div>
+            <button className="ghost-link" onClick={() => nav("/create-job")}>
+              Nouvelle offre
+            </button>
+          </div>
+
+          {data.loadingJobs && <div className="loader">Chargement de vos offres…</div>}
+          {data.error && <div className="error-message">{data.error}</div>}
+          {!data.loadingJobs && data.jobs.length === 0 && !data.error && (
+            <div className="empty-state">Vous n'avez pas encore publié d'offre.</div>
+          )}
+
+          <div className="mini-section">
+            <div className="mini-section-header">
+              <h4>Dernières offres</h4>
+              <span className="mini-count">{data.jobs.length}</span>
+            </div>
+            <div className="mini-grid">
+              {data.jobs.slice(0, 4).map((job) => (
+                <div key={job._id} className="mini-card" onClick={() => openJob(job._id)}>
+                  <div className="mini-card-top">
+                    <div>
+                      <p className="mini-title">{job.title}</p>
+                      <p className="mini-sub">{job.location || "Localisation"}</p>
+                    </div>
+                    <span className="mini-count">{job.applications?.length || 0}</span>
+                  </div>
+                  <p className="mini-meta">
+                    Publiée le {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </JobConnectLayout>
   );
 }

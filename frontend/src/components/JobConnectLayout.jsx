@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-export default function JobConnectLayout({ user, onLogout, children }) {
+const defaultMenuItems = [
+  { key: "home", label: "🏠 Accueil", path: "/fb/dashboard" },
+  { key: "jobs", label: "💼 Emplois", path: "/emplois" },
+  { key: "dashboard", label: "Tableau de bord", path: "/jobconnect/dashboard" },
+  { key: "candidatures", label: "Mes candidatures", path: "/jobconnect/candidatures" },
+  { key: "entretiens", label: "Entretiens", path: "/jobconnect/entretiens" },
+  { key: "messages", label: "Messages", path: "/jobconnect/messages" },
+  { key: "favoris", label: "Favoris", path: "/jobconnect/favoris" },
+  { key: "agenda", label: "Ordre du jour", path: "/jobconnect/agenda" },
+  { key: "profil", label: "Profil", path: "/jobconnect/profil" },
+];
+
+export default function JobConnectLayout({
+  user,
+  onLogout,
+  children,
+  menuItems = defaultMenuItems,
+  eyebrow = "Espace candidat",
+  titlePrefix = "Bonjour",
+  avatarFallback = "C",
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const nav = useNavigate();
-
-  const menuItems = [
-    { key: "home", label: "🏠 Accueil", path: "/fb/dashboard" },
-    { key: "jobs", label: "💼 Emplois", path: "/emplois" },
-    { key: "dashboard", label: "Tableau de bord", path: "/jobconnect/dashboard" },
-    { key: "candidatures", label: "Mes candidatures", path: "/jobconnect/candidatures" },
-    { key: "entretiens", label: "Entretiens", path: "/jobconnect/entretiens" },
-    { key: "messages", label: "Messages", path: "/jobconnect/messages" },
-    { key: "favoris", label: "Favoris", path: "/jobconnect/favoris" },
-    { key: "agenda", label: "Ordre du jour", path: "/jobconnect/agenda" },
-    { key: "profil", label: "Profil", path: "/jobconnect/profil" },
-  ];
 
   useEffect(() => {
     document.body.style.overflow = sidebarOpen ? "hidden" : "";
@@ -68,8 +76,10 @@ export default function JobConnectLayout({ user, onLogout, children }) {
       <main className="cd-main">
         <header className="cd-topbar">
           <div className="topbar-left">
-            <p className="eyebrow">Espace candidat</p>
-            <h2>Bonjour {user?.name || "!"}</h2>
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>
+              {titlePrefix} {user?.name || user?.companyName || "!"}
+            </h2>
           </div>
           <div className="topbar-actions">
             <button
@@ -82,7 +92,11 @@ export default function JobConnectLayout({ user, onLogout, children }) {
             <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
               🔔
             </button>
-            <div className="avatar">{user?.name?.charAt(0)?.toUpperCase() || "C"}</div>
+            <div className="avatar">
+              {user?.name?.charAt(0)?.toUpperCase() ||
+                user?.companyName?.charAt(0)?.toUpperCase() ||
+                avatarFallback}
+            </div>
           </div>
         </header>
 
