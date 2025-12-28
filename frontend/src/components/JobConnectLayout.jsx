@@ -21,7 +21,6 @@ export default function JobConnectLayout({
   eyebrow = "Espace candidat",
   titlePrefix = "Bonjour",
   avatarFallback = "C",
-  showHeader = true,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
@@ -75,35 +74,33 @@ export default function JobConnectLayout({
       {sidebarOpen && <div className="cd-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
       <main className="cd-main">
-        {showHeader && (
-          <header className="cd-topbar">
-            <div className="topbar-left">
-              <p className="eyebrow">{eyebrow}</p>
-              <h2>
-                {titlePrefix} {user?.name || user?.companyName || "!"}
-              </h2>
+        <header className="cd-topbar">
+          <div className="topbar-left">
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>
+              {titlePrefix} {user?.name || user?.companyName || "!"}
+            </h2>
+          </div>
+          <div className="topbar-actions">
+            <button
+              className="notif-btn mobile-only"
+              aria-label="Ouvrir le menu"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              ☰
+            </button>
+            <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
+              🔔
+            </button>
+            <div className="avatar">
+              {user?.name?.charAt(0)?.toUpperCase() ||
+                user?.companyName?.charAt(0)?.toUpperCase() ||
+                avatarFallback}
             </div>
-            <div className="topbar-actions">
-              <button
-                className="notif-btn mobile-only"
-                aria-label="Ouvrir le menu"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                ☰
-              </button>
-              <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
-                🔔
-              </button>
-              <div className="avatar">
-                {user?.name?.charAt(0)?.toUpperCase() ||
-                  user?.companyName?.charAt(0)?.toUpperCase() ||
-                  avatarFallback}
-              </div>
-            </div>
-          </header>
-        )}
+          </div>
+        </header>
 
-        <div className={`content ${showHeader ? "" : "content-no-header"}`}>{children}</div>
+        <div className="content">{children}</div>
       </main>
     </div>
   );
