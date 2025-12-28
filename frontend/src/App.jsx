@@ -35,12 +35,6 @@ import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import RecruiterJobApplications from "./pages/RecruiterJobApplications";
 import RecruiterAllApplications from "./pages/RecruiterAllApplications";
-import RecruiterJobs from "./pages/RecruiterJobs";
-import RecruiterPostJob from "./pages/RecruiterPostJob";
-import RecruiterMessages from "./pages/RecruiterMessages";
-import RecruiterCompany from "./pages/RecruiterCompany";
-import RecruiterSettings from "./pages/RecruiterSettings";
-import RecruiterLayout from "./components/RecruiterLayout";
 import JobConnectApplications from "./pages/JobConnectApplications";
 import JobConnectInterviews from "./pages/JobConnectInterviews";
 import JobConnectMessages from "./pages/JobConnectMessages";
@@ -206,6 +200,19 @@ export default function App() {
                 <Route path="/reels" element={<ReelsPage />} />
 
                 <Route
+                  path="/recruiter/dashboard"
+                  element={<RecruiterDashboard />}
+                />
+                <Route
+                  path="/recruiter/candidatures"
+                  element={<RecruiterAllApplications />}
+                />
+                <Route
+                  path="/recruiter/job/:jobId"
+                  element={<RecruiterJobApplications />}
+                />
+
+                <Route
                   path="/jobconnect"
                   element={
                     <ProtectedRoute>
@@ -230,25 +237,6 @@ export default function App() {
                 <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />
                 <Route path="/photo/:postId" element={<PhotoViewerPage />} />
               </Route>
-
-              <Route
-                element={
-                  <ProtectedRoute roles={["recruiter"]}>
-                    <RecruiterLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/recruiter" element={<Outlet />}>
-                  <Route index element={<RecruiterDashboard />} />
-                  <Route path="jobs" element={<RecruiterJobs />} />
-                  <Route path="post" element={<RecruiterPostJob />} />
-                  <Route path="candidatures" element={<RecruiterAllApplications />} />
-                  <Route path="job/:jobId" element={<RecruiterJobApplications />} />
-                  <Route path="messages" element={<RecruiterMessages />} />
-                  <Route path="entreprise" element={<RecruiterCompany />} />
-                  <Route path="settings" element={<RecruiterSettings />} />
-                </Route>
-              </Route>
             </Routes>
                 </BrowserRouter>
               </NotificationProvider>
@@ -267,7 +255,7 @@ function DashboardRouter() {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/fb" replace />;
 
-  if (user.role === "recruiter") return <Navigate to="/recruiter" replace />;
+  if (user.role === "recruiter") return <RecruiterDashboard />;
   if (user.role === "candidate") return <Navigate to="/jobconnect/dashboard" replace />;
 
   return <Navigate to="/fb" replace />;

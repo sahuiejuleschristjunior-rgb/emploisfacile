@@ -14,10 +14,16 @@ export default function RecruiterJobApplications() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
 
+  /* ============================================================
+     REDIRECTION SI PAS CONNECTÉ
+  ============================================================ */
   useEffect(() => {
     if (!token) nav("/login");
   }, [token]);
 
+  /* ============================================================
+     CHARGER LES CANDIDATURES
+  ============================================================ */
   useEffect(() => {
     if (jobId && token) fetchApplications();
   }, [jobId, token]);
@@ -43,6 +49,9 @@ export default function RecruiterJobApplications() {
     setLoading(false);
   };
 
+  /* ============================================================
+     CHANGEMENT DE STATUT
+  ============================================================ */
   const handleStatusChange = async (applicationId, newStatus) => {
     try {
       setUpdatingId(applicationId);
@@ -69,6 +78,9 @@ export default function RecruiterJobApplications() {
     setUpdatingId(null);
   };
 
+  /* ============================================================
+     GÉNÉRATION DU BADGE
+  ============================================================ */
   const renderStatusBadge = (status) => {
     const labels = {
       Pending: "En attente",
@@ -81,6 +93,9 @@ export default function RecruiterJobApplications() {
     return <span className={`status-badge status-badge--${status.toLowerCase()}`}>{labels[status]}</span>;
   };
 
+  /* ============================================================
+     BOUTON → CONTACTER LE CANDIDAT
+  ============================================================ */
   const contactCandidate = (candidate) => {
     nav("/messages", {
       state: {
@@ -91,6 +106,9 @@ export default function RecruiterJobApplications() {
     });
   };
 
+  /* ============================================================
+     BOUTON → APPEL VIDÉO (placeholder)
+  ============================================================ */
   const callCandidate = (candidate) => {
     nav("/video-call", {
       state: {
@@ -102,11 +120,17 @@ export default function RecruiterJobApplications() {
     });
   };
 
+  /* ============================================================
+     AFFICHAGE D'UNE CANDIDATURE
+  ============================================================ */
   const renderApplicationItem = (app) => {
     const c = app.candidate || {};
 
     return (
       <div key={app._id} className="app-item">
+        {/* ------------------------------------------------ */}
+        {/* INFO CANDIDAT */}
+        {/* ------------------------------------------------ */}
         <div className="app-main">
           <div className="app-avatar">
             {c.avatar ? (
@@ -130,7 +154,12 @@ export default function RecruiterJobApplications() {
           </div>
         </div>
 
+        {/* ------------------------------------------------ */}
+        {/* ACTIONS */}
+        {/* ------------------------------------------------ */}
         <div className="app-actions">
+
+          {/* STATUT */}
           <div className="app-status-row">
             {renderStatusBadge(app.status)}
 
@@ -148,6 +177,7 @@ export default function RecruiterJobApplications() {
             </select>
           </div>
 
+          {/* MESSAGERIE */}
           <button
             className="app-btn contact-btn"
             onClick={() => contactCandidate(c)}
@@ -155,37 +185,64 @@ export default function RecruiterJobApplications() {
             💬 Contacter
           </button>
 
-          <button className="app-btn call-btn" onClick={() => callCandidate(c)}>
+          {/* APPEL VIDÉO */}
+          <button
+            className="app-btn call-btn"
+            onClick={() => callCandidate(c)}
+          >
             📹 Appel vidéo
           </button>
+
         </div>
       </div>
     );
   };
 
+  /* ============================================================
+     RENDU GLOBAL
+  ============================================================ */
   return (
-    <>
-      <div className="rd-page-header">
-        <div>
-          <h2>Candidatures de l'offre</h2>
-          <p>ID Offre : {jobId}</p>
+    <div className="recruiter-dashboard">
+      <header className="rd-header">
+        <div className="rd-header-left">
+          <button className="rd-burger" onClick={() => nav(-1)}>
+            ←
+          </button>
+
+          <div className="rd-brand">
+            <div className="rd-logo">EF</div>
+            <div className="rd-brand-text">
+              <div className="rd-brand-title">Candidatures de l'offre</div>
+              <div className="rd-brand-sub">ID Offre : {jobId}</div>
+            </div>
+          </div>
         </div>
+      </header>
+
+      <div className="rd-shell">
+        <main className="rd-main">
+          <div className="rd-container">
+            <section className="rd-card">
+              <div className="rd-card-header">
+                <h3>Candidats ({applications.length})</h3>
+              </div>
+
+              {error && <div className="error-message">{error}</div>}
+              {loading && <div className="loader">Chargement…</div>}
+
+              {!loading && applications.length === 0 && !error && (
+                <div className="empty-state">
+                  Aucun candidat n’a encore postulé.
+                </div>
+              )}
+
+              <div className="app-list">
+                {applications.map(renderApplicationItem)}
+              </div>
+            </section>
+          </div>
+        </main>
       </div>
-
-      <section className="rd-card">
-        <div className="rd-card-header">
-          <h3>Candidats ({applications.length})</h3>
-        </div>
-
-        {error && <div className="error-message">{error}</div>}
-        {loading && <div className="loader">Chargement…</div>}
-
-        {!loading && applications.length === 0 && !error && (
-          <div className="empty-state">Aucun candidat n’a encore postulé.</div>
-        )}
-
-        <div className="app-list">{applications.map(renderApplicationItem)}</div>
-      </section>
-    </>
+    </div>
   );
 }
