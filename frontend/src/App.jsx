@@ -36,6 +36,7 @@ import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import RecruiterJobApplications from "./pages/RecruiterJobApplications";
 import RecruiterAllApplications from "./pages/RecruiterAllApplications";
+import RecruiterOffers from "./pages/RecruiterOffers";
 import JobConnectApplications from "./pages/JobConnectApplications";
 import JobConnectInterviews from "./pages/JobConnectInterviews";
 import JobConnectMessages from "./pages/JobConnectMessages";
@@ -212,6 +213,7 @@ export default function App() {
                   path="/recruiter/dashboard"
                   element={<RecruiterDashboard />}
                 />
+                <Route path="/recruiter/offres" element={<RecruiterOffers />} />
                 <Route
                   path="/recruiter/candidatures"
                   element={<RecruiterAllApplications />}
