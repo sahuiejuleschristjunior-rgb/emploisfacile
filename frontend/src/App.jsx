@@ -26,23 +26,23 @@ import ChatPage from "./pages/ChatPage";
 
 import Messages from "./pages/Messages.jsx";
 import JobDetailPage from "./pages/JobDetailPage";
-import CreateJobPage from "./pages/CreateJobPage";
+import CreateJobPage from "./pages/recruiter/CreateJobPage";
 import PageCreate from "./pages/PageCreate";
 import MyPages from "./pages/MyPages";
 import PageProfile from "./pages/PageProfile";
 import LikesPage from "./pages/LikesPage";
 
-import RecruiterDashboard from "./pages/RecruiterDashboard";
-import CandidateDashboard from "./pages/CandidateDashboard";
-import RecruiterJobApplications from "./pages/RecruiterJobApplications";
-import RecruiterAllApplications from "./pages/RecruiterAllApplications";
-import RecruiterOffers from "./pages/RecruiterOffers";
-import JobConnectApplications from "./pages/JobConnectApplications";
-import JobConnectInterviews from "./pages/JobConnectInterviews";
-import JobConnectMessages from "./pages/JobConnectMessages";
-import JobConnectFavorites from "./pages/JobConnectFavorites";
-import JobConnectAgenda from "./pages/JobConnectAgenda";
-import JobConnectProfile from "./pages/JobConnectProfile";
+import RecruiterDashboard from "./pages/recruiter/RecruiterDashboard";
+import CandidateDashboard from "./pages/candidate/CandidateDashboard";
+import RecruiterJobApplications from "./pages/recruiter/RecruiterJobApplications";
+import RecruiterAllApplications from "./pages/recruiter/RecruiterAllApplications";
+import RecruiterOffers from "./pages/recruiter/RecruiterOffers";
+import JobConnectApplications from "./pages/candidate/JobConnectApplications";
+import JobConnectInterviews from "./pages/candidate/JobConnectInterviews";
+import JobConnectMessages from "./pages/candidate/JobConnectMessages";
+import JobConnectFavorites from "./pages/candidate/JobConnectFavorites";
+import JobConnectAgenda from "./pages/candidate/JobConnectAgenda";
+import JobConnectProfile from "./pages/candidate/JobConnectProfile";
 
 import FacebookFeed from "./components/FacebookFeed";
 
@@ -190,11 +190,7 @@ export default function App() {
                 <Route path="/messages/:id" element={<ChatPage />} />
                 <Route
                   path="/create-job"
-                  element={
-                    <ProtectedRoute roles={["recruiter"]}>
-                      <CreateJobPage />
-                    </ProtectedRoute>
-                  }
+                  element={<Navigate to="/recruiter/create-job" replace />}
                 />
                 <Route
                   path="/settings"
@@ -210,23 +206,24 @@ export default function App() {
                 <Route path="/reels" element={<ReelsPage />} />
 
                 <Route
-                  path="/recruiter/dashboard"
-                  element={<RecruiterDashboard />}
-                />
-                <Route path="/recruiter/offres" element={<RecruiterOffers />} />
-                <Route
-                  path="/recruiter/candidatures"
-                  element={<RecruiterAllApplications />}
-                />
-                <Route
-                  path="/recruiter/job/:jobId"
-                  element={<RecruiterJobApplications />}
-                />
+                  path="/recruiter"
+                  element={
+                    <ProtectedRoute roles={["recruiter"]}>
+                      <Outlet />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="dashboard" element={<RecruiterDashboard />} />
+                  <Route path="offres" element={<RecruiterOffers />} />
+                  <Route path="candidatures" element={<RecruiterAllApplications />} />
+                  <Route path="job/:jobId" element={<RecruiterJobApplications />} />
+                  <Route path="create-job" element={<CreateJobPage />} />
+                </Route>
 
                 <Route
-                  path="/jobconnect"
+                  path="/candidate"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute roles={["candidate"]}>
                       <Outlet />
                     </ProtectedRoute>
                   }
@@ -241,8 +238,32 @@ export default function App() {
                 </Route>
 
                 <Route
-                  path="/candidate/dashboard"
-                  element={<Navigate to="/jobconnect/dashboard" replace />}
+                  path="/jobconnect/dashboard"
+                  element={<Navigate to="/candidate/dashboard" replace />}
+                />
+                <Route
+                  path="/jobconnect/candidatures"
+                  element={<Navigate to="/candidate/candidatures" replace />}
+                />
+                <Route
+                  path="/jobconnect/entretiens"
+                  element={<Navigate to="/candidate/entretiens" replace />}
+                />
+                <Route
+                  path="/jobconnect/messages"
+                  element={<Navigate to="/candidate/messages" replace />}
+                />
+                <Route
+                  path="/jobconnect/favoris"
+                  element={<Navigate to="/candidate/favoris" replace />}
+                />
+                <Route
+                  path="/jobconnect/agenda"
+                  element={<Navigate to="/candidate/agenda" replace />}
+                />
+                <Route
+                  path="/jobconnect/profil"
+                  element={<Navigate to="/candidate/profil" replace />}
                 />
 
                 <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />
@@ -266,8 +287,8 @@ function DashboardRouter() {
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) return <Navigate to="/fb" replace />;
 
-  if (user.role === "recruiter") return <RecruiterDashboard />;
-  if (user.role === "candidate") return <Navigate to="/jobconnect/dashboard" replace />;
+  if (user.role === "recruiter") return <Navigate to="/recruiter/dashboard" replace />;
+  if (user.role === "candidate") return <Navigate to="/candidate/dashboard" replace />;
 
   return <Navigate to="/fb" replace />;
 }

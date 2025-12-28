@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import "../styles/Dashboard.css";
+import RecruiterLayout from "../../layouts/RecruiterLayout";
+import "../../styles/Dashboard.css";
 
 export default function RecruiterJobApplications() {
   const { jobId } = useParams();
@@ -12,6 +13,7 @@ export default function RecruiterJobApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
 
   /* ============================================================
@@ -20,6 +22,23 @@ export default function RecruiterJobApplications() {
   useEffect(() => {
     if (!token) nav("/login");
   }, [token]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch (err) {
+        console.error("Erreur de chargement de l'utilisateur", err);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    nav("/login");
+  };
 
   /* ============================================================
      CHARGER LES CANDIDATURES
@@ -202,26 +221,27 @@ export default function RecruiterJobApplications() {
      RENDU GLOBAL
   ============================================================ */
   return (
-    <div className="recruiter-dashboard">
-      <header className="rd-header">
-        <div className="rd-header-left">
-          <button className="rd-burger" onClick={() => nav(-1)}>
-            ←
-          </button>
+    <RecruiterLayout user={user} onLogout={handleLogout}>
+      <div className="recruiter-dashboard">
+        <header className="rd-header">
+          <div className="rd-header-left">
+            <button className="rd-burger" onClick={() => nav(-1)}>
+              ←
+            </button>
 
-          <div className="rd-brand">
-            <div className="rd-logo">EF</div>
-            <div className="rd-brand-text">
-              <div className="rd-brand-title">Candidatures de l'offre</div>
-              <div className="rd-brand-sub">ID Offre : {jobId}</div>
+            <div className="rd-brand">
+              <div className="rd-logo">EF</div>
+              <div className="rd-brand-text">
+                <div className="rd-brand-title">Candidatures de l'offre</div>
+                <div className="rd-brand-sub">ID Offre : {jobId}</div>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="rd-shell">
-        <main className="rd-main">
-          <div className="rd-container">
+        <div className="rd-shell">
+          <main className="rd-main">
+            <div className="rd-container">
             <section className="rd-card">
               <div className="rd-card-header">
                 <h3>Candidats ({applications.length})</h3>
@@ -240,9 +260,10 @@ export default function RecruiterJobApplications() {
                 {applications.map(renderApplicationItem)}
               </div>
             </section>
-          </div>
-        </main>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </RecruiterLayout>
   );
 }

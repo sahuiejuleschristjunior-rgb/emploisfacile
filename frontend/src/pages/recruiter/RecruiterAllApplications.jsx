@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/Dashboard.css";
+import RecruiterLayout from "../../layouts/RecruiterLayout";
+import "../../styles/Dashboard.css";
 
 export default function RecruiterAllApplications() {
   const nav = useNavigate();
@@ -12,6 +13,7 @@ export default function RecruiterAllApplications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
+  const [user, setUser] = useState(null);
 
   const [selectedJobId, setSelectedJobId] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -22,6 +24,23 @@ export default function RecruiterAllApplications() {
       nav("/login");
     }
   }, [token, nav]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    nav("/login");
+  };
+
+  useEffect(() => {
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        setUser(JSON.parse(stored));
+      } catch (err) {
+        console.error("Erreur lors du chargement de l'utilisateur", err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -261,27 +280,28 @@ export default function RecruiterAllApplications() {
   };
 
   return (
-    <div className="recruiter-dashboard">
-      <header className="rd-header">
-        <div className="rd-header-left">
-          <button className="rd-burger" onClick={() => nav("/recruiter/dashboard")}>
-            ←
-          </button>
-          <div className="rd-brand">
-            <div className="rd-logo">EF</div>
-            <div className="rd-brand-text">
-              <div className="rd-brand-title">Toutes les candidatures</div>
-              <div className="rd-brand-sub">
-                Vue globale des candidats sur vos offres
+    <RecruiterLayout user={user} onLogout={handleLogout}>
+      <div className="recruiter-dashboard">
+        <header className="rd-header">
+          <div className="rd-header-left">
+            <button className="rd-burger" onClick={() => nav("/recruiter/dashboard")}>
+              ←
+            </button>
+            <div className="rd-brand">
+              <div className="rd-logo">EF</div>
+              <div className="rd-brand-text">
+                <div className="rd-brand-title">Toutes les candidatures</div>
+                <div className="rd-brand-sub">
+                  Vue globale des candidats sur vos offres
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="rd-shell">
-        <main className="rd-main">
-          <div className="rd-container">
+        <div className="rd-shell">
+          <main className="rd-main">
+            <div className="rd-container">
             <section className="rd-card rd-card-kpi" style={{ marginBottom: 16 }}>
               <div className="rd-kpi-grid">
                 <div className="rd-kpi">
@@ -403,9 +423,10 @@ export default function RecruiterAllApplications() {
                 </div>
               )}
             </section>
-          </div>
-        </main>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </RecruiterLayout>
   );
 }
