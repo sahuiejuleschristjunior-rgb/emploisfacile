@@ -26,6 +26,7 @@ import ChatPage from "./pages/ChatPage";
 
 import Messages from "./pages/Messages.jsx";
 import JobDetailPage from "./pages/JobDetailPage";
+import CreateJobPage from "./pages/CreateJobPage";
 import PageCreate from "./pages/PageCreate";
 import MyPages from "./pages/MyPages";
 import PageProfile from "./pages/PageProfile";
@@ -186,6 +187,14 @@ export default function App() {
                 <Route path="/profil" element={<ProfilPage />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/messages/:id" element={<ChatPage />} />
+                <Route
+                  path="/create-job"
+                  element={
+                    <ProtectedRoute roles={["recruiter"]}>
+                      <CreateJobPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/settings"
                   element={<Navigate to="/fb/settings" replace />}
