@@ -96,7 +96,6 @@ export default function RecruiterDashboard() {
       eyebrow="Espace recruteur"
       titlePrefix="Bonjour"
       avatarFallback="R"
-      showHeader={false}
       menuItems={[
         { key: "home", label: "🏠 Accueil", path: "/fb/dashboard" },
         { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
