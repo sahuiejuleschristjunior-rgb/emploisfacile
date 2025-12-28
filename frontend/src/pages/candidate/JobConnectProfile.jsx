@@ -1,11 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useJobConnectData from "../hooks/useJobConnectData";
+import CandidateLayout from "../../layouts/CandidateLayout";
+import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
 
 export default function JobConnectProfile() {
   const nav = useNavigate();
-  const data = useJobConnectData();
+  const data = useCandidateDashboardData();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -14,7 +14,7 @@ export default function JobConnectProfile() {
   };
 
   return (
-    <JobConnectLayout user={data.user} onLogout={handleLogout}>
+    <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero">
         <div className="hero__info">
           <p className="eyebrow">Profil</p>
@@ -62,9 +62,9 @@ export default function JobConnectProfile() {
           <button className="primary-btn ghost" onClick={() => nav("/profil")}>
             Modifier mon profil
           </button>
-          <button className="primary-btn ghost" onClick={() => nav("/jobconnect/candidatures")}>Retour aux candidatures</button>
+          <button className="primary-btn ghost" onClick={() => nav("/candidate/candidatures")}>Retour aux candidatures</button>
         </div>
       </section>
-    </JobConnectLayout>
+    </CandidateLayout>
   );
 }

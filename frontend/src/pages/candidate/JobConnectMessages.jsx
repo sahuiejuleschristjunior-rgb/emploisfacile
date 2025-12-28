@@ -1,11 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useJobConnectData from "../hooks/useJobConnectData";
+import CandidateLayout from "../../layouts/CandidateLayout";
+import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
 
 export default function JobConnectMessages() {
   const nav = useNavigate();
-  const data = useJobConnectData();
+  const data = useCandidateDashboardData();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -14,7 +14,7 @@ export default function JobConnectMessages() {
   };
 
   return (
-    <JobConnectLayout user={data.user} onLogout={handleLogout}>
+    <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero">
         <div className="hero__info">
           <p className="eyebrow">Messages</p>
@@ -54,7 +54,7 @@ export default function JobConnectMessages() {
             <p className="mini-title">Poursuivre une conversation</p>
             <p className="mini-sub">Ouvrir votre boîte de réception.</p>
           </div>
-          <div className="mini-card" onClick={() => nav("/jobconnect/entretiens")}>
+          <div className="mini-card" onClick={() => nav("/candidate/entretiens")}>
             <p className="mini-title">Préparer un entretien</p>
             <p className="mini-sub">Relisez les notes et messages échangés.</p>
           </div>
@@ -64,6 +64,6 @@ export default function JobConnectMessages() {
           </div>
         </div>
       </section>
-    </JobConnectLayout>
+    </CandidateLayout>
   );
 }

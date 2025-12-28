@@ -1,12 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useJobConnectData from "../hooks/useJobConnectData";
-import { ApplicationCard, ApplicationPipeline } from "../components/jobconnect/JobConnectWidgets";
+import CandidateLayout from "../../layouts/CandidateLayout";
+import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
+import { ApplicationCard, ApplicationPipeline } from "../../components/candidate/JobConnectWidgets";
 
 export default function JobConnectApplications() {
   const nav = useNavigate();
-  const data = useJobConnectData();
+  const data = useCandidateDashboardData();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -40,7 +40,7 @@ export default function JobConnectApplications() {
   };
 
   return (
-    <JobConnectLayout user={data.user} onLogout={handleLogout}>
+    <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero" id="recent">
         <div className="hero__info">
           <p className="eyebrow">Mes candidatures</p>
@@ -102,6 +102,6 @@ export default function JobConnectApplications() {
           ))}
         </div>
       </section>
-    </JobConnectLayout>
+    </CandidateLayout>
   );
 }

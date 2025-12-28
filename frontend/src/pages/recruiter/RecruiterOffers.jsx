@@ -1,11 +1,11 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useRecruiterDashboardData from "../hooks/useRecruiterDashboardData";
-import "../styles/CandidateDashboard.css";
+import RecruiterLayout from "../../layouts/RecruiterLayout";
+import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboardData";
+import "../../styles/RecruiterDashboard.css";
 
 const recruiterMenu = [
-  { key: "create", label: "➕ Créer une nouvelle offre", path: "/create-job" },
+  { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },
   { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
   { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
   { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
@@ -37,7 +37,7 @@ export default function RecruiterOffers() {
   };
 
   return (
-    <JobConnectLayout
+    <RecruiterLayout
       user={data.user}
       onLogout={logout}
       eyebrow="Espace recruteur"
@@ -52,7 +52,9 @@ export default function RecruiterOffers() {
             <h3>Mes offres publiées</h3>
           </div>
           <div className="hero__actions">
-            <button className="primary-btn" onClick={() => nav("/create-job")}>Créer une offre</button>
+            <button className="primary-btn" onClick={() => nav("/recruiter/create-job")}>
+              Créer une offre
+            </button>
           </div>
         </div>
 
@@ -101,7 +103,7 @@ export default function RecruiterOffers() {
                   className="ghost-link subtle"
                   onClick={(e) => {
                     e.stopPropagation();
-                    nav(`/create-job?from=${job._id}`);
+                    nav(`/recruiter/create-job?from=${job._id}`);
                   }}
                 >
                   Dupliquer l'offre
@@ -111,6 +113,6 @@ export default function RecruiterOffers() {
           ))}
         </div>
       </section>
-    </JobConnectLayout>
+    </RecruiterLayout>
   );
 }

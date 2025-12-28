@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-export default function useJobConnectData() {
+export default function useCandidateDashboardData() {
   const [user, setUser] = useState(null);
   const [applications, setApplications] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);

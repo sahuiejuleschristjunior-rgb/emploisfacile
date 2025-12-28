@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useRecruiterDashboardData from "../hooks/useRecruiterDashboardData";
-import "../styles/CandidateDashboard.css";
-import { RecruiterPipeline } from "../components/jobconnect/JobConnectWidgets";
+import "../../styles/RecruiterDashboard.css";
+import RecruiterLayout from "../../layouts/RecruiterLayout";
+import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboardData";
+import { RecruiterPipeline } from "../../components/jobconnect/JobConnectWidgets";
 
 export default function RecruiterDashboard() {
   const nav = useNavigate();
@@ -65,7 +65,7 @@ export default function RecruiterDashboard() {
           next.job?.title || "Poste"
         }`,
         ctaLabel: "Voir l'agenda",
-        ctaAction: () => nav("/jobconnect/agenda"),
+        ctaAction: () => nav("/recruiter/candidatures"),
         hint: "Partagez l'ordre du jour et les participants à l'avance.",
       };
     }
@@ -75,7 +75,7 @@ export default function RecruiterDashboard() {
         title: "Publiez votre première offre",
         subtitle: "Attirez vos premiers talents dès aujourd'hui",
         ctaLabel: "Créer une offre",
-        ctaAction: () => nav("/create-job"),
+        ctaAction: () => nav("/recruiter/create-job"),
         hint: "Une description claire augmente le nombre de candidatures qualifiées.",
       };
     }
@@ -90,14 +90,14 @@ export default function RecruiterDashboard() {
   }, [data.activeJobs, data.pendingReview, data.upcomingInterviews, nav]);
 
   return (
-    <JobConnectLayout
+    <RecruiterLayout
       user={data.user}
       onLogout={logout}
       eyebrow="Espace recruteur"
       titlePrefix="Bonjour"
       avatarFallback="R"
       menuItems={[
-        { key: "create", label: "➕ Créer une nouvelle offre", path: "/create-job" },
+        { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },
         { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
         { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
         { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
@@ -116,7 +116,7 @@ export default function RecruiterDashboard() {
             <button className="primary-btn" onClick={nextAction.ctaAction}>
               {nextAction.ctaLabel}
             </button>
-            <button className="ghost-link subtle" onClick={() => nav("/create-job")}>
+            <button className="ghost-link subtle" onClick={() => nav("/recruiter/create-job")}>
               Publier une offre
             </button>
           </div>
@@ -164,18 +164,18 @@ export default function RecruiterDashboard() {
         <section className="card pipeline" aria-label="Pipeline de candidatures">
           <div className="card-header">
             <h3>Pipeline candidats</h3>
-            <button className="ghost-link" onClick={() => nav("/recruiter/candidatures")}>
-              Voir tout
-            </button>
-          </div>
+          <button className="ghost-link" onClick={() => nav("/recruiter/candidatures")}>
+            Voir tout
+          </button>
+        </div>
 
-          <RecruiterPipeline groupedApps={data.groupedApps} onOpen={openCandidate} />
+        <RecruiterPipeline groupedApps={data.groupedApps} onOpen={openCandidate} />
         </section>
 
         <section className="card agenda-card" id="agenda">
           <div className="card-header">
             <h3>Entretiens à venir</h3>
-            <button className="ghost-link" onClick={() => nav("/jobconnect/agenda")}>
+            <button className="ghost-link" onClick={() => nav("/recruiter/candidatures")}>
               Voir l'agenda
             </button>
           </div>
@@ -307,7 +307,7 @@ export default function RecruiterDashboard() {
               <p className="eyebrow">Offres</p>
               <h3>Vos offres publiées</h3>
             </div>
-            <button className="ghost-link" onClick={() => nav("/create-job")}>
+            <button className="ghost-link" onClick={() => nav("/recruiter/create-job")}>
               Nouvelle offre
             </button>
           </div>
@@ -342,6 +342,6 @@ export default function RecruiterDashboard() {
           </div>
         </section>
       </div>
-    </JobConnectLayout>
+    </RecruiterLayout>
   );
 }

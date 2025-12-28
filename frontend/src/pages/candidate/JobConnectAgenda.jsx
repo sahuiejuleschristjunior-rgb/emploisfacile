@@ -1,11 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useJobConnectData from "../hooks/useJobConnectData";
+import CandidateLayout from "../../layouts/CandidateLayout";
+import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
 
 export default function JobConnectAgenda() {
   const nav = useNavigate();
-  const data = useJobConnectData();
+  const data = useCandidateDashboardData();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -35,7 +35,7 @@ export default function JobConnectAgenda() {
   };
 
   return (
-    <JobConnectLayout user={data.user} onLogout={handleLogout}>
+    <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero" id="agenda">
         <div className="hero__info">
           <p className="eyebrow">Agenda</p>
@@ -44,7 +44,7 @@ export default function JobConnectAgenda() {
             Visualisez vos entretiens à venir et préparez vos échanges avec les recruteurs.
           </p>
           <div className="hero__actions">
-            <button className="primary-btn" onClick={() => nav("/jobconnect/entretiens")}>
+            <button className="primary-btn" onClick={() => nav("/candidate/entretiens")}>
               Voir les entretiens
             </button>
           </div>
@@ -68,7 +68,7 @@ export default function JobConnectAgenda() {
       <section className="card agenda-card">
         <div className="card-header">
           <h3>Agenda à venir</h3>
-          <button className="ghost-link" onClick={() => nav("/jobconnect/favoris")}>Préparer</button>
+          <button className="ghost-link" onClick={() => nav("/candidate/favoris")}>Préparer</button>
         </div>
 
         <div className="agenda-list">
@@ -95,6 +95,6 @@ export default function JobConnectAgenda() {
           ))}
         </div>
       </section>
-    </JobConnectLayout>
+    </CandidateLayout>
   );
 }

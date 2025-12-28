@@ -1,12 +1,12 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useJobConnectData from "../hooks/useJobConnectData";
-import { ApplicationCard } from "../components/jobconnect/JobConnectWidgets";
+import CandidateLayout from "../../layouts/CandidateLayout";
+import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
+import { ApplicationCard } from "../../components/candidate/JobConnectWidgets";
 
 export default function JobConnectInterviews() {
   const nav = useNavigate();
-  const data = useJobConnectData();
+  const data = useCandidateDashboardData();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -42,7 +42,7 @@ export default function JobConnectInterviews() {
   const interviewApps = data.groupedApps.interview;
 
   return (
-    <JobConnectLayout user={data.user} onLogout={handleLogout}>
+    <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero">
         <div className="hero__info">
           <p className="eyebrow">Entretiens</p>
@@ -74,7 +74,7 @@ export default function JobConnectInterviews() {
       <section className="card" aria-label="Entretiens planifiés">
         <div className="card-header">
           <h3>Vos entretiens à venir</h3>
-          <button className="ghost-link" onClick={() => nav("/jobconnect/agenda")}>Voir l'agenda</button>
+          <button className="ghost-link" onClick={() => nav("/candidate/agenda")}>Voir l'agenda</button>
         </div>
 
         {data.loadingApps && <div className="loader">Chargement…</div>}
@@ -94,6 +94,6 @@ export default function JobConnectInterviews() {
           ))}
         </div>
       </section>
-    </JobConnectLayout>
+    </CandidateLayout>
   );
 }

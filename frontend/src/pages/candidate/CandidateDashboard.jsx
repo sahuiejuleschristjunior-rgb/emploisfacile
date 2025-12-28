@@ -1,17 +1,17 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "../styles/CandidateDashboard.css";
-import JobConnectLayout from "../components/JobConnectLayout";
-import useJobConnectData from "../hooks/useJobConnectData";
+import "../../styles/CandidateDashboard.css";
+import CandidateLayout from "../../layouts/CandidateLayout";
+import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
 import {
   ApplicationCard,
   ApplicationPipeline,
   JobMiniCard,
-} from "../components/jobconnect/JobConnectWidgets";
+} from "../../components/candidate/JobConnectWidgets";
 
 export default function CandidateDashboard() {
   const nav = useNavigate();
-  const data = useJobConnectData();
+  const data = useCandidateDashboardData();
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -56,7 +56,7 @@ export default function CandidateDashboard() {
           ? `Planifié le ${soonestInterview.toLocaleDateString()} à ${soonestInterview.toLocaleTimeString()}`
           : "Consolidez vos notes et relisez l'offre",
         ctaLabel: "Ouvrir l'agenda",
-        ctaAction: () => nav("/jobconnect/agenda"),
+        ctaAction: () => nav("/candidate/agenda"),
         hint: "Révisez la fiche de poste et notez 3 questions à poser.",
       };
     }
@@ -76,7 +76,7 @@ export default function CandidateDashboard() {
         title: "Finalisez vos favoris",
         subtitle: `${data.savedJobs.length} offre(s) en attente dans vos favoris`,
         ctaLabel: "Ouvrir les favoris",
-        ctaAction: () => nav("/jobconnect/favoris"),
+        ctaAction: () => nav("/candidate/favoris"),
         hint: "Priorisez 2 offres et préparez un message rapide.",
       };
     }
@@ -100,7 +100,7 @@ export default function CandidateDashboard() {
   }, [data.groupedApps.interview]);
 
   return (
-    <JobConnectLayout user={data.user} onLogout={logout}>
+    <CandidateLayout user={data.user} onLogout={logout}>
       <section className="hero" id="recent">
         <div className="hero__info">
           <div className="hero__badge">Action prioritaire</div>
@@ -159,7 +159,7 @@ export default function CandidateDashboard() {
         <section className="card pipeline" aria-label="Pipeline de candidatures">
           <div className="card-header">
             <h3>Suivi des candidatures</h3>
-            <button className="ghost-link" onClick={() => nav("/jobconnect/candidatures")}>Voir tout</button>
+            <button className="ghost-link" onClick={() => nav("/candidate/candidatures")}>Voir tout</button>
           </div>
 
           <ApplicationPipeline
@@ -177,7 +177,7 @@ export default function CandidateDashboard() {
         <section className="card agenda-card" id="agenda">
           <div className="card-header">
             <h3>Agenda à venir</h3>
-            <button className="ghost-link" onClick={() => nav("/jobconnect/agenda")}>Voir l'agenda</button>
+            <button className="ghost-link" onClick={() => nav("/candidate/agenda")}>Voir l'agenda</button>
           </div>
 
           <div className="agenda-list">
@@ -218,7 +218,7 @@ export default function CandidateDashboard() {
           </div>
 
           <div className="quick-actions">
-            <button className="primary-btn ghost" onClick={() => nav("/jobconnect/profil")}>Mettre à jour mon profil</button>
+            <button className="primary-btn ghost" onClick={() => nav("/candidate/profil")}>Mettre à jour mon profil</button>
           </div>
         </section>
       </div>
@@ -230,7 +230,7 @@ export default function CandidateDashboard() {
               <p className="eyebrow">Chronologie</p>
               <h3>Vos dernières activités</h3>
             </div>
-            <button className="ghost-link" onClick={() => nav("/jobconnect/candidatures")}>
+            <button className="ghost-link" onClick={() => nav("/candidate/candidatures")}>
               Tout voir
             </button>
           </div>
@@ -260,7 +260,7 @@ export default function CandidateDashboard() {
               <p className="eyebrow">Opportunités</p>
               <h3>Favoris & Recommandations</h3>
             </div>
-            <button className="ghost-link" onClick={() => nav("/jobconnect/favoris")}>
+            <button className="ghost-link" onClick={() => nav("/candidate/favoris")}>
               Voir tout
             </button>
           </div>
@@ -314,6 +314,6 @@ export default function CandidateDashboard() {
           </div>
         </section>
       </div>
-    </JobConnectLayout>
+    </CandidateLayout>
   );
 }
