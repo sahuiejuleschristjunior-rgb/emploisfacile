@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
-import { ApplicationCard, ApplicationPipeline } from "../../components/candidate/JobConnectWidgets";
+import { ApplicationCard, ApplicationPipeline } from "../../components/jobconnect/JobConnectWidgets";
 
 export default function JobConnectApplications() {
   const nav = useNavigate();
