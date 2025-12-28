@@ -244,6 +244,7 @@ export default function RecruiterAllApplications() {
             </select>
           </div>
 
+          {/* ⭐ Bouton Contact — ajout officiel */}
           <button
             className="view-link"
             onClick={() =>
@@ -260,135 +261,151 @@ export default function RecruiterAllApplications() {
   };
 
   return (
-    <>
-      <div className="rd-page-header">
-        <div>
-          <h2>Candidatures</h2>
-          <p>Vue globale des candidats sur vos offres publiées.</p>
-        </div>
-      </div>
-
-      <section className="rd-card rd-card-kpi" style={{ marginBottom: 16 }}>
-        <div className="rd-kpi-grid">
-          <div className="rd-kpi">
-            <div className="num">{totalApplications}</div>
-            <div className="label">Total candidatures</div>
-          </div>
-          <div className="rd-kpi">
-            <div className="num">{totalPending}</div>
-            <div className="label">En attente</div>
-          </div>
-          <div className="rd-kpi">
-            <div className="num">{totalAccepted}</div>
-            <div className="label">Acceptées</div>
-          </div>
-          <div className="rd-kpi">
-            <div className="num">{totalRejected}</div>
-            <div className="label">Rejetées</div>
+    <div className="recruiter-dashboard">
+      <header className="rd-header">
+        <div className="rd-header-left">
+          <button className="rd-burger" onClick={() => nav("/recruiter/dashboard")}>
+            ←
+          </button>
+          <div className="rd-brand">
+            <div className="rd-logo">EF</div>
+            <div className="rd-brand-text">
+              <div className="rd-brand-title">Toutes les candidatures</div>
+              <div className="rd-brand-sub">
+                Vue globale des candidats sur vos offres
+              </div>
+            </div>
           </div>
         </div>
+      </header>
 
-        <div
-          className="filters-row"
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gap: 8,
-            gridTemplateColumns: "2fr 2fr 3fr",
-          }}
-        >
-          <select
-            className="status-select"
-            value={selectedJobId}
-            onChange={(e) => setSelectedJobId(e.target.value)}
-          >
-            <option value="all">Toutes les offres</option>
-            {sortedJobs.map((job) => (
-              <option key={job._id} value={job._id}>
-                {job.title} {job.isActive ? "" : " (désactivée)"}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="status-select"
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-          >
-            <option value="all">Tous les statuts</option>
-            <option value="Pending">En attente</option>
-            <option value="Reviewing">En cours d'étude</option>
-            <option value="Interview">Entretien</option>
-            <option value="Accepted">Accepté</option>
-            <option value="Rejected">Rejeté</option>
-          </select>
-
-          <input
-            className="status-select"
-            placeholder="Rechercher par nom ou email…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </section>
-
-      <section className="rd-card">
-        <div className="rd-card-header">
-          <h3>Candidatures par offre</h3>
-        </div>
-
-        {error && (
-          <div className="error-message" style={{ marginBottom: 12 }}>
-            {error}
-          </div>
-        )}
-
-        {loading && <div className="loader">Chargement des candidatures…</div>}
-
-        {!loading && grouped.length === 0 && !error && (
-          <div className="empty-state">
-            Aucune candidature ne correspond à ces filtres.
-          </div>
-        )}
-
-        {!loading && grouped.length > 0 && (
-          <div className="job-list-dashboard">
-            {grouped.map((group) => {
-              const job = group.job || {};
-              const isActive = job.isActive !== false;
-
-              return (
-                <div key={job._id} className="rd-card" style={{ marginBottom: 12 }}>
-                  <div className="rd-card-header">
-                    <div>
-                      <h3 style={{ marginBottom: 4 }}>
-                        {job.title || "Offre inconnue"}
-                      </h3>
-                      <div className="job-meta">
-                        {job.location}{" "}
-                        {isActive ? (
-                          <span className="job-pill">Active</span>
-                        ) : (
-                          <span className="job-pill job-pill--inactive">
-                            Désactivée
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="rd-chip">
-                      {group.applications.length} candidatures
-                    </div>
-                  </div>
-
-                  <div className="app-list">
-                    {group.applications.map(renderApplicationItem)}
-                  </div>
+      <div className="rd-shell">
+        <main className="rd-main">
+          <div className="rd-container">
+            <section className="rd-card rd-card-kpi" style={{ marginBottom: 16 }}>
+              <div className="rd-kpi-grid">
+                <div className="rd-kpi">
+                  <div className="num">{totalApplications}</div>
+                  <div className="label">Total candidatures</div>
                 </div>
-              );
-            })}
+                <div className="rd-kpi">
+                  <div className="num">{totalPending}</div>
+                  <div className="label">En attente</div>
+                </div>
+                <div className="rd-kpi">
+                  <div className="num">{totalAccepted}</div>
+                  <div className="label">Acceptées</div>
+                </div>
+                <div className="rd-kpi">
+                  <div className="num">{totalRejected}</div>
+                  <div className="label">Rejetées</div>
+                </div>
+              </div>
+
+              <div
+                className="filters-row"
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gap: 8,
+                  gridTemplateColumns: "2fr 2fr 3fr",
+                }}
+              >
+                <select
+                  className="status-select"
+                  value={selectedJobId}
+                  onChange={(e) => setSelectedJobId(e.target.value)}
+                >
+                  <option value="all">Toutes les offres</option>
+                  {sortedJobs.map((job) => (
+                    <option key={job._id} value={job._id}>
+                      {job.title} {job.isActive ? "" : " (désactivée)"}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  className="status-select"
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="Pending">En attente</option>
+                  <option value="Reviewing">En cours d'étude</option>
+                  <option value="Interview">Entretien</option>
+                  <option value="Accepted">Accepté</option>
+                  <option value="Rejected">Rejeté</option>
+                </select>
+
+                <input
+                  className="status-select"
+                  placeholder="Rechercher par nom ou email…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </section>
+
+            <section className="rd-card">
+              <div className="rd-card-header">
+                <h3>Candidatures par offre</h3>
+              </div>
+
+              {error && (
+                <div className="error-message" style={{ marginBottom: 12 }}>
+                  {error}
+                </div>
+              )}
+
+              {loading && <div className="loader">Chargement des candidatures…</div>}
+
+              {!loading && grouped.length === 0 && !error && (
+                <div className="empty-state">
+                  Aucune candidature ne correspond à ces filtres.
+                </div>
+              )}
+
+              {!loading && grouped.length > 0 && (
+                <div className="job-list-dashboard">
+                  {grouped.map((group) => {
+                    const job = group.job || {};
+                    const isActive = job.isActive !== false;
+
+                    return (
+                      <div key={job._id} className="rd-card" style={{ marginBottom: 12 }}>
+                        <div className="rd-card-header">
+                          <div>
+                            <h3 style={{ marginBottom: 4 }}>
+                              {job.title || "Offre inconnue"}
+                            </h3>
+                            <div className="job-meta">
+                              {job.location}{" "}
+                              {isActive ? (
+                                <span className="job-pill">Active</span>
+                              ) : (
+                                <span className="job-pill job-pill--inactive">
+                                  Désactivée
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="rd-chip">
+                            {group.applications.length} candidatures
+                          </div>
+                        </div>
+
+                        <div className="app-list">
+                          {group.applications.map(renderApplicationItem)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
-        )}
-      </section>
-    </>
+        </main>
+      </div>
+    </div>
   );
 }

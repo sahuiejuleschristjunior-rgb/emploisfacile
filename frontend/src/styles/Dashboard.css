@@ -20,30 +20,6 @@
   padding-top:110px; /* header fixe */
 }
 
-.rd-page{
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-}
-
-.rd-page-header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-}
-
-.rd-page-header h2{
-  margin:0;
-  font-size:20px;
-}
-
-.rd-page-header p{
-  margin:4px 0 0;
-  color:var(--muted);
-  font-size:13px;
-}
-
 /* ------------------------------------------------------------
    HEADER FIXE
 ------------------------------------------------------------- */
@@ -157,13 +133,6 @@
   margin:0 auto;
 }
 
-.rd-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.45);
-  z-index:150;
-}
-
 /* Sidebar */
 .rd-sidebar{
   width:230px;
@@ -203,19 +172,11 @@
   display:flex;
   align-items:center;
   gap:8px;
-  text-decoration:none;
-  border:none;
-  background:transparent;
 }
 
 .rd-menu-item:hover{
   background:rgba(30,64,175,0.3);
   color:#fff;
-}
-
-.rd-menu-item--button{
-  width:100%;
-  text-align:left;
 }
 
 .rd-menu-item--active{
@@ -526,7 +487,6 @@
     opacity:0;
     pointer-events:none;
     transition:0.2s ease-out;
-    z-index:160;
   }
 
   .rd-sidebar.rd-sidebar--open{
