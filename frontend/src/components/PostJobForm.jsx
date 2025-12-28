@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import '../styles/JobForm.css';
+import React, { useState } from "react";
+import { API_URL } from "../api/config";
+import "../styles/JobForm.css";
 
 export default function PostJobForm({ onJobPosted }) {
     const [form, setForm] = useState({
@@ -14,9 +15,8 @@ export default function PostJobForm({ onJobPosted }) {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const API_URL = import.meta.env.VITE_API_URL;
-    const token = localStorage.getItem('token');
-    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const token = localStorage.getItem("token");
+    const currentUser = JSON.parse(localStorage.getItem("user"));
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value });

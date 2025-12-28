@@ -360,6 +360,15 @@ export default function JobFeed() {
                 </p>
               </div>
               <div className="job-feed-actions">
+                {isRecruiter && (
+                  <button
+                    type="button"
+                    className="cta-button create-job-btn"
+                    onClick={() => navigate("/create-job")}
+                  >
+                    Publier une offre
+                  </button>
+                )}
                 {renderFilterBar("desktop")}
                 <button
                   type="button"

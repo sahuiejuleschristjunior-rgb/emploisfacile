@@ -230,6 +230,19 @@
     width: 100%;
 }
 
+.create-job-btn {
+    background: #1d3b73;
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 18px rgba(29, 59, 115, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.create-job-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(29, 59, 115, 0.32);
+}
+
 .job-feed-hero h2 {
     margin: 4px 0;
     font-size: 24px;
@@ -758,6 +771,13 @@
     background: #1f2937;
     color: #e5e7eb;
     border-color: #334155;
+}
+
+.job-feed-screen.dark-mode .create-job-btn {
+    background: #4b6bff;
+    border-color: #4b6bff;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(75, 107, 255, 0.35);
 }
 
 .job-feed-screen.dark-mode .cta-button:hover {
