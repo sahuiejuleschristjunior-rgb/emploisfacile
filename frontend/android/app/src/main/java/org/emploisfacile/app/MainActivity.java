@@ -25,6 +25,6 @@ public class MainActivity extends BridgeActivity {
          Couleur cohérente avec ton thème sombre
         */
         getWindow().setStatusBarColor(0xFF020617);
-        getWindow().setNavigationBarColor(0xFF020617);
+        getWindow().setNavigationBarColor(0xFF020617) ;
     }
 }

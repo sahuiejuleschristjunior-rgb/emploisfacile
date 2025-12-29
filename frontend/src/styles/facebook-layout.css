@@ -1381,3 +1381,71 @@ body { background: #18191a !important; }
 .fs-item.logout {
   background: #3b0a0a;
 }
+/* =========================================================
+   🔧 PATCH SAMSUNG ANDROID – HEADER / FOOTER / SCROLL
+   (à coller EN FIN DE FICHIER)
+========================================================= */
+
+/* 1️⃣ STOP aux scrolls globaux (Samsung bug) */
+html,
+body {
+  height: 100%;
+  overflow: hidden !important;
+}
+
+/* 2️⃣ Conteneur principal */
+.fb-app {
+  height: 100%;
+  overflow: hidden !important;
+}
+
+/* 3️⃣ HEADER – forcer une position unique et stable */
+.fb-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0;
+  right: 0;
+  height: var(--fb-header-height);
+  z-index: 15000;
+  background: #242526;
+}
+
+/* 4️⃣ FOOTER MOBILE – toujours visible */
+.fb-bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 15000;
+  background: #111;
+}
+
+/* 5️⃣ ZONE DE CONTENU – UN SEUL SCROLL */
+.fb-app-body,
+.fb-center-column,
+.fb-compact-body {
+  position: absolute !important;
+  top: var(--fb-header-height);
+  bottom: 60px; /* hauteur footer */
+  left: 0;
+  right: 0;
+
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 6️⃣ NE PLUS UTILISER 100vh SUR SAMSUNG */
+.fb-app,
+.fb-layout,
+.fb-compact-shell,
+.fb-compact-body {
+  min-height: auto !important;
+  height: auto !important;
+}
+
+/* 7️⃣ Sécurité : empêcher les décalages fantômes */
+.fb-header,
+.fb-bottom-nav {
+  transform: translateZ(0);
+}
