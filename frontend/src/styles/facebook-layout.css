@@ -1524,3 +1524,91 @@ html, body {
     padding-bottom: 20px;
   }
 }
+/* =====================================================
+   ✅ CAPACITOR ANDROID FINAL FIX (HEADER SAFE)
+   ===================================================== */
+
+/* 1️⃣ Safe Area (OBLIGATOIRE) */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 2️⃣ STOP 100vh */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 3️⃣ App racine */
+.fb-app {
+  height: 100%;
+  overflow: hidden;
+  background: #18191a;
+}
+
+/* 4️⃣ HEADER – UNE SEULE DÉFINITION */
+.fb-header {
+  position: fixed;
+  top: var(--safe-top);
+  left: 0;
+  right: 0;
+
+  height: calc(var(--fb-header-height) + var(--safe-top));
+  padding-top: var(--safe-top);
+
+  z-index: 20000;
+  background: #242526;
+  border-bottom: 1px solid #3a3b3c;
+}
+
+/* 5️⃣ FOOTER MOBILE */
+.fb-bottom-nav {
+  position: fixed;
+  bottom: var(--safe-bottom);
+  left: 0;
+  right: 0;
+
+  height: 60px;
+  padding-bottom: var(--safe-bottom);
+
+  z-index: 20000;
+  background: #111;
+}
+
+/* 6️⃣ ZONE DE CONTENU – UN SEUL SCROLL */
+.fb-app-body {
+  position: absolute;
+  top: calc(var(--fb-header-height) + var(--safe-top));
+  bottom: calc(60px + var(--safe-bottom));
+  left: 0;
+  right: 0;
+
+  overflow: hidden;
+}
+
+/* 7️⃣ LE SEUL SCROLL AUTORISÉ */
+.fb-center-column {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+/* 8️⃣ SUPPRIMER TOUT AUTRE SCROLL */
+.fb-layout,
+.fb-left-column,
+.fb-right-column,
+.fb-compact-body {
+  overflow: hidden !important;
+  height: auto !important;
+}
+
+/* 9️⃣ Sécurité GPU Android */
+.fb-header,
+.fb-bottom-nav {
+  transform: translateZ(0);
+}
