@@ -1,25 +1,74 @@
-/* ——————— RESET GLOBAL ——————— */
+/* ============================================================
+   RESET GLOBAL – SAMSUNG STABLE
+============================================================ */
 
-html, body, #root {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-height: 100vh;
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
   background: #020617;
-  box-sizing: border-box !important;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden; /* ❗ PAS DE SCROLL ICI */
 }
-
-/* ——————— Neutralisation totale de Vite ——————— */
 
 #root {
-  text-align: left !important;
+  width: 100%;
+  height: 100%;
   background: #020617;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ——————— Basic global styles ——————— */
+/* ============================================================
+   APP LAYOUT
+============================================================ */
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px; /* hauteur contrôlée */
+  background: #020617;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px; /* hauteur contrôlée */
+  background: #020617;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+/* ============================================================
+   CONTENU SCROLLABLE (UN SEUL SCROLL)
+============================================================ */
+
+.app-content {
+  flex: 1;
+  margin-top: 56px;   /* même hauteur que header */
+  margin-bottom: 64px;/* même hauteur que footer */
+
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 16px;
+}
+
+/* ============================================================
+   GLOBAL ELEMENTS
+============================================================ */
 
 * {
   box-sizing: border-box;
@@ -27,12 +76,6 @@ html, body, #root {
 
 img, video {
   max-width: 100%;
+  height: auto;
   display: block;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  html, body, #root {
-    overflow-x: hidden !important;
-  }
 }
