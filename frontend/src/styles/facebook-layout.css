@@ -1612,3 +1612,89 @@ body {
 .fb-bottom-nav {
   transform: translateZ(0);
 }
+/* =====================================================
+   ✅ CAPACITOR ANDROID / SAMSUNG – FIX FINAL
+   ===================================================== */
+
+/* Safe areas Android / Samsung */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ❌ JAMAIS 100vh sur Android */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden !important;
+  background: #18191a;
+}
+
+/* App racine */
+.fb-app {
+  height: 100%;
+  overflow: hidden !important;
+  background: #18191a;
+}
+
+/* ================= HEADER ================= */
+.fb-header {
+  position: fixed !important;
+  top: var(--safe-top);
+  left: 0;
+  right: 0;
+
+  height: var(--fb-header-height);
+  padding-top: var(--safe-top);
+
+  z-index: 20000;
+  background: #242526;
+  border-bottom: 1px solid #3a3b3c;
+  transform: translateZ(0);
+}
+
+/* ================= FOOTER MOBILE ================= */
+.fb-bottom-nav {
+  position: fixed !important;
+  bottom: var(--safe-bottom);
+  left: 0;
+  right: 0;
+
+  height: 60px;
+  padding-bottom: var(--safe-bottom);
+
+  z-index: 20000;
+  background: #111;
+  transform: translateZ(0);
+}
+
+/* ================= ZONE DE CONTENU ================= */
+.fb-app-body {
+  position: absolute;
+  top: calc(var(--fb-header-height) + var(--safe-top));
+  bottom: calc(60px + var(--safe-bottom));
+  left: 0;
+  right: 0;
+
+  overflow: hidden !important;
+}
+
+/* ✅ SEUL SCROLL AUTORISÉ */
+.fb-center-column {
+  height: 100%;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+/* ❌ INTERDIRE LES AUTRES SCROLLS */
+.fb-layout,
+.fb-left-column,
+.fb-right-column,
+.fb-compact-body,
+.fb-compact-shell {
+  overflow: hidden !important;
+  height: auto !important;
+}
