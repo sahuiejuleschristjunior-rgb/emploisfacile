@@ -1449,3 +1449,78 @@ body {
 .fb-bottom-nav {
   transform: translateZ(0);
 }
+/* =========================
+   🔥 FIX SAMSUNG / ANDROID
+========================= */
+
+/* ❌ Ne JAMAIS utiliser 100vh sur Android */
+html, body {
+  height: 100%;
+}
+
+/* App racine */
+.fb-app {
+  min-height: 100%;
+  height: auto;
+  overflow: hidden;
+}
+
+/* HEADER */
+.fb-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--fb-header-height);
+  z-index: 11000;
+}
+
+/* FOOTER */
+.fb-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  z-index: 11000;
+}
+
+/* BODY PRINCIPAL */
+.fb-app-body {
+  position: relative;
+  height: auto;
+  min-height: 100%;
+  padding-top: var(--fb-header-height);
+  padding-bottom: 60px; /* footer */
+  overflow: hidden; /* ❌ pas de scroll ici */
+}
+
+/* LAYOUT */
+.fb-layout {
+  height: auto;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+/* ✅ UN SEUL SCROLL */
+.fb-center-column {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+}
+
+/* ❌ SUPPRIMER tout scroll ailleurs */
+.fb-left-column,
+.fb-right-column,
+.fb-layout,
+.fb-app-body {
+  overflow: hidden;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .fb-center-column {
+    padding-bottom: 20px;
+  }
+}
