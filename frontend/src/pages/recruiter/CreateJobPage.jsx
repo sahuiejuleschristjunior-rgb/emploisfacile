@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PostJobForm from "../../components/PostJobForm";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
+import "../../styles/RecruiterDashboard.css";
 import "../../styles/CreateJobPage.css";
 
 const parseUser = () => {
@@ -115,4 +116,3 @@ export default function CreateJobPage() {
     </RecruiterLayout>
   );
 }
-
