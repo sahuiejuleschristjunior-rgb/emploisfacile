@@ -31,10 +31,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     "/espace-candidat",
     "/candidate",
   ].some((path) => location.pathname.startsWith(path));
-  const isRecruiterPlainLayout = [
-    "/recruiter/offres",
-    "/recruiter/job",
-  ].some((path) => location.pathname.startsWith(path));
   const hideHeader =
     isCandidateSpace ||
     location.pathname.startsWith("/recruiter/dashboard") ||
@@ -49,7 +45,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         <div className="loader">Chargement...</div>
       </div>
     );
-  if (isRecruiterPlainLayout) return children || <Outlet />;
 
   const makeHeaders = (json = false) => {
     if (!authToken)
