@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
-import "../../styles/Dashboard.css";
+import "../../styles/RecruiterDashboard.css";
 
 export default function RecruiterJobApplications() {
   const { jobId } = useParams();
@@ -146,28 +146,28 @@ export default function RecruiterJobApplications() {
     const c = app.candidate || {};
 
     return (
-      <div key={app._id} className="app-item">
+      <div key={app._id} className="recruiter-app-item">
         {/* ------------------------------------------------ */}
         {/* INFO CANDIDAT */}
         {/* ------------------------------------------------ */}
-        <div className="app-main">
-          <div className="app-avatar">
+        <div className="recruiter-app-main">
+          <div className="recruiter-app-avatar">
             {c.avatar ? (
               <img src={c.avatar} alt={c.name} loading="lazy" />
             ) : (
-              <div className="app-avatar-fallback">
+              <div className="recruiter-app-avatar-fallback">
                 {(c.name || "?").charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
-          <div className="app-info">
-            <div className="app-name-row">
-              <div className="app-name">{c.name || "Candidat"}</div>
-              <div className="app-email">{c.email}</div>
+          <div className="recruiter-app-info">
+            <div className="recruiter-app-name-row">
+              <div className="recruiter-app-name">{c.name || "Candidat"}</div>
+              <div className="recruiter-app-email">{c.email}</div>
             </div>
 
-            <div className="app-meta">
+            <div className="recruiter-app-meta">
               <span>Candidature du {new Date(app.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
@@ -176,14 +176,14 @@ export default function RecruiterJobApplications() {
         {/* ------------------------------------------------ */}
         {/* ACTIONS */}
         {/* ------------------------------------------------ */}
-        <div className="app-actions">
+        <div className="recruiter-app-actions">
 
           {/* STATUT */}
-          <div className="app-status-row">
+          <div className="recruiter-app-status-row">
             {renderStatusBadge(app.status)}
 
             <select
-              className="status-select"
+              className="recruiter-status-select"
               value={app.status}
               disabled={updatingId === app._id}
               onChange={(e) => handleStatusChange(app._id, e.target.value)}
@@ -198,7 +198,7 @@ export default function RecruiterJobApplications() {
 
           {/* MESSAGERIE */}
           <button
-            className="app-btn contact-btn"
+            className="app-action-btn app-action-btn--primary"
             onClick={() => contactCandidate(c)}
           >
             💬 Contacter
@@ -206,7 +206,7 @@ export default function RecruiterJobApplications() {
 
           {/* APPEL VIDÉO */}
           <button
-            className="app-btn call-btn"
+            className="app-action-btn app-action-btn--ghost"
             onClick={() => callCandidate(c)}
           >
             📹 Appel vidéo
@@ -222,48 +222,56 @@ export default function RecruiterJobApplications() {
   ============================================================ */
   return (
     <RecruiterLayout user={user} onLogout={handleLogout}>
-      <div className="recruiter-dashboard">
-        <header className="rd-header">
-          <div className="rd-header-left">
-            <button className="rd-burger" onClick={() => nav(-1)}>
-              ←
+      <section className="hero recruiter-apps-hero">
+        <div className="hero__info">
+          <div className="hero__badge">Candidatures</div>
+          <h3>Candidatures de l'offre</h3>
+          <p className="hero__subtitle">ID Offre : {jobId}</p>
+          <div className="hero__actions">
+            <button className="ghost-link subtle" onClick={() => nav(-1)}>
+              ← Retour au tableau de bord
             </button>
-
-            <div className="rd-brand">
-              <div className="rd-logo">EF</div>
-              <div className="rd-brand-text">
-                <div className="rd-brand-title">Candidatures de l'offre</div>
-                <div className="rd-brand-sub">ID Offre : {jobId}</div>
-              </div>
-            </div>
           </div>
-        </header>
-
-        <div className="rd-shell">
-          <main className="rd-main">
-            <div className="rd-container">
-            <section className="rd-card">
-              <div className="rd-card-header">
-                <h3>Candidats ({applications.length})</h3>
-              </div>
-
-              {error && <div className="error-message">{error}</div>}
-              {loading && <div className="loader">Chargement…</div>}
-
-              {!loading && applications.length === 0 && !error && (
-                <div className="empty-state">
-                  Aucun candidat n’a encore postulé.
-                </div>
-              )}
-
-              <div className="app-list">
-                {applications.map(renderApplicationItem)}
-              </div>
-            </section>
-            </div>
-          </main>
         </div>
-      </div>
+        <div className="hero__highlights">
+          <div className="hero-chip">
+            <span>Total</span>
+            <strong>{applications.length}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>En attente</span>
+            <strong>{applications.filter((app) => app.status === "Pending").length}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>Entretiens</span>
+            <strong>{applications.filter((app) => app.status === "Interview").length}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="card recruiter-apps-card">
+        <div className="card-header recruiter-apps-card-header">
+          <div>
+            <h3>Candidats ({applications.length})</h3>
+            <p className="recruiter-apps-subtitle">
+              Suivez l’avancement des candidatures et contactez rapidement les profils clés.
+            </p>
+          </div>
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+        {loading && <div className="loader">Chargement…</div>}
+
+        {!loading && applications.length === 0 && !error && (
+          <div className="empty-state">
+            Aucun candidat n’a encore postulé.
+          </div>
+        )}
+
+        <div className="recruiter-apps-list">
+          {applications.map(renderApplicationItem)}
+        </div>
+      </section>
     </RecruiterLayout>
   );
 }
