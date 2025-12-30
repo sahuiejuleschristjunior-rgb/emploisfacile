@@ -653,6 +653,53 @@ body {
   gap: 10px;
 }
 
+.applications-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nested-card {
+  box-shadow: none;
+  background: rgba(12, 17, 33, 0.9);
+}
+
+.filters-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.filter-select,
+.filter-input {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  border-color: rgba(124, 58, 237, 0.6);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+}
+
+.filter-input::placeholder {
+  color: var(--muted);
+}
+
+.status-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .application-card__profile {
   display: flex;
   gap: 12px;
