@@ -278,146 +278,144 @@ export default function RecruiterAllApplications() {
 
   return (
     <RecruiterLayout user={user} onLogout={handleLogout}>
-      <div className="recruiter-dashboard">
-        <section className="hero">
-          <div className="hero__info">
-            <div className="hero__badge">Candidatures</div>
-            <h3>Suivi centralisé des candidats</h3>
-            <p className="hero__subtitle">
-              Analysez l'ensemble des candidatures reçues et ajustez vos priorités en un
-              coup d'œil.
-            </p>
-            <p className="hero__hint">Filtrez par offre, statut ou candidat.</p>
+      <section className="hero">
+        <div className="hero__info">
+          <div className="hero__badge">Candidatures</div>
+          <h3>Suivi centralisé des candidats</h3>
+          <p className="hero__subtitle">
+            Analysez l'ensemble des candidatures reçues et ajustez vos priorités en un
+            coup d'œil.
+          </p>
+          <p className="hero__hint">Filtrez par offre, statut ou candidat.</p>
+        </div>
+        <div className="hero__highlights">
+          <div className="hero-chip">
+            <span>Total</span>
+            <strong>{totalApplications}</strong>
           </div>
-          <div className="hero__highlights">
-            <div className="hero-chip">
-              <span>Total</span>
-              <strong>{totalApplications}</strong>
-            </div>
-            <div className="hero-chip">
-              <span>En attente</span>
-              <strong>{totalPending}</strong>
-            </div>
-            <div className="hero-chip">
-              <span>Entretiens</span>
-              <strong>{applications.filter((a) => a.status === "Interview").length}</strong>
-            </div>
+          <div className="hero-chip">
+            <span>En attente</span>
+            <strong>{totalPending}</strong>
           </div>
-        </section>
-
-        <section className="stats-grid">
-          <div className="stat-card">
-            <p className="stat-label">Total candidatures</p>
-            <p className="stat-value text-indigo">{totalApplications}</p>
-            <p className="stat-hint">Vue consolidée de toutes vos offres.</p>
+          <div className="hero-chip">
+            <span>Entretiens</span>
+            <strong>{applications.filter((a) => a.status === "Interview").length}</strong>
           </div>
-          <div className="stat-card">
-            <p className="stat-label">En attente</p>
-            <p className="stat-value text-orange">{totalPending}</p>
-            <p className="stat-hint">À traiter rapidement pour répondre aux candidats.</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Acceptées</p>
-            <p className="stat-value text-emerald">{totalAccepted}</p>
-            <p className="stat-hint">Candidats validés pour la suite.</p>
-          </div>
-          <div className="stat-card">
-            <p className="stat-label">Rejetées</p>
-            <p className="stat-value text-purple">{totalRejected}</p>
-            <p className="stat-hint">Décisions clôturées sur ces profils.</p>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="card">
-          <div className="card-header">
-            <h3>Filtres rapides</h3>
-            <button className="ghost-link subtle" onClick={() => nav("/recruiter/dashboard")}>
-              Retour tableau de bord
-            </button>
-          </div>
+      <section className="stats-grid">
+        <div className="stat-card">
+          <p className="stat-label">Total candidatures</p>
+          <p className="stat-value text-indigo">{totalApplications}</p>
+          <p className="stat-hint">Vue consolidée de toutes vos offres.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">En attente</p>
+          <p className="stat-value text-orange">{totalPending}</p>
+          <p className="stat-hint">À traiter rapidement pour répondre aux candidats.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Acceptées</p>
+          <p className="stat-value text-emerald">{totalAccepted}</p>
+          <p className="stat-hint">Candidats validés pour la suite.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">Rejetées</p>
+          <p className="stat-value text-purple">{totalRejected}</p>
+          <p className="stat-hint">Décisions clôturées sur ces profils.</p>
+        </div>
+      </section>
 
-          <div className="filters-bar">
-            <select
-              className="filter-select"
-              value={selectedJobId}
-              onChange={(e) => setSelectedJobId(e.target.value)}
-            >
-              <option value="all">Toutes les offres</option>
-              {sortedJobs.map((job) => (
-                <option key={job._id} value={job._id}>
-                  {job.title} {job.isActive ? "" : " (désactivée)"}
-                </option>
-              ))}
-            </select>
+      <section className="card">
+        <div className="card-header">
+          <h3>Filtres rapides</h3>
+          <button className="ghost-link subtle" onClick={() => nav("/recruiter/dashboard")}>
+            Retour tableau de bord
+          </button>
+        </div>
 
-            <select
-              className="filter-select"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="all">Tous les statuts</option>
-              <option value="Pending">En attente</option>
-              <option value="Reviewing">En cours d'étude</option>
-              <option value="Interview">Entretien</option>
-              <option value="Accepted">Accepté</option>
-              <option value="Rejected">Rejeté</option>
-            </select>
+        <div className="filters-bar">
+          <select
+            className="filter-select"
+            value={selectedJobId}
+            onChange={(e) => setSelectedJobId(e.target.value)}
+          >
+            <option value="all">Toutes les offres</option>
+            {sortedJobs.map((job) => (
+              <option key={job._id} value={job._id}>
+                {job.title} {job.isActive ? "" : " (désactivée)"}
+              </option>
+            ))}
+          </select>
 
-            <input
-              className="filter-input"
-              placeholder="Rechercher par nom ou email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </section>
+          <select
+            className="filter-select"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="Pending">En attente</option>
+            <option value="Reviewing">En cours d'étude</option>
+            <option value="Interview">Entretien</option>
+            <option value="Accepted">Accepté</option>
+            <option value="Rejected">Rejeté</option>
+          </select>
 
-        <section className="card">
-          <div className="card-header">
-            <h3>Candidatures par offre</h3>
-          </div>
+          <input
+            className="filter-input"
+            placeholder="Rechercher par nom ou email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </section>
 
-          {error && <div className="error-message">{error}</div>}
+      <section className="card">
+        <div className="card-header">
+          <h3>Candidatures par offre</h3>
+        </div>
 
-          {loading && <div className="loader">Chargement des candidatures…</div>}
+        {error && <div className="error-message">{error}</div>}
 
-          {!loading && grouped.length === 0 && !error && (
-            <div className="empty-state">Aucune candidature ne correspond à ces filtres.</div>
-          )}
+        {loading && <div className="loader">Chargement des candidatures…</div>}
 
-          {!loading && grouped.length > 0 && (
-            <div className="applications-groups">
-              {grouped.map((group) => {
-                const job = group.job || {};
-                const isActive = job.isActive !== false;
+        {!loading && grouped.length === 0 && !error && (
+          <div className="empty-state">Aucune candidature ne correspond à ces filtres.</div>
+        )}
 
-                return (
-                  <div key={job._id} className="card nested-card">
-                    <div className="card-header">
-                      <div>
-                        <h3 className="offer-title">{job.title || "Offre inconnue"}</h3>
-                        <p className="offer-location">{job.location || "Lieu non précisé"}</p>
-                        <div className="offer-meta">
-                          <span className={isActive ? "status-pill status-emerald" : "status-pill status-rose"}>
-                            {isActive ? "Active" : "Désactivée"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="status-pill status-blue">
-                        {group.applications.length} candidatures
+        {!loading && grouped.length > 0 && (
+          <div className="applications-groups">
+            {grouped.map((group) => {
+              const job = group.job || {};
+              const isActive = job.isActive !== false;
+
+              return (
+                <div key={job._id} className="card nested-card">
+                  <div className="card-header">
+                    <div>
+                      <h3 className="offer-title">{job.title || "Offre inconnue"}</h3>
+                      <p className="offer-location">{job.location || "Lieu non précisé"}</p>
+                      <div className="offer-meta">
+                        <span className={isActive ? "status-pill status-emerald" : "status-pill status-rose"}>
+                          {isActive ? "Active" : "Désactivée"}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="applications-list">
-                      {group.applications.map(renderApplicationItem)}
+                    <div className="status-pill status-blue">
+                      {group.applications.length} candidatures
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      </div>
+
+                  <div className="applications-list">
+                    {group.applications.map(renderApplicationItem)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </RecruiterLayout>
   );
 }
