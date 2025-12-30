@@ -36,6 +36,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     "/recruiter/candidatures",
     "/recruiter/offres",
     "/recruiter/job",
+    "/recruiter/create-job",
   ].some((path) => location.pathname.startsWith(path));
   const hideHeader =
     isCandidateSpace ||
