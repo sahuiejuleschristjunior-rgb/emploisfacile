@@ -1384,3 +1384,63 @@ body {
     flex-wrap: wrap;
   }
 }
+
+/* ------------------------------------------------------------
+   Recruiter layout fixes (end of file)
+------------------------------------------------------------- */
+.recruiter-dashboard {
+  width: 100%;
+  max-width: none;
+  overflow-x: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-sizing: border-box;
+}
+
+.recruiter-dashboard > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.recruiter-dashboard .card-header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.recruiter-dashboard .card,
+.recruiter-dashboard .offer-card,
+.recruiter-dashboard .application-card,
+.recruiter-dashboard .recruiter-app-item,
+.recruiter-dashboard .agenda-item,
+.recruiter-dashboard .stat-card,
+.recruiter-dashboard .mini-card,
+.recruiter-dashboard .nested-card,
+.recruiter-dashboard .hero {
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.recruiter-dashboard .hero__actions,
+.recruiter-dashboard .application-actions,
+.recruiter-dashboard .agenda-actions,
+.recruiter-dashboard .offer-actions,
+.recruiter-dashboard .inline-actions,
+.recruiter-dashboard .recruiter-app-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.recruiter-dashboard .hero__actions button,
+.recruiter-dashboard .application-actions button,
+.recruiter-dashboard .agenda-actions button,
+.recruiter-dashboard .offer-actions button,
+.recruiter-dashboard .inline-actions button,
+.recruiter-dashboard .recruiter-app-actions button {
+  min-width: 130px;
+}

@@ -45,74 +45,76 @@ export default function RecruiterOffers() {
       avatarFallback="R"
       menuItems={recruiterMenu}
     >
-      <section className="card">
-        <div className="card-header">
-          <div>
-            <p className="eyebrow">Vos annonces</p>
-            <h3>Mes offres publiées</h3>
+      <div className="recruiter-dashboard">
+        <section className="card">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">Vos annonces</p>
+              <h3>Mes offres publiées</h3>
+            </div>
+            <div className="hero__actions">
+              <button className="primary-btn" onClick={() => nav("/recruiter/create-job")}>
+                Créer une offre
+              </button>
+            </div>
           </div>
-          <div className="hero__actions">
-            <button className="primary-btn" onClick={() => nav("/recruiter/create-job")}>
-              Créer une offre
-            </button>
-          </div>
-        </div>
 
-        {data.loadingJobs && <div className="loader">Chargement de vos offres…</div>}
-        {data.error && <div className="error-message">{data.error}</div>}
-        {!data.loadingJobs && sortedJobs.length === 0 && !data.error && (
-          <div className="empty-state">Vous n'avez pas encore publié d'offre.</div>
-        )}
+          {data.loadingJobs && <div className="loader">Chargement de vos offres…</div>}
+          {data.error && <div className="error-message">{data.error}</div>}
+          {!data.loadingJobs && sortedJobs.length === 0 && !data.error && (
+            <div className="empty-state">Vous n'avez pas encore publié d'offre.</div>
+          )}
 
-        <div className="offers-grid">
-          {sortedJobs.map((job) => (
-            <article key={job._id} className="offer-card" onClick={() => openJob(job._id)}>
-              <div className="offer-card__head">
-                <div>
-                  <p className="offer-title">{job.title}</p>
-                  <p className="offer-location">{job.location || "Localisation non précisée"}</p>
+          <div className="offers-grid">
+            {sortedJobs.map((job) => (
+              <article key={job._id} className="offer-card" onClick={() => openJob(job._id)}>
+                <div className="offer-card__head">
+                  <div>
+                    <p className="offer-title">{job.title}</p>
+                    <p className="offer-location">{job.location || "Localisation non précisée"}</p>
+                  </div>
+                  <span className={`status-pill ${job.isActive === false ? "status-amber" : "status-blue"}`}>
+                    {job.isActive === false ? "Désactivée" : "Active"}
+                  </span>
                 </div>
-                <span className={`status-pill ${job.isActive === false ? "status-amber" : "status-blue"}`}>
-                  {job.isActive === false ? "Désactivée" : "Active"}
-                </span>
-              </div>
 
-              <div className="offer-meta">
-                <span>Publiée le {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}</span>
-                <span>{job.contractType || "Type de contrat"}</span>
-                <span>{job.salaryRange || "Salaire à définir"}</span>
-              </div>
+                <div className="offer-meta">
+                  <span>Publiée le {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "-"}</span>
+                  <span>{job.contractType || "Type de contrat"}</span>
+                  <span>{job.salaryRange || "Salaire à définir"}</span>
+                </div>
 
-              <div className="offer-stats">
-                <div className="offer-chip">{job.applications?.length || 0} candidature(s)</div>
-                <div className="offer-chip">{job.experience || "Niveau d'expérience"}</div>
-                <div className="offer-chip">{job.department || "Département"}</div>
-              </div>
+                <div className="offer-stats">
+                  <div className="offer-chip">{job.applications?.length || 0} candidature(s)</div>
+                  <div className="offer-chip">{job.experience || "Niveau d'expérience"}</div>
+                  <div className="offer-chip">{job.department || "Département"}</div>
+                </div>
 
-              <div className="offer-actions">
-                <button
-                  className="primary-btn ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openJob(job._id);
-                  }}
-                >
-                  Voir les candidatures
-                </button>
-                <button
-                  className="ghost-link subtle"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    nav(`/recruiter/create-job?from=${job._id}`);
-                  }}
-                >
-                  Dupliquer l'offre
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+                <div className="offer-actions">
+                  <button
+                    className="primary-btn ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openJob(job._id);
+                    }}
+                  >
+                    Voir les candidatures
+                  </button>
+                  <button
+                    className="ghost-link subtle"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      nav(`/recruiter/create-job?from=${job._id}`);
+                    }}
+                  >
+                    Dupliquer l'offre
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
     </RecruiterLayout>
   );
 }
