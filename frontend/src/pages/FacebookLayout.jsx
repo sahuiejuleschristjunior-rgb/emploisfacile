@@ -31,7 +31,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     "/espace-candidat",
     "/candidate",
   ].some((path) => location.pathname.startsWith(path));
-  const hideHeader = isCandidateSpace || location.pathname.startsWith("/recruiter/dashboard");
+  const hideHeader =
+    isCandidateSpace ||
+    location.pathname.startsWith("/recruiter/dashboard") ||
+    location.pathname.startsWith("/recruiter/candidatures");
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
