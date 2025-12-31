@@ -122,6 +122,15 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   }, [location.pathname]);
 
   useEffect(() => {
+    if (!headerOnly) return;
+    setShowMobileMenu(false);
+    setShowMobileSearch(false);
+    setSearchOpen(false);
+    setIsDropdownOpen(false);
+    setProfileSwitcherOpen(false);
+  }, [headerOnly]);
+
+  useEffect(() => {
     if (location.pathname.startsWith("/messages")) {
       setUnreadMessagesCount(0);
       messageIdsRef.current.clear();
@@ -1013,8 +1022,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             )}
           </div>
 
-          {searchOpen && !showMobileSearch && (
+          {searchOpen === true && !showMobileSearch && (
             <div
+              key="fb-search-overlay"
               className="fb-search-overlay"
               onClick={() => setSearchOpen(false)}
             />
@@ -1068,8 +1078,8 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               </button>
 
               {/* NOTIFS DROPDOWN */}
-              {isDropdownOpen && (
-                <div className="notif-dropdown">
+              {isDropdownOpen === true && (
+                <div key="notif-dropdown" className="notif-dropdown">
                   <div className="notif-header">
                     <h2>Notifications</h2>
                     <button
@@ -1386,8 +1396,8 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       </nav>
 
       {/* FULLSCREEN MENU */}
-      {showMobileMenu && (
-        <div className="fullscreen-menu">
+      {showMobileMenu === true && (
+        <div key="fb-mobile-menu" className="fullscreen-menu">
           <div className="fs-menu-header">
             <h2>Menu</h2>
             <button onClick={() => setShowMobileMenu(false)}>✖</button>
@@ -1473,8 +1483,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         </div>
       )}
 
-      {showMobileSearch && (
+      {showMobileSearch === true && (
         <div
+          key="fb-mobile-search"
           className="fb-mobile-search-modal"
           onClick={() => {
             setShowMobileSearch(false);
