@@ -152,7 +152,7 @@ exports.getJobById = async (req, res) => {
 ============================================================ */
 exports.searchJobs = async (req, res) => {
     try {
-        const { q, city, country, category, recruiter, contract } = req.query;
+        const { q, city, country, category, recruiter, contract, mode, workMode } = req.query;
 
         const andConditions = [
             { isActive: { $ne: false } }
@@ -175,6 +175,7 @@ exports.searchJobs = async (req, res) => {
                 { "recruiter.name": textRegex },
                 { "recruiter.companyName": textRegex },
                 { contractType: textRegex },
+                { workMode: textRegex },
                 { salaryRange: textRegex },
             );
 
@@ -219,6 +220,12 @@ exports.searchJobs = async (req, res) => {
 
         if (contract?.trim()) {
             andConditions.push({ contractType: contract.trim() });
+        }
+
+        const normalizedMode = mode?.trim() || workMode?.trim();
+        if (normalizedMode) {
+            const modeRegex = buildRegex(normalizedMode);
+            andConditions.push({ workMode: modeRegex });
         }
 
         const query = andConditions.length > 1 ? { $and: andConditions } : andConditions[0];

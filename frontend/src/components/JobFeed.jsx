@@ -1,8 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useJobApplication from "../hooks/useJobApplication";
-import GlobalFeedbackModal from "./GlobalFeedbackModal";
+import { getImageUrl } from "../utils/imageUtils";
 import "../styles/JobFeed.css";
+
+const DEFAULT_CITY_OPTIONS = ["Abidjan", "Cocody", "Plateau"];
+const DEFAULT_MODE_OPTIONS = ["Remote", "Hybride", "Présentiel"];
+const DEFAULT_CONTRACT_OPTIONS = ["CDI", "CDD", "Stage", "Freelance", "Alternance", "Temps Partiel"];
 
 export default function JobFeed() {
   const [loading, setLoading] = useState(true);
@@ -10,84 +13,40 @@ export default function JobFeed() {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [cityFilter, setCityFilter] = useState("");
-  const [countryFilter, setCountryFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
   const [contractFilter, setContractFilter] = useState("");
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("jobfeed-dark-mode") === "true";
-  });
+  const [modeFilter, setModeFilter] = useState("");
 
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
   const navigate = useNavigate();
   const searchAbortRef = useRef(null);
 
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
+  const collectOptions = (items) => {
+    const uniq = Array.from(new Set(items.map((value) => value?.trim()).filter(Boolean)));
+    uniq.sort((a, b) => a.localeCompare(b));
+    return uniq;
   };
 
-  const {
-    appliedSet,
-    applyingJobId,
-    handleApply,
-    registerAppliedFromJobs,
-    isRecruiter,
-    isCandidate,
-    currentUser,
-  } = useJobApplication({
-    apiUrl: API_URL,
-    token,
-    onFeedback: (message) => {
-      setFeedbackMessage(message);
-      setFeedbackOpen(true);
-    },
-  });
+  const getRecruiterName = (job) =>
+    job.recruiter?.companyName || job.recruiter?.name || "Entreprise inconnue";
 
-  /* ======================================================
-     UTILITAIRES D'AFFICHAGE
-  ====================================================== */
-  const shortText = (text, max = 240) => {
-    if (!text) return "Aucune description fournie.";
-    const clean = text.replace(/\s+/g, " ").trim();
-    return clean.length > max ? `${clean.slice(0, max)}...` : clean;
-  };
+  const getLocation = (job) => job.location || job.city || "Lieu non précisé";
+  const getContract = (job) => job.contractType || "Contrat non précisé";
+  const getMode = (job) => job.workMode || job.mode || "Mode non précisé";
+  const getSalary = (job) => job.salaryRange || "Salaire non précisé";
 
-  const formatDate = (value) => {
-    if (!value) return "Date inconnue";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Date inconnue";
-    return date.toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
-  const getInitials = (name = "?") => {
-    return name
+  const getInitials = (name = "?") =>
+    name
       .split(" ")
-      .map((n) => n[0])
+      .map((word) => word[0])
       .join("")
       .slice(0, 2)
       .toUpperCase();
+
+  const tags = (job) => {
+    const rawTags = [job.category, job.experienceLevel, job.contractType, job.workMode].filter(Boolean);
+    return Array.from(new Set(rawTags)).slice(0, 4);
   };
-
-  const getLocation = (job) => job.location || "Lieu non précisé";
-  const getContract = (job) => job.contractType || "Contrat non précisé";
-  const getSalary = (job) => job.salaryRange || null;
-
-  /* ======================================================
-     CHARGER LES OFFRES
-  ====================================================== */
-  useEffect(() => {
-    registerAppliedFromJobs(jobs);
-  }, [jobs, registerAppliedFromJobs]);
-
-  useEffect(() => {
-    localStorage.setItem("jobfeed-dark-mode", darkMode);
-  }, [darkMode]);
 
   useEffect(() => {
     if (searchAbortRef.current) {
@@ -106,17 +65,16 @@ export default function JobFeed() {
 
         if (searchQuery.trim()) params.append("q", searchQuery.trim());
         if (cityFilter.trim()) params.append("city", cityFilter.trim());
-        if (countryFilter.trim()) params.append("country", countryFilter.trim());
-        if (categoryFilter.trim()) params.append("category", categoryFilter.trim());
         if (contractFilter.trim()) params.append("contract", contractFilter.trim());
+        if (modeFilter.trim()) params.append("mode", modeFilter.trim());
 
         const queryString = params.toString();
         const url = `${API_URL}/jobs/search${queryString ? `?${queryString}` : ""}`;
 
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
           signal: controller.signal,
         });
 
@@ -150,308 +108,231 @@ export default function JobFeed() {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [API_URL, token, searchQuery, cityFilter, countryFilter, categoryFilter, contractFilter]);
+  }, [API_URL, token, searchQuery, cityFilter, contractFilter, modeFilter]);
 
-  /* ======================================================
-     TEMPLATE CARTE OFFRE
-  ====================================================== */
-  const renderJobCard = (job) => {
-    const recruiterName =
-      job.recruiter?.companyName || job.recruiter?.name || "Entreprise inconnue";
+  const cityOptions = useMemo(() => {
+    const values = collectOptions(jobs.map((job) => job.location || job.city));
+    return values.length ? values : DEFAULT_CITY_OPTIONS;
+  }, [jobs]);
 
-    const hasApplied = appliedSet.has(job._id);
-    const salary = getSalary(job);
-    const cover = job.coverImage || job.bannerUrl || job.image;
+  const modeOptions = useMemo(() => {
+    const values = collectOptions(jobs.map((job) => job.workMode || job.mode));
+    return values.length ? values : DEFAULT_MODE_OPTIONS;
+  }, [jobs]);
 
-    return (
-      <article key={job._id} className="job-post-card">
-        <header className="job-post-header">
-          <div className="job-avatar" aria-hidden>
-            {getInitials(recruiterName)}
-          </div>
-          <div className="job-post-meta">
-            <p className="job-company">{recruiterName}</p>
-            <p className="job-meta-line">{getContract(job)} • {getLocation(job)}</p>
-          </div>
-          <button className="job-more-btn" aria-label="Actions">
-            <span>•••</span>
-          </button>
-        </header>
+  const contractOptions = useMemo(() => {
+    const values = collectOptions(jobs.map((job) => job.contractType));
+    return values.length ? values : DEFAULT_CONTRACT_OPTIONS;
+  }, [jobs]);
 
-        <div className="job-post-content">
-          <p className="job-post-text">{shortText(job.description)}</p>
-        </div>
+  const topTags = useMemo(() => {
+    const counts = new Map();
+    jobs.forEach((job) => {
+      tags(job).forEach((tag) => {
+        counts.set(tag, (counts.get(tag) || 0) + 1);
+      });
+    });
 
-        <div className="job-cta-card">
-          <div
-            className={`job-cta-visual ${cover ? "with-image" : "no-image"}`}
-            style={cover ? { backgroundImage: `url(${cover})` } : {}}
-            aria-hidden
-          />
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([tag]) => tag);
+  }, [jobs]);
 
-          <div className="job-cta-body">
-            <div className="job-cta-infos">
-              <p className="job-location">{getLocation(job)}</p>
-              <h3 className="job-role">{job.title}</h3>
-              <p className="job-extra">{salary ? `💰 ${salary}` : "Postulez maintenant pour en savoir plus"}</p>
-              <p className="job-date">Publiée le {formatDate(job.createdAt)}</p>
-            </div>
-
-            {isCandidate && !hasApplied ? (
-              <button
-                className="cta-button"
-                onClick={() => handleApply(job._id, job.title)}
-                disabled={applyingJobId === job._id}
-              >
-                {applyingJobId === job._id ? "Envoi..." : "Postuler"}
-              </button>
-            ) : (
-              <button
-                className="cta-button neutral"
-                onClick={() => navigate(`/emplois/${job._id}`, { state: { job } })}
-              >
-                Voir les détails
-              </button>
-            )}
-          </div>
-        </div>
-
-        <footer className="job-post-footer">
-          <div className="job-social">
-            <span className="like-badge">👍</span>
-            <span className="social-count">{job.likes || 0}</span>
-          </div>
-          <div className="job-stats">
-            <span>{job.commentsCount || 0} commentaires</span>
-            <span>•</span>
-            <span>{job.shares || 0} partages</span>
-          </div>
-        </footer>
-
-        <div className="job-actions-row">
-          <button className="action-btn">J'aime</button>
-          <button className="action-btn">Commenter</button>
-          <button className="action-btn">Partager</button>
-        </div>
-      </article>
-    );
+  const handleReset = () => {
+    setSearchQuery("");
+    setCityFilter("");
+    setContractFilter("");
+    setModeFilter("");
   };
-
-  /* ======================================================
-     RENDU GLOBAL
-  ====================================================== */
-  const filteredJobs = jobs;
-
-  const featuredJobs = filteredJobs.slice(0, 3);
-
-  const handleDashboardNavigation = () => {
-    const role = (currentUser.role || "").toLowerCase();
-    if (role === "recruiter" || role === "recruteur") {
-      navigate("/recruiter/dashboard");
-      return;
-    }
-
-    if (role === "candidate" || role === "candidat") {
-      navigate("/candidate/dashboard");
-      return;
-    }
-
-    navigate("/fb/dashboard");
-  };
-
-  const renderSearchBar = (extraClass = "") => (
-    <div className={`job-feed-search ${extraClass}`.trim()}>
-      <span role="img" aria-hidden>
-        🔍
-      </span>
-      <input
-        type="search"
-        placeholder="Rechercher un poste, une ville..."
-        value={searchQuery}
-        onChange={handleSearchChange}
-      />
-    </div>
-  );
-
-  const renderFilterBar = (variant = "desktop") => (
-    <div className={`job-filter-bar ${variant}`.trim()}>
-      {renderSearchBar(variant === "mobile" ? "mobile" : "")}
-
-      <input
-        type="text"
-        className="job-filter-input"
-        placeholder="Ville"
-        value={cityFilter}
-        onChange={(event) => setCityFilter(event.target.value)}
-      />
-
-      <input
-        type="text"
-        className="job-filter-input"
-        placeholder="Pays"
-        value={countryFilter}
-        onChange={(event) => setCountryFilter(event.target.value)}
-      />
-
-      <input
-        type="text"
-        className="job-filter-input"
-        placeholder="Catégorie"
-        value={categoryFilter}
-        onChange={(event) => setCategoryFilter(event.target.value)}
-      />
-
-      <select
-        className="job-filter-input select"
-        value={contractFilter}
-        onChange={(event) => setContractFilter(event.target.value)}
-      >
-        <option value="">Tous les contrats</option>
-        <option value="CDI">CDI</option>
-        <option value="CDD">CDD</option>
-        <option value="Alternance">Alternance</option>
-        <option value="Stage">Stage</option>
-        <option value="Freelance">Freelance</option>
-      </select>
-    </div>
-  );
 
   return (
-    <div className={`job-feed-screen ${darkMode ? "dark-mode" : ""}`}>
-      <div className="jobfeed-grid">
-        <aside className="jobfeed-sidebar">
-          <div className="sidebar-card profile-card">
-            <div className="profile-avatar" aria-hidden>
-              {getInitials(currentUser.name || "Vous")}
-            </div>
-            <div>
-              <p className="profile-name">{currentUser.name || "Mon profil"}</p>
-              <p className="profile-sub">Accédez rapidement à vos actions</p>
-            </div>
-          </div>
-
-          <div className="sidebar-card links-card">
-            <button className="link-row" onClick={handleDashboardNavigation}>
-              📊 Tableau de bord
+    <div className="job-feed-screen">
+      <div className="jobs-shell">
+        <aside className="jobs-panel jobs-left-menu">
+          <h3>Menu</h3>
+          <nav className="jobs-nav">
+            <button type="button" className="jobs-nav-item">
+              <span>Accueil</span>
+              <span className="jobs-pill">Home</span>
             </button>
-            <button className="link-row">📄 Mes CV & candidatures</button>
-            <button className="link-row">📌 Favoris</button>
-            <button className="link-row">🛠️ Paramètres</button>
-            <button className="link-row">💬 Messages</button>
-          </div>
+            <button type="button" className="jobs-nav-item">
+              <span>Offres</span>
+              <span className="jobs-pill">{jobs.length}</span>
+            </button>
+            <button type="button" className="jobs-nav-item">
+              <span>Entreprises</span>
+              <span className="jobs-pill">24</span>
+            </button>
+            <button type="button" className="jobs-nav-item">
+              <span>Candidatures</span>
+              <span className="jobs-pill">3</span>
+            </button>
+            <button type="button" className="jobs-nav-item">
+              <span>Paramètres</span>
+              <span className="jobs-pill">⚙</span>
+            </button>
+          </nav>
 
-          <div className="sidebar-card tip-card">
-            <p className="tip-title">Conseil</p>
-            <p className="tip-text">
-              Complétez votre profil pour remonter dans les recommandations des
-              recruteurs.
-            </p>
+          <div className="jobs-spacer" />
+          <h3>Raccourcis</h3>
+          <div className="jobs-box jobs-small">
+            • Publier une offre<br />
+            • Voir les favoris<br />
+            • Alertes e-mail
           </div>
         </aside>
 
-          <main className="jobfeed-center">
-            <header className="job-feed-hero">
-              <div>
-                <p className="job-feed-kicker">Offres d'emploi</p>
-                <h2>Un fil d'emplois inspiré des réseaux</h2>
-                <p className="job-feed-subtitle">
-                  Explorez les dernières opportunités publiées par nos
-                  recruteurs et postulez en un clic.
-                </p>
+        <main className="jobs-main">
+          <div className="jobs-main-header">
+            <div className="jobs-topbar">
+              <div className="jobs-brand">
+                <img src="/vite.svg" alt="Logo entreprise" />
+                <div>
+                  <h1>Offres d’emploi</h1>
+                  <div className="jobs-muted">
+                    Recherche par mot-clé, ville, type et mode de travail.
+                  </div>
+                </div>
               </div>
-              <div className="job-feed-actions">
-                {isRecruiter && (
-                  <button
-                    type="button"
-                    className="cta-button create-job-btn"
-                    onClick={() => navigate("/create-job")}
-                  >
-                    Publier une offre
-                  </button>
-                )}
-                {renderFilterBar("desktop")}
-                <button
-                  type="button"
-                  className="theme-toggle"
-                  onClick={() => setDarkMode((prev) => !prev)}
-                  aria-pressed={darkMode}
-                >
-                  <span className="theme-label">{darkMode ? "Mode sombre" : "Mode clair"}</span>
-                  <span className={`toggle-switch ${darkMode ? "on" : ""}`}>
-                    <span className="toggle-handle" />
-                  </span>
-                </button>
-              </div>
-            </header>
-
-          <div className="job-feed-mobile-search">{renderFilterBar("mobile")}</div>
-
-          {loading && <div className="loader">Chargement des offres...</div>}
-
-          {error && <div className="error-message">{error}</div>}
-
-          {!loading && filteredJobs.length === 0 && !error && (
-            <div className="empty-state">
-              Aucune offre ne correspond à votre recherche.
+              <div className="jobs-count">{jobs.length} offre(s)</div>
             </div>
-          )}
 
-          <div className="job-list">{filteredJobs.map(renderJobCard)}</div>
+            <div className="jobs-bar">
+              <input
+                id="q"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Titre, compétences, entreprise (ex: marketer, react…)"
+              />
+              <select
+                id="city"
+                value={cityFilter}
+                onChange={(event) => setCityFilter(event.target.value)}
+              >
+                <option value="">Toutes villes</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+              <select
+                id="type"
+                value={contractFilter}
+                onChange={(event) => setContractFilter(event.target.value)}
+              >
+                <option value="">Tous contrats</option>
+                {contractOptions.map((contract) => (
+                  <option key={contract} value={contract}>
+                    {contract}
+                  </option>
+                ))}
+              </select>
+              <select
+                id="mode"
+                value={modeFilter}
+                onChange={(event) => setModeFilter(event.target.value)}
+              >
+                <option value="">Tous modes</option>
+                {modeOptions.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {mode}
+                  </option>
+                ))}
+              </select>
+              <button type="button" id="reset" onClick={handleReset}>
+                Réinitialiser
+              </button>
+            </div>
+          </div>
+
+          <div className="jobs-main-scroll">
+            {loading && <div className="jobs-loader">Chargement des offres...</div>}
+            {error && <div className="jobs-error">{error}</div>}
+            {!loading && !error && jobs.length === 0 && (
+              <div className="jobs-empty">Aucune offre ne correspond à votre recherche.</div>
+            )}
+
+            <div className="jobs-list">
+              {jobs.map((job) => {
+                const companyName = getRecruiterName(job);
+                const logoUrl = getImageUrl(job.recruiter?.avatar);
+                const jobTags = tags(job);
+
+                return (
+                  <div key={job._id} className="jobs-item">
+                    <div className="jobs-left">
+                      {logoUrl ? (
+                        <img className="jobs-mini-logo" src={logoUrl} alt={`Logo ${companyName}`} />
+                      ) : (
+                        <div className="jobs-mini-logo jobs-logo-fallback">{getInitials(companyName)}</div>
+                      )}
+                      <div className="jobs-info">
+                        <div className="jobs-title">
+                          {job.title} • {companyName}
+                        </div>
+                        <div className="jobs-meta">
+                          <span>{getLocation(job)}</span> • <span>{getContract(job)}</span> •{" "}
+                          <span>{getMode(job)}</span> • <span>{getSalary(job)}</span>
+                        </div>
+                        <div className="jobs-tags">
+                          {jobTags.map((tag) => (
+                            <span key={tag} className="jobs-tag">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="jobs-link"
+                      onClick={() => navigate(`/emplois/${job._id}`, { state: { job } })}
+                    >
+                      Voir
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </main>
 
-        <aside className="jobfeed-sidebar right">
-          <div className="sidebar-card info-card">
-            <p className="info-title">JobFeed en direct</p>
-            <p className="info-text">
-              Retrouvez les dernières offres et revenez plus tard pour de
-              nouvelles opportunités.
-            </p>
+        <aside className="jobs-panel jobs-right-menu">
+          <h3>Filtres rapides</h3>
+          <div className="jobs-box jobs-small">
+            <strong>Top tags</strong>
+            <br />
+            {topTags.length ? (
+              topTags.map((tag) => (
+                <div key={tag}>• {tag}</div>
+              ))
+            ) : (
+              <>
+                • React
+                <br />
+                • Marketing
+                <br />
+                • SQL / BI
+                <br />
+                • Remote
+              </>
+            )}
           </div>
 
-          <div className="sidebar-card featured-card">
-            <div className="featured-header">
-              <span role="img" aria-hidden>
-                🧭
-              </span>
-              <div>
-                <p className="featured-kicker">À découvrir</p>
-                <p className="featured-title">Tendances du jour</p>
-              </div>
-            </div>
-
-            {featuredJobs.map((job) => (
-              <div key={job._id} className="featured-item">
-                <p className="featured-role">{job.title}</p>
-                <p className="featured-meta">
-                  {getLocation(job)} • {getContract(job)}
-                </p>
-                {isCandidate && !appliedSet.has(job._id) ? (
-                  <button
-                    className="featured-cta"
-                    onClick={() => handleApply(job._id, job.title)}
-                    disabled={applyingJobId === job._id}
-                  >
-                    {applyingJobId === job._id ? "Envoi..." : "Postuler"}
-                  </button>
-                ) : (
-                  <button
-                    className="featured-cta neutral"
-                    onClick={() => navigate(`/emplois/${job._id}`, { state: { job } })}
-                  >
-                    Voir les détails
-                  </button>
-                )}
-              </div>
-            ))}
+          <div className="jobs-spacer" />
+          <h3>Infos</h3>
+          <div className="jobs-box jobs-small">
+            <strong>Conseil</strong> : utilise la recherche pour filtrer vite, et clique sur “Voir”
+            pour le détail.
           </div>
+
+          <div className="jobs-spacer" />
+          <h3>Publicité / Bannière</h3>
+          <div className="jobs-box jobs-small">Espace sponsor / annonce RH</div>
         </aside>
       </div>
-
-      <GlobalFeedbackModal
-        open={feedbackOpen}
-        message={feedbackMessage}
-        onClose={() => setFeedbackOpen(false)}
-      />
     </div>
   );
 }
