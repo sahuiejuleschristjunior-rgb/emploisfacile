@@ -7,7 +7,6 @@ import FBIcon from "../components/FBIcon";
 import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
 import PagesFeedSidebar from "../components/PagesFeedSidebar";
-import MobileMenu from "../components/MobileMenu";
 import {
   fetchRelationStatus,
   sendFriendRequest,
@@ -20,7 +19,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const location = useLocation();
   const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
-  const { token: authToken, user: authUser, logout, role } = useAuth();
+  const { token: authToken, user: authUser, logout } = useAuth();
   const { notifications: notifList = [] } = useNotifications() || {};
 
   const isJobsFeed = location.pathname.startsWith("/emplois");
@@ -80,6 +79,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showJobsDrawer, setShowJobsDrawer] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
@@ -122,6 +122,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setSearchOpen(false);
     setShowMobileSearch(false);
     setShowMobileMenu(false);
+    setShowJobsDrawer(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
@@ -162,6 +163,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isJobsFeed || !isMobile) {
+      setShowJobsDrawer(false);
+    }
+  }, [isJobsFeed, isMobile]);
+
   const safeNavigate = useCallback(
     (path, options = {}) => {
       setShowMobileMenu(false);
@@ -169,6 +176,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       setSearchOpen(false);
       setIsDropdownOpen(false);
       setProfileSwitcherOpen(false);
+      setShowJobsDrawer(false);
 
       requestAnimationFrame(() => {
         nav(path, options);
@@ -179,6 +187,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const handleLeftMenuNavigate = useCallback(
     (path) => {
+      setShowJobsDrawer(false);
       nav(path);
     },
     [nav]
@@ -1164,7 +1173,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                 type="button"
                 className="fb-header-burger"
                 aria-label="Ouvrir le menu"
-                onClick={() => setShowMobileMenu(true)}
+                onClick={() => setShowJobsDrawer((prev) => !prev)}
               >
                 <FBIcon name="menu" size={20} />
               </button>
@@ -1399,12 +1408,19 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <main className="jobs-mobile-layout">{children || <Outlet />}</main>
 
-        <MobileMenu
-          open={showMobileMenu}
-          onClose={() => setShowMobileMenu(false)}
-          user={currentUser}
-          role={role}
-        />
+        {showJobsDrawer && (
+          <div
+            className="jobs-left-drawer-backdrop"
+            onClick={() => setShowJobsDrawer(false)}
+          >
+            <aside
+              className="jobs-left-drawer"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {leftMenuContent}
+            </aside>
+          </div>
+        )}
 
         {toast && <div className="fb-toast">{toast}</div>}
       </div>
