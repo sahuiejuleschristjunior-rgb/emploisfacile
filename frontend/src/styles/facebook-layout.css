@@ -49,11 +49,6 @@
   overflow-y: auto;
   padding-top: var(--fb-header-height);
   padding-bottom: 70px;
-  padding-left: 12px;
-  padding-right: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 }
@@ -781,7 +776,6 @@
   .jobs-mobile-layout .job-feed-screen {
     min-height: 100%;
     padding: 14px;
-    width: min(100%, 720px);
   }
 
   .jobs-mobile-layout .jobs-shell {
