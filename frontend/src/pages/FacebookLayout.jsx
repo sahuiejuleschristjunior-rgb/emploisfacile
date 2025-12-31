@@ -1160,8 +1160,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  const hideJobsHeaderOnMobile = isJobsFeed && isMobile;
-  const header = hideHeader || hideJobsHeaderOnMobile ? null : (
+  const header = hideHeader ? null : (
     <header
       className="fb-header"
     >
@@ -1455,7 +1454,8 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   if (isJobsFeed && isMobile) {
     return (
-      <div className="jobs-mobile-shell jobs-mobile-shell--no-header">
+      <div className="jobs-mobile-shell">
+        {header}
 
         <main className="jobs-mobile-content">
           {children || (
