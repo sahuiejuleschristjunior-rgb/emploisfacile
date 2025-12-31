@@ -11,6 +11,12 @@ export default function PostJobForm({ onJobPosted }) {
         location: '',
         contractType: 'CDI',
         salaryRange: '',
+        workMode: '',
+        experienceLevel: '',
+        responsibilities: '',
+        profile: '',
+        benefits: '',
+        recruitmentProcess: '',
     });
 
     const [loading, setLoading] = useState(false);
@@ -30,6 +36,12 @@ export default function PostJobForm({ onJobPosted }) {
         setError('');
         setSuccess('');
     }
+
+    const listFromText = (value) =>
+        (value || "")
+            .split("\n")
+            .map((item) => item.trim())
+            .filter(Boolean);
 
     const buildPreview = (file) => ({
         id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
@@ -188,7 +200,17 @@ export default function PostJobForm({ onJobPosted }) {
             }
 
             const payload = {
-                ...form,
+                title: form.title,
+                description: form.description,
+                location: form.location,
+                contractType: form.contractType,
+                salaryRange: form.salaryRange,
+                workMode: form.workMode,
+                experienceLevel: form.experienceLevel,
+                recruitmentProcess: form.recruitmentProcess,
+                responsibilities: listFromText(form.responsibilities),
+                profile: listFromText(form.profile),
+                benefits: listFromText(form.benefits),
                 ...(mediaPayload ? { media: mediaPayload } : {}),
             };
 
@@ -215,7 +237,13 @@ export default function PostJobForm({ onJobPosted }) {
                 description: '',
                 location: '',
                 contractType: 'CDI',
-                salaryRange: ''
+                salaryRange: '',
+                workMode: '',
+                experienceLevel: '',
+                responsibilities: '',
+                profile: '',
+                benefits: '',
+                recruitmentProcess: '',
             });
             images.forEach(cleanupPreview);
             if (video?.preview) URL.revokeObjectURL(video.preview);
@@ -290,9 +318,42 @@ export default function PostJobForm({ onJobPosted }) {
                             >
                                 <option value="CDI">CDI</option>
                                 <option value="CDD">CDD</option>
+                                <option value="Alternance">Alternance</option>
                                 <option value="Stage">Stage</option>
                                 <option value="Freelance">Freelance</option>
                                 <option value="Temps Partiel">Temps Partiel</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="input-row">
+                        <div className="input-group">
+                            <label>Mode de travail</label>
+                            <select
+                                name="workMode"
+                                value={form.workMode}
+                                onChange={handleChange}
+                            >
+                                <option value="">Sélectionnez un mode</option>
+                                <option value="Sur site">Sur site</option>
+                                <option value="Hybride">Hybride</option>
+                                <option value="Télétravail">Télétravail</option>
+                            </select>
+                        </div>
+
+                        <div className="input-group">
+                            <label>Niveau d'expérience</label>
+                            <select
+                                name="experienceLevel"
+                                value={form.experienceLevel}
+                                onChange={handleChange}
+                            >
+                                <option value="">Sélectionnez un niveau</option>
+                                <option value="Débutant">Débutant</option>
+                                <option value="Junior">Junior</option>
+                                <option value="Confirmé">Confirmé</option>
+                                <option value="Senior">Senior</option>
+                                <option value="Expert">Expert</option>
                             </select>
                         </div>
                     </div>
@@ -305,6 +366,50 @@ export default function PostJobForm({ onJobPosted }) {
                             value={form.salaryRange}
                             onChange={handleChange}
                             placeholder="Ex: 400k - 600k / mois"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Responsabilités (une par ligne)</label>
+                        <textarea
+                            name="responsibilities"
+                            rows="4"
+                            value={form.responsibilities}
+                            onChange={handleChange}
+                            placeholder="Ex: Concevoir l'architecture\nCollaborer avec l'équipe produit"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Profil recherché (une compétence par ligne)</label>
+                        <textarea
+                            name="profile"
+                            rows="4"
+                            value={form.profile}
+                            onChange={handleChange}
+                            placeholder="Ex: 3 ans d'expérience\nMaîtrise de React"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Avantages (un par ligne)</label>
+                        <textarea
+                            name="benefits"
+                            rows="3"
+                            value={form.benefits}
+                            onChange={handleChange}
+                            placeholder="Ex: Mutuelle\nTélétravail partiel"
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Process de recrutement</label>
+                        <textarea
+                            name="recruitmentProcess"
+                            rows="3"
+                            value={form.recruitmentProcess}
+                            onChange={handleChange}
+                            placeholder="Ex: Entretien RH, test technique, entretien final"
                         />
                     </div>
 
