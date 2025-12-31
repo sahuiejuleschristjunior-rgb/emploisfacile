@@ -48,7 +48,7 @@
   min-height: 100%;
   overflow-y: auto;
   padding-top: var(--fb-header-height);
-  padding-bottom: 70px;
+  padding-bottom: 10px;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 }
