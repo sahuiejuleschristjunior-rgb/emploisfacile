@@ -40,6 +40,12 @@
     border: 1px solid #dce3ef;
     font-size: 0.95rem;
     background: #f9fbfd;
+    color: #1b2a41;
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder {
+    color: #6b7a90;
 }
 
 /* INLINE ROW */
