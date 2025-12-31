@@ -217,11 +217,7 @@ export default function JobDetailPage() {
               ))}
             </div>
           </div>
-          <div className="job-detail-hero-cta">
-            <button className="job-detail-btn secondary" type="button">
-              Sauvegarder l'offre
-            </button>
-          </div>
+          <div className="job-detail-hero-cta" />
         </section>
 
         <div className="job-detail-grid">
@@ -334,15 +330,6 @@ export default function JobDetailPage() {
                   <strong>{jobDetails.publishedAt}</strong>
                 </li>
               </ul>
-            </div>
-
-            <div className="job-detail-card job-detail-actions">
-              <button className="job-detail-btn secondary" type="button">
-                Sauvegarder
-              </button>
-              <button className="job-detail-btn ghost" type="button">
-                Partager
-              </button>
             </div>
 
             <div className="job-detail-card">
