@@ -22,8 +22,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const { token: authToken, user: authUser, logout } = useAuth();
   const { notifications: notifList = [] } = useNotifications() || {};
 
+  const isJobsPage = location.pathname.startsWith("/emplois");
   const isFullLayout = location.pathname.startsWith("/fb");
-  const isCompactLayout = headerOnly || !isFullLayout;
+  const isHeaderOnly = headerOnly || isJobsPage;
+  const isCompactLayout = isHeaderOnly || !isFullLayout;
   const isPagesFeed = location.pathname.startsWith("/fb/pages-feed");
   const isCandidateSpace = [
     "/dashboard",
@@ -129,6 +131,30 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [headerOnly]);
+
+  useEffect(() => {
+    if (!isJobsPage) return;
+    setShowMobileMenu(false);
+    setShowMobileSearch(false);
+    setSearchOpen(false);
+    setIsDropdownOpen(false);
+    setProfileSwitcherOpen(false);
+  }, [isJobsPage]);
+
+  const safeNavigate = useCallback(
+    (path, options = {}) => {
+      setShowMobileMenu(false);
+      setShowMobileSearch(false);
+      setSearchOpen(false);
+      setIsDropdownOpen(false);
+      setProfileSwitcherOpen(false);
+
+      requestAnimationFrame(() => {
+        nav(path, options);
+      });
+    },
+    [nav]
+  );
 
   useEffect(() => {
     if (location.pathname.startsWith("/messages")) {
@@ -1015,14 +1041,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               />
             </div>
 
-            {searchOpen && (
-              <div className="fb-search-dropdown">
+            {searchOpen && !isJobsPage && (
+              <div key="fb-search-dropdown" className="fb-search-dropdown">
                 {renderSearchContent()}
               </div>
             )}
           </div>
 
-          {searchOpen === true && !showMobileSearch && (
+          {searchOpen === true && !showMobileSearch && !isJobsPage && (
             <div
               key="fb-search-overlay"
               className="fb-search-overlay"
@@ -1078,7 +1104,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               </button>
 
               {/* NOTIFS DROPDOWN */}
-              {isDropdownOpen === true && (
+              {isDropdownOpen === true && !isJobsPage && (
                 <div key="notif-dropdown" className="notif-dropdown">
                   <div className="notif-header">
                     <h2>Notifications</h2>
@@ -1132,8 +1158,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                 <div className="fb-header-avatar" style={avatarStyle} />
               </button>
 
-              {profileSwitcherOpen && (
-                <div className="profile-switcher-dropdown">
+              {profileSwitcherOpen && !isJobsPage && (
+                <div
+                  key="profile-switcher-dropdown"
+                  className="profile-switcher-dropdown"
+                >
                   <div className="profile-switcher-title">
                     Utiliser EmploisFacile en tant que
                   </div>
@@ -1362,12 +1391,15 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       <nav className="fb-bottom-nav">
         <div className="fb-bottom-nav-inner">
 
-          <div className="fb-bottom-nav-item" onClick={() => nav("/fb")}>
+          <div className="fb-bottom-nav-item" onClick={() => safeNavigate("/fb")}>
             <FBIcon name="home" size={22} />
             <div>Accueil</div>
           </div>
 
-          <div className="fb-bottom-nav-item" onClick={() => nav("/emplois")}>
+          <div
+            className="fb-bottom-nav-item"
+            onClick={() => safeNavigate("/emplois")}
+          >
             <FBIcon name="jobs" size={22} />
             <div>Emplois</div>
           </div>
@@ -1383,7 +1415,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <div>Recherche</div>
           </div>
 
-          <div className="fb-bottom-nav-item" onClick={() => nav("/messages")}>
+          <div
+            className="fb-bottom-nav-item"
+            onClick={() => safeNavigate("/messages")}
+          >
             <FBIcon name="messages" size={22} />
             <div>Messages</div>
           </div>
@@ -1396,7 +1431,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       </nav>
 
       {/* FULLSCREEN MENU */}
-      {showMobileMenu === true && (
+      {showMobileMenu === true && !isJobsPage && (
         <div key="fb-mobile-menu" className="fullscreen-menu">
           <div className="fs-menu-header">
             <h2>Menu</h2>
@@ -1483,7 +1518,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         </div>
       )}
 
-      {showMobileSearch === true && (
+      {showMobileSearch === true && !isJobsPage && (
         <div
           key="fb-mobile-search"
           className="fb-mobile-search-modal"
