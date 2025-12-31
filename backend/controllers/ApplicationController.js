@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Application = require("../models/Application");
 const Job = require("../models/Job");
 const User = require("../models/User");
@@ -11,6 +12,10 @@ exports.applyToJob = async (req, res) => {
   const candidateId = req.user.id;
 
   try {
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ message: "Identifiant d'offre invalide." });
+    }
+
     // Vérifier que le job existe
     const job = await Job.findById(jobId);
     if (!job) {
@@ -94,6 +99,10 @@ exports.getJobApplications = async (req, res) => {
   const recruiterId = req.user.id;
 
   try {
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ message: "Identifiant d'offre invalide." });
+    }
+
     // Vérifier que le job appartient au recruteur
     const job = await Job.findOne({ _id: jobId, recruiter: recruiterId });
 
@@ -127,6 +136,10 @@ exports.updateApplicationStatus = async (req, res) => {
   const recruiterId = req.user.id;
 
   try {
+    if (!mongoose.Types.ObjectId.isValid(applicationId)) {
+      return res.status(400).json({ message: "Identifiant de candidature invalide." });
+    }
+
     const application = await Application.findById(applicationId)
       .populate("job", "recruiter");
 
