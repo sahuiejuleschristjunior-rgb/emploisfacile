@@ -3,7 +3,7 @@
 /* ========================= */
 
 :root {
-  --fb-header-height: 60px;
+  --fb-header-height: 52px;
 }
 
 .fb-app {
@@ -766,7 +766,6 @@
 
   .fb-compact-body {
     margin-top: 0;
-    padding-top: 0;
   }
 
   .fb-right-column,
