@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import "../styles/job-detail.css";
 
@@ -21,11 +21,9 @@ export default function JobDetailPage() {
   const location = useLocation();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
-  const initialJob = location.state?.job || null;
 
-  const [job, setJob] = useState(initialJob);
-  const [loading, setLoading] = useState(true);
-  const [isLayoutReady, setIsLayoutReady] = useState(false);
+  const [job, setJob] = useState(() => location.state?.job || null);
+  const [loading, setLoading] = useState(!location.state?.job);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
 
@@ -34,8 +32,9 @@ export default function JobDetailPage() {
 
     const fetchJob = async () => {
       setError(null);
-      setJob(initialJob);
-      setLoading(true);
+      if (!location.state?.job) {
+        setLoading(true);
+      }
 
       try {
         const res = await fetch(`${API_URL}/jobs/${id}`, {
@@ -69,16 +68,7 @@ export default function JobDetailPage() {
     fetchJob();
 
     return () => controller.abort();
-  }, [API_URL, id, token, initialJob]);
-
-  useLayoutEffect(() => {
-    // Garantit un rendu complet (DOM + layout prêt) avant d'afficher la page.
-    if (!loading && job && !error) {
-      setIsLayoutReady(true);
-    } else {
-      setIsLayoutReady(false);
-    }
-  }, [loading, job, error]);
+  }, [API_URL, id, token, location.state?.job]);
 
   useEffect(() => {
     if (!job?.contractType) {
@@ -157,9 +147,7 @@ export default function JobDetailPage() {
     return (
       <div className="job-detail-page" role="main">
         <div className="job-detail-wrapper">
-          <div className="job-detail-loading">
-            Chargement de l'offre...
-          </div>
+          <div className="job-detail-loading">Chargement de l'offre...</div>
         </div>
       </div>
     );
@@ -170,18 +158,6 @@ export default function JobDetailPage() {
       <div className="job-detail-page" role="main">
         <div className="job-detail-wrapper">
           <div className="job-detail-error">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isLayoutReady) {
-    return (
-      <div className="job-detail-page" role="main">
-        <div className="job-detail-wrapper">
-          <div className="job-detail-loading">
-            Chargement de l'offre...
-          </div>
         </div>
       </div>
     );
