@@ -182,6 +182,12 @@
   color: #dbeafe;
 }
 
+@media (min-width: 641px) {
+  .stat-value.stat-email {
+    font-size: 20px;
+  }
+}
+
 @media (max-width: 900px) {
   .job-detail-hero {
     grid-template-columns: 1fr;

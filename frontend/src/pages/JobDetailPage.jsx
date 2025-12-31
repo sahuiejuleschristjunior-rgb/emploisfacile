@@ -253,7 +253,7 @@ export default function JobDetailPage() {
           </div>
           <div className="stat-card">
             <p className="stat-label">Contact</p>
-            <p className="stat-value text-purple">{jobDetails.recruiterEmail}</p>
+            <p className="stat-value stat-email text-purple">{jobDetails.recruiterEmail}</p>
             <p className="stat-hint">Réponse rapide recommandée</p>
           </div>
         </section>
