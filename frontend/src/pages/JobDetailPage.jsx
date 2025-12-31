@@ -218,9 +218,6 @@ export default function JobDetailPage() {
             </div>
           </div>
           <div className="job-detail-hero-cta">
-            <button className="job-detail-btn primary" type="button">
-              Postuler maintenant
-            </button>
             <button className="job-detail-btn secondary" type="button">
               Sauvegarder l'offre
             </button>
@@ -308,23 +305,6 @@ export default function JobDetailPage() {
               </div>
             </section>
 
-            <section className="job-detail-section" aria-labelledby="apply-title">
-              <h2 id="apply-title">Postuler</h2>
-              <form className="job-detail-form" aria-label="Formulaire de candidature">
-                <div className="job-detail-form-row">
-                  <label htmlFor="candidate-contact">Email ou téléphone</label>
-                  <input
-                    id="candidate-contact"
-                    name="candidate-contact"
-                    type="text"
-                    placeholder="prenom@email.com ou +225 00 00 00 00"
-                  />
-                </div>
-                <button className="job-detail-btn primary" type="submit">
-                  Envoyer ma candidature
-                </button>
-              </form>
-            </section>
           </main>
 
           <aside className="job-detail-sidebar" aria-label="Informations clés">
@@ -357,9 +337,6 @@ export default function JobDetailPage() {
             </div>
 
             <div className="job-detail-card job-detail-actions">
-              <button className="job-detail-btn primary" type="button">
-                Postuler
-              </button>
               <button className="job-detail-btn secondary" type="button">
                 Sauvegarder
               </button>
