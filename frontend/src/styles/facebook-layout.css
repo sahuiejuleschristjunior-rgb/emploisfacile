@@ -43,6 +43,36 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.jobs-mobile-layout {
+  width: 100%;
+  min-height: 100%;
+  overflow-y: auto;
+  padding-top: var(--fb-header-height);
+  padding-bottom: 70px;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.jobs-left-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 12000;
+}
+
+.jobs-left-drawer {
+  position: fixed;
+  top: var(--fb-header-height);
+  left: 0;
+  width: min(82vw, 320px);
+  height: calc(100vh - var(--fb-header-height));
+  background: #111;
+  padding: 16px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  z-index: 12001;
+}
+
 .fb-layout--header-only {
   max-width: 1360px;
   width: 100%;
@@ -89,6 +119,29 @@
   gap: 8px;
 }
 
+.fb-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.fb-header-burger {
+  width: 40px;
+  height: 40px;
+  background: #222;
+  border: none;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  cursor: pointer;
+}
+
+.fb-header-burger:hover {
+  background: #2d2f34;
+}
 .fb-logo {
   width: 36px;
   height: 36px;
@@ -713,6 +766,35 @@
 
   .fb-compact-body {
     margin-top: 80px;
+  }
+
+  .fb-right-column,
+  .fb-left-column {
+    display: none !important;
+  }
+
+  .jobs-mobile-layout .job-feed-screen {
+    min-height: 100%;
+    padding: 14px;
+  }
+
+  .jobs-mobile-layout .jobs-shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .jobs-mobile-layout .jobs-main {
+    overflow: visible;
+  }
+
+  .jobs-mobile-layout .jobs-main-scroll {
+    overflow: visible;
+    height: auto;
+  }
+
+  .jobs-mobile-layout .jobs-left-menu,
+  .jobs-mobile-layout .jobs-right-menu {
+    display: none;
   }
 }
 

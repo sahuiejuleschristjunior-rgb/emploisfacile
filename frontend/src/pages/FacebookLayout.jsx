@@ -22,9 +22,13 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const { token: authToken, user: authUser, logout } = useAuth();
   const { notifications: notifList = [] } = useNotifications() || {};
 
-  const isJobsPage = location.pathname.startsWith("/emplois");
+  const isJobsFeed = location.pathname.startsWith("/emplois");
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 768px)").matches;
+  });
   const isFullLayout = location.pathname.startsWith("/fb");
-  const isHeaderOnly = headerOnly || isJobsPage;
+  const isHeaderOnly = headerOnly || isJobsFeed;
   const isCompactLayout = isHeaderOnly || !isFullLayout;
   const isPagesFeed = location.pathname.startsWith("/fb/pages-feed");
   const isCandidateSpace = [
@@ -40,9 +44,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     "/recruiter/job",
     "/recruiter/create-job",
   ].some((path) => location.pathname.startsWith(path));
-  const hideHeader =
-    isCandidateSpace ||
-    isRecruiterSpace;
+  const hideHeader = isCandidateSpace || isRecruiterSpace;
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -77,6 +79,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showJobsDrawer, setShowJobsDrawer] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
@@ -119,6 +122,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setSearchOpen(false);
     setShowMobileSearch(false);
     setShowMobileMenu(false);
+    setShowJobsDrawer(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
@@ -133,13 +137,37 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   }, [headerOnly]);
 
   useEffect(() => {
-    if (!isJobsPage) return;
+    if (!isJobsFeed) return;
     setShowMobileMenu(false);
     setShowMobileSearch(false);
     setSearchOpen(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
-  }, [isJobsPage]);
+  }, [isJobsFeed]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const media = window.matchMedia("(max-width: 768px)");
+    const handler = (event) => setIsMobile(event.matches);
+    if (media.addEventListener) {
+      media.addEventListener("change", handler);
+    } else {
+      media.addListener(handler);
+    }
+    return () => {
+      if (media.removeEventListener) {
+        media.removeEventListener("change", handler);
+      } else {
+        media.removeListener(handler);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isJobsFeed || !isMobile) {
+      setShowJobsDrawer(false);
+    }
+  }, [isJobsFeed, isMobile]);
 
   const safeNavigate = useCallback(
     (path, options = {}) => {
@@ -148,10 +176,19 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       setSearchOpen(false);
       setIsDropdownOpen(false);
       setProfileSwitcherOpen(false);
+      setShowJobsDrawer(false);
 
       requestAnimationFrame(() => {
         nav(path, options);
       });
+    },
+    [nav]
+  );
+
+  const handleLeftMenuNavigate = useCallback(
+    (path) => {
+      setShowJobsDrawer(false);
+      nav(path);
     },
     [nav]
   );
@@ -706,6 +743,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       console.error("Logout error:", err);
     }
 
+    setShowJobsDrawer(false);
     nav("/login", { replace: true });
 
     setTimeout(() => {
@@ -1011,6 +1049,114 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     );
   };
 
+  const leftMenuContent = (
+    <div className="fb-left-section">
+      <div className="fb-sidebar-group">
+        <div
+          className="fb-sidebar-item"
+          onClick={() => handleLeftMenuNavigate(`/profil/${currentUser?._id}`)}
+        >
+          <div className="fb-sidebar-item-icon" style={avatarStyle}>
+            {!currentUser?.avatar && <span>🙂</span>}
+          </div>
+          <div className="fb-sidebar-item-label">
+            {currentUser?.name || "Mon Profil"}
+          </div>
+        </div>
+      </div>
+
+      <div className="fb-sidebar-group">
+        <div className="fb-sidebar-group-header">Navigation</div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb")}>
+          <FBIcon name="home" size={20} />
+          <div className="fb-sidebar-item-label">Accueil</div>
+        </div>
+
+        <div
+          className="fb-sidebar-item"
+          onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
+        >
+          <FBIcon name="friends" size={20} />
+          <div className="fb-sidebar-item-label">Feed des pages</div>
+        </div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
+          <FBIcon name="ads" size={20} />
+          <div className="fb-sidebar-item-label">Publicités</div>
+        </div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
+          <FBIcon name="jobs" size={20} />
+          <div className="fb-sidebar-item-label">Emplois</div>
+        </div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
+          <FBIcon name="profile" size={20} />
+          <div className="fb-sidebar-item-label">Pages</div>
+        </div>
+
+        <div
+          className="fb-sidebar-item"
+          onClick={() => handleLeftMenuNavigate("/notifications")}
+        >
+          <FBIcon name="notif" size={20} />
+          <div className="fb-sidebar-item-label">Notifications</div>
+        </div>
+
+        <div
+          className="fb-sidebar-item"
+          onClick={() => handleLeftMenuNavigate("/fb/relations")}
+        >
+          <FBIcon name="friends" size={20} />
+          <div className="fb-sidebar-item-label">Relations</div>
+        </div>
+
+        <div
+          className="fb-sidebar-item fb-sidebar-settings"
+          onClick={() => setShowSettings((prev) => !prev)}
+        >
+          <FBIcon name="settings" size={20} />
+          <div className="fb-sidebar-item-label">Paramètres</div>
+        </div>
+
+        {showSettings && (
+          <div className="fb-sidebar-submenu">
+            <div
+              className="fb-sidebar-subitem"
+              onClick={() => {
+                handleLeftMenuNavigate("/fb/dashboard");
+                setShowSettings(false);
+              }}
+            >
+              <FBIcon name="home" size={18} />
+              <span>Tableau de bord</span>
+            </div>
+
+            <div
+              className="fb-sidebar-subitem"
+              onClick={() => {
+                handleLeftMenuNavigate("/fb/settings");
+                setShowSettings(false);
+              }}
+            >
+              <FBIcon name="settings" size={18} />
+              <span>Général</span>
+            </div>
+
+            <div
+              className="fb-sidebar-subitem fb-sidebar-subitem-logout"
+              onClick={handleLogout}
+            >
+              <FBIcon name="logout" size={18} />
+              <span>Déconnexion</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
@@ -1021,9 +1167,21 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       <div className="fb-header-inner">
           
           {/* LOGO */}
-          <div className="fb-header-left" onClick={() => nav("/fb")}>
-            <div className="fb-logo"><span>EF</span></div>
-            <span className="fb-logo-label">EmploisFacile</span>
+          <div className="fb-header-left">
+            {isJobsFeed && isMobile && (
+              <button
+                type="button"
+                className="fb-header-burger"
+                aria-label="Ouvrir le menu"
+                onClick={() => setShowJobsDrawer((prev) => !prev)}
+              >
+                <FBIcon name="menu" size={20} />
+              </button>
+            )}
+            <div className="fb-header-brand" onClick={() => nav("/fb")}>
+              <div className="fb-logo"><span>EF</span></div>
+              <span className="fb-logo-label">EmploisFacile</span>
+            </div>
           </div>
 
           {/* SEARCH BAR */}
@@ -1041,14 +1199,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               />
             </div>
 
-            {searchOpen && !isJobsPage && (
+            {searchOpen && !isJobsFeed && (
               <div key="fb-search-dropdown" className="fb-search-dropdown">
                 {renderSearchContent()}
               </div>
             )}
           </div>
 
-          {searchOpen === true && !showMobileSearch && !isJobsPage && (
+          {searchOpen === true && !showMobileSearch && !isJobsFeed && (
             <div
               key="fb-search-overlay"
               className="fb-search-overlay"
@@ -1104,7 +1262,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               </button>
 
               {/* NOTIFS DROPDOWN */}
-              {isDropdownOpen === true && !isJobsPage && (
+              {isDropdownOpen === true && !isJobsFeed && (
                 <div key="notif-dropdown" className="notif-dropdown">
                   <div className="notif-header">
                     <h2>Notifications</h2>
@@ -1158,7 +1316,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                 <div className="fb-header-avatar" style={avatarStyle} />
               </button>
 
-              {profileSwitcherOpen && !isJobsPage && (
+              {profileSwitcherOpen && !isJobsFeed && (
                 <div
                   key="profile-switcher-dropdown"
                   className="profile-switcher-dropdown"
@@ -1243,6 +1401,32 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     </header>
   );
 
+  if (isJobsFeed && isMobile) {
+    return (
+      <div className="fb-compact-shell">
+        {header}
+
+        <main className="jobs-mobile-layout">{children || <Outlet />}</main>
+
+        {showJobsDrawer && (
+          <div
+            className="jobs-left-drawer-backdrop"
+            onClick={() => setShowJobsDrawer(false)}
+          >
+            <aside
+              className="jobs-left-drawer"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {leftMenuContent}
+            </aside>
+          </div>
+        )}
+
+        {toast && <div className="fb-toast">{toast}</div>}
+      </div>
+    );
+  }
+
   if (isCompactLayout) {
     return (
       <div className="fb-compact-shell">
@@ -1265,108 +1449,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       <main className="fb-app-body">
         <div className="fb-layout">
           <aside className="fb-left-column">
-            <div className="fb-left-section">
-              <div className="fb-sidebar-group">
-                <div
-                  className="fb-sidebar-item"
-                  onClick={() => nav(`/profil/${currentUser?._id}`)}
-                >
-                  <div className="fb-sidebar-item-icon" style={avatarStyle}>
-                    {!currentUser?.avatar && <span>🙂</span>}
-                  </div>
-                  <div className="fb-sidebar-item-label">
-                    {currentUser?.name || "Mon Profil"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="fb-sidebar-group">
-                <div className="fb-sidebar-group-header">Navigation</div>
-
-                <div className="fb-sidebar-item" onClick={() => nav("/fb")}>
-                  <FBIcon name="home" size={20} />
-                  <div className="fb-sidebar-item-label">Accueil</div>
-                </div>
-
-                <div
-                  className="fb-sidebar-item"
-                  onClick={() => nav("/fb/pages-feed")}
-                >
-                  <FBIcon name="friends" size={20} />
-                  <div className="fb-sidebar-item-label">Feed des pages</div>
-                </div>
-
-                <div
-                  className="fb-sidebar-item"
-                  onClick={() => nav("/fb/ads")}
-                >
-                  <FBIcon name="ads" size={20} />
-                  <div className="fb-sidebar-item-label">Publicités</div>
-                </div>
-
-                <div className="fb-sidebar-item" onClick={() => nav("/emplois")}>
-                  <FBIcon name="jobs" size={20} />
-                  <div className="fb-sidebar-item-label">Emplois</div>
-                </div>
-
-                <div className="fb-sidebar-item" onClick={() => nav("/pages/me")}>
-                  <FBIcon name="profile" size={20} />
-                  <div className="fb-sidebar-item-label">Pages</div>
-                </div>
-
-                <div className="fb-sidebar-item" onClick={() => nav("/notifications")}>
-                  <FBIcon name="notif" size={20} />
-                  <div className="fb-sidebar-item-label">Notifications</div>
-                </div>
-
-                <div className="fb-sidebar-item" onClick={() => nav("/fb/relations")}>
-                  <FBIcon name="friends" size={20} />
-                  <div className="fb-sidebar-item-label">Relations</div>
-                </div>
-
-                <div
-                  className="fb-sidebar-item fb-sidebar-settings"
-                  onClick={() => setShowSettings((prev) => !prev)}
-                >
-                  <FBIcon name="settings" size={20} />
-                  <div className="fb-sidebar-item-label">Paramètres</div>
-                </div>
-
-                {showSettings && (
-                  <div className="fb-sidebar-submenu">
-                    <div
-                      className="fb-sidebar-subitem"
-                      onClick={() => {
-                        nav("/fb/dashboard");
-                        setShowSettings(false);
-                      }}
-                    >
-                      <FBIcon name="home" size={18} />
-                      <span>Tableau de bord</span>
-                    </div>
-
-                    <div
-                      className="fb-sidebar-subitem"
-                      onClick={() => {
-                        nav("/fb/settings");
-                        setShowSettings(false);
-                      }}
-                    >
-                      <FBIcon name="settings" size={18} />
-                      <span>Général</span>
-                    </div>
-
-                    <div
-                      className="fb-sidebar-subitem fb-sidebar-subitem-logout"
-                      onClick={handleLogout}
-                    >
-                      <FBIcon name="logout" size={18} />
-                      <span>Déconnexion</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            {leftMenuContent}
           </aside>
 
           <section
@@ -1431,7 +1514,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       </nav>
 
       {/* FULLSCREEN MENU */}
-      {showMobileMenu === true && !isJobsPage && (
+      {showMobileMenu === true && !isJobsFeed && (
         <div key="fb-mobile-menu" className="fullscreen-menu">
           <div className="fs-menu-header">
             <h2>Menu</h2>
@@ -1518,7 +1601,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         </div>
       )}
 
-      {showMobileSearch === true && !isJobsPage && (
+      {showMobileSearch === true && !isJobsFeed && (
         <div
           key="fb-mobile-search"
           className="fb-mobile-search-modal"
