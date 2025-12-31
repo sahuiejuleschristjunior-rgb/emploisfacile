@@ -16,12 +16,36 @@ const jobSchema = new mongoose.Schema({
   },
   contractType: {
     type: String,
-    enum: ['CDI', 'CDD', 'Alternance', 'Stage', 'Freelance'],
+    enum: ['CDI', 'CDD', 'Alternance', 'Stage', 'Freelance', 'Temps Partiel'],
     required: [true, "Le type de contrat est requis."],
   },
   salaryRange: {
     type: String,
     default: 'Non spécifié',
+  },
+  workMode: {
+    type: String,
+    default: '',
+  },
+  experienceLevel: {
+    type: String,
+    default: '',
+  },
+  responsibilities: {
+    type: [String],
+    default: [],
+  },
+  profile: {
+    type: [String],
+    default: [],
+  },
+  benefits: {
+    type: [String],
+    default: [],
+  },
+  recruitmentProcess: {
+    type: String,
+    default: '',
   },
   media: {
     images: {

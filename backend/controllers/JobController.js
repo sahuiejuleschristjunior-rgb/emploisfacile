@@ -18,8 +18,31 @@ exports.createJob = async (req, res) => {
             location,
             contractType,
             salaryRange,
+            workMode,
+            experienceLevel,
+            responsibilities,
+            profile,
+            benefits,
+            recruitmentProcess,
             media
         } = req.body;
+
+        const normalizeList = (value) => {
+            if (Array.isArray(value)) {
+                return value
+                    .map((item) => (typeof item === "string" ? item.trim() : ""))
+                    .filter(Boolean);
+            }
+
+            if (typeof value === "string") {
+                return value
+                    .split("\n")
+                    .map((item) => item.trim())
+                    .filter(Boolean);
+            }
+
+            return [];
+        };
 
         const images = Array.isArray(media?.images)
             ? media.images.filter((item) => typeof item === "string" && item.trim())
@@ -44,6 +67,12 @@ exports.createJob = async (req, res) => {
             location,
             contractType,
             salaryRange,
+            workMode,
+            experienceLevel,
+            responsibilities: normalizeList(responsibilities),
+            profile: normalizeList(profile),
+            benefits: normalizeList(benefits),
+            recruitmentProcess,
             recruiter,
             applications: []   // 🔥 toujours initialiser proprement
         };
