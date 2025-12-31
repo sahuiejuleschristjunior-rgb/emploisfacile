@@ -312,30 +312,12 @@ export default function JobDetailPage() {
               <h2 id="apply-title">Postuler</h2>
               <form className="job-detail-form" aria-label="Formulaire de candidature">
                 <div className="job-detail-form-row">
-                  <label htmlFor="candidate-name">Nom complet</label>
+                  <label htmlFor="candidate-contact">Email ou téléphone</label>
                   <input
-                    id="candidate-name"
-                    name="candidate-name"
+                    id="candidate-contact"
+                    name="candidate-contact"
                     type="text"
-                    placeholder="Votre nom"
-                  />
-                </div>
-                <div className="job-detail-form-row">
-                  <label htmlFor="candidate-email">Email</label>
-                  <input
-                    id="candidate-email"
-                    name="candidate-email"
-                    type="email"
-                    placeholder="prenom@email.com"
-                  />
-                </div>
-                <div className="job-detail-form-row">
-                  <label htmlFor="candidate-message">Message</label>
-                  <textarea
-                    id="candidate-message"
-                    name="candidate-message"
-                    rows="4"
-                    placeholder="Parlez-nous de vous"
+                    placeholder="prenom@email.com ou +225 00 00 00 00"
                   />
                 </div>
                 <button className="job-detail-btn primary" type="submit">
