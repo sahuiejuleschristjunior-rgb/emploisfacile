@@ -94,6 +94,30 @@ exports.getAllJobs = async (req, res) => {
 };
 
 /* ============================================================
+   GET /api/jobs/:id
+   ➤ Détails d'une offre
+============================================================ */
+exports.getJobById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const job = await Job.findById(id)
+            .populate("recruiter", "companyName name email avatar");
+
+        if (!job) {
+            return res.status(404).json({ error: "Offre introuvable." });
+        }
+
+        return res.status(200).json(job);
+    } catch (error) {
+        return res.status(500).json({
+            error: "Erreur serveur lors de la récupération de l'offre.",
+            details: error.message,
+        });
+    }
+};
+
+/* ============================================================
    GET /api/jobs/search
    ➤ Recherche d'offres (backend source of truth)
 ============================================================ */

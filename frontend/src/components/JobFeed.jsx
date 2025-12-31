@@ -208,7 +208,7 @@ export default function JobFeed() {
             ) : (
               <button
                 className="cta-button neutral"
-                onClick={() => navigate(`/emplois/${job._id}`)}
+                onClick={() => navigate(`/emplois/${job._id}`, { state: { job } })}
               >
                 Voir les détails
               </button>
@@ -436,7 +436,7 @@ export default function JobFeed() {
                 ) : (
                   <button
                     className="featured-cta neutral"
-                    onClick={() => navigate(`/emplois/${job._id}`)}
+                    onClick={() => navigate(`/emplois/${job._id}`, { state: { job } })}
                   >
                     Voir les détails
                   </button>
