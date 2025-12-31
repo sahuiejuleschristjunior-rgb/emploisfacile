@@ -191,6 +191,7 @@ export default function App() {
                   }
                 >
                   <Route path="/emplois" element={<EmploisPage />} />
+                  <Route path="/emplois/:id" element={<JobDetailPage />} />
                 </Route>
 
                 {/* Pages compactes mais avec le header présent */}
@@ -209,8 +210,6 @@ export default function App() {
                 <Route path="/pages/me" element={<MyPages />} />
                 <Route path="/pages/:slug" element={<PageProfile />} />
                 <Route path="/post/:id" element={<PostPage />} />
-                <Route path="/emplois" element={<EmploisPage />} />
-                <Route path="/emplois/:id" element={<JobDetailPage />} />
                 <Route path="/likes/:postId" element={<LikesPage />} />
                 <Route path="/reels" element={<ReelsPage />} />
 
