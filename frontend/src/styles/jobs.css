@@ -11,48 +11,9 @@
 }
 
 .jobs-page.job-detail-page {
-  --job-bg: #f8fafc;
-  --job-card: #ffffff;
-  --job-card-muted: #f1f5f9;
-  --job-text: #0f172a;
-  --job-muted: #64748b;
-  --job-border: #e2e8f0;
-  --job-accent: #6366f1;
-  --job-accent-soft: rgba(99, 102, 241, 0.15);
-  --job-gradient: linear-gradient(135deg, #dbeafe, #eef2ff);
-  --job-sticky-from: rgba(248, 250, 252, 0.4);
-  background: var(--job-bg);
-  color: var(--job-text);
+  background: #f5f6f8;
+  color: #0f172a;
   padding-bottom: 120px;
-  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-
-body[data-theme="dark"] .jobs-page.job-detail-page {
-  --job-bg: #0f172a;
-  --job-card: #0b1221;
-  --job-card-muted: #121a2e;
-  --job-text: #e2e8f0;
-  --job-muted: #94a3b8;
-  --job-border: #1f2937;
-  --job-accent: #7c3aed;
-  --job-accent-soft: rgba(124, 58, 237, 0.2);
-  --job-gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
-  --job-sticky-from: rgba(15, 23, 42, 0.4);
-}
-
-@media (prefers-color-scheme: dark) {
-  .jobs-page.job-detail-page {
-    --job-bg: #0f172a;
-    --job-card: #0b1221;
-    --job-card-muted: #121a2e;
-    --job-text: #e2e8f0;
-    --job-muted: #94a3b8;
-    --job-border: #1f2937;
-    --job-accent: #7c3aed;
-    --job-accent-soft: rgba(124, 58, 237, 0.2);
-    --job-gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
-    --job-sticky-from: rgba(15, 23, 42, 0.4);
-  }
 }
 
 .jobs-title {
@@ -87,18 +48,6 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   cursor: pointer;
   white-space: nowrap;
   transition: 0.2s ease;
-}
-
-.job-detail-page .filter-btn {
-  background: var(--job-card);
-  border-color: var(--job-border);
-  color: var(--job-text);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-}
-
-.job-detail-page .filter-btn:hover {
-  border-color: var(--job-accent);
-  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.2);
 }
 
 .filter-btn.active,
@@ -180,7 +129,7 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
 .job-detail-shell {
   max-width: 900px;
   margin: 0 auto 90px;
-  padding: 12px 16px;
+  padding: 12px;
 }
 
 .job-detail-header {
@@ -196,8 +145,8 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: var(--job-gradient);
-  color: var(--job-text);
+  background: linear-gradient(135deg, #e0e7ff, #f3f4f6);
+  color: #111827;
   font-weight: 800;
   font-size: 20px;
   text-transform: uppercase;
@@ -212,27 +161,27 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
 .job-detail-meta,
 .job-detail-date {
   margin: 2px 0;
-  color: var(--job-muted);
+  color: #4b5563;
 }
 
 .job-detail-body {
-  background: var(--job-card);
-  border: 1px solid var(--job-border);
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .job-detail-title {
   font-size: 26px;
   font-weight: 800;
   margin-bottom: 6px;
-  color: var(--job-text);
+  color: #0f172a;
 }
 
 .job-detail-salary {
   margin-top: 0;
-  color: var(--job-accent);
+  color: #2563eb;
   font-weight: 700;
 }
 
@@ -244,21 +193,21 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   font-size: 20px;
   margin-bottom: 8px;
   font-weight: 700;
-  color: var(--job-text);
+  color: #111827;
 }
 
 .job-detail-text {
   line-height: 1.6;
-  color: var(--job-muted);
+  color: #1f2937;
 }
 
 .job-detail-feedback {
   margin-top: 18px;
   padding: 12px;
   border-radius: 10px;
-  background: var(--job-card-muted);
-  color: var(--job-text);
-  border: 1px solid var(--job-border);
+  background: #ecfeff;
+  color: #0f172a;
+  border: 1px solid #bae6fd;
 }
 
 .job-media-gallery {
@@ -275,8 +224,8 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   gap: 10px;
   padding: 12px;
   border-radius: 14px;
-  border: 1px solid var(--job-border);
-  background: var(--job-card-muted);
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
 }
 
 .job-media-slider img {
@@ -289,7 +238,7 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
 
 .job-media-nav {
   border: none;
-  background: var(--job-accent);
+  background: #1877f2;
   color: #fff;
   width: 36px;
   height: 36px;
@@ -330,7 +279,7 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
 }
 
 .job-media-thumb.active {
-  border-color: var(--job-accent);
+  border-color: #1877f2;
 }
 
 .job-media-thumb img {
@@ -344,8 +293,8 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   margin-top: 16px;
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid var(--job-border);
-  background: var(--job-card-muted);
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
 }
 
 .job-media-video video {
@@ -361,12 +310,8 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   display: flex;
   justify-content: center;
   padding: 12px 16px;
-  background: linear-gradient(
-    180deg,
-    var(--job-sticky-from),
-    var(--job-bg) 60%
-  );
-  border-top: 1px solid var(--job-border);
+  background: linear-gradient(180deg, rgba(245, 246, 248, 0.4), #f5f6f8 60%);
+  border-top: 1px solid #e5e7eb;
 }
 
 .detail-cta {
@@ -381,15 +326,12 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
   flex-direction: column;
   gap: 4px;
   align-items: flex-start;
-  background: var(--job-card);
-  color: var(--job-text);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
 }
 
 .detail-cta.primary {
-  background: var(--job-accent);
+  background: #1877f2;
   color: #fff;
-  border-color: var(--job-accent);
+  border-color: #1877f2;
   align-items: center;
   text-align: center;
 }
@@ -400,24 +342,24 @@ body[data-theme="dark"] .jobs-page.job-detail-page {
 }
 
 .detail-cta.applied {
-  background: var(--job-card-muted);
-  color: var(--job-muted);
-  border-color: var(--job-border);
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #e5e7eb;
   cursor: not-allowed;
   align-items: center;
   text-align: center;
 }
 
 .detail-cta.disabled {
-  background: var(--job-card-muted);
-  border-color: var(--job-border);
-  color: var(--job-muted);
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #6b7280;
   cursor: not-allowed;
 }
 
 .detail-cta-title {
   font-weight: 800;
-  color: inherit;
+  color: #111827;
 }
 
 .detail-cta-sub {
