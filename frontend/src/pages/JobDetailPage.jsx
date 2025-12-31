@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
 
 const formatDate = (value) => {
@@ -189,26 +190,22 @@ export default function JobDetailPage() {
             <span>Détail</span>
           </nav>
           <div className="job-detail-header-actions">
-            <button className="job-detail-btn ghost" type="button">
+            <button className="ghost-link subtle" type="button">
               Sauvegarder
             </button>
-            <button className="job-detail-btn ghost" type="button">
+            <button className="ghost-link subtle" type="button">
               Partager
             </button>
           </div>
         </header>
 
-        <section className="job-detail-hero" aria-label="Résumé de l'offre">
-          <div className="job-detail-hero-main">
-            <p className="job-detail-overline">Offre #{job._id}</p>
-            <h1>{job.title}</h1>
-            <div className="job-detail-company">
-              <span className="job-detail-company-name">{jobDetails.companyName}</span>
-              <span className="job-detail-dot" aria-hidden="true">
-                •
-              </span>
-              <span>{jobDetails.locationLabel}</span>
-            </div>
+        <section className="hero job-detail-hero" aria-label="Résumé de l'offre">
+          <div className="hero__info">
+            <span className="hero__badge">Offre en détail</span>
+            <h1 className="job-detail-title">{job.title}</h1>
+            <p className="hero__subtitle">
+              {jobDetails.companyName} • {jobDetails.locationLabel}
+            </p>
             <div className="job-detail-tags" role="list">
               {jobDetails.tags.map((tag) => (
                 <span key={tag} role="listitem">
@@ -216,131 +213,182 @@ export default function JobDetailPage() {
                 </span>
               ))}
             </div>
+            <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
+            <div className="hero__actions">
+              <button className="primary-btn" type="button">
+                Postuler maintenant
+              </button>
+              <button className="primary-btn ghost" type="button">
+                Contacter le recruteur
+              </button>
+            </div>
           </div>
-          <div className="job-detail-hero-cta" />
+          <div className="hero__highlights">
+            <div className="hero-chip">
+              <span>Salaire</span>
+              <strong>{jobDetails.salaryLabel}</strong>
+            </div>
+            <div className="hero-chip">
+              <span>Contrat</span>
+              <strong>{jobDetails.contractType}</strong>
+            </div>
+          </div>
         </section>
 
-        <div className="job-detail-grid">
-          <main className="job-detail-content">
-            <section className="job-detail-section" aria-labelledby="description-title">
-              <h2 id="description-title">Description</h2>
-              <p>{job.description || "Aucune description fournie."}</p>
-            </section>
+        <section className="stats-grid" aria-label="Infos principales">
+          <div className="stat-card">
+            <p className="stat-label">Mode de travail</p>
+            <p className="stat-value text-emerald">{jobDetails.workMode}</p>
+            <p className="stat-hint">Organisation flexible</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Expérience attendue</p>
+            <p className="stat-value text-indigo">{jobDetails.experienceLevel}</p>
+            <p className="stat-hint">Niveau recommandé</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Publié le</p>
+            <p className="stat-value text-orange">{jobDetails.publishedAt}</p>
+            <p className="stat-hint">Dernière mise à jour</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Contact</p>
+            <p className="stat-value text-purple">{jobDetails.recruiterEmail}</p>
+            <p className="stat-hint">Réponse rapide recommandée</p>
+          </div>
+        </section>
 
-            <section className="job-detail-section" aria-labelledby="responsibilities-title">
-              <h2 id="responsibilities-title">Responsabilités</h2>
-              {responsibilities.length ? (
-                <ul>
-                  {responsibilities.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>Les responsabilités détaillées ne sont pas précisées.</p>
-              )}
-            </section>
-
-            <section className="job-detail-section" aria-labelledby="profile-title">
-              <h2 id="profile-title">Profil recherché</h2>
-              {profile.length ? (
-                <ul>
-                  {profile.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>Le profil recherché n'est pas renseigné.</p>
-              )}
-            </section>
-
-            <section className="job-detail-section" aria-labelledby="benefits-title">
-              <h2 id="benefits-title">Avantages</h2>
-              {benefits.length ? (
-                <ul>
-                  {benefits.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>Les avantages ne sont pas communiqués pour cette offre.</p>
-              )}
-            </section>
-
-            <section className="job-detail-section" aria-labelledby="process-title">
-              <h2 id="process-title">Process de recrutement</h2>
-              <p>{job.recruitmentProcess || "Process non communiqué."}</p>
-            </section>
-
-            <section className="job-detail-section" aria-labelledby="similar-title">
-              <div className="job-detail-section-head">
-                <h2 id="similar-title">Offres similaires</h2>
-                <button className="job-detail-btn ghost" type="button">
-                  Voir tout
-                </button>
+        <div className="grid-two">
+          <section className="card job-detail-card" aria-labelledby="description-title">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Présentation</p>
+                <h3 id="description-title">Description du poste</h3>
               </div>
-              <div className="job-detail-similar">
-                {similarJobs.length ? (
-                  similarJobs.map((similarJob) => (
-                    <article key={similarJob._id} className="job-detail-similar-card">
-                      <div>
-                        <p className="job-detail-similar-title">{similarJob.title}</p>
-                        <p className="job-detail-similar-meta">
-                          {resolveCompanyName(similarJob)} • {similarJob.location || "Lieu non précisé"}
-                        </p>
-                      </div>
-                      <div className="job-detail-similar-tags">
-                        <span>{similarJob.contractType || "Contrat non précisé"}</span>
-                        <span>{similarJob.workMode || "Mode non précisé"}</span>
-                        <span>{similarJob.salaryRange || "Salaire non communiqué"}</span>
-                      </div>
-                    </article>
-                  ))
+            </div>
+            <p className="job-detail-text">{job.description || "Aucune description fournie."}</p>
+
+            <div className="job-detail-split">
+              <div>
+                <h4 id="responsibilities-title">Responsabilités</h4>
+                {responsibilities.length ? (
+                  <ul>
+                    {responsibilities.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
                 ) : (
-                  <p>Aucune offre similaire disponible pour le moment.</p>
+                  <p className="job-detail-muted">Les responsabilités détaillées ne sont pas précisées.</p>
                 )}
               </div>
-            </section>
-
-          </main>
-
-          <aside className="job-detail-sidebar" aria-label="Informations clés">
-            <div className="job-detail-card">
-              <p className="job-detail-card-label">Salaire</p>
-              <p className="job-detail-card-value">{jobDetails.salaryLabel}</p>
-              <p className="job-detail-card-sub">Selon expérience</p>
+              <div>
+                <h4 id="profile-title">Profil recherché</h4>
+                {profile.length ? (
+                  <ul>
+                    {profile.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="job-detail-muted">Le profil recherché n'est pas renseigné.</p>
+                )}
+              </div>
             </div>
+          </section>
 
-            <div className="job-detail-card">
-              <p className="job-detail-card-title">Infos clés</p>
-              <ul className="job-detail-info">
-                <li>
-                  <span>Type de contrat</span>
-                  <strong>{jobDetails.contractType}</strong>
-                </li>
-                <li>
-                  <span>Expérience</span>
-                  <strong>{jobDetails.experienceLevel}</strong>
-                </li>
-                <li>
-                  <span>Mode</span>
-                  <strong>{jobDetails.workMode}</strong>
-                </li>
-                <li>
-                  <span>Publié</span>
-                  <strong>{jobDetails.publishedAt}</strong>
-                </li>
-              </ul>
+          <aside className="card job-detail-card" aria-label="Contact recruteur">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Recruteur</p>
+                <h3>Contact recruteur</h3>
+              </div>
             </div>
-
-            <div className="job-detail-card">
-              <p className="job-detail-card-title">Contact recruteur</p>
-              <p className="job-detail-card-value">{jobDetails.companyName}</p>
-              <p className="job-detail-card-sub">{jobDetails.recruiterEmail}</p>
-              <button className="job-detail-btn ghost" type="button">
+            <div className="job-detail-contact">
+              <div>
+                <p className="job-detail-contact-title">{jobDetails.companyName}</p>
+                <p className="job-detail-muted">{jobDetails.recruiterEmail}</p>
+              </div>
+              <button className="primary-btn ghost" type="button">
                 Envoyer un message
               </button>
             </div>
+            <div className="job-detail-info">
+              <div>
+                <span>Type de contrat</span>
+                <strong>{jobDetails.contractType}</strong>
+              </div>
+              <div>
+                <span>Expérience</span>
+                <strong>{jobDetails.experienceLevel}</strong>
+              </div>
+              <div>
+                <span>Mode</span>
+                <strong>{jobDetails.workMode}</strong>
+              </div>
+              <div>
+                <span>Publié</span>
+                <strong>{jobDetails.publishedAt}</strong>
+              </div>
+            </div>
           </aside>
+        </div>
+
+        <div className="grid-two">
+          <section className="card job-detail-card" aria-labelledby="benefits-title">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Avantages</p>
+                <h3 id="benefits-title">Ce que propose l'entreprise</h3>
+              </div>
+            </div>
+            {benefits.length ? (
+              <ul>
+                {benefits.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="job-detail-muted">Les avantages ne sont pas communiqués pour cette offre.</p>
+            )}
+
+            <div className="job-detail-divider" />
+
+            <h4 id="process-title">Process de recrutement</h4>
+            <p className="job-detail-text">{job.recruitmentProcess || "Process non communiqué."}</p>
+          </section>
+
+          <section className="card job-detail-card" aria-labelledby="similar-title">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Suggestions</p>
+                <h3 id="similar-title">Offres similaires</h3>
+              </div>
+              <button className="ghost-link" type="button">
+                Voir tout
+              </button>
+            </div>
+            <div className="job-detail-similar">
+              {similarJobs.length ? (
+                similarJobs.map((similarJob) => (
+                  <article key={similarJob._id} className="job-detail-similar-card">
+                    <div>
+                      <p className="job-detail-similar-title">{similarJob.title}</p>
+                      <p className="job-detail-similar-meta">
+                        {resolveCompanyName(similarJob)} • {similarJob.location || "Lieu non précisé"}
+                      </p>
+                    </div>
+                    <div className="job-detail-similar-tags">
+                      <span>{similarJob.contractType || "Contrat non précisé"}</span>
+                      <span>{similarJob.workMode || "Mode non précisé"}</span>
+                      <span>{similarJob.salaryRange || "Salaire non communiqué"}</span>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="job-detail-muted">Aucune offre similaire disponible pour le moment.</p>
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </div>
