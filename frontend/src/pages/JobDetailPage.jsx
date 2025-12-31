@@ -22,20 +22,25 @@ export default function JobDetailPage() {
   const location = useLocation();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
+  const locationJob = location.state?.job;
 
-  const [job, setJob] = useState(() => location.state?.job || null);
-  const [loading, setLoading] = useState(!location.state?.job);
+  const [job, setJob] = useState(() => locationJob || null);
+  const [loading, setLoading] = useState(!locationJob);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
 
     const fetchJob = async () => {
       setError(null);
-      if (!location.state?.job) {
-        setLoading(true);
-      }
+      setLoading(true);
+      setJob(null);
 
       try {
         const res = await fetch(`${API_URL}/jobs/${id}`, {
@@ -66,10 +71,25 @@ export default function JobDetailPage() {
       }
     };
 
+    if (locationJob) {
+      setError(null);
+      setJob(locationJob);
+      setLoading(false);
+      return () => controller.abort();
+    }
+
     fetchJob();
 
     return () => controller.abort();
-  }, [API_URL, id, token, location.state?.job]);
+  }, [API_URL, id, token, locationJob]);
+
+  useEffect(() => {
+    setHasApplied(false);
+    setAlreadyApplied(false);
+    setIsSubmitting(false);
+    setSubmitSuccess(null);
+    setSubmitError(null);
+  }, [job?._id]);
 
   useEffect(() => {
     if (!job?.contractType) {
@@ -177,6 +197,57 @@ export default function JobDetailPage() {
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const profile = Array.isArray(job.profile) ? job.profile : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
+  const isApplied = hasApplied || alreadyApplied;
+  const applyLabel = isSubmitting
+    ? "Envoi en cours…"
+    : isApplied
+      ? "Déjà postulé ✔"
+      : "Postuler maintenant";
+
+  const handleApply = async () => {
+    if (!job?._id || isSubmitting || isApplied) return;
+
+    setIsSubmitting(true);
+    setSubmitSuccess(null);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/applications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ jobId: job._id }),
+      });
+
+      let payload = {};
+      try {
+        payload = await res.json();
+      } catch (err) {
+        payload = {};
+      }
+
+      if (res.ok) {
+        setHasApplied(true);
+        setSubmitSuccess(payload?.message || "Candidature envoyée avec succès.");
+        return;
+      }
+
+      if (res.status === 400 && payload?.message?.toLowerCase().includes("déjà")) {
+        setAlreadyApplied(true);
+        setSubmitSuccess(payload.message);
+        return;
+      }
+
+      setSubmitError(payload?.message || "Erreur lors de l'envoi de la candidature.");
+    } catch (err) {
+      console.error("APPLICATION ERROR:", err);
+      setSubmitError("Erreur lors de l'envoi de la candidature.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="job-detail-page" role="main">
@@ -197,13 +268,28 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              <button className="primary-btn" type="button">
-                Postuler maintenant
+              <button
+                className="primary-btn"
+                type="button"
+                onClick={handleApply}
+                disabled={isSubmitting || isApplied}
+              >
+                {applyLabel}
               </button>
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur
               </button>
             </div>
+            {(submitSuccess || submitError) && (
+              <div className="job-detail-feedback" role="status">
+                {submitSuccess && (
+                  <p className="job-detail-alert job-detail-alert--success">{submitSuccess}</p>
+                )}
+                {submitError && (
+                  <p className="job-detail-alert job-detail-alert--error">{submitError}</p>
+                )}
+              </div>
+            )}
           </div>
           <div className="hero__highlights">
             <div className="hero-chip">

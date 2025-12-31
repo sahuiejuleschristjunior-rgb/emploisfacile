@@ -8,7 +8,7 @@
   --accent: rgba(56, 189, 248, 0.1);
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  min-height: 100%;
   padding: 14px;
   box-sizing: border-box;
 }
@@ -72,16 +72,34 @@
   .job-feed-screen {
     padding-left: 12px;
     padding-right: 12px;
+    min-height: auto;
   }
 
   .jobs-main-scroll {
     padding-left: 12px;
     padding-right: 12px;
+    overflow: visible;
   }
 
   .jobs-list {
     width: 100%;
     margin: 0 auto;
+  }
+
+  .jobs-main {
+    overflow: visible;
+  }
+
+  .jobs-left-menu {
+    display: none;
+  }
+
+  .job-feed-screen--menu-open .jobs-left-menu {
+    display: block;
+  }
+
+  .jobs-right-menu {
+    display: none;
   }
 }
 
