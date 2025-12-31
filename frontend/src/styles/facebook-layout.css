@@ -43,34 +43,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.jobs-mobile-layout {
-  width: 100%;
+.jobs-mobile-shell {
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.jobs-mobile-content {
+  flex: 1;
   overflow-y: auto;
   padding-top: var(--fb-header-height);
-  padding-bottom: 5px;
-  box-sizing: border-box;
-  -webkit-overflow-scrolling: touch;
-}
-
-.jobs-left-drawer-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 12000;
-}
-
-.jobs-left-drawer {
-  position: fixed;
-  top: var(--fb-header-height);
-  left: 0;
-  width: min(82vw, 320px);
-  height: calc(100vh - var(--fb-header-height));
-  background: #111;
-  padding: 16px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  z-index: 12001;
+  padding-bottom: 70px;
 }
 
 .fb-layout--header-only {
@@ -773,27 +756,25 @@
     display: none !important;
   }
 
-  .jobs-mobile-layout .job-feed-screen {
+  .jobs-mobile-content .job-feed-screen {
     min-height: 100%;
-    padding: px;
   }
 
-  .jobs-mobile-layout .jobs-shell {
+  .jobs-mobile-content .jobs-shell {
     grid-template-columns: 1fr;
     min-height: auto;
   }
 
-  .jobs-mobile-layout .jobs-main {
+  .jobs-mobile-content .jobs-main {
     overflow: visible;
   }
 
-  .jobs-mobile-layout .jobs-main-scroll {
+  .jobs-mobile-content .jobs-main-scroll {
     overflow: visible;
     height: auto;
   }
 
-  .jobs-mobile-layout .jobs-left-menu,
-  .jobs-mobile-layout .jobs-right-menu {
+  .jobs-mobile-content .jobs-right-menu {
     display: none;
   }
 }

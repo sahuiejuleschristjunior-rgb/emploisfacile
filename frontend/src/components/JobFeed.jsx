@@ -7,7 +7,7 @@ const DEFAULT_CITY_OPTIONS = ["Abidjan", "Cocody", "Plateau"];
 const DEFAULT_MODE_OPTIONS = ["Remote", "Hybride", "Présentiel"];
 const DEFAULT_CONTRACT_OPTIONS = ["CDI", "CDD", "Stage", "Freelance", "Alternance", "Temps Partiel"];
 
-export default function JobFeed() {
+export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
@@ -146,29 +146,35 @@ export default function JobFeed() {
     setModeFilter("");
   };
 
+  const handleMenuClose = () => {
+    if (setJobsMenuOpen) {
+      setJobsMenuOpen(false);
+    }
+  };
+
   return (
-    <div className="job-feed-screen">
+    <div className={`job-feed-screen${jobsMenuOpen ? " job-feed-screen--menu-open" : ""}`}>
       <div className="jobs-shell">
         <aside className="jobs-panel jobs-left-menu">
           <h3>Menu</h3>
           <nav className="jobs-nav">
-            <button type="button" className="jobs-nav-item">
+            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
               <span>Accueil</span>
               <span className="jobs-pill">Home</span>
             </button>
-            <button type="button" className="jobs-nav-item">
+            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
               <span>Offres</span>
               <span className="jobs-pill">{jobs.length}</span>
             </button>
-            <button type="button" className="jobs-nav-item">
+            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
               <span>Entreprises</span>
               <span className="jobs-pill">24</span>
             </button>
-            <button type="button" className="jobs-nav-item">
+            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
               <span>Candidatures</span>
               <span className="jobs-pill">3</span>
             </button>
-            <button type="button" className="jobs-nav-item">
+            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
               <span>Paramètres</span>
               <span className="jobs-pill">⚙</span>
             </button>

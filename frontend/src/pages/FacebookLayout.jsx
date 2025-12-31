@@ -79,7 +79,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showJobsDrawer, setShowJobsDrawer] = useState(false);
+  const [showJobsMenu, setShowJobsMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
@@ -122,7 +122,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setSearchOpen(false);
     setShowMobileSearch(false);
     setShowMobileMenu(false);
-    setShowJobsDrawer(false);
+    setShowJobsMenu(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
@@ -165,7 +165,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   useEffect(() => {
     if (!isJobsFeed || !isMobile) {
-      setShowJobsDrawer(false);
+      setShowJobsMenu(false);
     }
   }, [isJobsFeed, isMobile]);
 
@@ -176,7 +176,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       setSearchOpen(false);
       setIsDropdownOpen(false);
       setProfileSwitcherOpen(false);
-      setShowJobsDrawer(false);
+      setShowJobsMenu(false);
 
       requestAnimationFrame(() => {
         nav(path, options);
@@ -187,7 +187,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const handleLeftMenuNavigate = useCallback(
     (path) => {
-      setShowJobsDrawer(false);
+      setShowJobsMenu(false);
       nav(path);
     },
     [nav]
@@ -1173,7 +1173,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                 type="button"
                 className="fb-header-burger"
                 aria-label="Ouvrir le menu"
-                onClick={() => setShowJobsDrawer((prev) => !prev)}
+                onClick={() => setShowJobsMenu((prev) => !prev)}
               >
                 <FBIcon name="menu" size={20} />
               </button>
@@ -1401,26 +1401,74 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     </header>
   );
 
+  const bottomNav = (
+    <nav className="fb-bottom-nav">
+      <div className="fb-bottom-nav-inner">
+
+        <div className="fb-bottom-nav-item" onClick={() => safeNavigate("/fb")}>
+          <FBIcon name="home" size={22} />
+          <div>Accueil</div>
+        </div>
+
+        <div
+          className="fb-bottom-nav-item"
+          onClick={() => safeNavigate("/emplois")}
+        >
+          <FBIcon name="jobs" size={22} />
+          <div>Emplois</div>
+        </div>
+
+        <div
+          className="fb-bottom-nav-item"
+          onClick={() => {
+            if (isJobsFeed) return;
+            setShowMobileSearch(true);
+            setSearchOpen(true);
+          }}
+        >
+          <FBIcon name="search" size={22} />
+          <div>Recherche</div>
+        </div>
+
+        <div
+          className="fb-bottom-nav-item"
+          onClick={() => safeNavigate("/messages")}
+        >
+          <FBIcon name="messages" size={22} />
+          <div>Messages</div>
+        </div>
+
+        <div
+          className="fb-bottom-nav-item"
+          onClick={() => {
+            if (isJobsFeed) return;
+            setShowMobileMenu(true);
+          }}
+        >
+          <FBIcon name="profile" size={22} />
+          <div>Menu</div>
+        </div>
+      </div>
+    </nav>
+  );
+
   if (isJobsFeed && isMobile) {
     return (
-      <div className="fb-compact-shell">
+      <div className="jobs-mobile-shell">
         {header}
 
-        <main className="jobs-mobile-layout">{children || <Outlet />}</main>
+        <main className="jobs-mobile-content">
+          {children || (
+            <Outlet
+              context={{
+                jobsMenuOpen: showJobsMenu,
+                setJobsMenuOpen: setShowJobsMenu,
+              }}
+            />
+          )}
+        </main>
 
-        {showJobsDrawer && (
-          <div
-            className="jobs-left-drawer-backdrop"
-            onClick={() => setShowJobsDrawer(false)}
-          >
-            <aside
-              className="jobs-left-drawer"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {leftMenuContent}
-            </aside>
-          </div>
-        )}
+        {bottomNav}
 
         {toast && <div className="fb-toast">{toast}</div>}
       </div>
@@ -1471,47 +1519,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       </main>
 
       {/* BOTTOM NAV */}
-      <nav className="fb-bottom-nav">
-        <div className="fb-bottom-nav-inner">
-
-          <div className="fb-bottom-nav-item" onClick={() => safeNavigate("/fb")}>
-            <FBIcon name="home" size={22} />
-            <div>Accueil</div>
-          </div>
-
-          <div
-            className="fb-bottom-nav-item"
-            onClick={() => safeNavigate("/emplois")}
-          >
-            <FBIcon name="jobs" size={22} />
-            <div>Emplois</div>
-          </div>
-
-          <div
-            className="fb-bottom-nav-item"
-            onClick={() => {
-              setShowMobileSearch(true);
-              setSearchOpen(true);
-            }}
-          >
-            <FBIcon name="search" size={22} />
-            <div>Recherche</div>
-          </div>
-
-          <div
-            className="fb-bottom-nav-item"
-            onClick={() => safeNavigate("/messages")}
-          >
-            <FBIcon name="messages" size={22} />
-            <div>Messages</div>
-          </div>
-
-          <div className="fb-bottom-nav-item" onClick={() => setShowMobileMenu(true)}>
-            <FBIcon name="profile" size={22} />
-            <div>Menu</div>
-          </div>
-        </div>
-      </nav>
+      {bottomNav}
 
       {/* FULLSCREEN MENU */}
       {showMobileMenu === true && !isJobsFeed && (
