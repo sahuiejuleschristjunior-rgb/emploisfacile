@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import useJobApplication from "../hooks/useJobApplication";
 import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
 
@@ -27,6 +28,13 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(!location.state?.job);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  const { appliedSet, applyingJobId, handleApply, isCandidate } = useJobApplication({
+    apiUrl: API_URL,
+    token,
+    onFeedback: setFeedbackMessage,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -117,6 +125,10 @@ export default function JobDetailPage() {
     return () => controller.abort();
   }, [API_URL, job, token]);
 
+  useEffect(() => {
+    setFeedbackMessage("");
+  }, [job?._id]);
+
   const jobDetails = useMemo(() => {
     if (!job) return null;
 
@@ -177,6 +189,13 @@ export default function JobDetailPage() {
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const profile = Array.isArray(job.profile) ? job.profile : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
+  const hasApplied = appliedSet.has(job._id);
+  const isApplying = applyingJobId === job._id;
+  const applyLabel = hasApplied
+    ? "Déjà postulé"
+    : isApplying
+      ? "Envoi en cours..."
+      : "Postuler maintenant";
 
   return (
     <div className="job-detail-page" role="main">
@@ -197,13 +216,23 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              <button className="primary-btn" type="button">
-                Postuler maintenant
+              <button
+                className="primary-btn"
+                type="button"
+                disabled={hasApplied || isApplying || !isCandidate}
+                onClick={() => handleApply(job._id, job.title)}
+              >
+                {applyLabel}
               </button>
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur
               </button>
             </div>
+            {feedbackMessage ? (
+              <p className="job-detail-feedback" role="status">
+                {feedbackMessage}
+              </p>
+            ) : null}
           </div>
           <div className="hero__highlights">
             <div className="hero-chip">
