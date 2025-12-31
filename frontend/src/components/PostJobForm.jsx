@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { API_URL } from "../api/config";
 import "../styles/JobForm.css";
 
 export default function PostJobForm({ onJobPosted }) {
+    const maxImages = 5;
+    const maxVideoSeconds = 300;
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -14,15 +16,105 @@ export default function PostJobForm({ onJobPosted }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [mediaError, setMediaError] = useState('');
+    const [images, setImages] = useState([]);
+    const [video, setVideo] = useState(null);
 
     const token = localStorage.getItem("token");
     const currentUser = JSON.parse(localStorage.getItem("user"));
+
+    const imageCount = useMemo(() => images.length, [images]);
 
     function handleChange(e) {
         setForm({ ...form, [e.target.name]: e.target.value });
         setError('');
         setSuccess('');
     }
+
+    const buildPreview = (file) => ({
+        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+        file,
+        preview: URL.createObjectURL(file),
+    });
+
+    const cleanupPreview = (preview) => {
+        if (preview?.preview) URL.revokeObjectURL(preview.preview);
+    };
+
+    const handleImageSelection = (files) => {
+        setMediaError('');
+        const allowed = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+        const selected = Array.from(files || []).filter((file) => allowed.includes(file.type));
+        const remaining = Math.max(0, maxImages - images.length);
+
+        if (selected.length > remaining) {
+            setMediaError(`Maximum ${maxImages} images autorisées.`);
+        }
+
+        const accepted = selected.slice(0, remaining).map(buildPreview);
+        if (accepted.length) {
+            setImages((prev) => [...prev, ...accepted]);
+        }
+    };
+
+    const handleVideoSelection = async (file) => {
+        if (!file) return;
+        setMediaError('');
+        if (file.type !== "video/mp4") {
+            setMediaError("Format vidéo non autorisé (mp4 uniquement).");
+            return;
+        }
+
+        try {
+            const duration = await new Promise((resolve, reject) => {
+                const videoElement = document.createElement("video");
+                videoElement.preload = "metadata";
+                videoElement.onloadedmetadata = () => {
+                    URL.revokeObjectURL(videoElement.src);
+                    resolve(videoElement.duration || 0);
+                };
+                videoElement.onerror = () => {
+                    reject(new Error("Impossible de lire la vidéo."));
+                };
+                videoElement.src = URL.createObjectURL(file);
+            });
+
+            if (duration > maxVideoSeconds) {
+                setMediaError("La vidéo dépasse 5 minutes.");
+                return;
+            }
+
+            if (video?.preview) URL.revokeObjectURL(video.preview);
+            setVideo(buildPreview(file));
+        } catch (err) {
+            console.error("Erreur durée vidéo:", err);
+            setMediaError("Impossible de vérifier la durée de la vidéo.");
+        }
+    };
+
+    const removeImage = (id) => {
+        setImages((prev) => {
+            const next = prev.filter((img) => img.id !== id);
+            const removed = prev.find((img) => img.id === id);
+            cleanupPreview(removed);
+            return next;
+        });
+    };
+
+    const removeVideo = () => {
+        if (video?.preview) URL.revokeObjectURL(video.preview);
+        setVideo(null);
+    };
+
+    const handleDropImages = (event) => {
+        event.preventDefault();
+        handleImageSelection(event.dataTransfer.files);
+    };
+
+    const handleDropVideo = (event) => {
+        event.preventDefault();
+        handleVideoSelection(event.dataTransfer.files?.[0]);
+    };
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -43,13 +135,70 @@ export default function PostJobForm({ onJobPosted }) {
         }
 
         try {
+            let mediaPayload = null;
+
+            if (images.length || video) {
+                const formData = new FormData();
+                const uploadItems = [
+                    ...images.map((img) => ({ type: "image", file: img.file })),
+                    ...(video ? [{ type: "video", file: video.file }] : []),
+                ];
+
+                uploadItems.forEach((item) => formData.append("files", item.file));
+
+                const uploadRes = await fetch(`${API_URL}/upload/job-media`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: formData,
+                });
+
+                const uploadData = await uploadRes.json();
+
+                if (!uploadRes.ok || !uploadData?.success) {
+                    setError(uploadData?.error || "Erreur lors de l'upload des médias.");
+                    setLoading(false);
+                    return;
+                }
+
+                const urls = Array.isArray(uploadData.urls) ? uploadData.urls : [];
+                if (urls.length !== uploadItems.length) {
+                    setError("Erreur lors de la récupération des URLs médias.");
+                    setLoading(false);
+                    return;
+                }
+
+                const imageUrls = [];
+                let videoUrl = "";
+
+                uploadItems.forEach((item, index) => {
+                    const url = urls[index];
+                    if (!url) return;
+                    if (item.type === "image") imageUrls.push(url);
+                    if (item.type === "video") videoUrl = url;
+                });
+
+                if (imageUrls.length || videoUrl) {
+                    mediaPayload = {
+                        images: imageUrls,
+                        video: videoUrl,
+                    };
+                }
+            }
+
+            const payload = {
+                ...form,
+                ...(mediaPayload ? { media: mediaPayload } : {}),
+            };
+
             const res = await fetch(`${API_URL}/jobs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify(form)
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
@@ -68,6 +217,10 @@ export default function PostJobForm({ onJobPosted }) {
                 contractType: 'CDI',
                 salaryRange: ''
             });
+            images.forEach(cleanupPreview);
+            if (video?.preview) URL.revokeObjectURL(video.preview);
+            setImages([]);
+            setVideo(null);
 
             if (onJobPosted) onJobPosted(data.job);
 
@@ -85,6 +238,7 @@ export default function PostJobForm({ onJobPosted }) {
 
             {error && <div className="alert alert-error">{error}</div>}
             {success && <div className="alert alert-success">{success}</div>}
+            {mediaError && <div className="alert alert-error">{mediaError}</div>}
 
             <div className="job-form-card">
                 <form onSubmit={handleSubmit}>
@@ -152,6 +306,69 @@ export default function PostJobForm({ onJobPosted }) {
                             onChange={handleChange}
                             placeholder="Ex: 400k - 600k / mois"
                         />
+                    </div>
+
+                    <div className="input-group">
+                        <label>Images (max {maxImages})</label>
+                        <div
+                            className="media-dropzone"
+                            onDrop={handleDropImages}
+                            onDragOver={(event) => event.preventDefault()}
+                        >
+                            <p>Glissez-déposez vos images ou sélectionnez un fichier</p>
+                            <span>{imageCount}/{maxImages} sélectionnée(s)</span>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                onChange={(event) => handleImageSelection(event.target.files)}
+                            />
+                        </div>
+                        {images.length > 0 && (
+                            <div className="media-grid">
+                                {images.map((img) => (
+                                    <div key={img.id} className="media-item">
+                                        <img src={img.preview} alt="Aperçu image" />
+                                        <button
+                                            type="button"
+                                            className="media-remove"
+                                            onClick={() => removeImage(img.id)}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="input-group">
+                        <label>Vidéo (optionnelle, max 5 min)</label>
+                        <div
+                            className="media-dropzone"
+                            onDrop={handleDropVideo}
+                            onDragOver={(event) => event.preventDefault()}
+                        >
+                            <p>Glissez-déposez une vidéo mp4 ou sélectionnez un fichier</p>
+                            <span>{video ? "1 vidéo sélectionnée" : "Aucune vidéo"}</span>
+                            <input
+                                type="file"
+                                accept="video/mp4"
+                                onChange={(event) => handleVideoSelection(event.target.files?.[0])}
+                            />
+                        </div>
+                        {video && (
+                            <div className="media-video-preview">
+                                <video controls preload="metadata" src={video.preview} />
+                                <button
+                                    type="button"
+                                    className="media-remove"
+                                    onClick={removeVideo}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <button className="btn-primary" disabled={loading}>

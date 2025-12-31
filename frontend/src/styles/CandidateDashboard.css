@@ -717,6 +717,29 @@ body {
   gap: 10px;
 }
 
+.application-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.application-media {
+  margin-top: 10px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.application-media img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
 .application-title {
   margin: 0;
   font-weight: 700;
@@ -759,6 +782,21 @@ body {
   font-weight: 700;
   font-size: 12px;
   border: 1px solid transparent;
+}
+
+.media-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .status-blue {
