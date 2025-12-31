@@ -22,6 +22,17 @@ export default function JobDetailPage() {
   const location = useLocation();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
+  // L'utilisateur est stocké côté frontend dans localStorage ("user")
+  const storedUser = localStorage.getItem("user");
+  let user = null;
+  if (storedUser) {
+    try {
+      user = JSON.parse(storedUser);
+    } catch (err) {
+      console.error("Impossible de lire l'utilisateur depuis le localStorage.", err);
+      user = null;
+    }
+  }
   const locationJob = location.state?.job;
 
   const [job, setJob] = useState(() => locationJob || null);
@@ -29,7 +40,7 @@ export default function JobDetailPage() {
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
   const [hasApplied, setHasApplied] = useState(false);
-  const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(null);
   const [submitError, setSubmitError] = useState(null);
@@ -85,11 +96,59 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     setHasApplied(false);
-    setAlreadyApplied(false);
+    setCheckingStatus(true);
     setIsSubmitting(false);
     setSubmitSuccess(null);
     setSubmitError(null);
   }, [job?._id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const controller = new AbortController();
+
+    const fetchApplicationStatus = async () => {
+      setCheckingStatus(true);
+      setSubmitError(null);
+
+      if (!user || !token) {
+        setHasApplied(false);
+        setCheckingStatus(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/applications/status?jobId=${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          throw new Error("Impossible de vérifier votre candidature.");
+        }
+
+        const data = await res.json();
+
+        if (!controller.signal.aborted) {
+          setHasApplied(Boolean(data?.hasApplied));
+        }
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("APPLICATION STATUS ERROR:", err);
+        setSubmitError(err.message || "Impossible de vérifier votre candidature.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setCheckingStatus(false);
+        }
+      }
+    };
+
+    fetchApplicationStatus();
+
+    return () => controller.abort();
+  }, [API_URL, id, token, user]);
 
   useEffect(() => {
     if (!job?.contractType) {
@@ -197,15 +256,19 @@ export default function JobDetailPage() {
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const profile = Array.isArray(job.profile) ? job.profile : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
-  const isApplied = hasApplied || alreadyApplied;
-  const applyLabel = isSubmitting
-    ? "Envoi en cours…"
-    : isApplied
+  const isRecruiter = user?.role === "recruiter";
+  const isJobOwner = job?.recruiter?._id && user?._id && job.recruiter._id === user._id;
+  const canApply = user && !isRecruiter && !isJobOwner;
+  const applyLabel = checkingStatus
+    ? "Vérification..."
+    : hasApplied
       ? "Déjà postulé ✔"
-      : "Postuler maintenant";
+      : isSubmitting
+        ? "Envoi en cours..."
+        : "Postuler maintenant";
 
   const handleApply = async () => {
-    if (!job?._id || isSubmitting || isApplied) return;
+    if (!job?._id || isSubmitting || hasApplied) return;
 
     setIsSubmitting(true);
     setSubmitSuccess(null);
@@ -230,13 +293,13 @@ export default function JobDetailPage() {
 
       if (res.ok) {
         setHasApplied(true);
-        setSubmitSuccess(payload?.message || "Candidature envoyée avec succès.");
+        setSubmitSuccess("Votre candidature a été envoyée avec succès");
         return;
       }
 
       if (res.status === 400 && payload?.message?.toLowerCase().includes("déjà")) {
-        setAlreadyApplied(true);
-        setSubmitSuccess(payload.message);
+        setHasApplied(true);
+        setSubmitSuccess(payload?.message || "Votre candidature a déjà été envoyée.");
         return;
       }
 
@@ -268,19 +331,21 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              <button
-                className="primary-btn"
-                type="button"
-                onClick={handleApply}
-                disabled={isSubmitting || isApplied}
-              >
-                {applyLabel}
-              </button>
+              {canApply && (
+                <button
+                  className="primary-btn"
+                  type="button"
+                  onClick={handleApply}
+                  disabled={checkingStatus || isSubmitting || hasApplied}
+                >
+                  {applyLabel}
+                </button>
+              )}
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur
               </button>
             </div>
-            {(submitSuccess || submitError) && (
+            {canApply && (submitSuccess || submitError) && (
               <div className="job-detail-feedback" role="status">
                 {submitSuccess && (
                   <p className="job-detail-alert job-detail-alert--success">{submitSuccess}</p>
