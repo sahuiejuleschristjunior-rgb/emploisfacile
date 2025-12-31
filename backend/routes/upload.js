@@ -7,6 +7,13 @@ const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 
 const uploadsDir = path.join(__dirname, "../uploads");
+const ffprobePath = ffmpegPath
+  ? ffmpegPath.replace(/ffmpeg(\.exe)?$/, (match, ext) => `ffprobe${ext || ""}`)
+  : null;
+
+if (ffprobePath && fs.existsSync(ffprobePath)) {
+  ffmpeg.setFfprobePath(ffprobePath);
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
@@ -21,6 +28,16 @@ const upload = multer({
   storage,
   limits: { fileSize: 500 * 1024 * 1024 } // 500MB
 });
+
+const JOB_MEDIA = {
+  imageMimes: new Set(["image/jpeg", "image/png", "image/webp", "image/jpg"]),
+  videoMimes: new Set(["video/mp4"]),
+  imageExtensions: new Set([".jpg", ".jpeg", ".png", ".webp"]),
+  videoExtensions: new Set([".mp4"]),
+  maxImages: 5,
+  maxVideos: 1,
+  maxVideoSeconds: 300,
+};
 
 const generateName = (extension) =>
   `${Date.now()}-${Math.random().toString(36).slice(2)}${extension}`;
@@ -75,6 +92,38 @@ const processVideoAsync = (file, targetPath, thumbnailPath) => {
   });
 };
 
+const isJobImage = (file) => {
+  const ext = (path.extname(file.originalname) || "").toLowerCase();
+  return JOB_MEDIA.imageMimes.has(file.mimetype) || JOB_MEDIA.imageExtensions.has(ext);
+};
+
+const isJobVideo = (file) => {
+  const ext = (path.extname(file.originalname) || "").toLowerCase();
+  return JOB_MEDIA.videoMimes.has(file.mimetype) || JOB_MEDIA.videoExtensions.has(ext);
+};
+
+const cleanupUploadedFiles = async (files = []) => {
+  await Promise.all(
+    files.map((file) =>
+      fs.promises.unlink(file.path).catch(() => {
+        // Ignore cleanup errors
+      })
+    )
+  );
+};
+
+const getVideoDuration = (filePath) =>
+  new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, metadata) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      const duration = metadata?.format?.duration;
+      resolve(Number.isFinite(duration) ? duration : null);
+    });
+  });
+
 router.post("/file", upload.array("files", 10), (req, res) => {
   const urls = (req.files || []).map((file) => {
     const mime = file.mimetype || "";
@@ -87,6 +136,89 @@ router.post("/file", upload.array("files", 10), (req, res) => {
     }
 
     if (mime.startsWith("video/")) {
+      const outputName = generateName(".mp4");
+      const outputPath = path.join(uploadsDir, outputName);
+      const thumbName = `${path.parse(outputName).name}-thumb.jpg`;
+      const thumbPath = path.join(uploadsDir, thumbName);
+      processVideoAsync(file, outputPath, thumbPath);
+      return `/uploads/${outputName}`;
+    }
+
+    return `/uploads/${file.filename}`;
+  });
+
+  return res.json({
+    success: true,
+    urls,
+  });
+});
+
+router.post("/job-media", upload.array("files", 6), async (req, res) => {
+  const files = req.files || [];
+
+  if (!files.length) {
+    return res.status(400).json({
+      success: false,
+      error: "Aucun fichier envoyé.",
+    });
+  }
+
+  const images = files.filter(isJobImage);
+  const videos = files.filter(isJobVideo);
+  const invalid = files.filter((file) => !isJobImage(file) && !isJobVideo(file));
+
+  if (invalid.length) {
+    await cleanupUploadedFiles(files);
+    return res.status(400).json({
+      success: false,
+      error: "Formats autorisés : jpg, jpeg, png, webp et mp4.",
+    });
+  }
+
+  if (images.length > JOB_MEDIA.maxImages) {
+    await cleanupUploadedFiles(files);
+    return res.status(400).json({
+      success: false,
+      error: "Maximum 5 images autorisées.",
+    });
+  }
+
+  if (videos.length > JOB_MEDIA.maxVideos) {
+    await cleanupUploadedFiles(files);
+    return res.status(400).json({
+      success: false,
+      error: "Une seule vidéo est autorisée.",
+    });
+  }
+
+  if (videos.length === 1) {
+    try {
+      const duration = await getVideoDuration(videos[0].path);
+      if (!duration || duration > JOB_MEDIA.maxVideoSeconds) {
+        await cleanupUploadedFiles(files);
+        return res.status(400).json({
+          success: false,
+          error: "La durée de la vidéo ne doit pas dépasser 5 minutes.",
+        });
+      }
+    } catch (err) {
+      await cleanupUploadedFiles(files);
+      return res.status(400).json({
+        success: false,
+        error: "Impossible de vérifier la durée de la vidéo.",
+      });
+    }
+  }
+
+  const urls = files.map((file) => {
+    if (isJobImage(file)) {
+      const outputName = generateName(".webp");
+      const outputPath = path.join(uploadsDir, outputName);
+      processImageAsync(file, outputPath);
+      return `/uploads/${outputName}`;
+    }
+
+    if (isJobVideo(file)) {
       const outputName = generateName(".mp4");
       const outputPath = path.join(uploadsDir, outputName);
       const thumbName = `${path.parse(outputName).name}-thumb.jpg`;

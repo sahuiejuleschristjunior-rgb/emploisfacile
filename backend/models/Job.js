@@ -23,6 +23,16 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: 'Non spécifié',
   },
+  media: {
+    images: {
+      type: [String],
+      default: [],
+    },
+    video: {
+      type: String,
+      default: "",
+    },
+  },
 
   // 🔥 Liste des candidatures liées au job
   applications: [

@@ -1052,6 +1052,30 @@ body {
   min-width: 0;
 }
 
+.offer-media {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.offer-media img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.offer-media__placeholder {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .offer-card:hover {
   border-color: rgba(59, 130, 246, 0.6);
   transform: translateY(-2px);
@@ -1106,6 +1130,21 @@ body {
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.media-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .ghost-btn {

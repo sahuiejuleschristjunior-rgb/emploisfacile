@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useJobApplication from "../hooks/useJobApplication";
+import { API_URL } from "../api/config";
+import { getMediaUrl } from "../utils/mediaUtils";
 import "../styles/jobs.css";
 
 export default function JobDetailPage() {
@@ -10,9 +12,9 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const token = localStorage.getItem("token");
-  const API_URL = import.meta.env.VITE_API_URL;
 
   const {
     appliedSet,
@@ -34,6 +36,10 @@ export default function JobDetailPage() {
   useEffect(() => {
     fetchJob();
   }, [jobId]);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [job?._id]);
 
   const formatDate = (value) => {
     if (!value) return "Date inconnue";
@@ -104,6 +110,12 @@ export default function JobDetailPage() {
   const location = getLocation(job);
   const contractType = getContract(job);
   const salary = getSalary(job);
+  const mediaImages = useMemo(
+    () => (job?.media?.images || []).filter(Boolean),
+    [job?.media?.images]
+  );
+  const mediaVideo = job?.media?.video;
+  const activeImage = mediaImages[activeImageIndex];
 
   if (loading) {
     return (
@@ -151,6 +163,75 @@ export default function JobDetailPage() {
         <div className="job-detail-body">
           <h1 className="job-detail-title">{job.title}</h1>
           {salary && <p className="job-detail-salary">💰 {salary}</p>}
+
+          {(mediaImages.length > 0 || mediaVideo) && (
+            <section className="job-detail-section">
+              <h2 className="job-detail-section-title">Médias</h2>
+              {mediaImages.length > 0 && (
+                <div className="job-media-gallery">
+                  <div className="job-media-slider">
+                    <button
+                      type="button"
+                      className="job-media-nav"
+                      onClick={() =>
+                        setActiveImageIndex((prev) =>
+                          prev === 0 ? mediaImages.length - 1 : prev - 1
+                        )
+                      }
+                      disabled={mediaImages.length < 2}
+                      aria-label="Image précédente"
+                    >
+                      ‹
+                    </button>
+                    <img
+                      src={getMediaUrl(activeImage)}
+                      alt={`Image ${activeImageIndex + 1}`}
+                    />
+                    <button
+                      type="button"
+                      className="job-media-nav"
+                      onClick={() =>
+                        setActiveImageIndex((prev) =>
+                          prev === mediaImages.length - 1 ? 0 : prev + 1
+                        )
+                      }
+                      disabled={mediaImages.length < 2}
+                      aria-label="Image suivante"
+                    >
+                      ›
+                    </button>
+                    <span className="job-media-counter">
+                      {activeImageIndex + 1}/{mediaImages.length}
+                    </span>
+                  </div>
+                  {mediaImages.length > 1 && (
+                    <div className="job-media-thumbs">
+                      {mediaImages.map((image, index) => (
+                        <button
+                          key={`${image}-${index}`}
+                          type="button"
+                          className={`job-media-thumb ${index === activeImageIndex ? "active" : ""}`}
+                          onClick={() => setActiveImageIndex(index)}
+                        >
+                          <img src={getMediaUrl(image)} alt={`Miniature ${index + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {mediaVideo && (
+                <div className="job-media-video">
+                  <video
+                    controls
+                    preload="metadata"
+                    src={getMediaUrl(mediaVideo)}
+                    poster={mediaImages.length ? getMediaUrl(mediaImages[0]) : undefined}
+                  />
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="job-detail-section">
             <h2 className="job-detail-section-title">Description du poste</h2>

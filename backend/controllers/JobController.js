@@ -12,9 +12,33 @@ exports.createJob = async (req, res) => {
     try {
         const recruiter = req.user.id;
 
-        const { title, description, location, contractType, salaryRange } = req.body;
+        const {
+            title,
+            description,
+            location,
+            contractType,
+            salaryRange,
+            media
+        } = req.body;
 
-        const newJob = new Job({
+        const images = Array.isArray(media?.images)
+            ? media.images.filter((item) => typeof item === "string" && item.trim())
+            : [];
+        const video = typeof media?.video === "string" ? media.video.trim() : "";
+
+        if (images.length > 5) {
+            return res.status(400).json({
+                error: "Maximum 5 images autorisées.",
+            });
+        }
+
+        if (Array.isArray(media?.video)) {
+            return res.status(400).json({
+                error: "Une seule vidéo est autorisée.",
+            });
+        }
+
+        const newJobPayload = {
             title,
             description,
             location,
@@ -22,7 +46,16 @@ exports.createJob = async (req, res) => {
             salaryRange,
             recruiter,
             applications: []   // 🔥 toujours initialiser proprement
-        });
+        };
+
+        if (images.length || video) {
+            newJobPayload.media = {
+                images,
+                video: video || "",
+            };
+        }
+
+        const newJob = new Job(newJobPayload);
 
         await newJob.save();
 

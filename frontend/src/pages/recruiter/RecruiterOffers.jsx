@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboardData";
+import { getMediaUrl } from "../../utils/mediaUtils";
 import "../../styles/RecruiterDashboard.css";
 
 const recruiterMenu = [
@@ -67,6 +68,19 @@ export default function RecruiterOffers() {
         <div className="offers-grid">
           {sortedJobs.map((job) => (
             <article key={job._id} className="offer-card" onClick={() => openJob(job._id)}>
+              {(job?.media?.images?.[0] || job?.media?.video) && (
+                <div className="offer-media">
+                  {job?.media?.images?.[0] ? (
+                    <img
+                      src={getMediaUrl(job.media.images[0])}
+                      alt={`Aperçu ${job.title}`}
+                    />
+                  ) : (
+                    <div className="offer-media__placeholder">Vidéo disponible</div>
+                  )}
+                  {job?.media?.video && <span className="media-badge">Vidéo</span>}
+                </div>
+              )}
               <div className="offer-card__head">
                 <div>
                   <p className="offer-title">{job.title}</p>

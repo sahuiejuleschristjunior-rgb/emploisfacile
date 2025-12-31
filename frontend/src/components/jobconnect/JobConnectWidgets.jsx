@@ -1,4 +1,5 @@
 import React from "react";
+import { getMediaUrl } from "../../utils/mediaUtils";
 
 const statusConfig = {
   pending: { label: "Envoyée", color: "blue" },
@@ -19,6 +20,9 @@ export function ApplicationCard({ app, onOpen, onContact, onCall }) {
   const recruiter = job.recruiter || {};
   const company = recruiter.companyName || recruiter.name || "Entreprise";
   const status = (app.status || "pending").toLowerCase();
+  const previewImage = job?.media?.images?.[0];
+  const previewUrl = getMediaUrl(previewImage);
+  const hasVideo = Boolean(job?.media?.video);
 
   const actionConfig = {
     interview: {
@@ -68,8 +72,17 @@ export function ApplicationCard({ app, onOpen, onContact, onCall }) {
           <p className="application-title">{job.title || "Poste"}</p>
           <p className="application-sub">{company}</p>
         </div>
-        <StatusPill status={status} />
+        <div className="application-status">
+          {hasVideo && <span className="media-badge">Vidéo</span>}
+          <StatusPill status={status} />
+        </div>
       </div>
+
+      {previewUrl && (
+        <div className="application-media">
+          <img src={previewUrl} alt={`Aperçu ${job.title || "poste"}`} />
+        </div>
+      )}
 
       <div className="application-meta">
         <span>
