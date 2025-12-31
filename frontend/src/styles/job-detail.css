@@ -66,12 +66,6 @@
   color: #cbd5f5;
 }
 
-.job-detail-feedback {
-  margin: 12px 0 0;
-  font-size: 14px;
-  color: #86efac;
-}
-
 .job-detail-card {
   display: flex;
   flex-direction: column;
