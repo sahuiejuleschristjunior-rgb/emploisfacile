@@ -56,6 +56,10 @@
   padding-bottom: 70px;
 }
 
+.jobs-mobile-shell--no-header .jobs-mobile-content {
+  padding-top: 0;
+}
+
 .fb-layout--header-only {
   max-width: 1360px;
   width: 100%;
