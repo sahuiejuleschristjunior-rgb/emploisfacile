@@ -132,7 +132,7 @@ export default function useJobApplication({ apiUrl, token, onFeedback }) {
         const updated = markApplied(userId, jobId);
         setAppliedSet(new Set(updated));
 
-        openFeedback("Vous avez postulé avec succès");
+        openFeedback("Votre candidature a bien été envoyée");
         return { status: "success" };
       } catch (err) {
         console.error("APPLY ERROR:", err);
