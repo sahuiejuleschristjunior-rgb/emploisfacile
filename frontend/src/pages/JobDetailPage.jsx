@@ -181,24 +181,6 @@ export default function JobDetailPage() {
   return (
     <div className="job-detail-page" role="main">
       <div className="job-detail-wrapper">
-        <header className="job-detail-header" aria-label="Fil d'Ariane">
-          <nav className="job-detail-breadcrumbs">
-            <span>Accueil</span>
-            <span aria-hidden="true">/</span>
-            <span>Emplois</span>
-            <span aria-hidden="true">/</span>
-            <span>Détail</span>
-          </nav>
-          <div className="job-detail-header-actions">
-            <button className="ghost-link subtle" type="button">
-              Sauvegarder
-            </button>
-            <button className="ghost-link subtle" type="button">
-              Partager
-            </button>
-          </div>
-        </header>
-
         <section className="hero job-detail-hero" aria-label="Résumé de l'offre">
           <div className="hero__info">
             <span className="hero__badge">Offre en détail</span>
