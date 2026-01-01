@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSocket } from "../../context/SocketContext";
-import { useActiveConversation } from "../../context/ActiveConversationContext";
 import { sendMessagePayload } from "../../api/messagesApi";
 import {
   fetchConversationMessages,
@@ -46,7 +45,6 @@ export default function JobConversationPage() {
   const location = useLocation();
   const nav = useNavigate();
   const socket = useSocket();
-  const { setActiveConversationId } = useActiveConversation() || {};
 
   const token = localStorage.getItem("token");
   const storedUser = localStorage.getItem("user");
@@ -113,17 +111,6 @@ export default function JobConversationPage() {
       active = false;
     };
   }, [conversationId, user?._id]);
-
-  useEffect(() => {
-    if (!setActiveConversationId) return;
-    const participantId = getId(otherParticipant);
-    if (!participantId) return;
-
-    setActiveConversationId(participantId);
-    return () => {
-      setActiveConversationId(null);
-    };
-  }, [otherParticipant, setActiveConversationId]);
 
   useEffect(() => {
     if (!jobId || job) return;
