@@ -24,15 +24,15 @@ export default function JobDetailPage() {
   const token = localStorage.getItem("token");
   // L'utilisateur est stocké côté frontend dans localStorage ("user")
   const storedUser = localStorage.getItem("user");
-  const user = useMemo(() => {
-    if (!storedUser) return null;
+  let user = null;
+  if (storedUser) {
     try {
-      return JSON.parse(storedUser);
+      user = JSON.parse(storedUser);
     } catch (err) {
       console.error("Impossible de lire l'utilisateur depuis le localStorage.", err);
-      return null;
+      user = null;
     }
-  }, [storedUser]);
+  }
   const locationJob = location.state?.job;
 
   const [job, setJob] = useState(() => locationJob || null);
