@@ -337,23 +337,17 @@ exports.sendMessage = async (req, res) => {
     await conversation.save();
 
     /* 🔥 SOCKET.IO — MESSAGE TEMPS RÉEL */
-    if (message.job) {
-      getIO()
-        .to(`job:${conversation._id.toString()}`)
-        .emit("job:message:new", message);
-    } else {
-      getIO().to(receiverId.toString()).emit("new_message", {
-        from: sender,
-        to: receiverId,
-        message,
-      });
+    getIO().to(receiverId.toString()).emit("new_message", {
+      from: sender,
+      to: receiverId,
+      message,
+    });
 
-      getIO().to(sender.toString()).emit("new_message", {
-        from: sender,
-        to: receiverId,
-        message,
-      });
-    }
+    getIO().to(sender.toString()).emit("new_message", {
+      from: sender,
+      to: receiverId,
+      message,
+    });
 
     /* 🔥 NOTIFICATION */
     await pushNotification(receiverId, {

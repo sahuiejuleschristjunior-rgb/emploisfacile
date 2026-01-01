@@ -137,17 +137,10 @@
   padding: 12px 14px;
   border-radius: 16px;
   position: relative;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .job-chat-row.me .job-chat-bubble {
   background: #2563eb;
-}
-
-.job-chat-row.message--new .job-chat-bubble {
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.6),
-    0 10px 20px rgba(15, 23, 42, 0.4);
-  transform: translateY(-1px);
 }
 
 .job-chat-bubble p {
