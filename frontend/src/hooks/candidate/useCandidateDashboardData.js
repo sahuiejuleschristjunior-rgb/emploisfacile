@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function useCandidateDashboardData() {
   const [user, setUser] = useState(null);
@@ -32,7 +32,7 @@ export default function useCandidateDashboardData() {
     [token],
   );
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -48,7 +48,7 @@ export default function useCandidateDashboardData() {
     } catch (err) {
       console.error("Erreur chargement profil:", err);
     }
-  };
+  }, [API_URL, token]);
 
   useEffect(() => {
     if (!token) return;
@@ -56,7 +56,7 @@ export default function useCandidateDashboardData() {
     fetchApplications();
     fetchSavedJobs();
     fetchRecommended();
-  }, [token]);
+  }, [fetchUserProfile, token]);
 
   const fetchApplications = async () => {
     setLoadingApps(true);
@@ -192,6 +192,8 @@ export default function useCandidateDashboardData() {
     messagesCount,
     recentApplications,
     upcomingAgenda,
+    refreshUser: fetchUserProfile,
+    updateUser: setUser,
     saveJob,
     unsaveJob,
     contactError: error,

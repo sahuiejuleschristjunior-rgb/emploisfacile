@@ -107,6 +107,7 @@ export default function JobConnectProfile() {
       const payload = await res.json();
       if (payload.user) {
         localStorage.setItem("user", JSON.stringify(payload.user));
+        data.updateUser?.(payload.user);
       }
 
       setStatusMessage("Profil candidat mis à jour avec succès.");
