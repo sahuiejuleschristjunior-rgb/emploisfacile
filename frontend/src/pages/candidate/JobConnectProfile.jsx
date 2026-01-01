@@ -18,25 +18,35 @@ export default function JobConnectProfile() {
     portfolio: "",
     linkedin: "",
     bio: "",
+    avatar: "",
+    cvData: "",
+    cvName: "",
   });
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!data.user) return;
+    const professionalProfile = data.user?.professionalProfile || {};
     setFormValues((prev) => ({
       ...prev,
-      name: data.user?.name || "",
-      title: data.user?.title || data.user?.jobTitle || "",
-      email: data.user?.email || "",
-      phone: data.user?.phone || "",
-      location: data.user?.location || "",
-      experience: data.user?.experience || "",
-      skills: Array.isArray(data.user?.skills) ? data.user.skills.join(", ") : data.user?.skills || "",
-      availability: data.user?.availability || "",
-      portfolio: data.user?.portfolio || "",
-      linkedin: data.user?.linkedin || "",
-      bio: data.user?.bio || "",
+      name: professionalProfile.name || data.user?.name || "",
+      title: professionalProfile.title || data.user?.title || data.user?.jobTitle || "",
+      email: professionalProfile.email || data.user?.email || "",
+      phone: professionalProfile.phone || data.user?.phone || "",
+      location: professionalProfile.location || data.user?.location || "",
+      experience: professionalProfile.experience || data.user?.experience || "",
+      skills: Array.isArray(professionalProfile.skills)
+        ? professionalProfile.skills.join(", ")
+        : professionalProfile.skills ||
+          (Array.isArray(data.user?.skills) ? data.user.skills.join(", ") : data.user?.skills || ""),
+      availability: professionalProfile.availability || data.user?.availability || "",
+      portfolio: professionalProfile.portfolio || data.user?.portfolio || "",
+      linkedin: professionalProfile.linkedin || data.user?.linkedin || "",
+      bio: professionalProfile.bio || data.user?.bio || "",
+      avatar: professionalProfile.avatar || "",
+      cvData: professionalProfile.cvData || "",
+      cvName: professionalProfile.cvName || "",
     }));
   }, [data.user]);
 
@@ -51,6 +61,19 @@ export default function JobConnectProfile() {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileUpload = (file, field, nameField) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormValues((prev) => ({
+        ...prev,
+        [field]: reader.result,
+        ...(nameField ? { [nameField]: file.name } : {}),
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     setIsSaving(true);
@@ -58,11 +81,14 @@ export default function JobConnectProfile() {
 
     const updatedProfile = {
       ...(data.user || {}),
-      ...formValues,
-      skills: formValues.skills
-        .split(",")
-        .map((skill) => skill.trim())
-        .filter(Boolean),
+      professionalProfile: {
+        ...(data.user?.professionalProfile || {}),
+        ...formValues,
+        skills: formValues.skills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+      },
     };
 
     localStorage.setItem("user", JSON.stringify(updatedProfile));
@@ -113,6 +139,48 @@ export default function JobConnectProfile() {
           </button>
         </div>
         <form className="candidate-profile-form" onSubmit={handleSubmit}>
+          <div className="profile-form-grid profile-form-grid--media">
+            <div className="profile-form-field profile-form-field--media">
+              <label htmlFor="avatar">Photo de profil</label>
+              <div className="profile-avatar">
+                {formValues.avatar ? (
+                  <img src={formValues.avatar} alt="Photo de profil" />
+                ) : (
+                  <div className="profile-avatar-placeholder">Aucune photo</div>
+                )}
+              </div>
+              <input
+                id="avatar"
+                name="avatar"
+                type="file"
+                accept="image/*"
+                onChange={(event) => handleFileUpload(event.target.files?.[0], "avatar")}
+              />
+              <span className="profile-form-hint">Formats acceptés : JPG, PNG. Taille max 5 Mo.</span>
+            </div>
+            <div className="profile-form-field profile-form-field--media">
+              <label htmlFor="cv">CV (PDF ou Word)</label>
+              <input
+                id="cv"
+                name="cv"
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(event) => handleFileUpload(event.target.files?.[0], "cvData", "cvName")}
+              />
+              {formValues.cvName ? (
+                <div className="profile-cv-info">
+                  <span>{formValues.cvName}</span>
+                  {formValues.cvData && (
+                    <a className="primary-btn ghost" href={formValues.cvData} download={formValues.cvName}>
+                      Télécharger le CV
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <span className="profile-form-hint">Ajoutez votre CV pour que les recruteurs puissent le télécharger.</span>
+              )}
+            </div>
+          </div>
           <div className="profile-form-grid">
             <div className="profile-form-field">
               <label htmlFor="name">Nom complet</label>
@@ -214,6 +282,60 @@ export default function JobConnectProfile() {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="card">
+        <div className="card-header">
+          <div>
+            <p className="eyebrow">Profil professionnel</p>
+            <h3>Visible par les recruteurs</h3>
+          </div>
+          <button className="primary-btn ghost" type="button" onClick={() => nav("/profil")}>
+            Voir le profil public
+          </button>
+        </div>
+        <div className="professional-profile">
+          <div className="professional-profile__identity">
+            <div className="profile-avatar profile-avatar--small">
+              {formValues.avatar ? (
+                <img src={formValues.avatar} alt="Photo de profil professionnelle" />
+              ) : (
+                <div className="profile-avatar-placeholder">Photo</div>
+              )}
+            </div>
+            <div>
+              <h4>{formValues.name || "Votre nom complet"}</h4>
+              <p>{formValues.title || "Métier ciblé"}</p>
+              <p className="professional-profile__meta">
+                {formValues.location || "Localisation"} · {formValues.availability || "Disponibilité"}
+              </p>
+            </div>
+          </div>
+          <div className="professional-profile__details">
+            <p>{formValues.bio || "Ajoutez une présentation pour vous démarquer auprès des recruteurs."}</p>
+            <div className="professional-profile__tags">
+              {formValues.skills
+                ? formValues.skills.split(",").map((skill) => skill.trim()).filter(Boolean).slice(0, 6).map((skill) => (
+                  <span key={skill}>{skill}</span>
+                ))
+                : <span>Compétences</span>}
+            </div>
+          </div>
+          <div className="professional-profile__actions">
+            {formValues.cvData ? (
+              <a className="primary-btn" href={formValues.cvData} download={formValues.cvName || "cv.pdf"}>
+                Télécharger le CV
+              </a>
+            ) : (
+              <button className="primary-btn ghost" type="button" onClick={() => document.getElementById("cv")?.click()}>
+                Ajouter un CV
+              </button>
+            )}
+            <span className="professional-profile__note">
+              Ce profil est distinct de votre profil public et dédié aux candidatures.
+            </span>
+          </div>
+        </div>
       </section>
 
       <section className="card">
