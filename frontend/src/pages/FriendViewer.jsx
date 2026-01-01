@@ -4,12 +4,23 @@ import FacebookLayout from "./FacebookLayout";
 import { useAuth } from "../context/AuthContext";
 import "../styles/friend-viewer.css";
 
-const API_ROOT = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
-const fixUrl = (path) => {
-  if (!path) return "/default-avatar.png";
-  if (path.startsWith("http")) return path;
-  return `${API_ROOT.replace("/api", "")}${path.startsWith("/") ? "" : "/"}${path}`;
+const resolveAvatar = (user) => {
+  if (!user) return "/default-avatar.png";
+
+  const avatar =
+    user.avatar ||
+    user.profilePicture ||
+    user.photo ||
+    user.picture ||
+    user.profile?.avatar;
+
+  if (!avatar) return "/default-avatar.png";
+  if (avatar.startsWith("http")) return avatar;
+
+  const baseUrl = API_URL || "";
+  return `${baseUrl}${avatar.startsWith("/") ? avatar : `/${avatar}`}`;
 };
 
 const normalizeFriend = (friend) => {
@@ -18,11 +29,10 @@ const normalizeFriend = (friend) => {
   if (!rawUser) return null;
   const id = rawUser._id || rawUser.id || (typeof rawUser === "string" ? rawUser : null);
   const name = rawUser.name || rawUser.fullName || "Utilisateur";
-  const avatar = rawUser.avatar || rawUser.profile?.avatar || null;
   return {
     id,
     name,
-    avatar: fixUrl(avatar),
+    user: rawUser,
   };
 };
 
@@ -37,7 +47,7 @@ export default function FriendViewer() {
     if (!id) return;
     setLoading(true);
 
-    fetch(`${API_ROOT}/auth/user/${id}`, {
+    fetch(`${API_URL}/auth/user/${id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(async (res) => {
@@ -112,9 +122,16 @@ export default function FriendViewer() {
                 className="friend-viewer-card"
                 onClick={() => handleProfileOpen(friend.id)}
               >
-                <img src={friend.avatar} alt={friend.name} loading="lazy" />
-                <div className="friend-viewer-name">{friend.name}</div>
-                <span className="friend-viewer-action">Voir le profil</span>
+                <img
+                  src={resolveAvatar(friend.user)}
+                  alt={`Photo de ${friend.name}`}
+                  className="friend-avatar"
+                  loading="lazy"
+                />
+                <div className="friend-viewer-details">
+                  <div className="friend-viewer-name">{friend.name}</div>
+                  <span className="friend-viewer-action">Voir le profil</span>
+                </div>
               </button>
             ))}
           </div>
