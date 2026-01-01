@@ -34,6 +34,15 @@ router.get(
     ApplicationController.getMyApplications
 );
 
+// GET /api/applications/status?jobId=:jobId
+// ➤ Candidat : vérifier le statut d'une candidature
+router.get(
+    '/status',
+    isAuthenticated,
+    isCandidate,
+    ApplicationController.getApplicationStatus
+);
+
 
 // ==================================================
 // RECRUTEUR : consulter et gérer les candidatures
