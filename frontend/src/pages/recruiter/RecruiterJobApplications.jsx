@@ -15,7 +15,6 @@ export default function RecruiterJobApplications() {
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
-  const [expandedProfileId, setExpandedProfileId] = useState(null);
 
   /* ============================================================
      REDIRECTION SI PAS CONNECTÉ
@@ -140,56 +139,11 @@ export default function RecruiterJobApplications() {
     });
   };
 
-  const toggleProfessionalProfile = (applicationId) => {
-    setExpandedProfileId((prev) => (prev === applicationId ? null : applicationId));
-  };
-
-  const buildProfessionalProfile = (candidate = {}) => {
-    const professionalProfile = candidate.professionalProfile || {};
-    const skillsValue = Array.isArray(professionalProfile.skills)
-      ? professionalProfile.skills.join(", ")
-      : professionalProfile.skills || "";
-
-    return {
-      name: professionalProfile.name || candidate.name || "Candidat",
-      title: professionalProfile.title || "",
-      email: professionalProfile.email || candidate.email || "",
-      phone: professionalProfile.phone || "",
-      location: professionalProfile.location || "",
-      experience: professionalProfile.experience || "",
-      skills: skillsValue,
-      availability: professionalProfile.availability || "",
-      portfolio: professionalProfile.portfolio || "",
-      linkedin: professionalProfile.linkedin || "",
-      bio: professionalProfile.bio || "",
-      avatar: professionalProfile.avatar || candidate.avatar || "",
-      cvData: professionalProfile.cvData || "",
-      cvName: professionalProfile.cvName || "",
-    };
-  };
-
   /* ============================================================
      AFFICHAGE D'UNE CANDIDATURE
   ============================================================ */
   const renderApplicationItem = (app) => {
     const c = app.candidate || {};
-    const profile = buildProfessionalProfile(c);
-    const profileSkills = profile.skills
-      ? profile.skills.split(",").map((skill) => skill.trim()).filter(Boolean).slice(0, 8)
-      : [];
-    const cvLink = app.cvUrl || profile.cvData || c.candidateProfile?.cvUrl || "";
-    const cvName = profile.cvName || "cv.pdf";
-    const isProfileExpanded = expandedProfileId === app._id;
-    const hasProfileDetails = Boolean(
-      profile.title ||
-      profile.location ||
-      profile.experience ||
-      profile.skills ||
-      profile.availability ||
-      profile.portfolio ||
-      profile.linkedin ||
-      profile.bio
-    );
 
     return (
       <div key={app._id} className="recruiter-app-item">
@@ -258,80 +212,7 @@ export default function RecruiterJobApplications() {
             📹 Appel vidéo
           </button>
 
-          <button
-            className="app-action-btn app-action-btn--ghost"
-            type="button"
-            onClick={() => nav(`/profil/${c._id}`)}
-            disabled={!c._id}
-          >
-            👤 Profil public
-          </button>
-
-          <button
-            className="app-action-btn app-action-btn--ghost"
-            type="button"
-            onClick={() => toggleProfessionalProfile(app._id)}
-            aria-expanded={isProfileExpanded}
-          >
-            🧾 Profil professionnel
-          </button>
-
-          {cvLink ? (
-            <a
-              className="app-action-btn app-action-btn--primary"
-              href={cvLink}
-              download={cvName}
-            >
-              📄 Télécharger CV
-            </a>
-          ) : (
-            <button className="app-action-btn app-action-btn--ghost" type="button" disabled>
-              📄 CV indisponible
-            </button>
-          )}
-
         </div>
-
-        {isProfileExpanded && (
-          <div className="recruiter-profile-panel">
-            <div className="recruiter-profile-header">
-              <div className="recruiter-profile-avatar">
-                {profile.avatar ? (
-                  <img src={profile.avatar} alt={`Photo de ${profile.name}`} />
-                ) : (
-                  <div className="recruiter-profile-avatar-fallback">
-                    {(profile.name || "C").charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div>
-                <h4>{profile.name}</h4>
-                <p>{profile.title || "Titre professionnel non renseigné"}</p>
-                <p className="recruiter-profile-meta">
-                  {profile.location || "Localisation non précisée"} · {profile.availability || "Disponibilité à définir"}
-                </p>
-              </div>
-            </div>
-
-            {hasProfileDetails ? (
-              <div className="recruiter-profile-details">
-                <p>{profile.bio || "Présentation non renseignée."}</p>
-                <div className="recruiter-profile-tags">
-                  {profileSkills.length ? profileSkills.map((skill) => <span key={skill}>{skill}</span>) : <span>Compétences à compléter</span>}
-                </div>
-                <div className="recruiter-profile-contact">
-                  <p>{profile.experience || "Expérience à préciser"}</p>
-                  <p>{profile.email || "Email non communiqué"} · {profile.phone || "Téléphone non communiqué"}</p>
-                  <p>{profile.portfolio || "Portfolio"} · {profile.linkedin || "LinkedIn"}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="recruiter-profile-empty">
-                Le candidat n’a pas encore complété son profil professionnel.
-              </p>
-            )}
-          </div>
-        )}
       </div>
     );
   };
