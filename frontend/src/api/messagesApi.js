@@ -27,7 +27,7 @@ export async function fetchMessageRequests() {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/requests?type=public`, {
+  const res = await fetch(`${API_URL}/messages/requests`, {
     headers: getAuthHeaders(token),
   });
   const data = await parseJsonResponse(res);
@@ -43,7 +43,7 @@ export async function fetchInbox() {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox?type=public`, {
+  const res = await fetch(`${API_URL}/messages/inbox`, {
     headers: getAuthHeaders(token),
   });
 
@@ -52,15 +52,6 @@ export async function fetchInbox() {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  if (Array.isArray(data)) {
-    return data.map((conversation) => ({ ...conversation, type: "public" }));
-  }
-  if (Array.isArray(data?.data)) {
-    return {
-      ...data,
-      data: data.data.map((conversation) => ({ ...conversation, type: "public" })),
-    };
-  }
   return data;
 }
 
@@ -70,7 +61,7 @@ export async function sendMessageRequest(toUser, message) {
     throw new Error("Vous devez être connecté pour envoyer un message.");
   }
 
-  const res = await fetch(`${API_URL}/messages/request?type=public`, {
+  const res = await fetch(`${API_URL}/messages/request`, {
     method: "POST",
     headers: getAuthHeaders(token),
     body: JSON.stringify({ toUser, message }),
@@ -92,7 +83,7 @@ export async function acceptMessageRequest(id) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/request/${id}/accept?type=public`, {
+  const res = await fetch(`${API_URL}/messages/request/${id}/accept`, {
     method: "POST",
     headers: getAuthHeaders(token),
   });
@@ -113,7 +104,7 @@ export async function declineMessageRequest(id) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/request/${id}/reject?type=public`, {
+  const res = await fetch(`${API_URL}/messages/request/${id}/reject`, {
     method: "POST",
     headers: getAuthHeaders(token),
   });
@@ -132,7 +123,7 @@ export async function blockMessageRequest(id) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/request/${id}/block?type=public`, {
+  const res = await fetch(`${API_URL}/messages/request/${id}/block`, {
     method: "POST",
     headers: getAuthHeaders(token),
   });
@@ -145,13 +136,13 @@ export async function blockMessageRequest(id) {
   return data;
 }
 
-export async function sendMessagePayload(payload, type = "public") {
+export async function sendMessagePayload(payload) {
   const token = getToken();
   if (!token) {
     throw new Error("Vous devez être connecté pour envoyer un message.");
   }
 
-  const res = await fetch(`${API_URL}/messages/send?type=${type}`, {
+  const res = await fetch(`${API_URL}/messages/send`, {
     method: "POST",
     headers: getAuthHeaders(token),
     body: JSON.stringify(payload),

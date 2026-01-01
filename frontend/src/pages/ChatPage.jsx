@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import io from "socket.io-client";
 
-const API_URL = import.meta.env.VITE_API_URL;
-const socket = io(API_URL.replace("/api", ""));
+const API_ROOT = import.meta.env.VITE_API_URL;
+const socket = io(API_ROOT.replace("/api", ""));
 const loadErrorMessage = "Impossible de charger vos conversations";
 
 const ensureJsonResponse = async (res) => {
@@ -47,7 +47,7 @@ export default function ChatPage() {
 
   const loadViewer = async () => {
     try {
-      const res = await fetch(`${API_URL}/auth/me`, {
+      const res = await fetch(`${API_ROOT}/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -62,7 +62,7 @@ export default function ChatPage() {
 
   const loadPartner = async () => {
     try {
-      const res = await fetch(`${API_URL}/auth/user/${id}`, {
+      const res = await fetch(`${API_ROOT}/auth/user/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -77,7 +77,7 @@ export default function ChatPage() {
 
   const loadMessages = async () => {
     try {
-      const res = await fetch(`${API_URL}/messages/conversation/${id}?type=public`, {
+      const res = await fetch(`${API_ROOT}/messages/conversation/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -103,7 +103,7 @@ export default function ChatPage() {
     };
 
     try {
-      const res = await fetch(`${API_URL}/messages/send?type=public`, {
+      const res = await fetch(`${API_ROOT}/messages/send`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

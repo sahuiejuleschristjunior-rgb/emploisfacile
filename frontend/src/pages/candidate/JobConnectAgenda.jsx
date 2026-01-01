@@ -14,26 +14,18 @@ export default function JobConnectAgenda() {
     nav("/login");
   };
 
-  const contactRecruiter = async (event) => {
-    const recruiter = event?.recruiter;
-    const job = event?.job;
-    if (!recruiter?._id || !job?._id || !data.user?._id || !event?.applicationId) return;
+  const contactRecruiter = async (recruiter, job) => {
+    if (!recruiter?._id || !job?._id || !data.user?._id) return;
     try {
       const conversation = await createJobConversation({
         participants: [data.user._id, recruiter._id],
         jobId: job._id,
-        applicationId: event.applicationId,
-        candidateId: event.candidateId || data.user._id,
-        recruiterId: event.recruiterId || recruiter._id,
       });
       nav(`/candidate/messages/${conversation._id}`, {
         state: {
           jobId: job._id,
           jobTitle: job.title,
           otherParticipant: recruiter,
-          applicationId: event.applicationId,
-          candidateId: event.candidateId || data.user._id,
-          recruiterId: event.recruiterId || recruiter._id,
         },
       });
     } catch (err) {
@@ -104,7 +96,7 @@ export default function JobConnectAgenda() {
               <div className="agenda-actions">
                 <button
                   className="ghost-btn"
-                  onClick={() => contactRecruiter(event)}
+                  onClick={() => contactRecruiter(event.recruiter || {}, event.job)}
                 >
                   Contacter
                 </button>

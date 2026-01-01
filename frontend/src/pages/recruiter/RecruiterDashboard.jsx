@@ -24,16 +24,13 @@ export default function RecruiterDashboard() {
     if (jobId) nav(`/recruiter/job/${jobId}`);
   };
 
-  const contactCandidate = async (app, candidate, job) => {
-    if (!candidate?._id || !job?._id || !data.user?._id || !app?._id) return;
+  const contactCandidate = async (candidate, job) => {
+    if (!candidate?._id || !job?._id || !data.user?._id) return;
 
     try {
       const conversation = await createJobConversation({
         participants: [data.user._id, candidate._id],
         jobId: job._id,
-        applicationId: app._id,
-        candidateId: candidate._id,
-        recruiterId: data.user._id,
       });
 
       nav(`/recruiter/messages/${conversation._id}`, {
@@ -41,9 +38,6 @@ export default function RecruiterDashboard() {
           jobId: job._id,
           jobTitle: job.title,
           otherParticipant: candidate,
-          applicationId: app._id,
-          candidateId: candidate._id,
-          recruiterId: data.user._id,
         },
       });
     } catch (err) {
@@ -245,7 +239,7 @@ export default function RecruiterDashboard() {
                 <div className="agenda-actions">
                   <button
                     className="ghost-btn"
-                    onClick={() => contactCandidate(event, event.candidate, event.job)}
+                    onClick={() => contactCandidate(event.candidate, event.job)}
                   >
                     Contacter
                   </button>
@@ -331,7 +325,7 @@ export default function RecruiterDashboard() {
                           className="primary-btn ghost"
                           onClick={(e) => {
                             e.stopPropagation();
-                            contactCandidate(app, app.candidate, app.job);
+                            contactCandidate(app.candidate, app.job);
                           }}
                         >
                           Contacter

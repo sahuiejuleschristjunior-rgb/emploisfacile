@@ -168,17 +168,13 @@ export default function useCandidateDashboardData() {
 
   const upcomingAgenda = useMemo(() => {
     return groupedApps.interview.slice(0, 3).map((app) => ({
-      applicationId: app._id,
-      candidateId: app?.candidate?._id || user?._id,
-      recruiterId: app?.job?.recruiter?._id,
-      application: app,
       title: app.job?.title || "Entretien prévu",
       company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
       when: app.interviewDate || app.updatedAt || app.createdAt,
       recruiter: app.job?.recruiter,
       job: app.job,
     }));
-  }, [groupedApps.interview, user?._id]);
+  }, [groupedApps.interview]);
 
   return {
     user,

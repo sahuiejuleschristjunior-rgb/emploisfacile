@@ -7,15 +7,6 @@ import "../../styles/job-chat.css";
 const API_URL = import.meta.env.VITE_API_URL;
 const getId = (value) => (typeof value === "object" ? value?._id : value);
 const loadErrorMessage = "Impossible de charger vos conversations";
-const JOB_CHAT_TYPE = "job";
-
-const statusLabels = {
-  pending: "En attente",
-  reviewing: "En cours",
-  interview: "Entretien",
-  accepted: "Acceptée",
-  rejected: "Refusée",
-};
 
 const ensureJsonResponse = async (res) => {
   const contentType = res.headers.get("content-type");
@@ -32,11 +23,6 @@ const resolveOtherParticipant = (participants, currentUserId) => {
   );
 };
 
-const resolveStatusLabel = (status) => {
-  const key = (status || "").toString().toLowerCase();
-  return statusLabels[key] || status || "Statut inconnu";
-};
-
 export default function RecruiterInbox() {
   const nav = useNavigate();
   const token = localStorage.getItem("token");
@@ -45,7 +31,6 @@ export default function RecruiterInbox() {
 
   const [conversations, setConversations] = useState([]);
   const [jobsById, setJobsById] = useState({});
-  const [applicationsByKey, setApplicationsByKey] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -72,44 +57,6 @@ export default function RecruiterInbox() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!token) return;
-    let active = true;
-
-    const loadApplications = async () => {
-      try {
-        const res = await fetch(`${API_URL}/applications/all`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (!res.ok) return;
-        const data = await ensureJsonResponse(res);
-        const apps = Array.isArray(data) ? data : data.applications || [];
-        if (!active) return;
-        setApplicationsByKey(() =>
-          apps.reduce((acc, app) => {
-            const jobId = app?.job?._id || app?.jobId;
-            const candidateId = app?.candidate?._id || app?.candidateId;
-            if (jobId && candidateId) {
-              acc[`${jobId}:${candidateId}`] = app;
-            }
-            return acc;
-          }, {})
-        );
-      } catch (err) {
-        console.error("Erreur candidatures", err);
-      }
-    };
-
-    loadApplications();
-
-    return () => {
-      active = false;
-    };
-  }, [token]);
 
   useEffect(() => {
     const jobIds = conversations
@@ -162,38 +109,15 @@ export default function RecruiterInbox() {
     };
   }, [conversations, jobsById, token]);
 
-  const getConversationMeta = (conv) => {
-    const jobId =
-      conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job || null;
-    const other = resolveOtherParticipant(conv?.participants, user?._id);
-    const candidateId = getId(other);
-    const application =
-      jobId && candidateId ? applicationsByKey[`${jobId}:${candidateId}`] : null;
-
-    return {
-      jobId,
-      other,
-      candidateId:
-        conv?.candidateId || conv?.candidate?._id || candidateId || application?.candidate?._id || null,
-      recruiterId:
-        conv?.recruiterId || conv?.recruiter?._id || application?.job?.recruiter?._id || user?._id || null,
-      applicationId:
-        conv?.applicationId || conv?.application?._id || application?._id || null,
-      application,
-    };
-  };
-
   const filteredConversations = useMemo(() => {
     return conversations.filter((conv) => {
-      if (conv?.type !== JOB_CHAT_TYPE) return false;
-      const meta = getConversationMeta(conv);
-      if (!meta.jobId) return false;
-      const job = jobsById[String(meta.jobId)] || conv?.job;
+      const jobId = conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
+      if (!jobId) return false;
+      const job = jobsById[String(jobId)] || conv?.job;
       const recruiterId = getId(job?.recruiter);
-      if (!recruiterId || recruiterId !== user?._id) return false;
-      return Boolean(meta.applicationId && meta.candidateId && meta.recruiterId);
+      return recruiterId && recruiterId === user?._id;
     });
-  }, [conversations, jobsById, user?._id, applicationsByKey]);
+  }, [conversations, jobsById, user?._id]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -229,21 +153,13 @@ export default function RecruiterInbox() {
 
         <div className="job-chat-list">
           {filteredConversations.map((conv) => {
-            const meta = getConversationMeta(conv);
-            const jobId = meta.jobId;
-            const job = jobsById[String(jobId)] || conv?.job || meta.application?.job;
-            const other = meta.other;
-            const companyName =
-              job?.companyName ||
-              job?.company?.name ||
-              job?.recruiter?.companyName ||
-              user?.companyName ||
-              "Entreprise";
+            const jobId =
+              conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
+            const job = jobsById[String(jobId)] || conv?.job;
+            const other = resolveOtherParticipant(conv?.participants, user?._id);
+            const otherName = other?.name || other?.companyName || "Candidat";
             const lastMessage = conv?.lastMessage?.content || "Aucun message";
             const jobTitle = job?.title || conv?.jobTitle || "Offre";
-            const statusLabel = resolveStatusLabel(
-              meta.application?.status || conv?.applicationStatus || conv?.status
-            );
 
             return (
               <button
@@ -256,9 +172,6 @@ export default function RecruiterInbox() {
                       jobId,
                       jobTitle,
                       otherParticipant: other,
-                      applicationId: meta.applicationId,
-                      candidateId: meta.candidateId,
-                      recruiterId: meta.recruiterId,
                     },
                   })
                 }
@@ -266,8 +179,8 @@ export default function RecruiterInbox() {
                 <div>
                   <div className="job-chat-item-title">{jobTitle}</div>
                   <div className="job-chat-item-sub">
-                    <span>{companyName}</span>
-                    <span className="job-chat-role">{statusLabel}</span>
+                    {otherName}
+                    <span className="job-chat-role">Candidat</span>
                   </div>
                 </div>
                 <div className="job-chat-item-preview">{lastMessage}</div>
