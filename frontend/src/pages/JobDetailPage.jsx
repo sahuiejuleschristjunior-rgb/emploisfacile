@@ -39,10 +39,11 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(!locationJob);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
+  // États uniques pour gérer la candidature (source de vérité = hasApplied).
   const [hasApplied, setHasApplied] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
@@ -95,25 +96,16 @@ export default function JobDetailPage() {
   }, [API_URL, id, token, locationJob]);
 
   useEffect(() => {
-    setHasApplied(false);
-    setCheckingStatus(true);
-    setIsSubmitting(false);
-    setSubmitSuccess(null);
-    setSubmitError(null);
-  }, [job?._id]);
-
-  useEffect(() => {
     if (!id) return;
 
-    const controller = new AbortController();
-
+    // Vérification unique du statut (pas de relance après soumission).
+    let isMounted = true;
     const fetchApplicationStatus = async () => {
-      setCheckingStatus(true);
-      setSubmitError(null);
-
       if (!user || !token) {
-        setHasApplied(false);
-        setCheckingStatus(false);
+        if (isMounted) {
+          setHasApplied(false);
+          setCheckingStatus(false);
+        }
         return;
       }
 
@@ -122,24 +114,19 @@ export default function JobDetailPage() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          signal: controller.signal,
         });
 
-        if (!res.ok) {
-          throw new Error("Impossible de vérifier votre candidature.");
-        }
+        if (!res.ok) return;
 
         const data = await res.json();
 
-        if (!controller.signal.aborted) {
+        if (isMounted) {
           setHasApplied(Boolean(data?.hasApplied));
         }
       } catch (err) {
-        if (err.name === "AbortError") return;
         console.error("APPLICATION STATUS ERROR:", err);
-        setSubmitError(err.message || "Impossible de vérifier votre candidature.");
       } finally {
-        if (!controller.signal.aborted) {
+        if (isMounted) {
           setCheckingStatus(false);
         }
       }
@@ -147,8 +134,10 @@ export default function JobDetailPage() {
 
     fetchApplicationStatus();
 
-    return () => controller.abort();
-  }, [API_URL, id, token, user]);
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!job?.contractType) {
@@ -257,21 +246,29 @@ export default function JobDetailPage() {
   const profile = Array.isArray(job.profile) ? job.profile : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
   const isRecruiter = user?.role === "recruiter";
-  const isJobOwner = job?.recruiter?._id && user?._id && job.recruiter._id === user._id;
+  const isJobOwner = job?.recruiter?._id === user?._id;
   const canApply = user && !isRecruiter && !isJobOwner;
-  const applyLabel = checkingStatus
-    ? "Vérification..."
-    : hasApplied
-      ? "Déjà postulé ✔"
-      : isSubmitting
-        ? "Envoi en cours..."
-        : "Postuler maintenant";
+
+  // Libellé et état unique du bouton (anti-tremblement).
+  let applyLabel = "Postuler maintenant";
+  let applyDisabled = false;
+
+  if (checkingStatus) {
+    applyLabel = "Vérification…";
+    applyDisabled = true;
+  } else if (hasApplied) {
+    applyLabel = "Déjà postulé ✔";
+    applyDisabled = true;
+  } else if (isSubmitting) {
+    applyLabel = "Envoi en cours…";
+    applyDisabled = true;
+  }
 
   const handleApply = async () => {
-    if (!job?._id || isSubmitting || hasApplied) return;
+    if (hasApplied || isSubmitting) return;
 
     setIsSubmitting(true);
-    setSubmitSuccess(null);
+    setSubmitSuccess(false);
     setSubmitError(null);
 
     try {
@@ -281,32 +278,20 @@ export default function JobDetailPage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ jobId: job._id }),
+        body: JSON.stringify({ jobId: id }),
       });
 
-      let payload = {};
-      try {
-        payload = await res.json();
-      } catch (err) {
-        payload = {};
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err?.message || "Erreur lors de la candidature");
       }
 
-      if (res.ok) {
-        setHasApplied(true);
-        setSubmitSuccess("Votre candidature a été envoyée avec succès");
-        return;
-      }
-
-      if (res.status === 400 && payload?.message?.toLowerCase().includes("déjà")) {
-        setHasApplied(true);
-        setSubmitSuccess(payload?.message || "Votre candidature a déjà été envoyée.");
-        return;
-      }
-
-      setSubmitError(payload?.message || "Erreur lors de l'envoi de la candidature.");
+      // ✅ SUCCÈS DÉFINITIF
+      setHasApplied(true);
+      setSubmitSuccess(true);
     } catch (err) {
       console.error("APPLICATION ERROR:", err);
-      setSubmitError("Erreur lors de l'envoi de la candidature.");
+      setSubmitError(err.message || "Erreur lors de l'envoi de la candidature.");
     } finally {
       setIsSubmitting(false);
     }
@@ -336,7 +321,7 @@ export default function JobDetailPage() {
                   className="primary-btn"
                   type="button"
                   onClick={handleApply}
-                  disabled={checkingStatus || isSubmitting || hasApplied}
+                  disabled={applyDisabled}
                 >
                   {applyLabel}
                 </button>
@@ -348,7 +333,9 @@ export default function JobDetailPage() {
             {canApply && (submitSuccess || submitError) && (
               <div className="job-detail-feedback" role="status">
                 {submitSuccess && (
-                  <p className="job-detail-alert job-detail-alert--success">{submitSuccess}</p>
+                  <p className="job-detail-alert job-detail-alert--success">
+                    Votre candidature a été envoyée avec succès
+                  </p>
                 )}
                 {submitError && (
                   <p className="job-detail-alert job-detail-alert--error">{submitError}</p>
