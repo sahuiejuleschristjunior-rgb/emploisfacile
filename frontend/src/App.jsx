@@ -43,6 +43,7 @@ import JobConnectMessages from "./pages/candidate/JobConnectMessages";
 import JobConnectFavorites from "./pages/candidate/JobConnectFavorites";
 import JobConnectAgenda from "./pages/candidate/JobConnectAgenda";
 import JobConnectProfile from "./pages/candidate/JobConnectProfile";
+import ProfessionalProfile from "./pages/candidate/ProfessionalProfile";
 
 import FacebookFeed from "./components/FacebookFeed";
 
@@ -234,6 +235,7 @@ export default function App() {
                   <Route path="favoris" element={<JobConnectFavorites />} />
                   <Route path="agenda" element={<JobConnectAgenda />} />
                   <Route path="profil" element={<JobConnectProfile />} />
+                  <Route path="profil-professionnel" element={<ProfessionalProfile />} />
                 </Route>
 
                 <Route
@@ -263,6 +265,10 @@ export default function App() {
                 <Route
                   path="/jobconnect/profil"
                   element={<Navigate to="/candidate/profil" replace />}
+                />
+                <Route
+                  path="/jobconnect/profil-professionnel"
+                  element={<Navigate to="/candidate/profil-professionnel" replace />}
                 />
 
                 <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />

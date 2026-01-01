@@ -118,8 +118,7 @@ export default function JobConnectProfile() {
   };
 
   const handleOpenProfessionalProfile = () => {
-    const section = document.getElementById("professional-profile");
-    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    nav("/candidate/profil-professionnel");
   };
 
   return (
