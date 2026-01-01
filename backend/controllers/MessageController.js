@@ -115,6 +115,28 @@ function resolveNotificationType({ job, application } = {}) {
   return job || application ? "job" : "public";
 }
 
+function buildJobMessagePayload(message, conversationId) {
+  if (!message || !conversationId) return null;
+  return {
+    _id: message._id,
+    conversationId,
+    sender: message.sender ? String(message.sender) : null,
+    text: message.content || "",
+    createdAt: message.createdAt || new Date(),
+    type: "job",
+  };
+}
+
+function emitJobMessage(message, conversationId) {
+  if (!message || !conversationId) return;
+  const payload = buildJobMessagePayload(message, conversationId);
+  if (!payload) return;
+  getIO().to(`job:${conversationId}`).emit("job:message:new", payload);
+  if (process.env.NODE_ENV !== "production") {
+    console.log("🧩 JobChat emit job:message:new", payload);
+  }
+}
+
 async function buildMessageRequest({ senderUser, receiverUser, content }) {
   const senderId = senderUser?._id;
   const receiverId = receiverUser?._id;
@@ -348,6 +370,10 @@ exports.sendMessage = async (req, res) => {
       to: receiverId,
       message,
     });
+
+    if (jobId) {
+      emitJobMessage(message, conversation._id);
+    }
 
     /* 🔥 NOTIFICATION */
     await pushNotification(receiverId, {
@@ -833,6 +859,10 @@ exports.sendAudioMessage = async (req, res) => {
       .to(receiverId.toString())
       .to(sender.toString())
       .emit("audio_message", { message });
+
+    if (jobId) {
+      emitJobMessage(message, conversation._id);
+    }
 
     await pushNotification(receiverId, {
       from: sender,

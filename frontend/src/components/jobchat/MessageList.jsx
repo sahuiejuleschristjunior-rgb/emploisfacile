@@ -10,7 +10,7 @@ const formatTime = (value) => {
   });
 };
 
-export default function MessageList({ messages, currentUserId }) {
+export default function MessageList({ messages, currentUserId, lastIncomingId }) {
   return (
     <div className="job-chat-messages">
       {messages.map((message) => {
@@ -18,10 +18,13 @@ export default function MessageList({ messages, currentUserId }) {
           typeof message.sender === "object" ? message.sender?._id : message.sender;
         const isMe = senderId === currentUserId;
         const content = message.content || message.text || "";
+        const isNew = message._id && message._id === lastIncomingId;
         return (
           <div
             key={message._id || message.clientTempId || message.createdAt}
-            className={`job-chat-row ${isMe ? "me" : "other"}`}
+            className={`job-chat-row ${isMe ? "me" : "other"}${
+              isNew ? " job-msg--new" : ""
+            }`}
           >
             <div className="job-chat-bubble">
               <p>{content}</p>
