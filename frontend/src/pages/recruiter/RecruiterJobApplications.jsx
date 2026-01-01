@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
+import { createJobConversation } from "../../api/jobChatApi";
 import "../../styles/RecruiterDashboard.css";
 
 export default function RecruiterJobApplications() {
@@ -115,14 +116,23 @@ export default function RecruiterJobApplications() {
   /* ============================================================
      BOUTON → CONTACTER LE CANDIDAT
   ============================================================ */
-  const contactCandidate = (candidate) => {
-    nav("/messages", {
-      state: {
-        userId: candidate._id,
-        name: candidate.name,
-        avatar: candidate.avatar,
-      },
-    });
+  const contactCandidate = async (candidate) => {
+    if (!candidate?._id || !jobId || !user?._id) return;
+    try {
+      const conversation = await createJobConversation({
+        participants: [user._id, candidate._id],
+        jobId,
+      });
+      nav(`/recruiter/messages/${conversation._id}`, {
+        state: {
+          jobId,
+          jobTitle: `Offre ${jobId}`,
+          otherParticipant: candidate,
+        },
+      });
+    } catch (err) {
+      console.error("Erreur conversation", err);
+    }
   };
 
   /* ============================================================

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/RecruiterDashboard.css";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboardData";
+import { createJobConversation } from "../../api/jobChatApi";
 import { RecruiterPipeline } from "../../components/jobconnect/JobConnectWidgets";
 
 export default function RecruiterDashboard() {
@@ -23,15 +24,25 @@ export default function RecruiterDashboard() {
     if (jobId) nav(`/recruiter/job/${jobId}`);
   };
 
-  const contactCandidate = (candidate) => {
-    if (!candidate?._id) return;
-    nav("/messages", {
-      state: {
-        userId: candidate._id,
-        name: candidate.name,
-        avatar: candidate.avatar,
-      },
-    });
+  const contactCandidate = async (candidate, job) => {
+    if (!candidate?._id || !job?._id || !data.user?._id) return;
+
+    try {
+      const conversation = await createJobConversation({
+        participants: [data.user._id, candidate._id],
+        jobId: job._id,
+      });
+
+      nav(`/recruiter/messages/${conversation._id}`, {
+        state: {
+          jobId: job._id,
+          jobTitle: job.title,
+          otherParticipant: candidate,
+        },
+      });
+    } catch (err) {
+      console.error("Erreur conversation", err);
+    }
   };
 
   const callCandidate = (candidate) => {
@@ -134,7 +145,7 @@ export default function RecruiterDashboard() {
         { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
         { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
         { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
-        { key: "messages", label: "Messages", path: "/messages" },
+        { key: "messages", label: "Messages", path: "/recruiter/messages" },
         { key: "profil", label: "Entreprise", path: "/profil" },
         { key: "settings", label: "Paramètres", path: "/settings" },
       ]}
@@ -226,7 +237,10 @@ export default function RecruiterDashboard() {
                   {event.when && <p className="agenda-date">{new Date(event.when).toLocaleString()}</p>}
                 </div>
                 <div className="agenda-actions">
-                  <button className="ghost-btn" onClick={() => contactCandidate(event.candidate)}>
+                  <button
+                    className="ghost-btn"
+                    onClick={() => contactCandidate(event.candidate, event.job)}
+                  >
                     Contacter
                   </button>
                   <button className="ghost-btn" onClick={() => callCandidate(event.candidate)}>
@@ -248,7 +262,7 @@ export default function RecruiterDashboard() {
           </div>
 
           <div className="quick-actions">
-            <button className="primary-btn ghost" onClick={() => nav("/messages")}>
+            <button className="primary-btn ghost" onClick={() => nav("/recruiter/messages")}>
               Ouvrir la messagerie
             </button>
           </div>
@@ -311,7 +325,7 @@ export default function RecruiterDashboard() {
                           className="primary-btn ghost"
                           onClick={(e) => {
                             e.stopPropagation();
-                            contactCandidate(app.candidate);
+                            contactCandidate(app.candidate, app.job);
                           }}
                         >
                           Contacter

@@ -23,7 +23,7 @@ export default function JobConnectMessages() {
             Accédez directement à votre messagerie pour poursuivre vos conversations en cours.
           </p>
           <div className="hero__actions">
-            <button className="primary-btn" onClick={() => nav("/messages")}>Ouvrir la messagerie</button>
+            <button className="primary-btn" onClick={() => nav("/candidate/messages")}>Ouvrir la messagerie</button>
           </div>
         </div>
         <div className="hero__highlights">
@@ -50,7 +50,7 @@ export default function JobConnectMessages() {
           </div>
         </div>
         <div className="mini-grid">
-          <div className="mini-card" onClick={() => nav("/messages")}>
+          <div className="mini-card" onClick={() => nav("/candidate/messages")}>
             <p className="mini-title">Poursuivre une conversation</p>
             <p className="mini-sub">Ouvrir votre boîte de réception.</p>
           </div>
