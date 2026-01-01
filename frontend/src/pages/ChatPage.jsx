@@ -4,6 +4,15 @@ import io from "socket.io-client";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 const socket = io(API_ROOT.replace("/api", ""));
+const loadErrorMessage = "Impossible de charger vos conversations";
+
+const ensureJsonResponse = async (res) => {
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error("Réponse serveur invalide");
+  }
+  return res.json();
+};
 
 export default function ChatPage() {
   const { id } = useParams();
@@ -13,8 +22,14 @@ export default function ChatPage() {
   const [partner, setPartner] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!token) {
+      setError(loadErrorMessage);
+      return;
+    }
+
     loadViewer();
     loadPartner();
     loadMessages();
@@ -31,56 +46,88 @@ export default function ChatPage() {
   }, [id]);
 
   const loadViewer = async () => {
-    const res = await fetch(`${API_ROOT}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (res.ok) setViewer(data.user);
+    try {
+      const res = await fetch(`${API_ROOT}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await ensureJsonResponse(res);
+      if (res.ok) setViewer(data.user);
+    } catch (err) {
+      setError(loadErrorMessage);
+    }
   };
 
   const loadPartner = async () => {
-    const res = await fetch(`${API_ROOT}/auth/user/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (res.ok) setPartner(data);
+    try {
+      const res = await fetch(`${API_ROOT}/auth/user/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await ensureJsonResponse(res);
+      if (res.ok) setPartner(data);
+    } catch (err) {
+      setError(loadErrorMessage);
+    }
   };
 
   const loadMessages = async () => {
-    const res = await fetch(`${API_ROOT}/messages/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const list = await res.json();
-    if (res.ok) setMessages(list);
+    try {
+      const res = await fetch(`${API_ROOT}/messages/conversation/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const list = await ensureJsonResponse(res);
+      if (res.ok && Array.isArray(list)) setMessages(list);
+    } catch (err) {
+      setError(loadErrorMessage);
+    }
   };
 
   const sendMessage = async () => {
     if (!text.trim()) return;
+    if (!token) {
+      setError(loadErrorMessage);
+      return;
+    }
 
     const body = {
-      receiverId: id,
-      text,
+      receiver: id,
+      content: text,
     };
 
-    const res = await fetch(`${API_ROOT}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    try {
+      const res = await fetch(`${API_ROOT}/messages/send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
-    const msg = await res.json();
-    if (res.ok) {
-      socket.emit("send_message", msg);
-      setMessages((prev) => [...prev, msg]);
-      setText("");
+      const msg = await ensureJsonResponse(res);
+      if (res.ok) {
+        socket.emit("send_message", msg);
+        setMessages((prev) => [...prev, msg]);
+        setText("");
+      } else {
+        setError(loadErrorMessage);
+      }
+    } catch (err) {
+      setError(loadErrorMessage);
     }
   };
 
   return (
     <div className="chat-wrapper">
+      {error && <div className="messages-empty">{error}</div>}
       <div className="chat-header">
         <h2>{partner?.name}</h2>
       </div>

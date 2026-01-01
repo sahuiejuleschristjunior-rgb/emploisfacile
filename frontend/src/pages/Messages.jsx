@@ -3,7 +3,6 @@ import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import VideoCallOverlay from "../components/VideoCallOverlay";
-import { API_URL } from "../api/config";
 import {
   acceptMessageRequest,
   blockMessageRequest,
@@ -14,9 +13,19 @@ import {
 } from "../api/messagesApi";
 import { useActiveConversation } from "../context/ActiveConversationContext";
 
+const API_URL = import.meta.env.VITE_API_URL;
 const API_HOST = API_URL?.replace(/\/?api$/, "");
 const SOCKET_URL = API_HOST || window.location.origin;
 const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+const loadErrorMessage = "Impossible de charger vos conversations";
+
+const ensureJsonResponse = async (res) => {
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error("Réponse serveur invalide");
+  }
+  return res.json();
+};
 
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
@@ -468,7 +477,7 @@ export default function Messages() {
       conversation?.lastMessage && conversation.lastMessage.isRead === false;
 
     return count > 0 || Boolean(lastMessageUnread);
-  }, []);
+  }, [token]);
 
   const getReadLastMessage = useCallback((conversation) => {
     if (!conversation?.lastMessage) return conversation?.lastMessage || null;
@@ -589,7 +598,7 @@ export default function Messages() {
   useEffect(() => {
     if (!token) {
       setFriends([]);
-      setErrorFriends("");
+      setErrorFriends(loadErrorMessage);
       setLoadingConversations(false);
       return;
     }
@@ -629,7 +638,7 @@ export default function Messages() {
       } catch (err) {
         console.error("Erreur chargement amis :", err);
         if (!cancelled) {
-          setErrorFriends("Erreur chargement conversations");
+          setErrorFriends(loadErrorMessage);
           setFriends([]);
         }
       } finally {
@@ -647,6 +656,11 @@ export default function Messages() {
   }, [token, isDirectConversation]);
 
   const loadRequests = useCallback(async () => {
+    if (!token) {
+      setRequests([]);
+      setRequestsError(loadErrorMessage);
+      return;
+    }
     try {
       setLoadingRequests(true);
       setRequestsError("");
@@ -655,7 +669,7 @@ export default function Messages() {
     } catch (err) {
       console.error("Erreur chargement demandes", err);
       setRequests([]);
-      setRequestsError("Impossible de charger les demandes");
+      setRequestsError(loadErrorMessage);
     } finally {
       setLoadingRequests(false);
     }
@@ -814,7 +828,10 @@ export default function Messages() {
       if (message?._id && senderId !== me?._id) {
         fetch(`${API_URL}/messages/${message._id}/read`, {
           method: "PATCH",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }).catch(() => {});
       }
     };
@@ -949,10 +966,19 @@ export default function Messages() {
      LOAD CONVERSATION
   ===================================================== */
   const fetchConversationById = async (id) => {
+    if (!token) {
+      throw new Error(loadErrorMessage);
+    }
     const res = await fetch(`${API_URL}/messages/conversation/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
-    const data = await res.json().catch(() => ({}));
+    const data = await ensureJsonResponse(res);
+    if (!res.ok) {
+      throw new Error(loadErrorMessage);
+    }
 
     const conversationData =
       data?.conversation ||
@@ -980,14 +1006,20 @@ export default function Messages() {
 
       fetch(`${API_URL}/messages/read-all/${id}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }).catch(() => {});
     },
     [token]
   );
 
   const loadConversation = async (user) => {
-    if (!user?._id) return;
+    if (!user?._id || !token) {
+      setErrorFriends(loadErrorMessage);
+      return;
+    }
 
     const clickedId = getFriendId(user);
     const sanitizedUser = {
@@ -1052,9 +1084,15 @@ export default function Messages() {
     try {
       setLoadingConversation(true);
       const res = await fetch(`${API_URL}/messages/conversation/${targetUserId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-      const data = await res.json();
+      const data = await ensureJsonResponse(res);
+      if (!res.ok) {
+        throw new Error(loadErrorMessage);
+      }
       const list = Array.isArray(data) ? data : [];
       list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       setMessages(list);
@@ -1305,7 +1343,7 @@ export default function Messages() {
       }
     } catch (err) {
       console.error("Erreur acceptation demande", err);
-      setRequestsError(err?.message || "Impossible d'accepter la demande.");
+      setRequestsError(loadErrorMessage);
     } finally {
       setLockedConversationId(null);
     }
@@ -1318,7 +1356,7 @@ export default function Messages() {
       handleRequestRemoval(request._id);
     } catch (err) {
       console.error("Erreur refus demande", err);
-      setRequestsError(err?.message || "Impossible de refuser la demande.");
+      setRequestsError(loadErrorMessage);
     }
   };
 
@@ -1329,9 +1367,7 @@ export default function Messages() {
       handleRequestRemoval(request._id);
     } catch (err) {
       console.error("Erreur blocage demande", err);
-      setRequestsError(
-        err?.message || "Impossible de bloquer l'utilisateur."
-      );
+      setRequestsError(loadErrorMessage);
     }
   };
 
@@ -1393,6 +1429,7 @@ export default function Messages() {
       }
     } catch (err) {
       console.error("Erreur envoi message", err);
+      setInfoBanner(loadErrorMessage);
       setMessages((prev) =>
         prev.filter(
           (m) =>
@@ -1407,6 +1444,10 @@ export default function Messages() {
   const saveEditedMessage = async () => {
     if (!editingMessage || !input.trim()) return;
     const content = input.trim();
+    if (!token) {
+      setInfoBanner(loadErrorMessage);
+      return;
+    }
 
     try {
       const res = await fetch(`${API_URL}/messages/${editingMessage._id}`, {
@@ -1417,14 +1458,14 @@ export default function Messages() {
         },
         body: JSON.stringify({ content }),
       });
-      const data = await res.json();
+      const data = await ensureJsonResponse(res);
       if (res.ok && data?.data) {
         upsertMessage(data.data);
         setEditingMessage(null);
         setReplyTo(null);
         setInput("");
-      } else if (data?.message) {
-        alert(data.message);
+      } else {
+        setInfoBanner(loadErrorMessage);
       }
     } catch (err) {
       console.error("Erreur modification message", err);
@@ -1463,7 +1504,10 @@ export default function Messages() {
   };
 
   const deleteMessage = async (msg, scope = "me") => {
-    if (!msg?._id) return;
+    if (!msg?._id || !token) {
+      setInfoBanner(loadErrorMessage);
+      return;
+    }
     setMessages((prev) =>
       prev.filter(
         (m) =>
@@ -1478,7 +1522,10 @@ export default function Messages() {
       const deleteScope = scope || "me";
       await fetch(`${API_URL}/messages/${msg._id}?scope=${deleteScope}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
     } catch (err) {
       console.error("Erreur suppression message", err);
@@ -1486,7 +1533,10 @@ export default function Messages() {
   };
 
   const togglePin = async (msg) => {
-    if (!msg?._id) return;
+    if (!msg?._id || !token) {
+      setInfoBanner(loadErrorMessage);
+      return;
+    }
     const nextState = !isPinnedByMe(msg);
     setMessageActions(null);
     try {
@@ -1498,7 +1548,7 @@ export default function Messages() {
         },
         body: JSON.stringify({ pinned: nextState }),
       });
-      const data = await res.json();
+      const data = await ensureJsonResponse(res);
       if (res.ok && data?.data) {
         upsertMessage(data.data);
       }
@@ -1754,7 +1804,10 @@ export default function Messages() {
 
   const uploadAudio = async (blob, replyTarget = null) => {
     const receiverId = getConversationTargetId();
-    if (!activeChat || !receiverId || !blob || blob.size === 0) return;
+    if (!activeChat || !receiverId || !blob || blob.size === 0 || !token) {
+      setInfoBanner(loadErrorMessage);
+      return;
+    }
     const fileName = `voice-${Date.now()}.webm`;
 
     const { replyId, preview: replyPreview } = buildReplyData(replyTarget);
@@ -1787,10 +1840,13 @@ export default function Messages() {
     try {
       const res = await fetch(`${API_URL}/messages/audio`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         body: formData,
       });
-      const data = await res.json();
+      const data = await ensureJsonResponse(res);
       if (res.ok && data?.data) {
         upsertMessage(data.data);
       }
@@ -1872,6 +1928,11 @@ export default function Messages() {
      REACTIONS
   ===================================================== */
   const sendReaction = async (messageId, emoji) => {
+    if (!token) {
+      setInfoBanner(loadErrorMessage);
+      setReactionPicker({ messageId: null, anchor: null });
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/messages/${messageId}/react`, {
         method: "POST",
@@ -1881,7 +1942,7 @@ export default function Messages() {
         },
         body: JSON.stringify({ emoji }),
       });
-      const data = await res.json();
+      const data = await ensureJsonResponse(res);
       if (res.ok && data?.data) {
         upsertMessage(data.data);
       }
@@ -1985,7 +2046,7 @@ export default function Messages() {
   const sendTypingFlag = (flag) => {
     setIsUserTyping?.(Boolean(flag && activeChat));
     const targetId = getConversationTargetId();
-    if (!activeChat || !targetId) return;
+    if (!activeChat || !targetId || !token) return;
     socketRef.current?.emit("typing", { to: targetId, isTyping: flag });
     fetch(`${API_URL}/messages/typing`, {
       method: "POST",
