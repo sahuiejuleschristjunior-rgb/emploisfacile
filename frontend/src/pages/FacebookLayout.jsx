@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, Outlet, useLocation, Navigate } from "react-router-dom";
 import NotificationItem from "../components/NotificationItem";
 import "../styles/facebook-layout.css";
@@ -114,6 +114,15 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   });
 
   const [relationStatuses, setRelationStatuses] = useState({});
+  const unreadPublicMessagesCount = useMemo(
+    () =>
+      notifList.reduce(
+        (sum, notif) => sum + (notif.type === "message" && !notif.read ? 1 : 0),
+        0
+      ),
+    [notifList]
+  );
+  const totalUnreadMessages = unreadMessagesCount + unreadPublicMessagesCount;
 
   const searchBoxRef = useRef(null);
   const profileSwitcherRef = useRef(null);
@@ -1256,6 +1265,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <button className="fb-header-icon-btn" onClick={handleMessagesIconClick}>
               <div style={{ position: "relative" }}>
                 <FBIcon name="messages" size={22} />
+                {totalUnreadMessages > 0 && (
+                  <span className="notif-badge" aria-label="Nouveaux messages">
+                    {totalUnreadMessages > 9 ? "9+" : totalUnreadMessages}
+                  </span>
+                )}
               </div>
             </button>
 
@@ -1445,7 +1459,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           className="fb-bottom-nav-item"
           onClick={() => safeNavigate("/messages")}
         >
-          <FBIcon name="messages" size={22} />
+          <div style={{ position: "relative" }}>
+            <FBIcon name="messages" size={22} />
+            {totalUnreadMessages > 0 && (
+              <span className="notif-badge" aria-label="Nouveaux messages">
+                {totalUnreadMessages > 9 ? "9+" : totalUnreadMessages}
+              </span>
+            )}
+          </div>
           <div>Messages</div>
         </div>
 
