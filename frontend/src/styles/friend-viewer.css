@@ -44,8 +44,8 @@
   border-radius: 16px;
   padding: 14px;
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -54,12 +54,19 @@
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
 
-.friend-viewer-card img {
-  width: 100%;
-  height: 160px;
-  border-radius: 12px;
+.friend-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   object-fit: cover;
-  background: #f3f4f6;
+  background: #2a2a2a;
+  flex-shrink: 0;
+}
+
+.friend-viewer-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .friend-viewer-name {
@@ -77,8 +84,11 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
 
-  .friend-viewer-card img {
-    height: 140px;
+@media (max-width: 768px) {
+  .friend-avatar {
+    width: 38px;
+    height: 38px;
   }
 }
