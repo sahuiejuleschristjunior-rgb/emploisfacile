@@ -37,6 +37,7 @@ import CandidateDashboard from "./pages/candidate/CandidateDashboard";
 import RecruiterJobApplications from "./pages/recruiter/RecruiterJobApplications";
 import RecruiterAllApplications from "./pages/recruiter/RecruiterAllApplications";
 import RecruiterOffers from "./pages/recruiter/RecruiterOffers";
+import RecruiterCvTheque from "./pages/recruiter/RecruiterCvTheque";
 import JobConnectApplications from "./pages/candidate/JobConnectApplications";
 import JobConnectInterviews from "./pages/candidate/JobConnectInterviews";
 import JobConnectMessages from "./pages/candidate/JobConnectMessages";
@@ -216,6 +217,7 @@ export default function App() {
                   <Route path="dashboard" element={<RecruiterDashboard />} />
                   <Route path="offres" element={<RecruiterOffers />} />
                   <Route path="candidatures" element={<RecruiterAllApplications />} />
+                  <Route path="cv-theque" element={<RecruiterCvTheque />} />
                   <Route path="job/:jobId" element={<RecruiterJobApplications />} />
                   <Route path="create-job" element={<CreateJobPage />} />
                 </Route>
