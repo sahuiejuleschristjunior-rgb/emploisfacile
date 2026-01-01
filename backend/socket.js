@@ -114,6 +114,14 @@ function initSocket(server) {
     });
 
     /* ============================================================
+       JOB CHAT ROOMS
+    ============================================================ */
+    socket.on("job:join", ({ conversationId }) => {
+      if (!conversationId) return;
+      socket.join(`job:${conversationId}`);
+    });
+
+    /* ============================================================
        TYPING
     ============================================================ */
     socket.on("typing", ({ to, isTyping = true }) => {
