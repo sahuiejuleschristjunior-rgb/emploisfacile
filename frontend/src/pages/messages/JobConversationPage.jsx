@@ -66,14 +66,11 @@ export default function JobConversationPage() {
   const [error, setError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [lastIncomingId, setLastIncomingId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messageIdsRef = useRef(new Set());
-  const highlightTimeoutRef = useRef(null);
 
   const basePath = role === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
-  const isDev = import.meta.env.MODE !== "production";
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -236,62 +233,33 @@ export default function JobConversationPage() {
   }, [conversationId, jobId, otherParticipant, token]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
     if (!socket || !conversationId) return;
 
-    const handleConnect = () => {
-      socket.emit("job:join", { conversationId });
-      if (isDev) {
-        console.log("🧩 JobChat rejoin on connect:", conversationId);
-      }
-    };
-
-    socket.on("connect", handleConnect);
-
-    return () => {
-      socket.off("connect", handleConnect);
-    };
-  }, [socket, conversationId, isDev]);
-
-  useEffect(() => {
-    if (!socket || !conversationId) return;
-
-    socket.emit("job:join", { conversationId });
-    if (isDev) {
-      console.log("🧩 JobChat join emit:", conversationId);
-    }
-
-    const handleJoined = ({ conversationId: joinedId } = {}) => {
-      if (isDev) {
-        console.log("🧩 JobChat joined:", joinedId);
-      }
-    };
+    socket.emit("join_room", { room: conversationId });
+    socket.emit("room:join", conversationId);
 
     const handleMessage = (payload) => {
-      if (!payload || payload.type !== "job") return;
-      if (String(payload.conversationId) !== String(conversationId)) return;
+      const message = payload?.message || payload;
+      const messageConversationId =
+        message?.conversationId ||
+        (typeof message?.conversation === "object"
+          ? message?.conversation?._id
+          : message?.conversation);
 
-      const senderId = getId(payload.sender);
-      if (senderId && senderId === user?._id) return;
+      if (String(messageConversationId) !== String(conversationId)) return;
+      if (jobId) {
+        const messageJobId = message?.jobId || message?.job || message?.job?._id;
+        if (String(messageJobId) !== String(jobId)) return;
+      }
 
-      if (payload?._id && messageIdsRef.current.has(payload._id)) return;
-      if (payload?._id) messageIdsRef.current.add(payload._id);
-
-      const message = {
-        ...payload,
-        content: payload.text || payload.content || "",
-      };
+      if (message?._id && messageIdsRef.current.has(message._id)) return;
+      if (message?._id) messageIdsRef.current.add(message._id);
 
       setMessages((prev) => [...prev, message]);
-      if (message._id) {
-        setLastIncomingId(message._id);
-      }
-      if (isDev) {
-        console.log("🧩 JobChat message received:", message);
-      }
     };
 
     const handleTyping = ({ from, isTyping: typingFlag }) => {
@@ -300,36 +268,16 @@ export default function JobConversationPage() {
       }
     };
 
-    socket.on("job:joined", handleJoined);
-    socket.on("job:message:new", handleMessage);
+    socket.on("message:new", handleMessage);
+    socket.on("new_message", handleMessage);
     socket.on("typing", handleTyping);
 
     return () => {
-      socket.off("job:joined", handleJoined);
-      socket.off("job:message:new", handleMessage);
+      socket.off("message:new", handleMessage);
+      socket.off("new_message", handleMessage);
       socket.off("typing", handleTyping);
-      socket.emit("job:leave", { conversationId });
-      if (isDev) {
-        console.log("🧩 JobChat leave emit:", conversationId);
-      }
     };
-  }, [socket, conversationId, otherParticipant, isDev, user?._id]);
-
-  useEffect(() => {
-    if (!lastIncomingId) return;
-    if (highlightTimeoutRef.current) {
-      clearTimeout(highlightTimeoutRef.current);
-    }
-    highlightTimeoutRef.current = setTimeout(() => {
-      setLastIncomingId(null);
-    }, 1200);
-
-    return () => {
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-      }
-    };
-  }, [lastIncomingId]);
+  }, [socket, conversationId, jobId, otherParticipant]);
 
   const otherName =
     otherParticipant?.name || otherParticipant?.companyName || "Conversation";
@@ -365,6 +313,12 @@ export default function JobConversationPage() {
           setMessages((prev) => [...prev.filter((msg) => msg !== payload), message]);
         }
       }
+
+      socket?.emit("message:send", payload);
+      socket?.emit("send_message", {
+        receiver: payload.receiver,
+        content: payload.content,
+      });
     } catch (err) {
       setError(err.message || "Impossible d'envoyer le message.");
     }
@@ -410,11 +364,7 @@ export default function JobConversationPage() {
         {loading && <div className="job-chat-loading">Chargement…</div>}
         {error && <div className="job-chat-error">{error}</div>}
 
-        <MessageList
-          messages={messages}
-          currentUserId={user?._id}
-          lastIncomingId={lastIncomingId}
-        />
+        <MessageList messages={messages} currentUserId={user?._id} />
 
         {isTyping && (
           <div className="job-chat-typing">{otherName} est en train d'écrire…</div>
