@@ -851,16 +851,13 @@ export default function Messages() {
       }
     };
 
-    socket.on("new_message", handleMessage);
-    socket.on("audio_message", handleMessage);
-
-    socket.on("reaction_update", (payload) => {
+    const handleReactionUpdate = (payload) => {
       if (payload?.message && isMessageInActiveChat(payload.message)) {
         upsertMessage(payload.message);
       }
-    });
+    };
 
-    socket.on("call_offer", ({ from, offer, callType }) => {
+    const handleCallOffer = ({ from, offer, callType }) => {
       if (!from || !offer) return;
       const caller =
         friends.find((f) => f._id === from) ||
@@ -874,35 +871,34 @@ export default function Messages() {
         offer,
         otherUser: caller,
       });
+    };
 
-    });
-
-    socket.on("message_updated", (payload) => {
+    const handleMessageUpdated = (payload) => {
       const message = payload?.message || payload;
       if (isMessageInActiveChat(message)) {
         upsertMessage(message);
       }
-    });
+    };
 
-    socket.on("message_pinned", (payload) => {
+    const handleMessagePinned = (payload) => {
       const message = payload?.message || payload;
       if (isMessageInActiveChat(message)) {
         upsertMessage(message);
       }
-    });
+    };
 
-    socket.on("message_deleted", ({ messageId }) => {
+    const handleMessageDeleted = ({ messageId }) => {
       if (!messageId) return;
       setMessages((prev) =>
         prev.filter((m) => m._id !== messageId && m.clientTempId !== messageId)
       );
-    });
+    };
 
-    socket.on("message_request_received", () => {
+    const handleMessageRequestReceived = () => {
       loadRequests();
-    });
+    };
 
-    socket.on("message_read", ({ messageId, withUserId }) => {
+    const handleMessageRead = ({ messageId, withUserId }) => {
       if (!messageId && !withUserId) return;
       setMessages((prev) =>
         prev.map((m) => {
@@ -917,9 +913,9 @@ export default function Messages() {
           return m;
         })
       );
-    });
+    };
 
-    socket.on("conversation_created", (payload) => {
+    const handleConversationCreated = (payload) => {
       const conversation = payload?.conversation || payload?.data || payload;
       if (!conversation?._id) return;
 
@@ -944,18 +940,18 @@ export default function Messages() {
       setLockedConversationId((prev) =>
         shouldMergeLocked && prev === lockedConversationRef.current ? null : prev
       );
-    });
+    };
 
-    socket.on("typing", ({ from, isTyping }) => {
+    const handleTyping = ({ from, isTyping }) => {
       const targetId = getConversationTargetId();
       if (!from || !activeChat || from !== targetId) return;
       setTypingState((prev) => ({
         ...prev,
         [from]: { isTyping: isTyping !== false, at: Date.now() },
       }));
-    });
+    };
 
-    socket.on("call_hangup", ({ from }) => {
+    const handleCallHangup = ({ from }) => {
       setCallOverlay((prev) => {
         if (!prev.visible || !prev.otherUser || prev.otherUser._id !== from) {
           return prev;
@@ -969,9 +965,34 @@ export default function Messages() {
           otherUser: null,
         };
       });
-    });
+    };
+
+    socket.on("new_message", handleMessage);
+    socket.on("audio_message", handleMessage);
+    socket.on("reaction_update", handleReactionUpdate);
+    socket.on("call_offer", handleCallOffer);
+    socket.on("message_updated", handleMessageUpdated);
+    socket.on("message_pinned", handleMessagePinned);
+    socket.on("message_deleted", handleMessageDeleted);
+    socket.on("message_request_received", handleMessageRequestReceived);
+    socket.on("message_read", handleMessageRead);
+    socket.on("conversation_created", handleConversationCreated);
+    socket.on("typing", handleTyping);
+    socket.on("call_hangup", handleCallHangup);
 
     return () => {
+      socket.off("new_message", handleMessage);
+      socket.off("audio_message", handleMessage);
+      socket.off("reaction_update", handleReactionUpdate);
+      socket.off("call_offer", handleCallOffer);
+      socket.off("message_updated", handleMessageUpdated);
+      socket.off("message_pinned", handleMessagePinned);
+      socket.off("message_deleted", handleMessageDeleted);
+      socket.off("message_request_received", handleMessageRequestReceived);
+      socket.off("message_read", handleMessageRead);
+      socket.off("conversation_created", handleConversationCreated);
+      socket.off("typing", handleTyping);
+      socket.off("call_hangup", handleCallHangup);
       socket.disconnect();
       socketRef.current = null;
     };

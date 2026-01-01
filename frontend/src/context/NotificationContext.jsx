@@ -121,6 +121,12 @@ export function NotificationProvider({ children }) {
       if (!notif) return;
 
       const fromId = notif.from?._id || notif.from;
+      const storedUser = localStorage.getItem("user");
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+
+      if (notif.type === "message" && currentUser?._id && fromId === currentUser._id) {
+        return;
+      }
 
       if (notif.type === "friend_accept" || notif.type === "friend_reject") {
         removeNotifications(
