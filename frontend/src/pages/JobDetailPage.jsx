@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { API_URL } from "../api/config";
 import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
 
@@ -21,6 +20,7 @@ const resolveCompanyName = (job) =>
 export default function JobDetailPage() {
   const { id } = useParams();
   const location = useLocation();
+  const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
   // L'utilisateur est stocké côté frontend dans localStorage ("user")
   const storedUser = localStorage.getItem("user");
