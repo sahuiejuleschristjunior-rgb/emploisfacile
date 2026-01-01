@@ -6,8 +6,8 @@ import "../styles/friend-viewer.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-const resolveAvatarUrl = (user) => {
-  if (!user) return null;
+const resolveAvatar = (user) => {
+  if (!user) return "/default-avatar.png";
 
   const avatar =
     user.avatar ||
@@ -16,21 +16,11 @@ const resolveAvatarUrl = (user) => {
     user.picture ||
     user.profile?.avatar;
 
-  if (typeof avatar !== "string" || avatar.trim() === "") return null;
-
-  const normalizedAvatar = avatar.trim();
-  if (normalizedAvatar.startsWith("http")) return normalizedAvatar;
+  if (!avatar) return "/default-avatar.png";
+  if (avatar.startsWith("http")) return avatar;
 
   const baseUrl = API_URL || "";
-  return `${baseUrl}${normalizedAvatar.startsWith("/") ? normalizedAvatar : `/${normalizedAvatar}`}`;
-};
-
-const getInitials = (name) => {
-  if (!name || typeof name !== "string") return "?";
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0][0]?.toUpperCase() || "?";
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return `${baseUrl}${avatar.startsWith("/") ? avatar : `/${avatar}`}`;
 };
 
 const normalizeFriend = (friend) => {
@@ -65,7 +55,6 @@ export default function FriendViewer() {
   const { token } = useAuth();
   const [profileUser, setProfileUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [failedAvatars, setFailedAvatars] = useState(() => new Set());
 
   useEffect(() => {
     if (!id) return;
@@ -140,55 +129,27 @@ export default function FriendViewer() {
         {!loading && friends.length > 0 && (
           <div className="friend-viewer-grid">
             {friends.map((friend) => (
-              <FriendCard
+              <button
                 key={friend.id}
-                friend={friend}
-                onOpenProfile={handleProfileOpen}
-                failedAvatars={failedAvatars}
-                setFailedAvatars={setFailedAvatars}
-              />
+                type="button"
+                className="friend-viewer-card"
+                onClick={() => handleProfileOpen(friend.id)}
+              >
+                <img
+                  src={resolveAvatar(friend.user)}
+                  alt={`Photo de ${friend.name}`}
+                  className="friend-avatar"
+                  loading="lazy"
+                />
+                <div className="friend-viewer-details">
+                  <div className="friend-viewer-name">{friend.name}</div>
+                  <span className="friend-viewer-action">Voir le profil</span>
+                </div>
+              </button>
             ))}
           </div>
         )}
       </div>
     </FacebookLayout>
-  );
-}
-
-function FriendCard({ friend, onOpenProfile, failedAvatars, setFailedAvatars }) {
-  const avatarUrl = resolveAvatarUrl(friend.user);
-  const showAvatar = avatarUrl && !failedAvatars.has(friend.id);
-  const initials = getInitials(friend.name);
-
-  const handleAvatarError = () => {
-    setFailedAvatars((previous) => {
-      const next = new Set(previous);
-      next.add(friend.id);
-      return next;
-    });
-  };
-
-  return (
-    <button
-      type="button"
-      className="friend-viewer-card"
-      onClick={() => onOpenProfile(friend.id)}
-    >
-      {showAvatar ? (
-        <img
-          src={avatarUrl}
-          alt={`Photo de ${friend.name}`}
-          className="friend-avatar"
-          loading="lazy"
-          onError={handleAvatarError}
-        />
-      ) : (
-        <div className="friend-avatar-fallback">{initials}</div>
-      )}
-      <div className="friend-viewer-details">
-        <div className="friend-viewer-name">{friend.name}</div>
-        <span className="friend-viewer-action">Voir le profil</span>
-      </div>
-    </button>
   );
 }
