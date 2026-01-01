@@ -14,6 +14,15 @@ import "../../styles/job-chat.css";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const loadErrorMessage = "Impossible de charger vos conversations";
+const JOB_CHAT_TYPE = "job";
+
+const statusLabels = {
+  pending: "En attente",
+  reviewing: "En cours",
+  interview: "Entretien",
+  accepted: "Acceptée",
+  rejected: "Refusée",
+};
 
 const ensureJsonResponse = async (res) => {
   const contentType = res.headers.get("content-type");
@@ -40,6 +49,30 @@ const resolveJobId = (conversation, fallbackJobId) =>
   fallbackJobId ||
   null;
 
+const resolveApplicationId = (conversation, fallbackApplicationId) =>
+  conversation?.applicationId ||
+  conversation?.application?._id ||
+  conversation?.lastMessage?.applicationId ||
+  fallbackApplicationId ||
+  null;
+
+const resolveStatusLabel = (status) => {
+  const key = (status || "").toString().toLowerCase();
+  return statusLabels[key] || status || "Statut inconnu";
+};
+
+const resolveCandidateId = (conversation, role, userId, otherParticipant) =>
+  conversation?.candidateId ||
+  conversation?.candidate?._id ||
+  (role === "candidate" ? userId : getId(otherParticipant)) ||
+  null;
+
+const resolveRecruiterId = (conversation, role, userId, otherParticipant) =>
+  conversation?.recruiterId ||
+  conversation?.recruiter?._id ||
+  (role === "recruiter" ? userId : getId(otherParticipant)) ||
+  null;
+
 export default function JobConversationPage() {
   const { conversationId } = useParams();
   const location = useLocation();
@@ -54,6 +87,15 @@ export default function JobConversationPage() {
   const [conversation, setConversation] = useState(null);
   const [job, setJob] = useState(location.state?.job || null);
   const [jobId, setJobId] = useState(location.state?.jobId || null);
+  const [applicationId, setApplicationId] = useState(
+    location.state?.applicationId || null
+  );
+  const [candidateId, setCandidateId] = useState(
+    location.state?.candidateId || null
+  );
+  const [recruiterId, setRecruiterId] = useState(
+    location.state?.recruiterId || null
+  );
   const [otherParticipant, setOtherParticipant] = useState(
     location.state?.otherParticipant || null
   );
@@ -89,11 +131,46 @@ export default function JobConversationPage() {
       try {
         const data = await fetchJobConversation(conversationId);
         if (!active) return;
-        setConversation(data);
+        if (data?.type && data.type !== JOB_CHAT_TYPE) {
+          setAccessDenied(true);
+          return;
+        }
+        const resolvedOther =
+          otherParticipant ||
+          resolveOtherParticipant(data?.participants, user?._id) ||
+          null;
         const derivedJobId = resolveJobId(data, jobId);
+        const derivedApplicationId = resolveApplicationId(data, applicationId);
+        const derivedCandidateId = resolveCandidateId(
+          data,
+          role,
+          user?._id,
+          resolvedOther
+        );
+        const derivedRecruiterId = resolveRecruiterId(
+          data,
+          role,
+          user?._id,
+          resolvedOther
+        );
+
+        if (
+          !derivedJobId ||
+          !derivedApplicationId ||
+          !derivedCandidateId ||
+          !derivedRecruiterId
+        ) {
+          setAccessDenied(true);
+          return;
+        }
+
+        setConversation({ ...data, type: JOB_CHAT_TYPE });
         setJobId(derivedJobId);
-        if (!otherParticipant) {
-          setOtherParticipant(resolveOtherParticipant(data?.participants, user?._id));
+        setApplicationId(derivedApplicationId);
+        setCandidateId(derivedCandidateId);
+        setRecruiterId(derivedRecruiterId);
+        if (!otherParticipant && resolvedOther) {
+          setOtherParticipant(resolvedOther);
         }
       } catch (err) {
         if (!active) return;
@@ -110,7 +187,7 @@ export default function JobConversationPage() {
     return () => {
       active = false;
     };
-  }, [conversationId, user?._id]);
+  }, [conversationId, user?._id, role, jobId, applicationId, otherParticipant]);
 
   useEffect(() => {
     if (!jobId || job) return;
@@ -267,6 +344,15 @@ export default function JobConversationPage() {
     otherParticipant?.name || otherParticipant?.companyName || "Conversation";
   const otherRole = otherParticipant?.role === "recruiter" ? "Recruteur" : "Candidat";
   const jobTitle = job?.title || location.state?.jobTitle || "Offre";
+  const companyName =
+    job?.companyName ||
+    job?.company?.name ||
+    job?.recruiter?.companyName ||
+    otherParticipant?.companyName ||
+    "Entreprise";
+  const statusLabel = resolveStatusLabel(
+    conversation?.applicationStatus || conversation?.application?.status
+  );
 
   const handleSend = async (content) => {
     if (!otherParticipant) return;
@@ -276,6 +362,10 @@ export default function JobConversationPage() {
       receiver: getId(otherParticipant),
       conversationId,
       jobId,
+      applicationId,
+      candidateId,
+      recruiterId,
+      type: JOB_CHAT_TYPE,
       content,
       createdAt: new Date().toISOString(),
     };
@@ -283,12 +373,18 @@ export default function JobConversationPage() {
     setMessages((prev) => [...prev, payload]);
 
     try {
-      const { ok, data } = await sendMessagePayload({
-        receiver: payload.receiver,
-        content: payload.content,
-        jobId: payload.jobId,
-        conversationId: payload.conversationId,
-      });
+      const { ok, data } = await sendMessagePayload(
+        {
+          receiver: payload.receiver,
+          content: payload.content,
+          jobId: payload.jobId,
+          conversationId: payload.conversationId,
+          applicationId: payload.applicationId,
+          candidateId: payload.candidateId,
+          recruiterId: payload.recruiterId,
+        },
+        JOB_CHAT_TYPE
+      );
 
       if (ok && data?.data) {
         const message = data.data;
@@ -339,7 +435,8 @@ export default function JobConversationPage() {
           <div className="job-chat-header-info">
             <h2>{jobTitle}</h2>
             <div className="job-chat-header-sub">
-              <span>{otherName}</span>
+              <span>{companyName}</span>
+              <span className="job-chat-badge">{statusLabel}</span>
               <span className="job-chat-badge">{otherRole}</span>
             </div>
           </div>
@@ -359,7 +456,14 @@ export default function JobConversationPage() {
         <MessageInput
           onSend={handleSend}
           onTyping={handleTyping}
-          disabled={!conversationId || !jobId || !otherParticipant}
+          disabled={
+            !conversationId ||
+            !jobId ||
+            !otherParticipant ||
+            !applicationId ||
+            !candidateId ||
+            !recruiterId
+          }
         />
       </div>
     </Layout>

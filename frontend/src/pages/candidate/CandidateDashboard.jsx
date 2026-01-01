@@ -24,18 +24,24 @@ export default function CandidateDashboard() {
     if (jobId) nav(`/emplois/${jobId}`);
   };
 
-  const contactRecruiter = async (recruiter, job) => {
-    if (!recruiter?._id || !job?._id || !data.user?._id) return;
+  const contactRecruiter = async (app, recruiter, job) => {
+    if (!recruiter?._id || !job?._id || !data.user?._id || !app?._id) return;
     try {
       const conversation = await createJobConversation({
         participants: [data.user._id, recruiter._id],
         jobId: job._id,
+        applicationId: app._id,
+        candidateId: data.user._id,
+        recruiterId: recruiter._id,
       });
       nav(`/candidate/messages/${conversation._id}`, {
         state: {
           jobId: job._id,
           jobTitle: job.title,
           otherParticipant: recruiter,
+          applicationId: app._id,
+          candidateId: data.user._id,
+          recruiterId: recruiter._id,
         },
       });
     } catch (err) {

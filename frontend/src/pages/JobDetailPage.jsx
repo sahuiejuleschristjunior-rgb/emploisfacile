@@ -234,9 +234,37 @@ export default function JobDetailPage() {
     }
 
     try {
+      let applicationId = null;
+      let candidateId = user?._id;
+      let resolvedRecruiterId = recruiterId;
+
+      const res = await fetch(`${API_URL}/applications/my-applications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const apps = Array.isArray(data) ? data : data.applications || [];
+        const match = apps.find((app) => String(app?.job?._id) === String(job?._id));
+        applicationId = match?._id || null;
+        candidateId = match?.candidate?._id || candidateId;
+        resolvedRecruiterId =
+          match?.job?.recruiter?._id || match?.job?.recruiter || resolvedRecruiterId;
+      }
+
+      if (!applicationId) {
+        setContactError("Aucune candidature liée à cette offre.");
+        return;
+      }
+
       const conversation = await createJobConversation({
         participants: [user._id, recruiterId],
         jobId: job._id,
+        applicationId,
+        candidateId,
+        recruiterId: resolvedRecruiterId,
       });
 
       nav(`/candidate/messages/${conversation._id}`, {
@@ -244,6 +272,9 @@ export default function JobDetailPage() {
           jobId: job._id,
           jobTitle: job.title,
           otherParticipant: job.recruiter,
+          applicationId,
+          candidateId,
+          recruiterId: resolvedRecruiterId,
         },
       });
     } catch (err) {

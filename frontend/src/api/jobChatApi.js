@@ -36,13 +36,18 @@ function unwrapPayload(data) {
   return data.data || data.conversation || data.conversations || data;
 }
 
+function withJobType(conversation) {
+  if (!conversation || typeof conversation !== "object") return conversation;
+  return { ...conversation, type: "job" };
+}
+
 export async function fetchJobChatConversations() {
   const token = getToken();
   if (!token) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox`, {
+  const res = await fetch(`${API_URL}/messages/inbox?type=job`, {
     headers: getAuthHeaders(token),
   });
 
@@ -52,7 +57,7 @@ export async function fetchJobChatConversations() {
   }
 
   const list = unwrapPayload(data);
-  return Array.isArray(list) ? list : [];
+  return Array.isArray(list) ? list.map(withJobType) : [];
 }
 
 export async function fetchJobConversation(conversationId) {
@@ -61,7 +66,7 @@ export async function fetchJobConversation(conversationId) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox`, {
+  const res = await fetch(`${API_URL}/messages/inbox?type=job`, {
     headers: getAuthHeaders(token),
   });
 
@@ -82,16 +87,22 @@ export async function fetchJobConversation(conversationId) {
         : false
     );
 
-  return match || null;
+  return match ? withJobType(match) : null;
 }
 
-export async function createJobConversation({ participants, jobId }) {
+export async function createJobConversation({
+  participants,
+  jobId,
+  applicationId,
+  candidateId,
+  recruiterId,
+}) {
   const token = getToken();
   if (!token) {
     throw new Error("Vous devez être connecté pour accéder à vos conversations.");
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox`, {
+  const res = await fetch(`${API_URL}/messages/inbox?type=job`, {
     headers: getAuthHeaders(token),
   });
 
@@ -110,7 +121,7 @@ export async function createJobConversation({ participants, jobId }) {
       : false
   );
 
-  if (existing) return existing;
+  if (existing) return withJobType(existing);
 
   const currentUserId = getStoredUserId();
   const otherParticipant =
@@ -126,6 +137,10 @@ export async function createJobConversation({ participants, jobId }) {
     _id: otherParticipant,
     participants: participants || [],
     jobId,
+    applicationId,
+    candidateId,
+    recruiterId,
+    type: "job",
     __placeholder: true,
   };
 }
@@ -136,9 +151,12 @@ export async function fetchConversationMessages(conversationId) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/conversation/${conversationId}`, {
-    headers: getAuthHeaders(token),
-  });
+  const res = await fetch(
+    `${API_URL}/messages/conversation/${conversationId}?type=job`,
+    {
+      headers: getAuthHeaders(token),
+    }
+  );
 
   const data = await parseJsonResponse(res);
   if (!res.ok) {
