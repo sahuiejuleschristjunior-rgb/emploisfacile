@@ -203,7 +203,7 @@ export default function CandidateInbox() {
                 type="button"
                 className="job-chat-item"
                 onClick={() =>
-                  nav(`/candidate/messages/${conv._id}`, {
+                  nav(`/candidate/job-messages/${conv._id}`, {
                     state: {
                       jobId,
                       jobTitle,
