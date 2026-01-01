@@ -305,7 +305,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       // 🔥 4 — On ajoute proprement
       setNotifications((prev) => [notif, ...prev]);
       setUnreadCount((prev) => prev + 1);
-      showToast("Nouvelle notification");
+      if (notif.type !== "message") {
+        showToast("Nouvelle notification");
+      }
 
       if (notif.type === "friend_request") {
         setPendingRequestsCount((prev) => prev + 1);
@@ -368,6 +370,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           : senderId;
       };
 
+      const senderId =
+        typeof msg?.sender === "object" ? msg?.sender?._id : msg?.sender;
+      const fromId = typeof msg?.from === "object" ? msg?.from?._id : msg?.from;
+      const originId = senderId || fromId;
+      if (originId && originId === currentUser?._id) return;
+
       if (id) {
         if (messageIdsRef.current.has(id)) return;
         messageIdsRef.current.add(id);
@@ -380,9 +388,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       if (conversationId) {
         setLastUnreadConversationId(conversationId);
       }
-    showToast("Nouveau message reçu");
-  },
-  [location.pathname]
+      showToast("Nouveau message reçu");
+    },
+    [currentUser?._id, location.pathname]
   );
 
   useEffect(() => {
