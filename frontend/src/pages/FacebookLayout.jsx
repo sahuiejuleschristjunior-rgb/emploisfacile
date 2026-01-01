@@ -153,9 +153,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   }, [currentUser?._id, notifList, resolveMessageType]);
 
   const publicMessagesCount = unreadNotificationMessageCounts.public;
-  const jobMessagesCount =
-    unreadNotificationMessageCounts.job + realtimeJobMessagesCount;
-  const totalUnreadMessages = publicMessagesCount + jobMessagesCount;
+  const totalUnreadMessages = publicMessagesCount;
 
   const searchBoxRef = useRef(null);
   const profileSwitcherRef = useRef(null);
