@@ -6,7 +6,12 @@ import { useNotifications } from "../context/NotificationContext";
 export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { notifications = [], unreadCount = 0, markAllAsRead } =
+  const {
+    notifications = [],
+    unreadCount = 0,
+    markAllAsRead,
+    removeNotifications,
+  } =
     useNotifications() || {};
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -49,6 +54,7 @@ export default function NotificationsBell() {
     }
 
     if (n.type === "message") {
+      removeNotifications?.((item) => item._id === n._id);
       if (isProfessionalMessage) {
         const basePath =
           currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
