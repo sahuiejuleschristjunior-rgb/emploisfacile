@@ -167,11 +167,18 @@
   color: #e2e8f0;
   border-radius: 12px;
   padding: 12px 14px;
+  font-size: 1.05rem;
+  line-height: 1.4;
 }
 
 .job-chat-input input:focus {
   outline: none;
   border-color: #3b82f6;
+}
+
+.job-chat-input .primary-btn {
+  padding: 8px 14px;
+  font-size: 0.85rem;
 }
 
 .job-chat-typing {
