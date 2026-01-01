@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Post from "../components/Post";
 import RelationButton from "../components/social/RelationButton";
@@ -37,6 +37,9 @@ export default function PublicProfile() {
   const [messageText, setMessageText] = useState("");
   const [messageError, setMessageError] = useState("");
   const [messageFeedback, setMessageFeedback] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuFeedback, setMenuFeedback] = useState("");
+  const menuRef = useRef(null);
 
   const viewerId = viewer?._id || authUser?._id;
   const relation = useRelation(id);
@@ -123,6 +126,53 @@ export default function PublicProfile() {
     if (!viewerId) return;
     setPosts((prev) => filterHiddenPosts(prev, viewerId));
   }, [viewerId]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
+
+  const handleCopyProfileLink = async () => {
+    if (!user?._id) return;
+    const profileLink = `${window.location.origin}/profil/${user._id}`;
+    try {
+      await navigator.clipboard.writeText(profileLink);
+      setMenuFeedback("Lien du profil copié.");
+    } catch (err) {
+      setMenuFeedback("Impossible de copier le lien.");
+    } finally {
+      setTimeout(() => setMenuFeedback(""), 2000);
+      setMenuOpen(false);
+    }
+  };
+
+  const handleShareProfile = async () => {
+    if (!user?._id) return;
+    const profileLink = `${window.location.origin}/profil/${user._id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: user.name || "Profil",
+          url: profileLink,
+        });
+        setMenuFeedback("Profil partagé.");
+      } else {
+        await navigator.clipboard.writeText(profileLink);
+        setMenuFeedback("Lien du profil copié.");
+      }
+    } catch (err) {
+      setMenuFeedback("Impossible de partager le profil.");
+    } finally {
+      setTimeout(() => setMenuFeedback(""), 2000);
+      setMenuOpen(false);
+    }
+  };
 
   const photoItems = useMemo(
     () =>
@@ -311,12 +361,39 @@ export default function PublicProfile() {
               <button disabled>Photos</button>
             </div>
             <div className="profil-tabs-actions">
-              <button className="profil-btn ghost" disabled>
-                ···
-              </button>
+              <div className="profil-more" ref={menuRef}>
+                <button
+                  className="profil-btn ghost"
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                >
+                  ···
+                </button>
+                {menuOpen && (
+                  <div className="profil-more-menu" role="menu">
+                    <button type="button" role="menuitem" onClick={handleShareProfile}>
+                      Partager le profil
+                    </button>
+                    <button type="button" role="menuitem" onClick={handleCopyProfileLink}>
+                      Copier le lien du profil
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => navigate(`/profil/${user._id}/amis`)}
+                    >
+                      Voir la liste des amis
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {menuFeedback && <div className="profil-toast profil-toast--menu">{menuFeedback}</div>}
 
         <div className="profil-content">
           <div className="profil-grid">
