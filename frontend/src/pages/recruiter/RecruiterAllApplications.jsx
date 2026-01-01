@@ -270,12 +270,18 @@ export default function RecruiterAllApplications() {
                 const conversation = await createJobConversation({
                   participants: [user._id, candidate._id],
                   jobId: job._id,
+                  applicationId: app._id,
+                  candidateId: candidate._id,
+                  recruiterId: user._id,
                 });
                 nav(`/recruiter/messages/${conversation._id}`, {
                   state: {
                     jobId: job._id,
                     jobTitle: job.title,
                     otherParticipant: candidate,
+                    applicationId: app._id,
+                    candidateId: candidate._id,
+                    recruiterId: user._id,
                   },
                 });
               } catch (err) {

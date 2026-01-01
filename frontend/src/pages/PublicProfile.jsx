@@ -169,10 +169,13 @@ export default function PublicProfile() {
     setMessageFeedback("");
 
     try {
-      const { data } = await sendMessagePayload({
-        receiver: user._id,
-        content: trimmed,
-      });
+      const { data } = await sendMessagePayload(
+        {
+          receiver: user._id,
+          content: trimmed,
+        },
+        "public"
+      );
 
       if (data?.type === "request") {
         setMessageFeedback("Message envoyé comme demande.");

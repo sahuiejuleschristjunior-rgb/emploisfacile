@@ -7,6 +7,15 @@ import "../../styles/job-chat.css";
 const API_URL = import.meta.env.VITE_API_URL;
 const getId = (value) => (typeof value === "object" ? value?._id : value);
 const loadErrorMessage = "Impossible de charger vos conversations";
+const JOB_CHAT_TYPE = "job";
+
+const statusLabels = {
+  pending: "En attente",
+  reviewing: "En cours",
+  interview: "Entretien",
+  accepted: "Acceptée",
+  rejected: "Refusée",
+};
 
 const ensureJsonResponse = async (res) => {
   const contentType = res.headers.get("content-type");
@@ -23,6 +32,11 @@ const resolveOtherParticipant = (participants, currentUserId) => {
   );
 };
 
+const resolveStatusLabel = (status) => {
+  const key = (status || "").toString().toLowerCase();
+  return statusLabels[key] || status || "Statut inconnu";
+};
+
 export default function CandidateInbox() {
   const nav = useNavigate();
   const token = localStorage.getItem("token");
@@ -32,6 +46,7 @@ export default function CandidateInbox() {
   const [conversations, setConversations] = useState([]);
   const [jobsById, setJobsById] = useState({});
   const [allowedJobIds, setAllowedJobIds] = useState(new Set());
+  const [applicationsByJobId, setApplicationsByJobId] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -77,6 +92,13 @@ export default function CandidateInbox() {
         const apps = Array.isArray(data) ? data : data.applications || [];
         if (!active) return;
         setAllowedJobIds(new Set(apps.map((app) => String(app?.job?._id)).filter(Boolean)));
+        setApplicationsByJobId(() =>
+          apps.reduce((acc, app) => {
+            const jobId = app?.job?._id;
+            if (jobId) acc[String(jobId)] = app;
+            return acc;
+          }, {})
+        );
       } catch (err) {
         console.error("Erreur candidatures", err);
       }
@@ -140,14 +162,38 @@ export default function CandidateInbox() {
     };
   }, [conversations, jobsById, token]);
 
+  const getConversationMeta = (conv) => {
+    const jobId =
+      conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job || null;
+    const application = jobId ? applicationsByJobId[String(jobId)] : null;
+    const other = resolveOtherParticipant(conv?.participants, user?._id);
+    return {
+      jobId,
+      application,
+      applicationId:
+        conv?.applicationId || conv?.application?._id || application?._id || null,
+      candidateId:
+        conv?.candidateId || conv?.candidate?._id || application?.candidate?._id || user?._id || null,
+      recruiterId:
+        conv?.recruiterId ||
+        conv?.recruiter?._id ||
+        application?.job?.recruiter?._id ||
+        getId(other) ||
+        null,
+      other,
+    };
+  };
+
   const filteredConversations = useMemo(() => {
     return conversations.filter((conv) => {
-      const jobId = conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
-      if (!jobId) return false;
+      if (conv?.type !== JOB_CHAT_TYPE) return false;
+      const meta = getConversationMeta(conv);
+      if (!meta.jobId) return false;
       if (!allowedJobIds.size) return false;
-      return allowedJobIds.has(String(jobId));
+      if (!allowedJobIds.has(String(meta.jobId))) return false;
+      return Boolean(meta.applicationId && meta.candidateId && meta.recruiterId);
     });
-  }, [conversations, allowedJobIds]);
+  }, [conversations, allowedJobIds, applicationsByJobId, user?._id]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -183,13 +229,21 @@ export default function CandidateInbox() {
 
         <div className="job-chat-list">
           {filteredConversations.map((conv) => {
-            const jobId =
-              conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
-            const job = jobsById[String(jobId)] || conv?.job;
-            const other = resolveOtherParticipant(conv?.participants, user?._id);
-            const otherName = other?.companyName || other?.name || "Recruteur";
+            const meta = getConversationMeta(conv);
+            const jobId = meta.jobId;
+            const job = jobsById[String(jobId)] || conv?.job || meta.application?.job;
+            const other = meta.other;
+            const companyName =
+              job?.companyName ||
+              job?.company?.name ||
+              job?.recruiter?.companyName ||
+              other?.companyName ||
+              "Entreprise";
             const lastMessage = conv?.lastMessage?.content || "Aucun message";
             const jobTitle = job?.title || conv?.jobTitle || "Offre";
+            const statusLabel = resolveStatusLabel(
+              meta.application?.status || conv?.applicationStatus || conv?.status
+            );
 
             return (
               <button
@@ -202,6 +256,9 @@ export default function CandidateInbox() {
                       jobId,
                       jobTitle,
                       otherParticipant: other,
+                      applicationId: meta.applicationId,
+                      candidateId: meta.candidateId,
+                      recruiterId: meta.recruiterId,
                     },
                   })
                 }
@@ -209,8 +266,8 @@ export default function CandidateInbox() {
                 <div>
                   <div className="job-chat-item-title">{jobTitle}</div>
                   <div className="job-chat-item-sub">
-                    {otherName}
-                    <span className="job-chat-role">Recruteur</span>
+                    <span>{companyName}</span>
+                    <span className="job-chat-role">{statusLabel}</span>
                   </div>
                 </div>
                 <div className="job-chat-item-preview">{lastMessage}</div>

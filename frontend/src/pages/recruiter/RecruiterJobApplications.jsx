@@ -116,18 +116,24 @@ export default function RecruiterJobApplications() {
   /* ============================================================
      BOUTON → CONTACTER LE CANDIDAT
   ============================================================ */
-  const contactCandidate = async (candidate) => {
-    if (!candidate?._id || !jobId || !user?._id) return;
+  const contactCandidate = async (app, candidate) => {
+    if (!candidate?._id || !jobId || !user?._id || !app?._id) return;
     try {
       const conversation = await createJobConversation({
         participants: [user._id, candidate._id],
         jobId,
+        applicationId: app._id,
+        candidateId: candidate._id,
+        recruiterId: user._id,
       });
       nav(`/recruiter/messages/${conversation._id}`, {
         state: {
           jobId,
           jobTitle: `Offre ${jobId}`,
           otherParticipant: candidate,
+          applicationId: app._id,
+          candidateId: candidate._id,
+          recruiterId: user._id,
         },
       });
     } catch (err) {
@@ -209,7 +215,7 @@ export default function RecruiterJobApplications() {
           {/* MESSAGERIE */}
           <button
             className="app-action-btn app-action-btn--primary"
-            onClick={() => contactCandidate(c)}
+            onClick={() => contactCandidate(app, c)}
           >
             💬 Contacter
           </button>
