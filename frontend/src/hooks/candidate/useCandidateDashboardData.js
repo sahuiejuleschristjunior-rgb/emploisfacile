@@ -32,8 +32,27 @@ export default function useCandidateDashboardData() {
     [token],
   );
 
+  const fetchUserProfile = async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+    } catch (err) {
+      console.error("Erreur chargement profil:", err);
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
+    fetchUserProfile();
     fetchApplications();
     fetchSavedJobs();
     fetchRecommended();
