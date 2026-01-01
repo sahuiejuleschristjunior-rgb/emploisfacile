@@ -7,6 +7,7 @@ import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
 import { useAuth } from "../context/AuthContext";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
+import useRelation from "../hooks/useRelation";
 import { sendMessagePayload } from "../api/messagesApi";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
@@ -38,6 +39,7 @@ export default function PublicProfile() {
   const [messageFeedback, setMessageFeedback] = useState("");
 
   const viewerId = viewer?._id || authUser?._id;
+  const relation = useRelation(id);
 
   /* ============================================================
       LOAD CONNECTED USER
@@ -147,6 +149,8 @@ export default function PublicProfile() {
     setViewerItems(photoItems);
   }, [photoItems]);
 
+  const isFriend = relation?.status?.isFriend;
+
   const sendProfileMessage = async () => {
     if (!user?._id) return;
     const trimmed = messageText.trim();
@@ -241,11 +245,11 @@ export default function PublicProfile() {
                   onClick={() => {
                     setMessageFeedback("");
                     setMessageError("");
-                    navigate("/messages", {
-                      state: {
-                        openConversationWith: user._id,
-                      },
-                    });
+                    if (isFriend) {
+                      navigate(`/messages?userId=${user._id}`);
+                    } else {
+                      setMessageModalOpen(true);
+                    }
                   }}
                   >
                     Message

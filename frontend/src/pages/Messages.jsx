@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import VideoCallOverlay from "../components/VideoCallOverlay";
@@ -278,10 +278,8 @@ export default function Messages() {
   const [typingState, setTypingState] = useState({});
 
   const location = useLocation();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const locationState = location.state || {};
-  const openConversationWith = locationState.openConversationWith || null;
   const openConversationIdFromSearch = searchParams.get("open");
   const openConversationId =
     locationState.openConversationId || openConversationIdFromSearch || null;
@@ -298,8 +296,6 @@ export default function Messages() {
   }, [lockedConversationId]);
 
   const navigationHandledRef = useRef(null);
-  const openConversationHandledRef = useRef(false);
-  const openConversationFocusRef = useRef(false);
 
   /* =====================================================
      HELPERS
@@ -1227,55 +1223,6 @@ export default function Messages() {
   useEffect(() => {
     loadConversationRef.current = loadConversation;
   }, [loadConversation]);
-
-  useEffect(() => {
-    openConversationHandledRef.current = false;
-    openConversationFocusRef.current = false;
-  }, [openConversationWith]);
-
-  useEffect(() => {
-    if (!openConversationWith || openConversationHandledRef.current) return;
-    if (loadingConversations) return;
-
-    const targetId = String(openConversationWith);
-    const existing = friends.find((f) => getFriendId(f) === targetId);
-
-    if (existing) {
-      // Ouvre uniquement une conversation existante sans créer de nouvelle entrée.
-      setListTab("conversations");
-      setSearch("");
-      openConversationFocusRef.current = true;
-      loadConversationRef.current?.(existing);
-    }
-
-    openConversationHandledRef.current = true;
-    navigate("/messages", { replace: true });
-  }, [
-    friends,
-    getFriendId,
-    loadingConversations,
-    navigate,
-    openConversationWith,
-  ]);
-
-  useEffect(() => {
-    if (!openConversationFocusRef.current) return;
-    if (loadingConversation) return;
-    if (!activeChat || !openConversationWith) return;
-    if (getFriendId(activeChat) !== String(openConversationWith)) return;
-
-    openConversationFocusRef.current = false;
-    requestAnimationFrame(() => {
-      scrollToBottom(true);
-      inputRef.current?.focus();
-    });
-  }, [
-    activeChat,
-    getFriendId,
-    loadingConversation,
-    openConversationWith,
-    scrollToBottom,
-  ]);
 
   useEffect(() => {
     if (!token || !conversationId) return;
