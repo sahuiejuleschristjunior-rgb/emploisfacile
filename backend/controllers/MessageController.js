@@ -106,8 +106,9 @@ async function pushNotification(userId, data) {
     read: false,
   });
 
-  getIO().to(String(userId)).emit("notification:new", notif);
-  return notif;
+  const populated = await notif.populate("from", "name avatar role");
+  getIO().to(String(userId)).emit("notification:new", populated);
+  return populated;
 }
 
 async function buildMessageRequest({ senderUser, receiverUser, content }) {

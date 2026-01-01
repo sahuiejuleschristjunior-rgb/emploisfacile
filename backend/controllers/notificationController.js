@@ -8,7 +8,7 @@ exports.getNotifications = async (req, res) => {
     const userId = req.user.id;
 
     const notifications = await Notification.find({ user: userId })
-      .populate("from", "name avatar")
+      .populate("from", "name avatar role")
       .populate("post", "text media")
       .populate({
         path: "story",

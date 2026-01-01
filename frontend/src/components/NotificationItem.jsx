@@ -16,6 +16,9 @@ const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
 export default function NotificationItem({ notif, onHandled }) {
   const navigate = useNavigate();
   const { removeNotifications } = useNotifications() || {};
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const currentRole = currentUser?.role || null;
 
   const getNotifConversationId = (item) =>
     item?.conversationId ||
@@ -26,6 +29,11 @@ export default function NotificationItem({ notif, onHandled }) {
     item?.from;
 
   const isFriendRequest = notif.type === "friend_request";
+  const senderRole = notif.from?.role || null;
+  const isProfessionalMessage =
+    notif.type === "message" &&
+    ((currentRole === "candidate" && senderRole === "recruiter") ||
+      (currentRole === "recruiter" && senderRole === "candidate"));
 
   const notifClass = notif.read ? "notif-item read" : "notif-item unread";
 
@@ -112,13 +120,22 @@ export default function NotificationItem({ notif, onHandled }) {
     const notifConversationId = getNotifConversationId(notif);
 
     if (notif.type === "message") {
-      navigate("/messages", {
-        replace: true,
-        state: {
-          openConversationId: notifConversationId || null,
-          source: "notification",
-        },
-      });
+      if (isProfessionalMessage) {
+        const basePath =
+          currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
+        navigate(`${basePath}/${notifConversationId || ""}`, {
+          replace: true,
+          state: { source: "notification" },
+        });
+      } else {
+        navigate("/messages", {
+          replace: true,
+          state: {
+            openConversationId: notifConversationId || null,
+            source: "notification",
+          },
+        });
+      }
       return;
     }
 
