@@ -183,16 +183,6 @@ export default function App() {
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <FacebookLayout headerOnly />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/emplois" element={<EmploisPage />} />
-                </Route>
-
                 {/* Pages compactes mais avec le header présent */}
                 <Route path="/profil" element={<ProfilPage />} />
                 <Route path="/messages" element={<Messages />} />
