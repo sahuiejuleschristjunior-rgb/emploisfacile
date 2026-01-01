@@ -383,7 +383,14 @@ async function getProfile(req, res) {
 async function updateProfile(req, res) {
   try {
     const userId = req.user?.id || req.user?._id;
-    const { name, companyName, companyInfo, candidateProfile, bio } = req.body;
+    const {
+      name,
+      companyName,
+      companyInfo,
+      candidateProfile,
+      professionalProfile,
+      bio,
+    } = req.body;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
@@ -399,6 +406,7 @@ async function updateProfile(req, res) {
       if (companyInfo) user.companyInfo = companyInfo;
     } else if (user.role === "candidate") {
       if (candidateProfile) user.candidateProfile = candidateProfile;
+      if (professionalProfile) user.professionalProfile = professionalProfile;
     }
 
     // Validate only the modified fields to avoid unrelated validation errors
@@ -419,6 +427,7 @@ async function updateProfile(req, res) {
       companyName: safeUser.companyName,
       companyInfo: safeUser.companyInfo,
       candidateProfile: safeUser.candidateProfile,
+      professionalProfile: safeUser.professionalProfile,
     };
 
     res.json({ success: true, user: profileData });
@@ -466,7 +475,7 @@ async function changePassword(req, res) {
 async function me(req, res) {
   try {
     const user = await User.findById(req.user.id).select(
-      "_id email role name avatar coverPhoto bio companyName companyInfo candidateProfile"
+      "_id email role name avatar coverPhoto bio companyName companyInfo candidateProfile professionalProfile"
     );
 
     res.json({ success: true, user });

@@ -60,6 +60,23 @@ const UserSchema = new mongoose.Schema(
       coverLetterUrl: String,
     },
 
+    professionalProfile: {
+      name: String,
+      title: String,
+      email: String,
+      phone: String,
+      location: String,
+      experience: String,
+      skills: [String],
+      availability: String,
+      portfolio: String,
+      linkedin: String,
+      bio: String,
+      avatar: String,
+      cvData: String,
+      cvName: String,
+    },
+
     /* =====================
        AUTH / SÉCURITÉ
     ===================== */

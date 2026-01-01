@@ -6,6 +6,8 @@ import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboa
 export default function JobConnectProfile() {
   const nav = useNavigate();
   const data = useCandidateDashboardData();
+  const API_URL = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem("token");
   const [formValues, setFormValues] = useState({
     name: "",
     title: "",
@@ -74,29 +76,45 @@ export default function JobConnectProfile() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSaving(true);
     setStatusMessage("");
 
-    const updatedProfile = {
-      ...(data.user || {}),
-      professionalProfile: {
-        ...(data.user?.professionalProfile || {}),
-        ...formValues,
-        skills: formValues.skills
-          .split(",")
-          .map((skill) => skill.trim())
-          .filter(Boolean),
-      },
+    const professionalProfile = {
+      ...(data.user?.professionalProfile || {}),
+      ...formValues,
+      skills: formValues.skills
+        .split(",")
+        .map((skill) => skill.trim())
+        .filter(Boolean),
     };
 
-    localStorage.setItem("user", JSON.stringify(updatedProfile));
+    try {
+      const res = await fetch(`${API_URL}/auth/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ professionalProfile }),
+      });
 
-    setTimeout(() => {
-      setIsSaving(false);
+      if (!res.ok) {
+        throw new Error("Impossible d'enregistrer votre profil.");
+      }
+
+      const payload = await res.json();
+      if (payload.user) {
+        localStorage.setItem("user", JSON.stringify(payload.user));
+      }
+
       setStatusMessage("Profil candidat mis à jour avec succès.");
-    }, 500);
+    } catch (error) {
+      setStatusMessage(error.message || "Erreur lors de la mise à jour du profil.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleOpenProfessionalProfile = () => {
