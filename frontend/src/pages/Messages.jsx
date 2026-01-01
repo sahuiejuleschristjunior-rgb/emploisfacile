@@ -293,6 +293,14 @@ export default function Messages() {
   /* =====================================================
      HELPERS
   ===================================================== */
+  const isProfessionalContact = (targetRole) => {
+    if (!targetRole || !me?.role) return false;
+    return (
+      (me.role === "candidate" && targetRole === "recruiter") ||
+      (me.role === "recruiter" && targetRole === "candidate")
+    );
+  };
+
   const normalizeFriend = (f) => {
     if (!f) return null;
 
@@ -306,6 +314,8 @@ export default function Messages() {
       const targetId =
         (typeof target === "object" ? target?._id : target) || null;
 
+      const targetRole = typeof target === "object" ? target?.role : null;
+
       return {
         _id: targetId,
         name:
@@ -316,6 +326,8 @@ export default function Messages() {
           (typeof target === "object" ? target?.avatar : null) ||
           f?.avatar ||
           "/default-avatar.png",
+        role: targetRole,
+        isProfessional: isProfessionalContact(targetRole),
         unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
         lastMessage: f?.lastMessage || null,
         conversationId: f?._id || f?.conversationId || null,
@@ -339,6 +351,8 @@ export default function Messages() {
       _id: userId,
       name: userObj?.name || f?.name || "Utilisateur",
       avatar: userObj?.avatar || f?.avatar || "/default-avatar.png",
+      role: userObj?.role || f?.role || null,
+      isProfessional: isProfessionalContact(userObj?.role || f?.role || null),
       unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
       lastMessage: f?.lastMessage || null,
       conversationId:
@@ -748,8 +762,9 @@ export default function Messages() {
   ===================================================== */
   const filteredFriends = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return friends;
-    return friends.filter((f) => (f.name || "").toLowerCase().includes(q));
+    const publicFriends = friends.filter((f) => !f.isProfessional);
+    if (!q) return publicFriends;
+    return publicFriends.filter((f) => (f.name || "").toLowerCase().includes(q));
   }, [friends, search]);
 
   const displayedFriends = useMemo(() => {

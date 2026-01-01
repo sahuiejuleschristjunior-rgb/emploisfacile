@@ -8,6 +8,9 @@ export default function NotificationsBell() {
   const navigate = useNavigate();
   const { notifications = [], unreadCount = 0, markAllAsRead } =
     useNotifications() || {};
+  const storedUser = localStorage.getItem("user");
+  const currentUser = storedUser ? JSON.parse(storedUser) : null;
+  const currentRole = currentUser?.role || null;
 
   const getNotifConversationId = (notif) =>
     notif?.conversationId ||
@@ -34,6 +37,11 @@ export default function NotificationsBell() {
   =========================== */
   const handleNotifClick = (n) => {
     const notifConversationId = getNotifConversationId(n);
+    const senderRole = n.from?.role || null;
+    const isProfessionalMessage =
+      n.type === "message" &&
+      ((currentRole === "candidate" && senderRole === "recruiter") ||
+        (currentRole === "recruiter" && senderRole === "candidate"));
 
     if (n.type === "friend_request") {
       navigate("/fb/relations"); // 🔥 PAGE DEMANDES D’AMIS
@@ -41,13 +49,22 @@ export default function NotificationsBell() {
     }
 
     if (n.type === "message") {
-      navigate("/messages", {
-        replace: true,
-        state: {
-          openConversationId: notifConversationId || null,
-          source: "notification",
-        },
-      });
+      if (isProfessionalMessage) {
+        const basePath =
+          currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
+        navigate(`${basePath}/${notifConversationId || ""}`, {
+          replace: true,
+          state: { source: "notification" },
+        });
+      } else {
+        navigate("/messages", {
+          replace: true,
+          state: {
+            openConversationId: notifConversationId || null,
+            source: "notification",
+          },
+        });
+      }
       setOpen(false);
       return;
     }
