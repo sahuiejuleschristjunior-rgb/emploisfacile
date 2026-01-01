@@ -979,6 +979,51 @@ body {
   flex-wrap: wrap;
 }
 
+.cv-library .card-header {
+  align-items: center;
+  gap: 16px;
+}
+
+.cv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card-muted);
+}
+
+.cv-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cv-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.cv-meta,
+.cv-file {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cv-item .ghost-btn {
+  white-space: nowrap;
+}
+
 .application-actions {
   display: flex;
   gap: 12px;

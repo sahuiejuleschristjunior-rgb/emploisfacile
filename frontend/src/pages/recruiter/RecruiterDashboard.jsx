@@ -46,6 +46,38 @@ export default function RecruiterDashboard() {
     });
   };
 
+  const cvCandidates = useMemo(() => {
+    const seen = new Set();
+    return data.applications
+      .map((app) => app.candidate)
+      .filter((candidate) => candidate && (candidate.cvData || candidate.cvName))
+      .filter((candidate) => {
+        const key = candidate._id || candidate.email;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [data.applications]);
+
+  const downloadCv = (candidate) => {
+    if (!candidate?.cvData) return;
+    const link = document.createElement("a");
+    const safeName = candidate.name ? candidate.name.replace(/\s+/g, "-").toLowerCase() : "candidat";
+    link.href = candidate.cvData;
+    link.download = candidate.cvName || `cv-${safeName}.pdf`;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const downloadAllCvs = () => {
+    cvCandidates.forEach((candidate, index) => {
+      setTimeout(() => downloadCv(candidate), index * 250);
+    });
+  };
+
   const nextAction = useMemo(() => {
     if (data.pendingReview > 0) {
       return {
@@ -342,6 +374,40 @@ export default function RecruiterDashboard() {
           </div>
         </section>
       </div>
+
+      <section className="card cv-library" aria-label="CV thèque">
+        <div className="card-header">
+          <div>
+            <p className="eyebrow">CV thèque</p>
+            <h3>Téléchargez tous les CV des candidats</h3>
+          </div>
+          <button className="primary-btn ghost" onClick={downloadAllCvs} disabled={cvCandidates.length === 0}>
+            Télécharger tous les CV
+          </button>
+        </div>
+
+        {cvCandidates.length === 0 ? (
+          <div className="empty-state">Aucun CV disponible pour le moment.</div>
+        ) : (
+          <div className="cv-list">
+            {cvCandidates.map((candidate) => (
+              <div
+                key={candidate._id || candidate.email}
+                className="cv-item"
+              >
+                <div className="cv-info">
+                  <p className="cv-name">{candidate.name || "Candidat"}</p>
+                  <p className="cv-meta">{candidate.email || "Email non renseigné"}</p>
+                  <p className="cv-file">{candidate.cvName || "CV disponible"}</p>
+                </div>
+                <button className="ghost-btn" onClick={() => downloadCv(candidate)}>
+                  Télécharger
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </RecruiterLayout>
   );
 }
