@@ -91,6 +91,33 @@ exports.getMyApplications = async (req, res) => {
 };
 
 /* ============================================================
+   GET /api/applications/status?jobId=:jobId
+   ➤ Candidat : vérifier s'il a déjà postulé
+============================================================ */
+exports.getApplicationStatus = async (req, res) => {
+  const { jobId } = req.query;
+  const candidateId = req.user.id;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ message: "Identifiant d'offre invalide." });
+    }
+
+    const existing = await Application.findOne({
+      job: jobId,
+      candidate: candidateId,
+    }).select("_id");
+
+    return res.status(200).json({ hasApplied: Boolean(existing) });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur serveur lors de la vérification de la candidature.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
    GET /api/applications/job/:jobId
    ➤ Recruteur : voir les candidats d'une offre
 ============================================================ */
