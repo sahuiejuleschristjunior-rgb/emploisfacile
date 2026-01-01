@@ -400,11 +400,9 @@ export default function FacebookFeed() {
 
     const SOCKET_URL =
       import.meta.env.VITE_SOCKET_URL || "https://emploisfacile.org";
-    const storedUser = localStorage.getItem("user");
-    const userId = storedUser ? JSON.parse(storedUser)?._id : null;
 
     const s = io(SOCKET_URL, {
-      auth: { token, userId },
+      auth: { token },
       transports: ["polling", "websocket"],
       reconnection: true,
       reconnectionDelay: 500,

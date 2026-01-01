@@ -3,7 +3,7 @@ const Message = require("../models/Message");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
 const MessageRequest = require("../models/MessageRequest");
-const { getIO, getSocketIdsByUser } = require("../socket");
+const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
 const path = require("path");
 const fs = require("fs");
@@ -113,17 +113,6 @@ async function pushNotification(userId, data) {
 
 function resolveNotificationType({ job, application } = {}) {
   return job || application ? "job" : "public";
-}
-
-function emitJobMessage({ conversationId, message, senderId }) {
-  if (!conversationId || !message) return;
-  const room = `job:${conversationId}`;
-  const senderSockets = senderId ? getSocketIdsByUser(senderId) : [];
-  if (senderSockets.length > 0) {
-    getIO().to(room).except(senderSockets).emit("job:message:new", { message });
-    return;
-  }
-  getIO().to(room).emit("job:message:new", { message });
 }
 
 async function buildMessageRequest({ senderUser, receiverUser, content }) {
@@ -348,26 +337,17 @@ exports.sendMessage = async (req, res) => {
     await conversation.save();
 
     /* 🔥 SOCKET.IO — MESSAGE TEMPS RÉEL */
-    const isJobMessage = Boolean(message.job || message.application);
-    if (isJobMessage) {
-      emitJobMessage({
-        conversationId: message.conversation?.toString?.() || message.conversation,
-        message,
-        senderId: sender,
-      });
-    } else {
-      getIO().to(receiverId.toString()).emit("new_message", {
-        from: sender,
-        to: receiverId,
-        message,
-      });
+    getIO().to(receiverId.toString()).emit("new_message", {
+      from: sender,
+      to: receiverId,
+      message,
+    });
 
-      getIO().to(sender.toString()).emit("new_message", {
-        from: sender,
-        to: receiverId,
-        message,
-      });
-    }
+    getIO().to(sender.toString()).emit("new_message", {
+      from: sender,
+      to: receiverId,
+      message,
+    });
 
     /* 🔥 NOTIFICATION */
     await pushNotification(receiverId, {
@@ -837,31 +817,22 @@ exports.sendAudioMessage = async (req, res) => {
     conversation.updatedAt = new Date();
     await conversation.save();
 
-    const isJobMessage = Boolean(message.job || message.application);
-    if (isJobMessage) {
-      emitJobMessage({
-        conversationId: message.conversation?.toString?.() || message.conversation,
-        message,
-        senderId: sender,
-      });
-    } else {
-      getIO().to(receiverId.toString()).emit("new_message", {
-        from: sender,
-        to: receiverId,
-        message,
-      });
+    getIO().to(receiverId.toString()).emit("new_message", {
+      from: sender,
+      to: receiverId,
+      message,
+    });
 
-      getIO().to(sender.toString()).emit("new_message", {
-        from: sender,
-        to: receiverId,
-        message,
-      });
+    getIO().to(sender.toString()).emit("new_message", {
+      from: sender,
+      to: receiverId,
+      message,
+    });
 
-      getIO()
-        .to(receiverId.toString())
-        .to(sender.toString())
-        .emit("audio_message", { message });
-    }
+    getIO()
+      .to(receiverId.toString())
+      .to(sender.toString())
+      .emit("audio_message", { message });
 
     await pushNotification(receiverId, {
       from: sender,

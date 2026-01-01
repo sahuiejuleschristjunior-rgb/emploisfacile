@@ -69,13 +69,11 @@ export function NotificationProvider({ children }) {
       setLoading(false);
       return;
     }
-    const storedUser = localStorage.getItem("user");
-    const userId = storedUser ? JSON.parse(storedUser)?._id : null;
 
     // 1) Connexion socket.io
     const s = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { token, userId },
+      auth: { token },
     });
 
     setSocket(s);

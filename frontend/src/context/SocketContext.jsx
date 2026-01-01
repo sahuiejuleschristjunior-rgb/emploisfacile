@@ -10,13 +10,11 @@ export function SocketProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return undefined;
-    const storedUser = localStorage.getItem("user");
-    const userId = storedUser ? JSON.parse(storedUser)?._id : null;
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
     const socket = io(SOCKET_URL, {
-      auth: { token, userId },
+      auth: { token },
       transports: ["polling", "websocket"],
       reconnection: true,
     });
