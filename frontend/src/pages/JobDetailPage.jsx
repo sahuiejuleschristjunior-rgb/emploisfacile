@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
-import { createJobConversation } from "../api/jobChatApi";
 
 const formatDate = (value) => {
   if (!value) return "Date inconnue";
@@ -21,41 +20,22 @@ const resolveCompanyName = (job) =>
 export default function JobDetailPage() {
   const { id } = useParams();
   const location = useLocation();
-  const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
-  // L'utilisateur est stocké côté frontend dans localStorage ("user")
-  const storedUser = localStorage.getItem("user");
-  let user = null;
-  if (storedUser) {
-    try {
-      user = JSON.parse(storedUser);
-    } catch (err) {
-      console.error("Impossible de lire l'utilisateur depuis le localStorage.", err);
-      user = null;
-    }
-  }
-  const locationJob = location.state?.job;
 
-  const [job, setJob] = useState(() => locationJob || null);
-  const [loading, setLoading] = useState(!locationJob);
+  const [job, setJob] = useState(() => location.state?.job || null);
+  const [loading, setLoading] = useState(!location.state?.job);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
-  // États uniques pour gérer la candidature (source de vérité = hasApplied).
-  const [hasApplied, setHasApplied] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  const [contactError, setContactError] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
 
     const fetchJob = async () => {
       setError(null);
-      setLoading(true);
-      setJob(null);
+      if (!location.state?.job) {
+        setLoading(true);
+      }
 
       try {
         const res = await fetch(`${API_URL}/jobs/${id}`, {
@@ -86,61 +66,10 @@ export default function JobDetailPage() {
       }
     };
 
-    if (locationJob) {
-      setError(null);
-      setJob(locationJob);
-      setLoading(false);
-      return () => controller.abort();
-    }
-
     fetchJob();
 
     return () => controller.abort();
-  }, [API_URL, id, token, locationJob]);
-
-  useEffect(() => {
-    if (!id) return;
-
-    // Vérification unique du statut (pas de relance après soumission).
-    let isMounted = true;
-    const fetchApplicationStatus = async () => {
-      if (!user || !token) {
-        if (isMounted) {
-          setHasApplied(false);
-          setCheckingStatus(false);
-        }
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_URL}/applications/status?jobId=${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) return;
-
-        const data = await res.json();
-
-        if (isMounted) {
-          setHasApplied(Boolean(data?.hasApplied));
-        }
-      } catch (err) {
-        console.error("APPLICATION STATUS ERROR:", err);
-      } finally {
-        if (isMounted) {
-          setCheckingStatus(false);
-        }
-      }
-    };
-
-    fetchApplicationStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
+  }, [API_URL, id, token, location.state?.job]);
 
   useEffect(() => {
     if (!job?.contractType) {
@@ -215,42 +144,6 @@ export default function JobDetailPage() {
     };
   }, [job]);
 
-  const handleContactRecruiter = async () => {
-    setContactError(null);
-    if (!user || user.role !== "candidate") {
-      nav("/login");
-      return;
-    }
-
-    if (!hasApplied) {
-      setContactError("Vous devez d'abord postuler à cette offre.");
-      return;
-    }
-
-    const recruiterId = job?.recruiter?._id || job?.recruiter;
-    if (!recruiterId) {
-      setContactError("Recruteur introuvable.");
-      return;
-    }
-
-    try {
-      const conversation = await createJobConversation({
-        participants: [user._id, recruiterId],
-        jobId: job._id,
-      });
-
-      nav(`/candidate/messages/${conversation._id}`, {
-        state: {
-          jobId: job._id,
-          jobTitle: job.title,
-          otherParticipant: job.recruiter,
-        },
-      });
-    } catch (err) {
-      setContactError(err.message || "Impossible d'ouvrir la conversation.");
-    }
-  };
-
   if (loading) {
     return (
       <div className="job-detail-page" role="main">
@@ -284,57 +177,6 @@ export default function JobDetailPage() {
   const responsibilities = Array.isArray(job.responsibilities) ? job.responsibilities : [];
   const profile = Array.isArray(job.profile) ? job.profile : [];
   const benefits = Array.isArray(job.benefits) ? job.benefits : [];
-  const isRecruiter = user?.role === "recruiter";
-  const isJobOwner = job?.recruiter?._id === user?._id;
-  const canApply = user && !isRecruiter && !isJobOwner;
-
-  // Libellé et état unique du bouton (anti-tremblement).
-  let applyLabel = "Postuler maintenant";
-  let applyDisabled = false;
-
-  if (checkingStatus) {
-    applyLabel = "Vérification…";
-    applyDisabled = true;
-  } else if (hasApplied) {
-    applyLabel = "Déjà postulé ✔";
-    applyDisabled = true;
-  } else if (isSubmitting) {
-    applyLabel = "Envoi en cours…";
-    applyDisabled = true;
-  }
-
-  const handleApply = async () => {
-    if (hasApplied || isSubmitting) return;
-
-    setIsSubmitting(true);
-    setSubmitSuccess(false);
-    setSubmitError(null);
-
-    try {
-      const res = await fetch(`${API_URL}/applications`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ jobId: id }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err?.message || "Erreur lors de la candidature");
-      }
-
-      // ✅ SUCCÈS DÉFINITIF
-      setHasApplied(true);
-      setSubmitSuccess(true);
-    } catch (err) {
-      console.error("APPLICATION ERROR:", err);
-      setSubmitError(err.message || "Erreur lors de l'envoi de la candidature.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="job-detail-page" role="main">
@@ -355,32 +197,13 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              {canApply && (
-                <button
-                  className="primary-btn"
-                  type="button"
-                  onClick={handleApply}
-                  disabled={applyDisabled}
-                >
-                  {applyLabel}
-                </button>
-              )}
+              <button className="primary-btn" type="button">
+                Postuler maintenant
+              </button>
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur
               </button>
             </div>
-            {canApply && (submitSuccess || submitError) && (
-              <div className="job-detail-feedback" role="status">
-                {submitSuccess && (
-                  <p className="job-detail-alert job-detail-alert--success">
-                    Votre candidature a été envoyée avec succès
-                  </p>
-                )}
-                {submitError && (
-                  <p className="job-detail-alert job-detail-alert--error">{submitError}</p>
-                )}
-              </div>
-            )}
           </div>
           <div className="hero__highlights">
             <div className="hero-chip">
@@ -467,19 +290,9 @@ export default function JobDetailPage() {
                 <p className="job-detail-contact-title">{jobDetails.companyName}</p>
                 <p className="job-detail-muted">{jobDetails.recruiterEmail}</p>
               </div>
-              <button
-                className="primary-btn ghost"
-                type="button"
-                disabled={checkingStatus || !hasApplied}
-                onClick={handleContactRecruiter}
-              >
-                Contacter le recruteur
+              <button className="primary-btn ghost" type="button">
+                Envoyer un message
               </button>
-              {contactError && (
-                <p className="job-detail-muted" style={{ marginTop: 8 }}>
-                  {contactError}
-                </p>
-              )}
             </div>
             <div className="job-detail-info">
               <div>
