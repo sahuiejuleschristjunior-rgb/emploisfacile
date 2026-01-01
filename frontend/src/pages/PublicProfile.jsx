@@ -8,7 +8,7 @@ import "../styles/profil.css";
 import { useAuth } from "../context/AuthContext";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 import useRelation from "../hooks/useRelation";
-import { sendMessagePayload } from "../api/messagesApi";
+import { fetchInbox, sendMessagePayload } from "../api/messagesApi";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 
@@ -187,6 +187,55 @@ export default function PublicProfile() {
     }
   };
 
+  const hasExistingConversation = async () => {
+    if (!user?._id || !viewerId) return false;
+
+    try {
+      const inboxData = await fetchInbox();
+      const inbox = Array.isArray(inboxData)
+        ? inboxData
+        : Array.isArray(inboxData?.data)
+        ? inboxData.data
+        : [];
+
+      return inbox.some((conversation) => {
+        const participants = Array.isArray(conversation?.participants)
+          ? conversation.participants
+          : [];
+        const participantIds = participants
+          .map((participant) => participant?._id || participant)
+          .filter(Boolean)
+          .map((participantId) => String(participantId));
+
+        return (
+          participantIds.includes(String(user._id)) &&
+          participantIds.includes(String(viewerId))
+        );
+      });
+    } catch (err) {
+      console.error("Erreur chargement conversations:", err);
+      return false;
+    }
+  };
+
+  const handleMessageClick = async () => {
+    setMessageFeedback("");
+    setMessageError("");
+
+    if (isFriend) {
+      navigate(`/messages?userId=${user._id}`);
+      return;
+    }
+
+    const canOpenConversation = await hasExistingConversation();
+    if (canOpenConversation) {
+      navigate(`/messages?userId=${user._id}`);
+      return;
+    }
+
+    setMessageModalOpen(true);
+  };
+
   const renderContent = () => {
     if (loading || !user || !viewer) {
       return <div className="profil-loading">Chargement…</div>;
@@ -242,18 +291,10 @@ export default function PublicProfile() {
               <div className="profil-hero-actions profile-actions">
                 <button
                   className="profil-btn primary"
-                  onClick={() => {
-                    setMessageFeedback("");
-                    setMessageError("");
-                    if (isFriend) {
-                      navigate(`/messages?userId=${user._id}`);
-                    } else {
-                      setMessageModalOpen(true);
-                    }
-                  }}
-                  >
-                    Message
-                  </button>
+                  onClick={handleMessageClick}
+                >
+                  Message
+                </button>
                   <RelationButton targetId={user._id} />
                   {messageFeedback && (
                     <div className="profil-toast">{messageFeedback}</div>
