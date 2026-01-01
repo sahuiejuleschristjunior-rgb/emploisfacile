@@ -123,6 +123,7 @@ export default function Post({
         backgroundPosition: "center",
       }
     : {};
+  const profilePath = post.user?._id ? `/profil/${post.user._id}` : null;
 
   const imageItems = (post.media || [])
     .map((m, originIndex) => ({ ...m, originIndex, url: fixUrl(m.url) }))
@@ -464,7 +465,16 @@ export default function Post({
       >
         {/* HEADER */}
         <div className="fb-post-header">
-          <div className="fb-post-avatar" style={avatarStyle} />
+          <button
+            type="button"
+            className="fb-post-avatar avatar-link"
+            style={avatarStyle}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (profilePath) nav(profilePath);
+            }}
+            aria-label="Ouvrir le profil"
+          />
 
           <div className="fb-post-user-info">
             <div className="fb-post-author">{post.user?.name}</div>

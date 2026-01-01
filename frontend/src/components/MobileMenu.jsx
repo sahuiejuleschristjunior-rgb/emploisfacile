@@ -1,5 +1,6 @@
 // src/components/MobileMenu.jsx
 import React from "react";
+import { Link } from "react-router-dom";
 import "./MobileMenu.css"; // ATTENTION à la majuscule
 import LeftMenu from "./LeftMenu";
 
@@ -24,15 +25,19 @@ export default function MobileMenu({ open, onClose, user, role }) {
 
         {/* ======== PROFIL EN LIGNE ======== */}
         <div className="mobile-menu-profile-row">
-          <img
-            src={
-              user?.avatar ||
-              "https://i.pravatar.cc/200"
-            }
-            alt="avatar"
-            className="mobile-profile-avatar"
-            loading="lazy"
-          />
+          <Link
+            to={user?._id ? `/profil/${user._id}` : "/profil"}
+            className="avatar-link"
+            aria-label="Ouvrir mon profil"
+            onClick={onClose}
+          >
+            <img
+              src={user?.avatar || "https://i.pravatar.cc/200"}
+              alt="avatar"
+              className="mobile-profile-avatar"
+              loading="lazy"
+            />
+          </Link>
 
           <div className="mobile-profile-info">
             <p className="mobile-profile-name">

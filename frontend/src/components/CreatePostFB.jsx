@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 
 const MAX_FILES = 10;
@@ -15,6 +16,7 @@ export default function CreatePostFB({
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const nav = useNavigate();
 
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
@@ -35,6 +37,7 @@ export default function CreatePostFB({
 
   const firstName =
     currentUser?.name?.split(" ")[0] || currentUser?.name || "vous";
+  const profilePath = currentUser?._id ? `/profil/${currentUser._id}` : "/profil";
 
   /* =====================================================
         GESTION DES FICHIERS
@@ -102,6 +105,12 @@ export default function CreatePostFB({
     setFiles([]);
     setPreview([]);
     setErrorMsg("");
+  };
+
+  const handleProfileClick = (event) => {
+    event?.stopPropagation?.();
+    nav(profilePath);
+    setIsModalOpen(false);
   };
 
   /* =====================================================
@@ -213,9 +222,15 @@ export default function CreatePostFB({
     <>
       {/* BARRE */}
       <div className="fb-create-post-bar" onClick={openModal}>
-        <div className="fb-create-post-avatar" style={avatarStyle}>
+        <button
+          type="button"
+          className="fb-create-post-avatar avatar-link"
+          style={avatarStyle}
+          onClick={handleProfileClick}
+          aria-label="Ouvrir mon profil"
+        >
           {!fullAvatarUrl && <span>👤</span>}
-        </div>
+        </button>
 
         <div className="fb-create-post-placeholder">Quoi de neuf ?</div>
 
@@ -238,9 +253,15 @@ export default function CreatePostFB({
             {/* BODY */}
             <div className="fb-modal-body">
               <div className="fb-modal-user-row">
-                <div className="fb-modal-avatar" style={avatarStyle}>
+                <button
+                  type="button"
+                  className="fb-modal-avatar avatar-link"
+                  style={avatarStyle}
+                  onClick={handleProfileClick}
+                  aria-label="Ouvrir mon profil"
+                >
                   {!fullAvatarUrl && <span>👤</span>}
-                </div>
+                </button>
 
                 <div className="fb-modal-user-infos">
                   <div className="fb-modal-name">

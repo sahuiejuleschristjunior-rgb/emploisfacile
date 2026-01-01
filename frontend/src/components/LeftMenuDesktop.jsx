@@ -1,5 +1,6 @@
 // src/components/LeftMenuDesktop.jsx
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import "../styles/leftMenuDesktop.css";
 
 export default function LeftMenuDesktop({ role: roleProp }) {
@@ -60,17 +61,23 @@ export default function LeftMenuDesktop({ role: roleProp }) {
 
   const roleLabel = isRecruteur ? "Recruteur" : "Candidat";
 
+  const profilePath = currentUser?._id ? `/profil/${currentUser._id}` : "/profil";
+
   return (
     <aside className="left-desktop-menu">
       {/* Profil */}
       <div className="left-desktop-profile">
-        <div className="left-desktop-avatar">
+        <Link
+          to={profilePath}
+          className="left-desktop-avatar avatar-link"
+          aria-label="Ouvrir mon profil"
+        >
           {currentUser?.avatarUrl ? (
             <img src={currentUser.avatarUrl} alt={name} loading="lazy" />
           ) : (
             <span>{initials}</span>
           )}
-        </div>
+        </Link>
 
         <div className="left-desktop-profile-info">
           <p className="left-desktop-name">{name}</p>

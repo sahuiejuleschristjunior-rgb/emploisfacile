@@ -107,11 +107,23 @@ export default function Feed() {
 
               {/* HEADER POST */}
               <div className="post-header">
-                <img
-                  src={post.user?.avatar || "/assets/default-avatar.png"}
-                  className="post-avatar"
-                  loading="lazy"
-                />
+                <button
+                  type="button"
+                  className="avatar-link"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (post.user?._id) {
+                      navigate(`/profil/${post.user._id}`);
+                    }
+                  }}
+                  aria-label="Ouvrir le profil"
+                >
+                  <img
+                    src={post.user?.avatar || "/assets/default-avatar.png"}
+                    className="post-avatar"
+                    loading="lazy"
+                  />
+                </button>
                 <div>
                   <div className="post-user">{post.user?.name || "Utilisateur"}</div>
                   <div className="post-sub">Membre EmploisFacile</div>
