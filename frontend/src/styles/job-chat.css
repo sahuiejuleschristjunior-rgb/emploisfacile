@@ -177,8 +177,15 @@
 }
 
 .job-chat-input .primary-btn {
-  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 96px;
+  margin: 0;
+  padding: 8px 12px;
   font-size: 0.85rem;
+  line-height: 1;
 }
 
 .job-chat-typing {
