@@ -281,11 +281,20 @@ export default function Messages() {
   const [searchParams] = useSearchParams();
   const locationState = location.state || {};
   const openConversationIdFromSearch = searchParams.get("open");
+  const openConversationUserIdFromSearch = searchParams.get("userId");
   const openConversationId =
-    locationState.openConversationId || openConversationIdFromSearch || null;
+    locationState.openConversationId ||
+    openConversationIdFromSearch ||
+    openConversationUserIdFromSearch ||
+    null;
   const highlightConversationId = locationState.highlightConversationId || null;
   const navigationSource =
-    locationState.source || (openConversationIdFromSearch ? "notification" : null);
+    locationState.source ||
+    (openConversationIdFromSearch
+      ? "notification"
+      : openConversationUserIdFromSearch
+      ? "profile"
+      : null);
 
   const { conversationId } = useParams();
   const isDirectConversation = Boolean(conversationId);
@@ -1319,7 +1328,11 @@ export default function Messages() {
       return;
     }
 
-    if (navigationSource === "notification" && openConversationId) {
+    if (
+      (navigationSource === "notification" ||
+        navigationSource === "profile") &&
+      openConversationId
+    ) {
       if (loadingConversations) return;
 
       navigationHandledRef.current = navigationSignature;
