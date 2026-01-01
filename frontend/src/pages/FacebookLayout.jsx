@@ -1256,9 +1256,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <button className="fb-header-icon-btn" onClick={handleMessagesIconClick}>
               <div style={{ position: "relative" }}>
                 <FBIcon name="messages" size={22} />
-                {unreadMessagesCount > 0 && (
-                  <span className="notif-badge">{unreadMessagesCount}</span>
-                )}
               </div>
             </button>
 
