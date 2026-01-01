@@ -16,7 +16,6 @@ import { useActiveConversation } from "../context/ActiveConversationContext";
 const API_URL = import.meta.env.VITE_API_URL;
 const API_HOST = API_URL?.replace(/\/?api$/, "");
 const SOCKET_URL = API_HOST || window.location.origin;
-const MESSAGE_TYPE = "public";
 const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 const loadErrorMessage = "Impossible de charger vos conversations";
 
@@ -320,7 +319,6 @@ export default function Messages() {
         unreadCount: typeof f?.unreadCount === "number" ? f.unreadCount : 0,
         lastMessage: f?.lastMessage || null,
         conversationId: f?._id || f?.conversationId || null,
-        type: f?.type || MESSAGE_TYPE,
       };
     }
 
@@ -345,7 +343,6 @@ export default function Messages() {
       lastMessage: f?.lastMessage || null,
       conversationId:
         f?.conversationId || (f?.user ? f?._id || null : f?.conversationId) || null,
-      type: f?.type || MESSAGE_TYPE,
     };
   };
 
@@ -627,7 +624,6 @@ export default function Messages() {
 
         const list = raw
           .map(normalizeFriend)
-          .filter((conversation) => conversation?.type === MESSAGE_TYPE)
           .filter((u) => u && u._id)
           .reduce((acc, user) => {
             if (!acc.some((u) => u._id === user._id)) {
@@ -830,7 +826,7 @@ export default function Messages() {
       upsertMessage(message);
       const senderId = typeof message.sender === "object" ? message.sender?._id : message.sender;
       if (message?._id && senderId !== me?._id) {
-        fetch(`${API_URL}/messages/${message._id}/read?type=public`, {
+        fetch(`${API_URL}/messages/${message._id}/read`, {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -911,7 +907,6 @@ export default function Messages() {
     socket.on("conversation_created", (payload) => {
       const conversation = payload?.conversation || payload?.data || payload;
       if (!conversation?._id) return;
-      if (conversation?.type && conversation.type !== MESSAGE_TYPE) return;
 
       const targetId = getConversationTargetId();
       const shouldMergeLocked = lockedConversationRef.current &&
@@ -974,7 +969,7 @@ export default function Messages() {
     if (!token) {
       throw new Error(loadErrorMessage);
     }
-    const res = await fetch(`${API_URL}/messages/conversation/${id}?type=public`, {
+    const res = await fetch(`${API_URL}/messages/conversation/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -1009,7 +1004,7 @@ export default function Messages() {
     (id) => {
       if (!id || !token || isLocalConversationId(id)) return;
 
-      fetch(`${API_URL}/messages/read-all/${id}?type=public`, {
+      fetch(`${API_URL}/messages/read-all/${id}`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1088,15 +1083,12 @@ export default function Messages() {
 
     try {
       setLoadingConversation(true);
-      const res = await fetch(
-        `${API_URL}/messages/conversation/${targetUserId}?type=public`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const res = await fetch(`${API_URL}/messages/conversation/${targetUserId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
       const data = await ensureJsonResponse(res);
       if (!res.ok) {
         throw new Error(loadErrorMessage);
@@ -1408,15 +1400,12 @@ export default function Messages() {
     setReplyTo(null);
 
     try {
-      const { ok, data } = await sendMessagePayload(
-        {
-          receiver: receiverId,
-          content,
-          clientTempId,
-          replyTo: replyId,
-        },
-        MESSAGE_TYPE
-      );
+      const { ok, data } = await sendMessagePayload({
+        receiver: receiverId,
+        content,
+        clientTempId,
+        replyTo: replyId,
+      });
 
       if (data?.type === "request") {
         setMessages((prev) =>
@@ -1461,7 +1450,7 @@ export default function Messages() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/messages/${editingMessage._id}?type=public`, {
+      const res = await fetch(`${API_URL}/messages/${editingMessage._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -1531,16 +1520,13 @@ export default function Messages() {
 
     try {
       const deleteScope = scope || "me";
-      await fetch(
-        `${API_URL}/messages/${msg._id}?scope=${deleteScope}&type=public`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      await fetch(`${API_URL}/messages/${msg._id}?scope=${deleteScope}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
     } catch (err) {
       console.error("Erreur suppression message", err);
     }
@@ -1554,7 +1540,7 @@ export default function Messages() {
     const nextState = !isPinnedByMe(msg);
     setMessageActions(null);
     try {
-      const res = await fetch(`${API_URL}/messages/${msg._id}/pin?type=public`, {
+      const res = await fetch(`${API_URL}/messages/${msg._id}/pin`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -1852,7 +1838,7 @@ export default function Messages() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/messages/audio?type=public`, {
+      const res = await fetch(`${API_URL}/messages/audio`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1948,7 +1934,7 @@ export default function Messages() {
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/messages/${messageId}/react?type=public`, {
+      const res = await fetch(`${API_URL}/messages/${messageId}/react`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2062,7 +2048,7 @@ export default function Messages() {
     const targetId = getConversationTargetId();
     if (!activeChat || !targetId || !token) return;
     socketRef.current?.emit("typing", { to: targetId, isTyping: flag });
-    fetch(`${API_URL}/messages/typing?type=public`, {
+    fetch(`${API_URL}/messages/typing`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
