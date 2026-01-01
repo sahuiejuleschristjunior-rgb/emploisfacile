@@ -29,10 +29,23 @@ const normalizeFriend = (friend) => {
   if (!rawUser) return null;
   const id = rawUser._id || rawUser.id || (typeof rawUser === "string" ? rawUser : null);
   const name = rawUser.name || rawUser.fullName || "Utilisateur";
+  const extraAvatar =
+    friend.avatar ||
+    friend.profilePicture ||
+    friend.photo ||
+    friend.picture ||
+    friend.profile?.avatar;
+  const user =
+    rawUser && typeof rawUser === "object"
+      ? {
+          ...rawUser,
+          avatar: rawUser.avatar || extraAvatar,
+        }
+      : rawUser;
   return {
     id,
     name,
-    user: rawUser,
+    user,
   };
 };
 
