@@ -6,24 +6,25 @@ const { getIO } = require("../socket");
    🔥 ENVOYER NOTIFICATION + SOCKET
 ============================================================ */
 async function pushNotification(userId, data) {
-  if (data.type === "friend_request") {
+  if (data.actionType === "friend_request") {
     const exists = await Notification.findOne({
-      user: userId,
+      userId,
       from: data.from,
-      type: "friend_request",
-      read: false,
+      type: "public",
+      actionType: "friend_request",
+      relatedId: data.relatedId,
     });
 
     if (exists) return exists;
   }
 
   const notif = await Notification.create({
-    user: userId,
-    from: data.from,
-    type: data.type,
+    userId,
+    from: data.from || null,
+    type: "public",
+    actionType: data.actionType,
+    relatedId: data.relatedId,
     text: data.text || "",
-    post: data.post || null,
-    read: false,
   });
 
   getIO().to(String(userId)).emit("notification:new", notif);
@@ -87,7 +88,8 @@ exports.sendFriendRequest = async (req, res) => {
 
     await pushNotification(other, {
       from: me,
-      type: "friend_request",
+      actionType: "friend_request",
+      relatedId: me,
       text: "Vous avez reçu une demande d’ami.",
     });
 
@@ -132,16 +134,17 @@ exports.acceptFriendRequest = async (req, res) => {
     await userOther.save();
 
     await Notification.deleteMany({
-      type: "friend_request",
+      actionType: "friend_request",
       $or: [
-        { user: me, from: other },
-        { user: other, from: me },
+        { userId: me, relatedId: other },
+        { userId: other, relatedId: me },
       ],
     });
 
     await pushNotification(other, {
       from: me,
-      type: "friend_accept",
+      actionType: "friend_accept",
+      relatedId: me,
       text: "Votre demande d’ami a été acceptée.",
     });
 
@@ -176,16 +179,17 @@ exports.rejectFriendRequest = async (req, res) => {
     await userOther.save();
 
     await Notification.deleteMany({
-      type: "friend_request",
+      actionType: "friend_request",
       $or: [
-        { user: me, from: other },
-        { user: other, from: me },
+        { userId: me, relatedId: other },
+        { userId: other, relatedId: me },
       ],
     });
 
     await pushNotification(other, {
       from: me,
-      type: "friend_reject",
+      actionType: "friend_reject",
+      relatedId: me,
       text: "Votre demande d’ami a été refusée.",
     });
 
@@ -219,9 +223,9 @@ exports.cancelFriendRequest = async (req, res) => {
     await userOther.save();
 
     await Notification.deleteMany({
-      type: "friend_request",
-      user: other,
-      from: me,
+      actionType: "friend_request",
+      userId: other,
+      relatedId: me,
     });
 
     res.json({ success: true, message: "Demande annulée." });
@@ -254,7 +258,8 @@ exports.removeFriend = async (req, res) => {
 
     await pushNotification(other, {
       from: me,
-      type: "friend_remove",
+      actionType: "friend_remove",
+      relatedId: me,
       text: "Vous n’êtes plus amis.",
     });
 
@@ -470,7 +475,8 @@ exports.followUser = async (req, res) => {
 
     await pushNotification(other, {
       from: me,
-      type: "follow",
+      actionType: "follow",
+      relatedId: me,
       text: "Vous avez un nouveau follower.",
     });
 

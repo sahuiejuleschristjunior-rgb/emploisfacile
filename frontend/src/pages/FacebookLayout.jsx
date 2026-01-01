@@ -126,19 +126,21 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     const counted = new Set();
     return notifList.reduce(
       (acc, notif) => {
-        if (notif.type !== "message" || notif.read) return acc;
+        const actionType = notif.actionType || notif.type;
+        if (actionType !== "message") return acc;
 
         const senderId = notif.from?._id || notif.from;
         if (senderId && senderId === currentUser?._id) return acc;
 
         const payload = notif?.message || notif?.data || notif;
-        const messageId = payload?._id || notif?.messageId || notif?._id;
+        const messageId =
+          payload?._id || notif?.messageId || notif?.relatedId || notif?._id;
         if (messageId) {
           if (counted.has(messageId)) return acc;
           counted.add(messageId);
         }
 
-        const messageType = resolveMessageType(payload);
+        const messageType = notif.type || resolveMessageType(payload);
         if (messageType === "job") {
           acc.job += 1;
         } else {
@@ -267,11 +269,13 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   useEffect(() => {
     notifList.forEach((notif) => {
-      if (notif.type !== "message") return;
+      const actionType = notif.actionType || notif.type;
+      if (actionType !== "message") return;
       const payload = notif?.message || notif?.data || notif;
-      const messageId = payload?._id || notif?.messageId;
+      const messageId =
+        payload?._id || notif?.messageId || notif?.relatedId || notif?._id;
       if (!messageId) return;
-      const messageType = resolveMessageType(payload);
+      const messageType = notif.type || resolveMessageType(payload);
       if (messageType === "job") {
         jobMessageIdsRef.current.add(messageId);
       } else {
@@ -361,7 +365,8 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       if (!notif) return;
 
       const senderId = notif.from?._id || notif.from;
-      if (notif.type === "message" && senderId === currentUser?._id) {
+      const actionType = notif.actionType || notif.type;
+      if (actionType === "message" && senderId === currentUser?._id) {
         return;
       }
 
@@ -369,8 +374,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       if (notif.handled) return;
 
       // 🔥 2 — Empêche les notifs déjà lues
-      if (notif.read === true) return;
-
       // 🔥 3 — Anti-doublons socket
       const id = notif._id || notif.id;
       if (id) {
@@ -381,11 +384,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       // 🔥 4 — On ajoute proprement
       setNotifications((prev) => [notif, ...prev]);
       setUnreadCount((prev) => prev + 1);
-      if (notif.type !== "message") {
+      if (actionType !== "message") {
         showToast("Nouvelle notification");
       }
 
-      if (notif.type === "friend_request") {
+      if (actionType === "friend_request") {
         setPendingRequestsCount((prev) => prev + 1);
       }
     },
@@ -755,8 +758,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
       if (res.ok) {
         setNotifications(data);
-        const unread = data.filter((n) => !n.read).length;
-        setUnreadCount(unread);
+        setUnreadCount(Array.isArray(data) ? data.length : 0);
       }
     } catch (err) {
       console.error("Erreur notif :", err);

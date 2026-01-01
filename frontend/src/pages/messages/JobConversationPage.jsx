@@ -12,6 +12,7 @@ import CandidateLayout from "../../layouts/CandidateLayout";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import "../../styles/job-chat.css";
 import { useActiveConversation } from "../../context/ActiveConversationContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const loadErrorMessage = "Impossible de charger vos conversations";
@@ -47,6 +48,7 @@ export default function JobConversationPage() {
   const nav = useNavigate();
   const socket = useSocket();
   const { setActiveConversationId } = useActiveConversation() || {};
+  const { deleteByType } = useNotifications() || {};
 
   const token = localStorage.getItem("token");
   const storedUser = localStorage.getItem("user");
@@ -75,6 +77,10 @@ export default function JobConversationPage() {
     localStorage.removeItem("user");
     nav("/login");
   };
+
+  useEffect(() => {
+    deleteByType?.("job");
+  }, [deleteByType]);
 
   useEffect(() => {
     let active = true;

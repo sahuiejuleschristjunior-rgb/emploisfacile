@@ -9,8 +9,9 @@ export default function NotificationsBell() {
   const {
     notifications = [],
     unreadCount = 0,
-    markAllAsRead,
     removeNotifications,
+    deleteById,
+    deleteByRelated,
   } =
     useNotifications() || {};
   const storedUser = localStorage.getItem("user");
@@ -31,29 +32,37 @@ export default function NotificationsBell() {
   const toggleMenu = async () => {
     const willOpen = !open;
     setOpen(willOpen);
-
-    if (willOpen && unreadCount > 0) {
-      await markAllAsRead?.();
-    }
   };
 
   /* ===========================
      5) CLIC NOTIFICATION
   =========================== */
   const handleNotifClick = (n) => {
+    const actionType = n.actionType || n.type;
     const notifConversationId = getNotifConversationId(n);
     const senderRole = n.from?.role || null;
     const isProfessionalMessage =
-      n.type === "message" &&
+      actionType === "message" &&
       ((currentRole === "candidate" && senderRole === "recruiter") ||
         (currentRole === "recruiter" && senderRole === "candidate"));
 
-    if (n.type === "friend_request") {
+    if (actionType === "friend_request") {
       navigate("/fb/relations"); // 🔥 PAGE DEMANDES D’AMIS
       return;
     }
 
-    if (n.type === "message") {
+    if (actionType === "message_request") {
+      deleteByRelated?.(n.relatedId);
+      navigate("/messages", {
+        replace: true,
+        state: { source: "notification" },
+      });
+      setOpen(false);
+      return;
+    }
+
+    if (actionType === "message") {
+      deleteByRelated?.(n.relatedId);
       removeNotifications?.((item) => item._id === n._id);
       if (isProfessionalMessage) {
         const basePath =
@@ -75,12 +84,14 @@ export default function NotificationsBell() {
       return;
     }
 
-    if (n.post?._id) {
-      navigate(`/fb/post/${n.post._id}`);
+    if (["like", "comment", "reply"].includes(actionType) && n.relatedId) {
+      deleteById?.(n._id);
+      navigate(`/fb/post/${n.relatedId}`);
       return;
     }
 
     if (n.from?._id) {
+      deleteById?.(n._id);
       navigate(`/profil/${n.from._id}`);
     }
   };
@@ -89,7 +100,8 @@ export default function NotificationsBell() {
      6) TEXTE
   =========================== */
   const getMessage = (n) => {
-    switch (n.type) {
+    const actionType = n.actionType || n.type;
+    switch (actionType) {
       case "friend_request":
         return "vous a envoyé une demande d’ami.";
       case "friend_accept":
@@ -102,6 +114,8 @@ export default function NotificationsBell() {
         return `a répondu : "${(n.text || "").slice(0, 40)}"`;
       case "message":
         return `vous a envoyé un message.`;
+      case "message_request":
+        return "vous a envoyé une demande de message.";
       case "follow":
         return "a commencé à vous suivre.";
       default:
@@ -128,7 +142,7 @@ export default function NotificationsBell() {
             notifications.map((n) => (
               <div
                 key={n._id}
-                className={`notif-item ${n.read ? "read" : "unread"}`}
+                className="notif-item unread"
                 onClick={() => handleNotifClick(n)}
               >
                 <strong>{n.from?.name || "Utilisateur"}</strong>{" "}

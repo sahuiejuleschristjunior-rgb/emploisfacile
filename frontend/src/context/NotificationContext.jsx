@@ -15,10 +15,7 @@ export function NotificationProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const { activeConversationId } = useActiveConversation() || {};
 
-  const computeUnread = useCallback(
-    (items) => items.reduce((sum, n) => sum + (n.read ? 0 : 1), 0),
-    []
-  );
+  const computeUnread = useCallback((items) => items.length, []);
 
   const setNotificationsAndUnread = useCallback(
     (updater) => {
@@ -44,13 +41,15 @@ export function NotificationProvider({ children }) {
     if (!activeConversationId) return;
 
     removeNotifications((n) => {
-      if (n.type !== "message") return false;
+      const actionType = n.actionType || n.type;
+      if (actionType !== "message") return false;
 
       const notifConversationId =
         n.conversationId ||
         (typeof n.conversation === "object"
           ? n.conversation?._id
           : n.conversation) ||
+        n.relatedId ||
         n.from?._id ||
         n.from;
 
@@ -124,14 +123,16 @@ export function NotificationProvider({ children }) {
       const storedUser = localStorage.getItem("user");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
 
-      if (notif.type === "message" && currentUser?._id && fromId === currentUser._id) {
+      const actionType = notif.actionType || notif.type;
+
+      if (actionType === "message" && currentUser?._id && fromId === currentUser._id) {
         return;
       }
 
-      if (notif.type === "friend_accept" || notif.type === "friend_reject") {
+      if (actionType === "friend_accept" || actionType === "friend_reject") {
         removeNotifications(
           (n) =>
-            n.type === "friend_request" &&
+            (n.actionType || n.type) === "friend_request" &&
             String(n.from?._id || n.from) === String(fromId)
         );
       }
@@ -162,20 +163,86 @@ export function NotificationProvider({ children }) {
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_ROOT}/notifications/read-all`, {
-        method: "PUT", // 🔥 Correction POST → PUT
+      const res = await fetch(`${API_ROOT}/notifications/cleanup`, {
+        method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
-        setNotificationsAndUnread((prev) =>
-          prev.map((n) => ({ ...n, read: true }))
-        );
+        setNotificationsAndUnread([]);
       }
     } catch (e) {
       console.error("MARK ALL READ ERROR:", e);
     }
   };
+
+  const deleteById = useCallback(
+    async (id) => {
+      const token = localStorage.getItem("token");
+      if (!token || !id) return;
+
+      try {
+        const res = await fetch(`${API_ROOT}/notifications/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          removeNotifications((n) => n._id !== id);
+        }
+      } catch (e) {
+        console.error("DELETE NOTIFICATION ERROR:", e);
+      }
+    },
+    [removeNotifications]
+  );
+
+  const deleteByRelated = useCallback(
+    async (relatedId) => {
+      const token = localStorage.getItem("token");
+      if (!token || !relatedId) return;
+
+      try {
+        const res = await fetch(
+          `${API_ROOT}/notifications/by-related/${relatedId}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (res.ok) {
+          removeNotifications(
+            (n) => String(n.relatedId) !== String(relatedId)
+          );
+        }
+      } catch (e) {
+        console.error("DELETE NOTIFICATION BY RELATED ERROR:", e);
+      }
+    },
+    [removeNotifications]
+  );
+
+  const deleteByType = useCallback(
+    async (type) => {
+      const token = localStorage.getItem("token");
+      if (!token || !type) return;
+
+      try {
+        const res = await fetch(`${API_ROOT}/notifications/by-type/${type}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          removeNotifications((n) => n.type !== type);
+        }
+      } catch (e) {
+        console.error("DELETE NOTIFICATION BY TYPE ERROR:", e);
+      }
+    },
+    [removeNotifications]
+  );
 
   const value = {
     socket,
@@ -184,6 +251,9 @@ export function NotificationProvider({ children }) {
     loading,
     markAllAsRead,
     removeNotifications,
+    deleteById,
+    deleteByRelated,
+    deleteByType,
   };
 
   return (

@@ -60,22 +60,22 @@ async function pushPageFollowNotification(targetUserId, fromUserId, pageId) {
   if (String(targetUserId) === String(fromUserId)) return null;
 
   const existing = await Notification.findOne({
-    user: targetUserId,
+    userId: targetUserId,
     from: fromUserId,
-    type: "page_follow",
-    page: pageId,
-    read: false,
+    type: "public",
+    actionType: "page_follow",
+    relatedId: pageId,
   });
 
   if (existing) return existing;
 
   const notif = await Notification.create({
-    user: targetUserId,
+    userId: targetUserId,
     from: fromUserId,
-    type: "page_follow",
-    page: pageId,
+    type: "public",
+    actionType: "page_follow",
+    relatedId: pageId,
     text: "A commencé à suivre votre page.",
-    read: false,
   });
 
   try {

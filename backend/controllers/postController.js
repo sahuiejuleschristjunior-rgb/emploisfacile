@@ -34,12 +34,12 @@ const withBasePopulate = (query) => query.populate(basePopulate);
 ============================================================ */
 async function pushNotification(userId, data) {
   const notif = await Notification.create({
-    user: userId,
-    from: data.from,
-    type: data.type,
+    userId,
+    from: data.from || null,
+    type: "public",
+    actionType: data.actionType,
+    relatedId: data.relatedId,
     text: data.text,
-    post: data.post || null,
-    read: false,
   });
 
   getIO().to(String(userId)).emit("notification:new", notif);
@@ -374,8 +374,8 @@ exports.comment = async (req, res) => {
     if (String(post.user) !== String(userId)) {
       await pushNotification(post.user, {
         from: userId,
-        post: post._id,
-        type: "comment",
+        actionType: "comment",
+        relatedId: post._id,
         text: "A commenté votre publication.",
       });
     }
@@ -414,8 +414,8 @@ exports.like = async (req, res) => {
       if (String(post.user) !== String(userId)) {
         await pushNotification(post.user, {
           from: userId,
-          type: "like",
-          post: post._id,
+          actionType: "like",
+          relatedId: post._id,
           text: "A aimé votre publication.",
         });
       }
@@ -508,8 +508,8 @@ exports.reply = async (req, res) => {
     if (String(comment.user) !== String(req.userId)) {
       await pushNotification(comment.user, {
         from: req.userId,
-        post: post._id,
-        type: "reply",
+        actionType: "reply",
+        relatedId: post._id,
         text: "A répondu à votre commentaire.",
       });
     }
