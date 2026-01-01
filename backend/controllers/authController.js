@@ -643,7 +643,9 @@ async function getStats(req, res) {
 ============================================================ */
 async function getUserById(req, res) {
   try {
-    const user = await User.findById(req.params.id).select("-password -otp -otpExpires");
+    const user = await User.findById(req.params.id)
+      .select("-password -otp -otpExpires")
+      .populate("friends.user", "name avatar");
 
     if (!user) {
       return res.status(404).json({ error: "Utilisateur introuvable" });
