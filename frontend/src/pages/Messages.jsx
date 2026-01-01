@@ -11,6 +11,7 @@ import {
   fetchInbox,
   sendMessagePayload,
 } from "../api/messagesApi";
+import { fetchFriends } from "../api/socialApi";
 import { useActiveConversation } from "../context/ActiveConversationContext";
 import { useNotifications } from "../context/NotificationContext";
 
@@ -299,6 +300,10 @@ export default function Messages() {
   /* =====================================================
      HELPERS
   ===================================================== */
+  const getFriendId = useCallback((friend) => {
+    return String(friend?._id || friend?.id || friend?.user?._id || "");
+  }, []);
+
   const isProfessionalContact = (targetRole) => {
     if (!targetRole || !me?.role) return false;
     return (
@@ -306,6 +311,57 @@ export default function Messages() {
       (me.role === "recruiter" && targetRole === "candidate")
     );
   };
+
+  const mergeFriendEntries = useCallback((friend, conversation) => {
+    if (!friend && !conversation) return null;
+
+    const base = friend || {};
+    const convo = conversation || {};
+
+    return {
+      _id: base._id || convo._id,
+      name: base.name || convo.name || "Utilisateur",
+      avatar: base.avatar || convo.avatar || "/default-avatar.png",
+      role: base.role || convo.role || null,
+      isProfessional:
+        typeof base.isProfessional === "boolean"
+          ? base.isProfessional
+          : convo.isProfessional,
+      lastMessage: convo.lastMessage || base.lastMessage || null,
+      unreadCount:
+        typeof convo.unreadCount === "number"
+          ? convo.unreadCount
+          : base.unreadCount || 0,
+      conversationId: convo.conversationId || base.conversationId || null,
+    };
+  }, []);
+
+  const mergeFriendsWithConversations = useCallback(
+    (friendsList, conversationsList) => {
+      const merged = new Map();
+
+      conversationsList.forEach((conversation) => {
+        const id = getFriendId(conversation);
+        if (!id) return;
+        merged.set(id, conversation);
+      });
+
+      friendsList.forEach((friend) => {
+        const id = getFriendId(friend);
+        if (!id) return;
+        const existing = merged.get(id);
+        const combined = mergeFriendEntries(friend, existing);
+        if (combined) {
+          merged.set(id, combined);
+        } else if (!existing) {
+          merged.set(id, friend);
+        }
+      });
+
+      return Array.from(merged.values());
+    },
+    [getFriendId, mergeFriendEntries]
+  );
 
   const normalizeFriend = (f) => {
     if (!f) return null;
@@ -475,7 +531,7 @@ export default function Messages() {
 
   const getLastMessagePreview = (friend) => {
     const msg = friend?.lastMessage;
-    if (!msg || typeof msg !== "object") return "Démarrer une conversation";
+    if (!msg || typeof msg !== "object") return "Commencez la conversation 👋";
 
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
     const prefix = senderId === me?._id ? "Vous: " : "";
@@ -615,6 +671,59 @@ export default function Messages() {
   /* =====================================================
      LOAD FRIENDS / CONVERSATIONS
   ===================================================== */
+  const loadFriendsAndConversations = useCallback(async () => {
+    if (!token || isDirectConversation) return;
+
+    setLoadingConversations(true);
+    setErrorFriends("");
+
+    try {
+      const [friendsData, inboxData] = await Promise.all([
+        fetchFriends(),
+        fetchInbox(),
+      ]);
+
+      const rawFriends = Array.isArray(friendsData) ? friendsData : [];
+      const normalizedFriends = rawFriends
+        .map(normalizeFriend)
+        .filter((u) => u && u._id)
+        .reduce((acc, user) => {
+          if (!acc.some((u) => u._id === user._id)) {
+            acc.push(user);
+          }
+          return acc;
+        }, []);
+
+      const rawInbox = Array.isArray(inboxData)
+        ? inboxData
+        : Array.isArray(inboxData?.data)
+        ? inboxData.data
+        : [];
+      const normalizedInbox = rawInbox
+        .map(normalizeFriend)
+        .filter((u) => u && u._id)
+        .reduce((acc, user) => {
+          if (!acc.some((u) => u._id === user._id)) {
+            acc.push(user);
+          }
+          return acc;
+        }, []);
+
+      const merged = mergeFriendsWithConversations(
+        normalizedFriends,
+        normalizedInbox
+      );
+
+      setFriends(merged);
+    } catch (err) {
+      console.error("Erreur chargement amis :", err);
+      setErrorFriends(loadErrorMessage);
+      setFriends([]);
+    } finally {
+      setLoadingConversations(false);
+    }
+  }, [isDirectConversation, mergeFriendsWithConversations, token]);
+
   useEffect(() => {
     if (!token) {
       setFriends([]);
@@ -628,52 +737,8 @@ export default function Messages() {
       return;
     }
 
-    let cancelled = false;
-
-    const loadConversations = async () => {
-      setLoadingConversations(true);
-      setErrorFriends("");
-
-      try {
-        const data = await fetchInbox();
-        const raw = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.data)
-          ? data.data
-          : [];
-
-        const list = raw
-          .map(normalizeFriend)
-          .filter((u) => u && u._id)
-          .reduce((acc, user) => {
-            if (!acc.some((u) => u._id === user._id)) {
-              acc.push(user);
-            }
-            return acc;
-          }, []);
-
-        if (!cancelled) {
-          setFriends(list);
-        }
-      } catch (err) {
-        console.error("Erreur chargement amis :", err);
-        if (!cancelled) {
-          setErrorFriends(loadErrorMessage);
-          setFriends([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingConversations(false);
-        }
-      }
-    };
-
-    loadConversations();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, isDirectConversation]);
+    loadFriendsAndConversations();
+  }, [isDirectConversation, loadFriendsAndConversations, token]);
 
   const loadRequests = useCallback(async () => {
     if (!token) {
@@ -700,10 +765,6 @@ export default function Messages() {
   }, [loadRequests]);
 
   const pendingRequestsCount = requests.length;
-
-  const getFriendId = useCallback((friend) => {
-    return String(friend?._id || friend?.id || friend?.user?._id || "");
-  }, []);
 
   const scrollConversationIntoView = useCallback((conversationKey) => {
     if (!conversationKey) return;
@@ -921,6 +982,10 @@ export default function Messages() {
       );
     };
 
+    const handleFriendAccepted = () => {
+      loadFriendsAndConversations();
+    };
+
     const handleConversationCreated = (payload) => {
       const conversation = payload?.conversation || payload?.data || payload;
       if (!conversation?._id) return;
@@ -982,6 +1047,7 @@ export default function Messages() {
     socket.on("message_deleted", handleMessageDeleted);
     socket.on("message_request_received", handleMessageRequestReceived);
     socket.on("message_read", handleMessageRead);
+    socket.on("friend:accepted", handleFriendAccepted);
     socket.on("conversation_created", handleConversationCreated);
     socket.on("typing", handleTyping);
     socket.on("call_hangup", handleCallHangup);
@@ -996,13 +1062,14 @@ export default function Messages() {
       socket.off("message_deleted", handleMessageDeleted);
       socket.off("message_request_received", handleMessageRequestReceived);
       socket.off("message_read", handleMessageRead);
+      socket.off("friend:accepted", handleFriendAccepted);
       socket.off("conversation_created", handleConversationCreated);
       socket.off("typing", handleTyping);
       socket.off("call_hangup", handleCallHangup);
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activeChat, friends, loadRequests, token]);
+  }, [activeChat, friends, loadFriendsAndConversations, loadRequests, token]);
 
   /* =====================================================
      LOAD CONVERSATION
