@@ -6,12 +6,22 @@ import {
   fetchConversationMessages,
   fetchJobConversation,
 } from "../../api/jobChatApi";
-import { API_URL } from "../../api/config";
 import MessageList from "../../components/jobchat/MessageList";
 import MessageInput from "../../components/jobchat/MessageInput";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import "../../styles/job-chat.css";
+
+const API_URL = import.meta.env.VITE_API_URL;
+const loadErrorMessage = "Impossible de charger vos conversations";
+
+const ensureJsonResponse = async (res) => {
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error("Réponse serveur invalide");
+  }
+  return res.json();
+};
 
 const getId = (value) => (typeof value === "object" ? value?._id : value);
 
@@ -68,6 +78,12 @@ export default function JobConversationPage() {
     let active = true;
 
     const loadConversation = async () => {
+      if (!token) {
+        setError(loadErrorMessage);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError("");
       try {
@@ -81,7 +97,7 @@ export default function JobConversationPage() {
         }
       } catch (err) {
         if (!active) return;
-        setError(err.message || "Impossible de charger la conversation.");
+        setError(loadErrorMessage);
       } finally {
         if (active) setLoading(false);
       }
@@ -105,10 +121,13 @@ export default function JobConversationPage() {
     const fetchJob = async () => {
       try {
         const res = await fetch(`${API_URL}/jobs/${jobId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
         if (!res.ok) return;
-        const data = await res.json();
+        const data = await ensureJsonResponse(res);
         if (active) {
           setJob(data?.job || data?.data || data);
         }
@@ -141,10 +160,13 @@ export default function JobConversationPage() {
 
         if (role === "candidate") {
           const res = await fetch(`${API_URL}/applications/status?jobId=${jobId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           });
           if (!res.ok) return;
-          const data = await res.json();
+          const data = await ensureJsonResponse(res);
           if (active) setAccessDenied(!data?.hasApplied);
         }
       } catch (err) {
@@ -163,10 +185,14 @@ export default function JobConversationPage() {
     let active = true;
 
     const loadMessages = async () => {
-      if (!conversationId) return;
+      if (!conversationId || !token) {
+        setError(loadErrorMessage);
+        return;
+      }
       setError("");
       try {
-        const list = await fetchConversationMessages(conversationId);
+        const targetUserId = getId(otherParticipant) || conversationId;
+        const list = await fetchConversationMessages(targetUserId);
         if (!active) return;
         const filtered = jobId
           ? list.filter((msg) =>
@@ -179,7 +205,7 @@ export default function JobConversationPage() {
         setMessages(filtered);
       } catch (err) {
         if (!active) return;
-        setError(err.message || "Impossible de charger les messages.");
+        setError(loadErrorMessage);
       }
     };
 
@@ -188,7 +214,7 @@ export default function JobConversationPage() {
     return () => {
       active = false;
     };
-  }, [conversationId, jobId]);
+  }, [conversationId, jobId, otherParticipant, token]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
