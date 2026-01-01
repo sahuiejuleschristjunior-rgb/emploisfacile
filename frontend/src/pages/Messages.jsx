@@ -1209,6 +1209,22 @@ export default function Messages() {
 
     if (navigationHandledRef.current === navigationSignature) return;
 
+    if (
+      navigationSource === "messages_icon" &&
+      !openConversationId &&
+      !highlightConversationId
+    ) {
+      navigationHandledRef.current = navigationSignature;
+      setListTab("conversations");
+      setSearch("");
+      setActiveChat(null);
+      setMessages([]);
+      setReplyTo(null);
+      setEditingMessage(null);
+      setInput("");
+      return;
+    }
+
     if (navigationSource === "notification" && openConversationId) {
       if (loadingConversations) return;
 

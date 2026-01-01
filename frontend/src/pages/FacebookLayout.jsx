@@ -775,32 +775,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   };
 
   const handleMessagesIconClick = () => {
-    const currentRole = currentUser?.role || null;
-    const professionalNotif = notifList.find(
-      (notif) =>
-        notif?.type === "message" &&
-        ((currentRole === "candidate" && notif?.from?.role === "recruiter") ||
-          (currentRole === "recruiter" && notif?.from?.role === "candidate"))
-    );
-    const professionalConversationId = getNotifConversationId(professionalNotif);
-
-    if (professionalConversationId) {
-      const basePath =
-        currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
-      nav(`${basePath}/${professionalConversationId}`, {
-        state: { source: "messages_icon" },
-      });
-      return;
-    }
-
-    const state = lastUnreadConversationId
-      ? {
-          highlightConversationId: lastUnreadConversationId,
-          source: "messages_icon",
-        }
-      : { source: "messages_icon" };
-
-    nav("/messages", { state });
+    nav("/messages", { state: { source: "messages_icon" } });
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
