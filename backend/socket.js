@@ -4,6 +4,33 @@ const jwt = require("jsonwebtoken");
 const Notification = require("./models/Notification");
 
 let io = null;
+const userSockets = new Map();
+const socketUsers = new Map();
+
+function registerSocket(userId, socketId) {
+  if (!userId || !socketId) return;
+  const key = String(userId);
+  const existing = userSockets.get(key) || new Set();
+  existing.add(socketId);
+  userSockets.set(key, existing);
+  socketUsers.set(socketId, key);
+}
+
+function unregisterSocket(socketId) {
+  if (!socketId) return;
+  const userId = socketUsers.get(socketId);
+  if (!userId) return;
+  const existing = userSockets.get(userId);
+  if (existing) {
+    existing.delete(socketId);
+    if (existing.size === 0) {
+      userSockets.delete(userId);
+    } else {
+      userSockets.set(userId, existing);
+    }
+  }
+  socketUsers.delete(socketId);
+}
 
 /* ============================================================
    FONCTION GLOBALE POUR ENVOYER UNE NOTIFICATION
@@ -58,6 +85,7 @@ function initSocket(server) {
   io.use((socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
+      const authUserId = socket.handshake.auth?.userId;
       if (!token) {
         const err = new Error("Token obligatoire");
         err.data = { code: "NO_TOKEN" };
@@ -79,6 +107,14 @@ function initSocket(server) {
 
       const decoded = jwt.verify(rawToken, process.env.JWT_SECRET);
       socket.userId = decoded.id;
+      if (authUserId && String(authUserId) !== String(decoded.id)) {
+        console.warn(
+          "⚠️ Socket auth userId mismatch:",
+          authUserId,
+          "≠",
+          decoded.id
+        );
+      }
       return next();
     } catch (err) {
       const error = new Error("Token invalide");
@@ -93,8 +129,22 @@ function initSocket(server) {
   io.on("connection", (socket) => {
     const userId = socket.userId;
     socket.join(String(userId));
+    registerSocket(userId, socket.id);
 
     console.log("🔌 Socket connecté :", userId, "| ID :", socket.id);
+
+    /* ============================================================
+       JOB CHAT — ROOMS DÉDIÉES
+    ============================================================ */
+    socket.on("job:join", ({ conversationId }) => {
+      if (!conversationId) return;
+      socket.join(`job:${conversationId}`);
+    });
+
+    socket.on("job:leave", ({ conversationId }) => {
+      if (!conversationId) return;
+      socket.leave(`job:${conversationId}`);
+    });
 
     /* ============================================================
        MESSAGES — TEMPS RÉEL
@@ -286,6 +336,7 @@ function initSocket(server) {
 
     socket.on("disconnect", () => {
       console.log("❌ Déconnexion :", userId);
+      unregisterSocket(socket.id);
       socket.broadcast.emit("user_offline", userId);
     });
   });
@@ -301,4 +352,15 @@ function getIO() {
   return io;
 }
 
-module.exports = { initSocket, getIO, sendNotification };
+function getSocketIdsByUser(userId) {
+  if (!userId) return [];
+  const sockets = userSockets.get(String(userId));
+  return sockets ? Array.from(sockets) : [];
+}
+
+module.exports = {
+  initSocket,
+  getIO,
+  sendNotification,
+  getSocketIdsByUser,
+};

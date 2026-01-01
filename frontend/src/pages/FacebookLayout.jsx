@@ -329,10 +329,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     if (!authToken) return;
 
     const SOCKET_URL = "https://emploisfacile.org";
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser)?._id : null;
 
     const s = io(SOCKET_URL, {
       path: "/socket.io",
-      auth: { token: authToken || "" },
+      auth: { token: authToken || "", userId },
       transports: ["polling", "websocket"],
       reconnection: true,
       reconnectionDelay: 500,

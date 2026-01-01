@@ -829,9 +829,11 @@ export default function Messages() {
   ===================================================== */
   useEffect(() => {
     if (!token) return undefined;
+    const storedUser = localStorage.getItem("user");
+    const userId = storedUser ? JSON.parse(storedUser)?._id : null;
     const socket = io(SOCKET_URL, {
       path: "/socket.io/",
-      auth: { token },
+      auth: { token, userId },
       transports: ["websocket", "polling"],
     });
 
