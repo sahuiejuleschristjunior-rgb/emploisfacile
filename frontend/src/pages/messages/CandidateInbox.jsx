@@ -2,10 +2,19 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import { fetchJobChatConversations } from "../../api/jobChatApi";
-import { API_URL } from "../../api/config";
 import "../../styles/job-chat.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
 const getId = (value) => (typeof value === "object" ? value?._id : value);
+const loadErrorMessage = "Impossible de charger vos conversations";
+
+const ensureJsonResponse = async (res) => {
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new Error("Réponse serveur invalide");
+  }
+  return res.json();
+};
 
 const resolveOtherParticipant = (participants, currentUserId) => {
   if (!Array.isArray(participants)) return null;
@@ -37,7 +46,7 @@ export default function CandidateInbox() {
         setConversations(list);
       } catch (err) {
         if (!active) return;
-        setError(err.message || "Impossible de charger les conversations.");
+        setError(loadErrorMessage);
       } finally {
         if (active) setLoading(false);
       }
@@ -57,11 +66,14 @@ export default function CandidateInbox() {
     const fetchApplications = async () => {
       try {
         const res = await fetch(`${API_URL}/applications/my-applications`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
         if (!res.ok) return;
-        const data = await res.json();
+        const data = await ensureJsonResponse(res);
         const apps = Array.isArray(data) ? data : data.applications || [];
         if (!active) return;
         setAllowedJobIds(new Set(apps.map((app) => String(app?.job?._id)).filter(Boolean)));
@@ -93,9 +105,12 @@ export default function CandidateInbox() {
         const results = await Promise.all(
           missing.map((jobId) =>
             fetch(`${API_URL}/jobs/${jobId}`, {
-              headers: { Authorization: `Bearer ${token}` },
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
             })
-              .then((res) => res.json())
+              .then((res) => ensureJsonResponse(res))
               .then((data) => ({
                 id: jobId,
                 job: data?.job || data?.data || data,
