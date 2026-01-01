@@ -172,6 +172,7 @@ export default function useCandidateDashboardData() {
       company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
       when: app.interviewDate || app.updatedAt || app.createdAt,
       recruiter: app.job?.recruiter,
+      job: app.job,
     }));
   }, [groupedApps.interview]);
 

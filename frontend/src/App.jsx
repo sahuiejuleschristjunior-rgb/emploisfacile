@@ -40,11 +40,13 @@ import RecruiterOffers from "./pages/recruiter/RecruiterOffers";
 import RecruiterCvTheque from "./pages/recruiter/RecruiterCvTheque";
 import JobConnectApplications from "./pages/candidate/JobConnectApplications";
 import JobConnectInterviews from "./pages/candidate/JobConnectInterviews";
-import JobConnectMessages from "./pages/candidate/JobConnectMessages";
 import JobConnectFavorites from "./pages/candidate/JobConnectFavorites";
 import JobConnectAgenda from "./pages/candidate/JobConnectAgenda";
 import JobConnectProfile from "./pages/candidate/JobConnectProfile";
 import ProfessionalProfile from "./pages/candidate/ProfessionalProfile";
+import RecruiterInbox from "./pages/messages/RecruiterInbox";
+import CandidateInbox from "./pages/messages/CandidateInbox";
+import JobConversationPage from "./pages/messages/JobConversationPage";
 
 import FacebookFeed from "./components/FacebookFeed";
 
@@ -220,6 +222,11 @@ export default function App() {
                   <Route path="cv-theque" element={<RecruiterCvTheque />} />
                   <Route path="job/:jobId" element={<RecruiterJobApplications />} />
                   <Route path="create-job" element={<CreateJobPage />} />
+                  <Route path="messages" element={<RecruiterInbox />} />
+                  <Route
+                    path="messages/:conversationId"
+                    element={<JobConversationPage />}
+                  />
                 </Route>
 
                 <Route
@@ -233,7 +240,11 @@ export default function App() {
                   <Route path="dashboard" element={<CandidateDashboard />} />
                   <Route path="candidatures" element={<JobConnectApplications />} />
                   <Route path="entretiens" element={<JobConnectInterviews />} />
-                  <Route path="messages" element={<JobConnectMessages />} />
+                  <Route path="messages" element={<CandidateInbox />} />
+                  <Route
+                    path="messages/:conversationId"
+                    element={<JobConversationPage />}
+                  />
                   <Route path="favoris" element={<JobConnectFavorites />} />
                   <Route path="agenda" element={<JobConnectAgenda />} />
                   <Route path="profil" element={<JobConnectProfile />} />

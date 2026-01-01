@@ -33,12 +33,12 @@ export function ApplicationCard({ app, onOpen, onContact, onCall }) {
     inreview: {
       label: "Relancer le recruteur",
       hint: "Envoyez un message cordial pour demander un retour.",
-      action: () => onContact(recruiter),
+      action: () => onContact(recruiter, job),
     },
     reviewing: {
       label: "Relancer le recruteur",
       hint: "Envoyez un message cordial pour demander un retour.",
-      action: () => onContact(recruiter),
+      action: () => onContact(recruiter, job),
     },
     accepted: {
       label: "Répondre à l'offre",
@@ -58,7 +58,7 @@ export function ApplicationCard({ app, onOpen, onContact, onCall }) {
     default: {
       label: "Relancer le recruteur",
       hint: "Un court message suffit pour se rappeler à lui.",
-      action: () => onContact(recruiter),
+      action: () => onContact(recruiter, job),
     },
   };
 

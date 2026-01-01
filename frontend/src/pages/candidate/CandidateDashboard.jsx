@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/CandidateDashboard.css";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
+import { createJobConversation } from "../../api/jobChatApi";
 import {
   ApplicationCard,
   ApplicationPipeline,
@@ -23,14 +24,23 @@ export default function CandidateDashboard() {
     if (jobId) nav(`/emplois/${jobId}`);
   };
 
-  const contactRecruiter = (recruiter) => {
-    nav("/messages", {
-      state: {
-        userId: recruiter._id,
-        name: recruiter.name || recruiter.companyName,
-        avatar: recruiter.avatar,
-      },
-    });
+  const contactRecruiter = async (recruiter, job) => {
+    if (!recruiter?._id || !job?._id || !data.user?._id) return;
+    try {
+      const conversation = await createJobConversation({
+        participants: [data.user._id, recruiter._id],
+        jobId: job._id,
+      });
+      nav(`/candidate/messages/${conversation._id}`, {
+        state: {
+          jobId: job._id,
+          jobTitle: job.title,
+          otherParticipant: recruiter,
+        },
+      });
+    } catch (err) {
+      console.error("Erreur conversation", err);
+    }
   };
 
   const callRecruiter = (recruiter) => {
@@ -96,6 +106,7 @@ export default function CandidateDashboard() {
       company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
       when: app.interviewDate || app.updatedAt || app.createdAt,
       recruiter: app.job?.recruiter,
+      job: app.job,
     }));
   }, [data.groupedApps.interview]);
 
@@ -195,7 +206,7 @@ export default function CandidateDashboard() {
                 <div className="agenda-actions">
                   <button
                     className="ghost-btn"
-                    onClick={() => contactRecruiter(event.recruiter || {})}
+                    onClick={() => contactRecruiter(event.recruiter || {}, event.job)}
                   >
                     Contacter
                   </button>

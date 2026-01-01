@@ -11,7 +11,7 @@ const recruiterMenu = [
   { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
   { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
   { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
-  { key: "messages", label: "Messages", path: "/messages" },
+  { key: "messages", label: "Messages", path: "/recruiter/messages" },
   { key: "profil", label: "Entreprise", path: "/profil" },
   { key: "settings", label: "Paramètres", path: "/settings" },
 ];

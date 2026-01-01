@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
+import { createJobConversation } from "../../api/jobChatApi";
 import "../../styles/RecruiterDashboard.css";
 
 export default function RecruiterAllApplications() {
@@ -263,11 +264,24 @@ export default function RecruiterAllApplications() {
 
           <button
             className="ghost-btn"
-            onClick={() =>
-              nav("/messages", {
-                state: { openUserId: candidate._id },
-              })
-            }
+            onClick={async () => {
+              if (!candidate?._id || !job?._id || !user?._id) return;
+              try {
+                const conversation = await createJobConversation({
+                  participants: [user._id, candidate._id],
+                  jobId: job._id,
+                });
+                nav(`/recruiter/messages/${conversation._id}`, {
+                  state: {
+                    jobId: job._id,
+                    jobTitle: job.title,
+                    otherParticipant: candidate,
+                  },
+                });
+              } catch (err) {
+                console.error("Erreur conversation", err);
+              }
+            }}
           >
             Contacter →
           </button>

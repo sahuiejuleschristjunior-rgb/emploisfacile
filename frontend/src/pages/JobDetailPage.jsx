@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
+import { createJobConversation } from "../api/jobChatApi";
 
 const formatDate = (value) => {
   if (!value) return "Date inconnue";
@@ -20,6 +21,7 @@ const resolveCompanyName = (job) =>
 export default function JobDetailPage() {
   const { id } = useParams();
   const location = useLocation();
+  const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
   // L'utilisateur est stocké côté frontend dans localStorage ("user")
@@ -45,6 +47,7 @@ export default function JobDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [contactError, setContactError] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -211,6 +214,42 @@ export default function JobDetailPage() {
       tags,
     };
   }, [job]);
+
+  const handleContactRecruiter = async () => {
+    setContactError(null);
+    if (!user || user.role !== "candidate") {
+      nav("/login");
+      return;
+    }
+
+    if (!hasApplied) {
+      setContactError("Vous devez d'abord postuler à cette offre.");
+      return;
+    }
+
+    const recruiterId = job?.recruiter?._id || job?.recruiter;
+    if (!recruiterId) {
+      setContactError("Recruteur introuvable.");
+      return;
+    }
+
+    try {
+      const conversation = await createJobConversation({
+        participants: [user._id, recruiterId],
+        jobId: job._id,
+      });
+
+      nav(`/candidate/messages/${conversation._id}`, {
+        state: {
+          jobId: job._id,
+          jobTitle: job.title,
+          otherParticipant: job.recruiter,
+        },
+      });
+    } catch (err) {
+      setContactError(err.message || "Impossible d'ouvrir la conversation.");
+    }
+  };
 
   if (loading) {
     return (
@@ -428,9 +467,19 @@ export default function JobDetailPage() {
                 <p className="job-detail-contact-title">{jobDetails.companyName}</p>
                 <p className="job-detail-muted">{jobDetails.recruiterEmail}</p>
               </div>
-              <button className="primary-btn ghost" type="button">
-                Envoyer un message
+              <button
+                className="primary-btn ghost"
+                type="button"
+                disabled={checkingStatus || !hasApplied}
+                onClick={handleContactRecruiter}
+              >
+                Contacter le recruteur
               </button>
+              {contactError && (
+                <p className="job-detail-muted" style={{ marginTop: 8 }}>
+                  {contactError}
+                </p>
+              )}
             </div>
             <div className="job-detail-info">
               <div>
