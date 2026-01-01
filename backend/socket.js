@@ -33,7 +33,6 @@ async function sendNotification(userId, notification) {
 ============================================================ */
 function initSocket(server) {
   const FRONTEND_ORIGIN = process.env.FRONTEND_URL || "*";
-  const isDev = process.env.NODE_ENV !== "production";
 
   io = new Server(server, {
     cors: {
@@ -96,32 +95,6 @@ function initSocket(server) {
     socket.join(String(userId));
 
     console.log("🔌 Socket connecté :", userId, "| ID :", socket.id);
-
-    if (isDev) {
-      console.log("🧩 JobChat socket connecté :", userId);
-    }
-
-    /* ============================================================
-       JOB CHAT — ROOMS DÉDIÉES
-    ============================================================ */
-    socket.on("job:join", ({ conversationId } = {}) => {
-      if (!conversationId) return;
-      const room = `job:${conversationId}`;
-      socket.join(room);
-      if (isDev) {
-        console.log("🧩 JobChat join room:", room, "user:", userId);
-      }
-      socket.emit("job:joined", { conversationId });
-    });
-
-    socket.on("job:leave", ({ conversationId } = {}) => {
-      if (!conversationId) return;
-      const room = `job:${conversationId}`;
-      socket.leave(room);
-      if (isDev) {
-        console.log("🧩 JobChat leave room:", room, "user:", userId);
-      }
-    });
 
     /* ============================================================
        MESSAGES — TEMPS RÉEL
