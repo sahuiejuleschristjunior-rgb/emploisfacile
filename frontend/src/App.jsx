@@ -18,6 +18,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import FacebookLayout from "./pages/FacebookLayout";
 import ProfilPage from "./pages/ProfilPage";
 import PublicProfile from "./pages/PublicProfile";
+import FriendViewer from "./pages/FriendViewer";
 import NotifsPage from "./pages/NotifsPage";
 import EmploisPage from "./pages/EmploisPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -140,6 +141,7 @@ export default function App() {
 
                 {/* Profil Public */}
                 <Route path="/profil/:id" element={<PublicProfile />} />
+                <Route path="/profil/:id/amis" element={<FriendViewer />} />
 
                 {/* Centre publicitaire indépendant */}
                 <Route path="/fb/ads/*" element={<Navigate to="/ads" replace />} />
