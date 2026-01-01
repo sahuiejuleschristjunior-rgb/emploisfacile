@@ -7,7 +7,7 @@ import "../styles/friend-viewer.css";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const resolveAvatar = (user) => {
-  if (!user) return null;
+  if (!user) return "/default-avatar.png";
 
   const avatar =
     user.avatar ||
@@ -16,45 +16,11 @@ const resolveAvatar = (user) => {
     user.picture ||
     user.profile?.avatar;
 
-  if (!avatar) return null;
+  if (!avatar) return "/default-avatar.png";
   if (avatar.startsWith("http")) return avatar;
 
   const baseUrl = API_URL || "";
   return `${baseUrl}${avatar.startsWith("/") ? avatar : `/${avatar}`}`;
-};
-
-const getInitials = (user) => {
-  if (!user) return "?";
-  const rawName = user.name || user.fullName || "";
-  const parts = rawName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (parts.length === 0) return "?";
-  const first = parts[0]?.[0] || "";
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "";
-  const initials = `${first}${last}`.toUpperCase();
-  return initials || "?";
-};
-
-const FriendAvatar = ({ user, name }) => {
-  const [hasError, setHasError] = useState(false);
-  const avatar = useMemo(() => resolveAvatar(user), [user]);
-  const initials = useMemo(() => getInitials(user || { name }), [user, name]);
-
-  if (!avatar || hasError) {
-    return <div className="friend-avatar-fallback">{initials}</div>;
-  }
-
-  return (
-    <img
-      src={avatar}
-      alt={`Photo de ${name}`}
-      className="friend-avatar"
-      loading="lazy"
-      onError={() => setHasError(true)}
-    />
-  );
 };
 
 const normalizeFriend = (friend) => {
@@ -169,7 +135,12 @@ export default function FriendViewer() {
                 className="friend-viewer-card"
                 onClick={() => handleProfileOpen(friend.id)}
               >
-                <FriendAvatar user={friend.user} name={friend.name} />
+                <img
+                  src={resolveAvatar(friend.user)}
+                  alt={`Photo de ${friend.name}`}
+                  className="friend-avatar"
+                  loading="lazy"
+                />
                 <div className="friend-viewer-details">
                   <div className="friend-viewer-name">{friend.name}</div>
                   <span className="friend-viewer-action">Voir le profil</span>
