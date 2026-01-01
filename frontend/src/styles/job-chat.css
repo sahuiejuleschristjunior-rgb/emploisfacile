@@ -143,6 +143,22 @@
   background: #2563eb;
 }
 
+.job-msg--new .job-chat-bubble {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7);
+  animation: job-chat-highlight 1.2s ease-out;
+}
+
+@keyframes job-chat-highlight {
+  0% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.7);
+    transform: translateY(0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    transform: translateY(0);
+  }
+}
+
 .job-chat-bubble p {
   margin: 0;
 }
