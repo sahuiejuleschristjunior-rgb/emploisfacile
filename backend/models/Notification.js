@@ -1,95 +1,51 @@
 const mongoose = require("mongoose");
 
 /*
-  TYPES DE NOTIFICATION PRIS EN CHARGE :
-
-  💬 message
-  👍 like
-  💬 comment
-  ↩️ reply
-  👤 friend_request
-  👥 friend_accept
-  ❌ friend_reject
-  🗑️ friend_remove
-  ➕ follow
-  ➖ unfollow
-  📞 call
-  👀 read_receipt
-  ✍️ typing
-  📰 story_new
+  MODÈLE DE NOTIFICATION (STRICT)
+  - userId : destinataire
+  - type : "public" | "job"
+  - actionType : nature de l'action
+  - relatedId : identifiant lié à l'action
 */
 
 const NotificationSchema = new mongoose.Schema(
   {
-    // Destinataire de la notification
-    user: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
+      index: true,
     },
 
-    // Expéditeur / auteur de l’action
+    type: {
+      type: String,
+      enum: ["public", "job"],
+      required: true,
+      index: true,
+    },
+
+    actionType: {
+      type: String,
+      required: true,
+    },
+
+    relatedId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
+
+    // Expéditeur / auteur de l’action (optionnel pour affichage)
     from: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
-    },
-
-    // Type de notification
-    type: {
-      type: String,
-      required: true,
-      enum: [
-        "like",
-        "comment",
-        "reply",
-        "message",
-        "friend_request",
-        "friend_accept",
-        "friend_reject",
-        "friend_remove",
-        "follow",
-        "unfollow",
-        "call",
-        "read_receipt",
-        "typing",
-        "story_new",
-        "message_request",
-        "page_follow",
-      ],
-    },
-
-    // Post lié (like / comment / reply)
-    post: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Post",
       default: null,
     },
 
-    // Story liée (permet d’éviter toute erreur dans le populate)
-    story: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Story",
-      default: null,
-    },
-
-    // Page liée (follow / posts)
-    page: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Page",
-      default: null,
-    },
-
-    // Texte optionnel
+    // Texte optionnel (pour affichage)
     text: {
       type: String,
       default: "",
-    },
-
-    // Statut : lu / non-lu
-    read: {
-      type: Boolean,
-      default: false
     },
   },
   { timestamps: true }

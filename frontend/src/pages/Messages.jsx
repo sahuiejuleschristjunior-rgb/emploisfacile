@@ -12,6 +12,7 @@ import {
   sendMessagePayload,
 } from "../api/messagesApi";
 import { useActiveConversation } from "../context/ActiveConversationContext";
+import { useNotifications } from "../context/NotificationContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_HOST = API_URL?.replace(/\/?api$/, "");
@@ -185,6 +186,7 @@ export default function Messages() {
   /* =====================================================
      STATE
   ===================================================== */
+  const { deleteByType } = useNotifications() || {};
   const [friends, setFriends] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [errorFriends, setErrorFriends] = useState("");
@@ -218,6 +220,10 @@ export default function Messages() {
   const token = localStorage.getItem("token");
   const me = JSON.parse(localStorage.getItem("user"));
   const { setActiveConversationId, setIsUserTyping } = useActiveConversation() || {};
+
+  useEffect(() => {
+    deleteByType?.("public");
+  }, [deleteByType]);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);

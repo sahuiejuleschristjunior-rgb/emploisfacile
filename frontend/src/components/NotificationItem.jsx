@@ -15,10 +15,12 @@ const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org";
 
 export default function NotificationItem({ notif, onHandled }) {
   const navigate = useNavigate();
-  const { removeNotifications } = useNotifications() || {};
+  const { removeNotifications, deleteById, deleteByRelated } =
+    useNotifications() || {};
   const storedUser = localStorage.getItem("user");
   const currentUser = storedUser ? JSON.parse(storedUser) : null;
   const currentRole = currentUser?.role || null;
+  const actionType = notif.actionType || notif.type;
 
   const getNotifConversationId = (item) =>
     item?.conversationId ||
@@ -28,14 +30,14 @@ export default function NotificationItem({ notif, onHandled }) {
     item?.from?._id ||
     item?.from;
 
-  const isFriendRequest = notif.type === "friend_request";
+  const isFriendRequest = actionType === "friend_request";
   const senderRole = notif.from?.role || null;
   const isProfessionalMessage =
-    notif.type === "message" &&
+    actionType === "message" &&
     ((currentRole === "candidate" && senderRole === "recruiter") ||
       (currentRole === "recruiter" && senderRole === "candidate"));
 
-  const notifClass = notif.read ? "notif-item read" : "notif-item unread";
+  const notifClass = "notif-item unread";
 
   const avatarUrl = notif.from?.avatar
     ? notif.from.avatar.startsWith("http")
@@ -46,7 +48,7 @@ export default function NotificationItem({ notif, onHandled }) {
   let message = "";
   let icon = "✨";
 
-  switch (notif.type) {
+  switch (actionType) {
     case "like":
       message = "a aimé votre publication.";
       icon = "👍";
@@ -65,6 +67,11 @@ export default function NotificationItem({ notif, onHandled }) {
     case "message":
       message = `vous a envoyé un message : "${(notif.text || "").slice(0, 40)}"`;
       icon = "✉️";
+      break;
+
+    case "message_request":
+      message = "vous a envoyé une demande de message.";
+      icon = "💬";
       break;
 
     case "friend_request":
@@ -95,9 +102,10 @@ export default function NotificationItem({ notif, onHandled }) {
   const handleAccept = async (e) => {
     e.stopPropagation();
     await acceptFriendRequest(notif.from._id);
+    await deleteByRelated?.(notif.relatedId);
     removeNotifications?.(
       (n) =>
-        n.type === "friend_request" &&
+        (n.actionType || n.type) === "friend_request" &&
         String(n.from?._id || n.from) === String(notif.from._id)
     );
     onHandled?.(notif._id, { handled: true }); // ✔ Empêche la notif de revenir
@@ -106,20 +114,28 @@ export default function NotificationItem({ notif, onHandled }) {
   const handleReject = async (e) => {
     e.stopPropagation();
     await rejectFriendRequest(notif.from._id);
+    await deleteByRelated?.(notif.relatedId);
     removeNotifications?.(
       (n) =>
-        n.type === "friend_request" &&
+        (n.actionType || n.type) === "friend_request" &&
         String(n.from?._id || n.from) === String(notif.from._id)
     );
     onHandled?.(notif._id, { handled: true }); // ✔ Empêche la notif de revenir
   };
 
-  const handleClick = () => {
+  const handleClick = async () => {
     if (isFriendRequest) return;
 
     const notifConversationId = getNotifConversationId(notif);
 
-    if (notif.type === "message") {
+    if (actionType === "message_request") {
+      await deleteByRelated?.(notif.relatedId);
+      navigate("/messages", { replace: true, state: { source: "notification" } });
+      return;
+    }
+
+    if (actionType === "message") {
+      await deleteByRelated?.(notif.relatedId);
       removeNotifications?.((item) => item._id === notif._id);
       if (isProfessionalMessage) {
         const basePath =
@@ -140,12 +156,14 @@ export default function NotificationItem({ notif, onHandled }) {
       return;
     }
 
-    if (notif.post?._id) {
-      navigate(`/fb/post/${notif.post._id}`);
+    if (["like", "comment", "reply"].includes(actionType) && notif.relatedId) {
+      await deleteById?.(notif._id);
+      navigate(`/fb/post/${notif.relatedId}`);
       return;
     }
 
     if (notif.from?._id) {
+      await deleteById?.(notif._id);
       navigate(`/profil/${notif.from._id}`);
     }
   };

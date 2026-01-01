@@ -77,7 +77,8 @@ export default function useRelation(targetId) {
     ]);
 
     const hasRelatedNotification = notifications.some((n) => {
-      if (!n?.type || !relevantTypes.has(n.type)) return false;
+      const actionType = n?.actionType || n?.type;
+      if (!actionType || !relevantTypes.has(actionType)) return false;
       const fromId = n.from?._id || n.from;
       return String(fromId) === String(targetId);
     });

@@ -9,7 +9,7 @@ import { useNotifications } from "../context/NotificationContext";
 export default function NotifsPage() {
     const nav = useNavigate();
     const token = localStorage.getItem("token");
-    const { notifications = [], markAllAsRead, removeNotifications, loading } = useNotifications() || {};
+    const { notifications = [], removeNotifications, loading } = useNotifications() || {};
 
     useEffect(() => {
         if (!token) {
@@ -17,11 +17,6 @@ export default function NotifsPage() {
             return;
         }
     }, [token, nav]);
-
-    useEffect(() => {
-        if (notifications.length === 0) return;
-        markAllAsRead?.();
-    }, [notifications, markAllAsRead]);
 
     return (
         <div className="notifs-wrapper">

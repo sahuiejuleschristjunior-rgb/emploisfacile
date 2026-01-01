@@ -10,12 +10,12 @@ const { getIO } = require("../socket");
 ============================================================ */
 async function pushNotification(userId, data) {
   const notif = await Notification.create({
-    user: userId,
-    from: data.from,
-    type: data.type,
+    userId,
+    from: data.from || null,
+    type: "public",
+    actionType: data.actionType,
+    relatedId: data.relatedId,
     text: data.text,
-    story: data.story || null,
-    read: false,
   });
 
   getIO().to(String(userId)).emit("notification:new", notif);
@@ -46,9 +46,9 @@ exports.create = async (req, res) => {
       author.followers.forEach((followerId) => {
         pushNotification(followerId, {
           from: req.user.id,
-          type: "story_new",
+          actionType: "story_new",
+          relatedId: story._id,
           text: `${author.name} a publié une nouvelle story.`,
-          story: story._id,
         });
 
         getIO().to(String(followerId)).emit("story:new", story);
@@ -127,9 +127,9 @@ exports.reactToStory = async (req, res) => {
     if (String(story.user) !== String(userId)) {
       await pushNotification(story.user, {
         from: userId,
-        type: "story_reaction",
+        actionType: "story_reaction",
+        relatedId: story._id,
         text: "A réagi à votre story.",
-        story: story._id,
       });
 
       // Socket temps réel

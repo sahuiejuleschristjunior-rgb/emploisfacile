@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import { fetchJobChatConversations } from "../../api/jobChatApi";
 import "../../styles/job-chat.css";
+import { useNotifications } from "../../context/NotificationContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const getId = (value) => (typeof value === "object" ? value?._id : value);
@@ -25,6 +26,7 @@ const resolveOtherParticipant = (participants, currentUserId) => {
 
 export default function RecruiterInbox() {
   const nav = useNavigate();
+  const { deleteByType } = useNotifications() || {};
   const token = localStorage.getItem("token");
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -33,6 +35,10 @@ export default function RecruiterInbox() {
   const [jobsById, setJobsById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    deleteByType?.("job");
+  }, [deleteByType]);
 
   useEffect(() => {
     let active = true;

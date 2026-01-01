@@ -1,18 +1,31 @@
 // socket.js
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
+const Notification = require("./models/Notification");
 
 let io = null;
 
 /* ============================================================
    FONCTION GLOBALE POUR ENVOYER UNE NOTIFICATION
 ============================================================ */
-function sendNotification(userId, notification) {
-  if (!io) return;
-  io.to(String(userId)).emit("notification", {
-    ...notification,
-    createdAt: new Date(),
-  });
+async function sendNotification(userId, notification) {
+  if (!io || !notification) return;
+  const { type, actionType, relatedId, from = null, text = "" } = notification;
+  if (!type || !actionType || !relatedId) return;
+
+  try {
+    const notif = await Notification.create({
+      userId,
+      type,
+      actionType,
+      relatedId,
+      from,
+      text,
+    });
+    io.to(String(userId)).emit("notification:new", notif);
+  } catch (err) {
+    console.error("SOCKET NOTIF ERROR:", err);
+  }
 }
 
 /* ============================================================
@@ -98,12 +111,6 @@ function initSocket(server) {
 
       io.to(String(receiver)).emit("new_message", payload);
       io.to(String(userId)).emit("new_message", payload);
-
-      sendNotification(receiver, {
-        type: "message",
-        from: userId,
-        text: "Vous avez reçu un nouveau message",
-      });
     });
 
     /* ============================================================
@@ -133,7 +140,9 @@ function initSocket(server) {
     socket.on("friend_request", ({ to }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "friend_request",
+        type: "public",
+        actionType: "friend_request",
+        relatedId: userId,
         from: userId,
         text: "Vous avez reçu une demande d’amitié",
       });
@@ -142,7 +151,9 @@ function initSocket(server) {
     socket.on("friend_accept", ({ to }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "friend_accept",
+        type: "public",
+        actionType: "friend_accept",
+        relatedId: userId,
         from: userId,
         text: "Votre demande d’amitié a été acceptée",
       });
@@ -151,7 +162,9 @@ function initSocket(server) {
     socket.on("friend_reject", ({ to }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "friend_reject",
+        type: "public",
+        actionType: "friend_reject",
+        relatedId: userId,
         from: userId,
         text: "Votre demande d’amitié a été refusée",
       });
@@ -160,7 +173,9 @@ function initSocket(server) {
     socket.on("friend_remove", ({ to }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "friend_remove",
+        type: "public",
+        actionType: "friend_remove",
+        relatedId: userId,
         from: userId,
         text: "Vous n’êtes plus amis",
       });
@@ -172,7 +187,9 @@ function initSocket(server) {
     socket.on("follow_user", ({ to }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "follow",
+        type: "public",
+        actionType: "follow",
+        relatedId: userId,
         from: userId,
         text: "Vous avez un nouvel abonné",
       });
@@ -181,7 +198,9 @@ function initSocket(server) {
     socket.on("unfollow_user", ({ to }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "unfollow",
+        type: "public",
+        actionType: "unfollow",
+        relatedId: userId,
         from: userId,
         text: "Un utilisateur s'est désabonné",
       });
@@ -193,9 +212,10 @@ function initSocket(server) {
     socket.on("post_like", ({ to, postId }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "post_like",
+        type: "public",
+        actionType: "like",
+        relatedId: postId,
         from: userId,
-        postId,
         text: "Quelqu'un aime votre publication",
       });
     });
@@ -203,9 +223,10 @@ function initSocket(server) {
     socket.on("post_comment", ({ to, postId }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "post_comment",
+        type: "public",
+        actionType: "comment",
+        relatedId: postId,
         from: userId,
-        postId,
         text: "Quelqu'un a commenté votre publication",
       });
     });
@@ -213,9 +234,10 @@ function initSocket(server) {
     socket.on("post_reply", ({ to, postId }) => {
       if (!to) return;
       sendNotification(to, {
-        type: "post_reply",
+        type: "public",
+        actionType: "reply",
+        relatedId: postId,
         from: userId,
-        postId,
         text: "Quelqu'un a répondu à votre commentaire",
       });
     });
@@ -229,7 +251,9 @@ function initSocket(server) {
       io.to(String(to)).emit("call_offer", { from: userId, offer, callType: type });
 
       sendNotification(to, {
-        type: "call",
+        type: "public",
+        actionType: "call",
+        relatedId: userId,
         from: userId,
         text: type === "audio" ? "Appel audio entrant" : "Appel entrant",
       });

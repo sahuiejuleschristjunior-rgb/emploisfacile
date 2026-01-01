@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import io from "socket.io-client";
+import { useNotifications } from "../context/NotificationContext";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
 const socket = io(API_ROOT.replace("/api", ""));
@@ -17,12 +18,17 @@ const ensureJsonResponse = async (res) => {
 export default function ChatPage() {
   const { id } = useParams();
   const token = localStorage.getItem("token");
+  const { deleteByType } = useNotifications() || {};
 
   const [viewer, setViewer] = useState(null);
   const [partner, setPartner] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    deleteByType?.("public");
+  }, [deleteByType]);
 
   useEffect(() => {
     if (!token) {

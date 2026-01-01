@@ -98,17 +98,21 @@ async function findOrCreateConversation(senderId, receiverId) {
 ============================================================ */
 async function pushNotification(userId, data) {
   const notif = await Notification.create({
-    user: userId,
-    from: data.from,
+    userId,
+    from: data.from || null,
     type: data.type,
-    text: data.text,
-    post: null,
-    read: false,
+    actionType: data.actionType,
+    relatedId: data.relatedId,
+    text: data.text || "",
   });
 
   const populated = await notif.populate("from", "name avatar role");
   getIO().to(String(userId)).emit("notification:new", populated);
   return populated;
+}
+
+function resolveNotificationType({ job, application } = {}) {
+  return job || application ? "job" : "public";
 }
 
 async function buildMessageRequest({ senderUser, receiverUser, content }) {
@@ -273,7 +277,9 @@ exports.sendMessage = async (req, res) => {
 
       await pushNotification(receiverId, {
         from: sender,
-        type: "message_request",
+        type: "public",
+        actionType: "message_request",
+        relatedId: request._id,
         text: "Nouvelle demande de message",
       });
 
@@ -346,7 +352,9 @@ exports.sendMessage = async (req, res) => {
     /* 🔥 NOTIFICATION */
     await pushNotification(receiverId, {
       from: sender,
-      type: "message",
+      type: resolveNotificationType(message),
+      actionType: "message",
+      relatedId: message._id,
       text: "Nouveau message reçu",
     });
 
@@ -418,7 +426,9 @@ exports.createMessageRequest = async (req, res) => {
 
     await pushNotification(toUser, {
       from: senderId,
-      type: "message_request",
+      type: "public",
+      actionType: "message_request",
+      relatedId: request._id,
       text: "Nouvelle demande de message",
     });
 
@@ -522,6 +532,13 @@ exports.acceptMessageRequest = async (req, res) => {
     request.status = "accepted";
     await request.save();
 
+    await Notification.deleteMany({
+      userId,
+      type: "public",
+      actionType: "message_request",
+      relatedId: request._id,
+    });
+
     const recipientView = {
       _id: conversation._id,
       user: sender,
@@ -569,6 +586,13 @@ exports.declineMessageRequest = async (req, res) => {
     request.status = "rejected";
     await request.save();
 
+    await Notification.deleteMany({
+      userId,
+      type: "public",
+      actionType: "message_request",
+      relatedId: request._id,
+    });
+
     return res.status(200).json({ success: true });
   } catch (error) {
     return res.status(500).json({
@@ -605,6 +629,13 @@ exports.blockFromMessageRequest = async (req, res) => {
 
     request.status = "rejected";
     await request.save();
+
+    await Notification.deleteMany({
+      userId,
+      type: "public",
+      actionType: "message_request",
+      relatedId: request._id,
+    });
 
     return res.status(200).json({ success: true });
   } catch (error) {
@@ -909,6 +940,13 @@ exports.markAsRead = async (req, res) => {
     message.readAt = new Date();
     await message.save();
 
+    const notificationType = resolveNotificationType(message);
+    await Notification.deleteMany({
+      userId,
+      type: notificationType,
+      relatedId: message._id,
+    });
+
     getIO().to(message.sender.toString()).emit("message_read", {
       messageId: message._id,
       readAt: message.readAt,
@@ -953,6 +991,47 @@ exports.markAllAsReadForConversation = async (req, res) => {
     getIO()
       .to(String(otherUserId))
       .emit("message_read", { withUserId: myId });
+
+    const unreadMessages = await Message.find({
+      sender: otherUserId,
+      receiver: myId,
+      isRead: true,
+    })
+      .select("_id job application")
+      .lean();
+
+    const jobIds = [];
+    const publicIds = [];
+    unreadMessages.forEach((msg) => {
+      if (resolveNotificationType(msg) === "job") {
+        jobIds.push(msg._id);
+      } else {
+        publicIds.push(msg._id);
+      }
+    });
+
+    const deletePromises = [];
+    if (jobIds.length > 0) {
+      deletePromises.push(
+        Notification.deleteMany({
+          userId: myId,
+          type: "job",
+          relatedId: { $in: jobIds },
+        })
+      );
+    }
+    if (publicIds.length > 0) {
+      deletePromises.push(
+        Notification.deleteMany({
+          userId: myId,
+          type: "public",
+          relatedId: { $in: publicIds },
+        })
+      );
+    }
+    if (deletePromises.length > 0) {
+      await Promise.all(deletePromises);
+    }
 
     return res.status(200).json({
       success: true,
