@@ -831,6 +831,13 @@ export default function FacebookFeed() {
           const postAvatarStyle = getAvatarStyle(
             isPagePost ? post.page?.avatar : post.user?.avatar
           );
+          const authorProfilePath = isPagePost
+            ? post.page?.slug
+              ? `/pages/${post.page.slug}`
+              : null
+            : post.user?._id
+            ? `/profil/${post.user._id}`
+            : null;
           const displayName = isPagePost ? post.page?.name : post.user?.name;
           const likes = post.likes?.length || 0;
           const commentsCount = post.comments?.length || 0;
@@ -873,9 +880,15 @@ export default function FacebookFeed() {
 
               {/* HEADER */}
               <div className="fb-post-header">
-                <div
-                  className="fb-post-avatar"
+                <button
+                  type="button"
+                  className="fb-post-avatar avatar-link"
                   style={postAvatarStyle}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (authorProfilePath) nav(authorProfilePath);
+                  }}
+                  aria-label="Ouvrir le profil"
                 />
                 <div className="fb-post-user">
                   <div className="fb-post-author">{displayName}</div>

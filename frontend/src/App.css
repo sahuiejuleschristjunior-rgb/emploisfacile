@@ -14,6 +14,19 @@
   display: none !important;
 }
 
+.avatar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 /* Pages (pages publiques) */
 .page-shell {
   background: #fff;

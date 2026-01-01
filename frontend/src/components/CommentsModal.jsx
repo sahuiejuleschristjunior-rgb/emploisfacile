@@ -1,5 +1,6 @@
 // CommentsModal.jsx
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/comments-modal.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 
@@ -78,6 +79,7 @@ export default function CommentsModal({
   userId: propUserId,
   targetType = "post",
 }) {
+  const nav = useNavigate();
   const token = propToken || (typeof window !== "undefined" && localStorage.getItem("token"));
   const API_URL = propApiUrl || import.meta.env.VITE_API_URL || "";
   const commentBasePath = targetType === "page" ? "posts" : "posts";
@@ -373,6 +375,13 @@ export default function CommentsModal({
   const isPagePost = post?.authorType === "page";
   const authorAvatar = isPagePost ? post?.page?.avatar : post?.user?.avatar;
   const authorName = isPagePost ? post?.page?.name : post?.user?.name;
+  const pageProfilePath = post?.page?.slug ? `/pages/${post.page.slug}` : null;
+  const authorProfilePath = post?.user?._id ? `/profil/${post.user._id}` : null;
+
+  const handleProfileNavigate = (path) => {
+    if (!path) return;
+    nav(path);
+  };
 
   return (
     <div className="cm-backdrop" onMouseDown={handleClose} role="dialog" aria-modal="true">
@@ -382,7 +391,16 @@ export default function CommentsModal({
         {/* LEFT: post preview */}
         <div className="cm-left">
           <div className="cm-post-header">
-            <div className="cm-avatar" style={getAvatarStyle(authorAvatar)} />
+            <button
+              type="button"
+              className="cm-avatar avatar-link"
+              style={getAvatarStyle(authorAvatar)}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleProfileNavigate(isPagePost ? pageProfilePath : authorProfilePath);
+              }}
+              aria-label="Ouvrir le profil"
+            />
             <div className="cm-post-meta">
               <div className="cm-post-author">{authorName}</div>
               <div className="cm-post-date">{new Date(post.createdAt).toLocaleString()}</div>
@@ -436,7 +454,16 @@ export default function CommentsModal({
               return (
                 <div className="cm-comment-wrap" key={c._id} ref={(el) => (commentsRefs.current[c._id] = el)}>
                   <div className="cm-comment">
-                    <div className="cm-comment-avatar" style={getAvatarStyle(c.user?.avatar)} />
+                    <button
+                      type="button"
+                      className="cm-comment-avatar avatar-link"
+                      style={getAvatarStyle(c.user?.avatar)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleProfileNavigate(c.user?._id ? `/profil/${c.user._id}` : null);
+                      }}
+                      aria-label="Ouvrir le profil"
+                    />
 
                     <div className="cm-comment-body">
                       <div
@@ -566,7 +593,16 @@ export default function CommentsModal({
                         const sum = getReactionSummary(r.reactions);
                         return (
                           <div key={r._id} className="cm-reply">
-                            <div className="cm-reply-avatar" style={getAvatarStyle(r.user?.avatar)} />
+                            <button
+                              type="button"
+                              className="cm-reply-avatar avatar-link"
+                              style={getAvatarStyle(r.user?.avatar)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleProfileNavigate(r.user?._id ? `/profil/${r.user._id}` : null);
+                              }}
+                              aria-label="Ouvrir le profil"
+                            />
                             <div
                               className="cm-reply-body"
                               onMouseDown={() => startLongPress(() => openReactionMenu("reply", c._id, r._id))}

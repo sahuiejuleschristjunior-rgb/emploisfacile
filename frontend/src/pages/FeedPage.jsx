@@ -497,8 +497,9 @@ export default function FeedPage() {
           <article key={id} className="feed-post-card">
             {/* --- HEADER --- */}
             <div className="feed-post-header">
-              <div
-                className="feed-post-avatar"
+              <button
+                type="button"
+                className="feed-post-avatar avatar-link"
                 style={
                   post.user?.avatar
                     ? {
@@ -508,6 +509,13 @@ export default function FeedPage() {
                       }
                     : {}
                 }
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (post.user?._id) {
+                    nav(`/profil/${post.user._id}`);
+                  }
+                }}
+                aria-label="Ouvrir le profil"
               />
 
               <div style={{ flex: 1 }}>

@@ -112,13 +112,21 @@ export default function PhotoViewerPage() {
         <button className="pv-close" onClick={() => nav(-1)}>✕</button>
 
         <div className="pv-user">
-          <div
-            className="pv-avatar"
+          <button
+            type="button"
+            className="pv-avatar avatar-link"
             style={
               post.user?.avatar
                 ? { backgroundImage: `url(${getImageUrl(post.user.avatar)})` }
                 : {}
             }
+            onClick={(event) => {
+              event.stopPropagation();
+              if (post.user?._id) {
+                nav(`/profil/${post.user._id}`);
+              }
+            }}
+            aria-label="Ouvrir le profil"
           />
           <div className="pv-user-info">
             <div className="pv-user-name">{post.user?.name}</div>
