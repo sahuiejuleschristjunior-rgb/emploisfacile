@@ -462,6 +462,79 @@ body {
   margin: 0;
 }
 
+.candidate-profile-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.candidate-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.profile-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-form-field label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.profile-form-field input,
+.profile-form-field textarea {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-form-field input:focus,
+.profile-form-field textarea:focus {
+  outline: none;
+  border-color: rgba(124, 58, 237, 0.7);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.profile-form-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.profile-form-field.full-width {
+  width: 100%;
+}
+
+.profile-form-status {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.profile-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .pipeline .lanes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
