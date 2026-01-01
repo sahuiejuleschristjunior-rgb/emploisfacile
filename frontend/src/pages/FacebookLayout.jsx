@@ -1192,10 +1192,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                 placeholder="Rechercher..."
                 value={searchTerm}
                 onChange={(e) => {
+                  if (isJobsFeed) return;
                   setSearchTerm(e.target.value);
                   setSearchOpen(true);
                 }}
-                onFocus={() => setSearchOpen(true)}
+                onFocus={() => {
+                  if (isJobsFeed) return;
+                  setSearchOpen(true);
+                }}
               />
             </div>
 
@@ -1253,6 +1257,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               <button
                 className="fb-header-icon-btn notif-btn"
                 onClick={() => {
+                  if (isJobsFeed) return;
                   loadNotifications();
                   setIsDropdownOpen((v) => !v);
                 }}
@@ -1311,7 +1316,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <div className="profile-switcher" ref={profileSwitcherRef}>
               <button
                 className="fb-header-icon-btn"
-                onClick={() => setProfileSwitcherOpen((v) => !v)}
+                onClick={() => {
+                  if (isJobsFeed) return;
+                  setProfileSwitcherOpen((v) => !v);
+                }}
               >
                 <div className="fb-header-avatar" style={avatarStyle} />
               </button>
