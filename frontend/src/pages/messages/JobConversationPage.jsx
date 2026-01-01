@@ -11,6 +11,7 @@ import MessageInput from "../../components/jobchat/MessageInput";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import "../../styles/job-chat.css";
+import { useActiveConversation } from "../../context/ActiveConversationContext";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const loadErrorMessage = "Impossible de charger vos conversations";
@@ -45,6 +46,7 @@ export default function JobConversationPage() {
   const location = useLocation();
   const nav = useNavigate();
   const socket = useSocket();
+  const { setActiveConversationId } = useActiveConversation() || {};
 
   const token = localStorage.getItem("token");
   const storedUser = localStorage.getItem("user");
@@ -111,6 +113,14 @@ export default function JobConversationPage() {
       active = false;
     };
   }, [conversationId, user?._id]);
+
+  useEffect(() => {
+    if (!setActiveConversationId || !conversationId) return;
+    setActiveConversationId(conversationId);
+    return () => {
+      setActiveConversationId(null);
+    };
+  }, [conversationId, setActiveConversationId]);
 
   useEffect(() => {
     if (!jobId || job) return;
