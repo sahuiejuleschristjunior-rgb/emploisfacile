@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
 import { fetchJobChatConversations } from "../../api/jobChatApi";
@@ -26,7 +26,7 @@ const resolveOtherParticipant = (participants, currentUserId) => {
 
 export default function RecruiterInbox() {
   const nav = useNavigate();
-  const { deleteByType } = useNotifications() || {};
+  const { deleteByType, socket } = useNotifications() || {};
   const token = localStorage.getItem("token");
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -36,33 +36,78 @@ export default function RecruiterInbox() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const loadConversations = useCallback(
+    async ({ showLoader = true } = {}) => {
+      if (showLoader) setLoading(true);
+      setError("");
+      try {
+        const list = await fetchJobChatConversations();
+        setConversations(list);
+      } catch (err) {
+        setError(loadErrorMessage);
+      } finally {
+        if (showLoader) setLoading(false);
+      }
+    },
+    []
+  );
+
+  const isJobMessage = (message) =>
+    Boolean(message?.job || message?.jobId || message?.job?._id || message?.application);
+
   useEffect(() => {
     deleteByType?.("job");
   }, [deleteByType]);
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const list = await fetchJobChatConversations();
-        if (!active) return;
-        setConversations(list);
-      } catch (err) {
-        if (!active) return;
-        setError(loadErrorMessage);
-      } finally {
-        if (active) setLoading(false);
+    loadConversations({ showLoader: true });
+  }, [loadConversations]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleIncoming = (payload) => {
+      const message = payload?.message || payload?.data || payload;
+      if (!isJobMessage(message)) return;
+      const conversationId =
+        message?.conversationId ||
+        (typeof message?.conversation === "object"
+          ? message?.conversation?._id
+          : message?.conversation);
+      if (!conversationId) return;
+
+      let shouldRefresh = false;
+      setConversations((prev) => {
+        const index = prev.findIndex(
+          (conv) => String(conv?._id) === String(conversationId)
+        );
+        if (index === -1) {
+          shouldRefresh = true;
+          return prev;
+        }
+
+        const updated = {
+          ...prev[index],
+          lastMessage: message,
+          updatedAt: message?.createdAt || new Date().toISOString(),
+        };
+
+        return [updated, ...prev.filter((_, idx) => idx !== index)];
+      });
+
+      if (shouldRefresh) {
+        loadConversations({ showLoader: false });
       }
     };
 
-    load();
+    socket.on("message:new", handleIncoming);
+    socket.on("new_message", handleIncoming);
 
     return () => {
-      active = false;
+      socket.off("message:new", handleIncoming);
+      socket.off("new_message", handleIncoming);
     };
-  }, []);
+  }, [socket, loadConversations]);
 
   useEffect(() => {
     const jobIds = conversations
