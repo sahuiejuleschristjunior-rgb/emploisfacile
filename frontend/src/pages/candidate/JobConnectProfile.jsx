@@ -99,6 +99,11 @@ export default function JobConnectProfile() {
     }, 500);
   };
 
+  const handleOpenProfessionalProfile = () => {
+    const section = document.getElementById("professional-profile");
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero">
@@ -109,7 +114,9 @@ export default function JobConnectProfile() {
             Consultez et mettez à jour votre profil pour améliorer vos chances auprès des recruteurs.
           </p>
           <div className="hero__actions">
-            <button className="primary-btn" onClick={() => nav("/profil")}>Voir mon profil public</button>
+            <button className="primary-btn" onClick={handleOpenProfessionalProfile}>
+              Voir mon profil professionnel
+            </button>
           </div>
         </div>
         <div className="hero__highlights">
@@ -277,21 +284,21 @@ export default function JobConnectProfile() {
             <button className="primary-btn" type="submit" disabled={isSaving}>
               {isSaving ? "Mise à jour..." : "Enregistrer les modifications"}
             </button>
-            <button className="primary-btn ghost" type="button" onClick={() => nav("/profil")}>
-              Ouvrir mon profil public
+            <button className="primary-btn ghost" type="button" onClick={handleOpenProfessionalProfile}>
+              Ouvrir mon profil professionnel
             </button>
           </div>
         </form>
       </section>
 
-      <section className="card">
+      <section className="card" id="professional-profile">
         <div className="card-header">
           <div>
             <p className="eyebrow">Profil professionnel</p>
             <h3>Visible par les recruteurs</h3>
           </div>
-          <button className="primary-btn ghost" type="button" onClick={() => nav("/profil")}>
-            Voir le profil public
+          <button className="primary-btn ghost" type="button" onClick={handleOpenProfessionalProfile}>
+            Voir le profil professionnel
           </button>
         </div>
         <div className="professional-profile">
