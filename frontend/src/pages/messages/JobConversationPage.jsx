@@ -66,6 +66,7 @@ export default function JobConversationPage() {
   const [error, setError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const messageIdsRef = useRef(new Set());
@@ -239,11 +240,13 @@ export default function JobConversationPage() {
   useEffect(() => {
     if (!socket || !conversationId) return;
 
-    socket.emit("join_room", { room: conversationId });
-    socket.emit("room:join", conversationId);
+    socket.emit("job:join", { conversationId });
 
     const handleMessage = (payload) => {
       const message = payload?.message || payload;
+      const senderId =
+        typeof message?.sender === "object" ? message?.sender?._id : message?.sender;
+      if (senderId && senderId === user?._id) return;
       const messageConversationId =
         message?.conversationId ||
         (typeof message?.conversation === "object"
@@ -260,6 +263,7 @@ export default function JobConversationPage() {
       if (message?._id) messageIdsRef.current.add(message._id);
 
       setMessages((prev) => [...prev, message]);
+      setHighlightedMessageId(message?._id || message?.clientTempId || null);
     };
 
     const handleTyping = ({ from, isTyping: typingFlag }) => {
@@ -268,16 +272,22 @@ export default function JobConversationPage() {
       }
     };
 
-    socket.on("message:new", handleMessage);
-    socket.on("new_message", handleMessage);
+    socket.on("job:message:new", handleMessage);
     socket.on("typing", handleTyping);
 
     return () => {
-      socket.off("message:new", handleMessage);
-      socket.off("new_message", handleMessage);
+      socket.off("job:message:new", handleMessage);
       socket.off("typing", handleTyping);
     };
-  }, [socket, conversationId, jobId, otherParticipant]);
+  }, [socket, conversationId, jobId, otherParticipant, user?._id]);
+
+  useEffect(() => {
+    if (!highlightedMessageId) return;
+    const timer = setTimeout(() => {
+      setHighlightedMessageId(null);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [highlightedMessageId]);
 
   const otherName =
     otherParticipant?.name || otherParticipant?.companyName || "Conversation";
@@ -364,7 +374,11 @@ export default function JobConversationPage() {
         {loading && <div className="job-chat-loading">Chargement…</div>}
         {error && <div className="job-chat-error">{error}</div>}
 
-        <MessageList messages={messages} currentUserId={user?._id} />
+        <MessageList
+          messages={messages}
+          currentUserId={user?._id}
+          highlightedMessageId={highlightedMessageId}
+        />
 
         {isTyping && (
           <div className="job-chat-typing">{otherName} est en train d'écrire…</div>
