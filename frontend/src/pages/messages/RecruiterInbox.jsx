@@ -173,7 +173,7 @@ export default function RecruiterInbox() {
                 type="button"
                 className="job-chat-item"
                 onClick={() =>
-                  nav(`/recruiter/job-messages/${conv._id}`, {
+                  nav(`/recruiter/messages/${conv._id}`, {
                     state: {
                       jobId,
                       jobTitle,

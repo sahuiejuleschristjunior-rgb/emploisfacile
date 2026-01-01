@@ -46,7 +46,7 @@ import JobConnectProfile from "./pages/candidate/JobConnectProfile";
 import ProfessionalProfile from "./pages/candidate/ProfessionalProfile";
 import RecruiterInbox from "./pages/messages/RecruiterInbox";
 import CandidateInbox from "./pages/messages/CandidateInbox";
-import JobMessages from "./pages/messages/JobMessages";
+import JobConversationPage from "./pages/messages/JobConversationPage";
 
 import FacebookFeed from "./components/FacebookFeed";
 
@@ -224,10 +224,9 @@ export default function App() {
                   <Route path="create-job" element={<CreateJobPage />} />
                   <Route path="messages" element={<RecruiterInbox />} />
                   <Route
-                    path="job-messages/:conversationId"
-                    element={<JobMessages />}
+                    path="messages/:conversationId"
+                    element={<JobConversationPage />}
                   />
-                  <Route path="messages/:conversationId" element={<JobMessages />} />
                 </Route>
 
                 <Route
@@ -243,10 +242,9 @@ export default function App() {
                   <Route path="entretiens" element={<JobConnectInterviews />} />
                   <Route path="messages" element={<CandidateInbox />} />
                   <Route
-                    path="job-messages/:conversationId"
-                    element={<JobMessages />}
+                    path="messages/:conversationId"
+                    element={<JobConversationPage />}
                   />
-                  <Route path="messages/:conversationId" element={<JobMessages />} />
                   <Route path="favoris" element={<JobConnectFavorites />} />
                   <Route path="agenda" element={<JobConnectAgenda />} />
                   <Route path="profil" element={<JobConnectProfile />} />
