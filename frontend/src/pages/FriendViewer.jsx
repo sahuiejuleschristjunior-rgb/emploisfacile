@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { API_URL } from "../api/config";
-import { useAuth } from "../context/AuthContext";
 import FacebookLayout from "./FacebookLayout";
+import { useAuth } from "../context/AuthContext";
 import "../styles/friend-viewer.css";
 
-const fixAvatar = (avatar) => {
-  if (!avatar || typeof avatar !== "string") return "/default-avatar.png";
-  if (avatar.startsWith("http")) return avatar;
-  return `${API_URL}${avatar}`;
+const API_ROOT = import.meta.env.VITE_API_URL;
+
+const fixUrl = (path) => {
+  if (!path) return "/default-avatar.png";
+  if (path.startsWith("http")) return path;
+  return `${API_ROOT.replace("/api", "")}${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
 const normalizeFriend = (friend) => {
@@ -21,7 +22,7 @@ const normalizeFriend = (friend) => {
   return {
     id,
     name,
-    avatar: fixAvatar(avatar),
+    avatar: fixUrl(avatar),
   };
 };
 
@@ -36,7 +37,7 @@ export default function FriendViewer() {
     if (!id) return;
     setLoading(true);
 
-    fetch(`${API_URL}/auth/user/${id}`, {
+    fetch(`${API_ROOT}/auth/user/${id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(async (res) => {
