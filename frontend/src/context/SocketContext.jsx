@@ -9,7 +9,7 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) return undefined;
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
@@ -21,12 +21,15 @@ export function SocketProvider({ children }) {
 
     socketRef.current = socket;
 
-    socket.on("connect", () =>
-      console.log("🌐 SOCKET GLOBAL CONNECTÉ :", socket.id)
-    );
+    const handleConnect = () => {
+      console.log("🌐 SOCKET GLOBAL CONNECTÉ :", socket.id);
+    };
+
+    socket.on("connect", handleConnect);
 
     return () => {
-      // ❗ on ne ferme PAS le socket en navigation
+      socket.off("connect", handleConnect);
+      socket.disconnect();
     };
   }, []);
 

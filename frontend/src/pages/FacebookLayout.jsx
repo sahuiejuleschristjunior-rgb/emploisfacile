@@ -74,7 +74,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [realtimeJobMessagesCount, setRealtimeJobMessagesCount] = useState(0);
   const [lastUnreadConversationId, setLastUnreadConversationId] = useState(null);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
@@ -86,7 +86,8 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const socketRef = useRef(null);
   const notifIdsRef = useRef(new Set());
-  const messageIdsRef = useRef(new Set());
+  const publicMessageIdsRef = useRef(new Set());
+  const jobMessageIdsRef = useRef(new Set());
   const [toast, setToast] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -114,15 +115,45 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   });
 
   const [relationStatuses, setRelationStatuses] = useState({});
-  const unreadPublicMessagesCount = useMemo(
-    () =>
-      notifList.reduce(
-        (sum, notif) => sum + (notif.type === "message" && !notif.read ? 1 : 0),
-        0
-      ),
-    [notifList]
-  );
-  const totalUnreadMessages = unreadMessagesCount + unreadPublicMessagesCount;
+  const resolveMessageType = useCallback((message) => {
+    const rawType = message?.type || message?.messageType;
+    if (rawType === "job" || rawType === "public") return rawType;
+    if (message?.jobId || message?.job || message?.job?._id) return "job";
+    return "public";
+  }, []);
+
+  const unreadNotificationMessageCounts = useMemo(() => {
+    const counted = new Set();
+    return notifList.reduce(
+      (acc, notif) => {
+        if (notif.type !== "message" || notif.read) return acc;
+
+        const senderId = notif.from?._id || notif.from;
+        if (senderId && senderId === currentUser?._id) return acc;
+
+        const payload = notif?.message || notif?.data || notif;
+        const messageId = payload?._id || notif?.messageId || notif?._id;
+        if (messageId) {
+          if (counted.has(messageId)) return acc;
+          counted.add(messageId);
+        }
+
+        const messageType = resolveMessageType(payload);
+        if (messageType === "job") {
+          acc.job += 1;
+        } else {
+          acc.public += 1;
+        }
+        return acc;
+      },
+      { public: 0, job: 0 }
+    );
+  }, [currentUser?._id, notifList, resolveMessageType]);
+
+  const publicMessagesCount = unreadNotificationMessageCounts.public;
+  const jobMessagesCount =
+    unreadNotificationMessageCounts.job + realtimeJobMessagesCount;
+  const totalUnreadMessages = publicMessagesCount + jobMessagesCount;
 
   const searchBoxRef = useRef(null);
   const profileSwitcherRef = useRef(null);
@@ -215,13 +246,39 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     [nav]
   );
 
+  const isPublicMessagesRoute = location.pathname.startsWith("/messages");
+  const isJobMessagesRoute =
+    location.pathname.startsWith("/candidate/messages") ||
+    location.pathname.startsWith("/recruiter/messages");
+
   useEffect(() => {
-    if (location.pathname.startsWith("/messages")) {
-      setUnreadMessagesCount(0);
-      messageIdsRef.current.clear();
+    if (isPublicMessagesRoute) {
+      publicMessageIdsRef.current.clear();
       setLastUnreadConversationId(null);
     }
-  }, [location.pathname]);
+  }, [isPublicMessagesRoute]);
+
+  useEffect(() => {
+    if (isJobMessagesRoute) {
+      setRealtimeJobMessagesCount(0);
+      jobMessageIdsRef.current.clear();
+    }
+  }, [isJobMessagesRoute]);
+
+  useEffect(() => {
+    notifList.forEach((notif) => {
+      if (notif.type !== "message") return;
+      const payload = notif?.message || notif?.data || notif;
+      const messageId = payload?._id || notif?.messageId;
+      if (!messageId) return;
+      const messageType = resolveMessageType(payload);
+      if (messageType === "job") {
+        jobMessageIdsRef.current.add(messageId);
+      } else {
+        publicMessageIdsRef.current.add(messageId);
+      }
+    });
+  }, [notifList, resolveMessageType]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -278,13 +335,18 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       reconnectionAttempts: 20,
     });
 
-    s.on("connect", () => console.log("📡 Socket connecté :", s.id));
-    s.on("disconnect", () => console.log("📡 Socket déconnecté"));
+    const handleConnect = () => console.log("📡 Socket connecté :", s.id);
+    const handleDisconnect = () => console.log("📡 Socket déconnecté");
+
+    s.on("connect", handleConnect);
+    s.on("disconnect", handleDisconnect);
 
     socketRef.current = s;
 
     return () => {
       try {
+        s.off("connect", handleConnect);
+        s.off("disconnect", handleDisconnect);
         socketRef.current?.disconnect();
       } catch {}
       socketRef.current = null;
@@ -297,6 +359,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const pushRealtimeNotification = useCallback(
     (notif) => {
       if (!notif) return;
+
+      const senderId = notif.from?._id || notif.from;
+      if (notif.type === "message" && senderId === currentUser?._id) {
+        return;
+      }
 
       // 🔥 1 — Empêche les notifs déjà traitées (handled)
       if (notif.handled) return;
@@ -322,7 +389,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
         setPendingRequestsCount((prev) => prev + 1);
       }
     },
-    []
+    [currentUser?._id]
   );
 
   useEffect(() => {
@@ -351,6 +418,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
       const msg = payload.message || payload.data || payload.msg || payload;
       const id = msg?._id || payload.messageId || payload.id;
+      const messageType = resolveMessageType(msg);
 
       const extractConversationId = () => {
         const receiverId =
@@ -385,21 +453,34 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       const originId = senderId || fromId;
       if (originId && originId === currentUser?._id) return;
 
+      const dedupeSet =
+        messageType === "job" ? jobMessageIdsRef : publicMessageIdsRef;
       if (id) {
-        if (messageIdsRef.current.has(id)) return;
-        messageIdsRef.current.add(id);
+        if (dedupeSet.current.has(id)) return;
+        dedupeSet.current.add(id);
       }
 
-      if (location.pathname.startsWith("/messages")) return;
+      if (messageType === "public" && location.pathname.startsWith("/messages")) {
+        return;
+      }
+      if (
+        messageType === "job" &&
+        (location.pathname.startsWith("/candidate/messages") ||
+          location.pathname.startsWith("/recruiter/messages"))
+      ) {
+        return;
+      }
 
-      setUnreadMessagesCount((prev) => prev + 1);
-      const conversationId = extractConversationId();
-      if (conversationId) {
-        setLastUnreadConversationId(conversationId);
+      if (messageType === "job") {
+        setRealtimeJobMessagesCount((prev) => prev + 1);
+        const conversationId = extractConversationId();
+        if (conversationId) {
+          setLastUnreadConversationId(conversationId);
+        }
       }
       showToast("Nouveau message reçu");
     },
-    [currentUser?._id, location.pathname]
+    [currentUser?._id, location.pathname, resolveMessageType]
   );
 
   useEffect(() => {
