@@ -120,6 +120,7 @@ export default function NotificationItem({ notif, onHandled }) {
     const notifConversationId = getNotifConversationId(notif);
 
     if (notif.type === "message") {
+      removeNotifications?.((item) => item._id === notif._id);
       if (isProfessionalMessage) {
         const basePath =
           currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
