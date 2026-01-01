@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { API_URL } from "../api/config";
 import useFriendRequests from "../hooks/useFriendRequests";
 import { changeFriendCategory } from "../api/socialApi";
@@ -16,6 +16,7 @@ const fixAvatar = (avatar) => {
 
 export default function RelationsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     requests,
     loading,
@@ -95,6 +96,11 @@ export default function RelationsPage() {
   /* ======================================================
        🔥 ACCEPT / REJECT (SYNC PROPRE)
   ===================================================== */
+  const handleProfileClick = (userId) => {
+    if (!userId) return;
+    navigate(`/profil/${userId}`);
+  };
+
   const handleAccept = async (userId) => {
     await accept(userId);
     await refreshRequests();
@@ -224,12 +230,19 @@ export default function RelationsPage() {
       <div className="relations-list">
         {publicFriends.map((friend) => (
           <div key={friend.user._id} className="relation-card">
-            <img
-              src={fixAvatar(friend.user.avatar)}
-              alt={friend.user.name}
-              className="relation-avatar"
-              loading="lazy"
-            />
+            <button
+              type="button"
+              className="relation-avatar-button"
+              onClick={() => handleProfileClick(friend.user._id)}
+              aria-label={`Ouvrir le profil de ${friend.user.name}`}
+            >
+              <img
+                src={fixAvatar(friend.user.avatar)}
+                alt={friend.user.name}
+                className="relation-avatar"
+                loading="lazy"
+              />
+            </button>
 
             <div className="relation-info">
               <strong>{friend.user.name}</strong>
@@ -261,12 +274,19 @@ export default function RelationsPage() {
       <div className="relations-list">
         {professionalFriends.map((friend) => (
           <div key={friend.user._id} className="relation-card">
-            <img
-              src={fixAvatar(friend.user.avatar)}
-              alt={friend.user.name}
-              className="relation-avatar"
-              loading="lazy"
-            />
+            <button
+              type="button"
+              className="relation-avatar-button"
+              onClick={() => handleProfileClick(friend.user._id)}
+              aria-label={`Ouvrir le profil de ${friend.user.name}`}
+            >
+              <img
+                src={fixAvatar(friend.user.avatar)}
+                alt={friend.user.name}
+                className="relation-avatar"
+                loading="lazy"
+              />
+            </button>
 
             <div className="relation-info">
               <strong>{friend.user.name}</strong>
