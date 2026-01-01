@@ -4,7 +4,12 @@ import io from "socket.io-client";
 import { useNotifications } from "../context/NotificationContext";
 
 const API_ROOT = import.meta.env.VITE_API_URL;
-const socket = io(API_ROOT.replace("/api", ""));
+const storedToken = localStorage.getItem("token");
+const storedUser = localStorage.getItem("user");
+const storedUserId = storedUser ? JSON.parse(storedUser)?._id : null;
+const socket = io(API_ROOT.replace("/api", ""), {
+  auth: { token: storedToken, userId: storedUserId },
+});
 const loadErrorMessage = "Impossible de charger vos conversations";
 
 const ensureJsonResponse = async (res) => {

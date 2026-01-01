@@ -236,24 +236,34 @@ export default function JobConversationPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-    if (!socket || !conversationId) return;
+  const roomId = conversation?._id || conversationId;
 
-    socket.emit("join_room", { room: conversationId });
-    socket.emit("room:join", conversationId);
+  useEffect(() => {
+    if (!socket || !roomId) return;
+
+    socket.emit("job:join", { conversationId: roomId });
 
     const handleMessage = (payload) => {
       const message = payload?.message || payload;
+      if (!message) return;
+
+      console.log("📩 Job message reçu", message);
+
       const messageConversationId =
         message?.conversationId ||
         (typeof message?.conversation === "object"
           ? message?.conversation?._id
           : message?.conversation);
 
-      if (String(messageConversationId) !== String(conversationId)) return;
+      if (String(messageConversationId) !== String(roomId)) return;
       if (jobId) {
         const messageJobId = message?.jobId || message?.job || message?.job?._id;
         if (String(messageJobId) !== String(jobId)) return;
+      }
+
+      const senderId = getId(message?.sender) || message?.senderId;
+      if (senderId && user?._id && String(senderId) === String(user._id)) {
+        return;
       }
 
       if (message?._id && messageIdsRef.current.has(message._id)) return;
@@ -268,16 +278,15 @@ export default function JobConversationPage() {
       }
     };
 
-    socket.on("message:new", handleMessage);
-    socket.on("new_message", handleMessage);
+    socket.on("job:message:new", handleMessage);
     socket.on("typing", handleTyping);
 
     return () => {
-      socket.off("message:new", handleMessage);
-      socket.off("new_message", handleMessage);
+      socket.emit("job:leave", { conversationId: roomId });
+      socket.off("job:message:new", handleMessage);
       socket.off("typing", handleTyping);
     };
-  }, [socket, conversationId, jobId, otherParticipant]);
+  }, [socket, roomId, jobId, otherParticipant, user?._id]);
 
   const otherName =
     otherParticipant?.name || otherParticipant?.companyName || "Conversation";
@@ -308,17 +317,22 @@ export default function JobConversationPage() {
 
       if (ok && data?.data) {
         const message = data.data;
+        const resolvedConversationId =
+          message?.conversation?._id || message?.conversation || null;
+        if (resolvedConversationId) {
+          setConversation((prev) => {
+            if (prev?._id && String(prev._id) === String(resolvedConversationId)) {
+              return prev;
+            }
+            return { ...(prev || {}), _id: resolvedConversationId };
+          });
+        }
         if (message?._id && !messageIdsRef.current.has(message._id)) {
           messageIdsRef.current.add(message._id);
           setMessages((prev) => [...prev.filter((msg) => msg !== payload), message]);
         }
       }
 
-      socket?.emit("message:send", payload);
-      socket?.emit("send_message", {
-        receiver: payload.receiver,
-        content: payload.content,
-      });
     } catch (err) {
       setError(err.message || "Impossible d'envoyer le message.");
     }
