@@ -1197,7 +1197,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/dashboard")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="home" size={24} />
+            <FBIcon name="dashboard" size={24} />
           </span>
           <span>Tableau de bord</span>
         </li>
@@ -1714,7 +1714,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
                 setShowMobileMenu(false);
               }}
             >
-              <FBIcon name="home" size={22} />
+              <FBIcon name="dashboard" size={22} />
               <span>Tableau de bord</span>
             </div>
 
