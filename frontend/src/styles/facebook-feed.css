@@ -4761,3 +4761,90 @@
   width: 100%;
   object-fit: cover;
 }
+
+/* ===================================================== */
+/* COMPACTAGE DES CARTES EN DESKTOP (FEED UNIQUEMENT)     */
+/* Objectif : densifier le feed sans impacter le mobile. */
+/* ===================================================== */
+@media (min-width: 1024px) {
+  .fb-feed {
+    padding: 10px 6px 64px;
+    max-width: 640px;
+  }
+
+  .fb-feed .fb-post,
+  .fb-feed .fb-post-card {
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+  }
+
+  .fb-feed .fb-post-header {
+    margin-bottom: 6px;
+  }
+
+  .fb-feed .fb-post-avatar {
+    width: 36px;
+    height: 36px;
+    margin-right: 6px;
+  }
+
+  .fb-feed .fb-post-author {
+    font-size: 13px;
+  }
+
+  .fb-feed .fb-post-meta {
+    font-size: 10px;
+    margin-top: 0;
+  }
+
+  .fb-feed .fb-post-menu-btn {
+    font-size: 18px;
+    padding: 2px;
+  }
+
+  .fb-feed .fb-post-text {
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .fb-feed .fb-post-text.is-expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+
+  .fb-feed .fb-post-media-wrapper {
+    margin: 4px -8px 0;
+    gap: 2px;
+  }
+
+  .fb-feed .fb-media-single img,
+  .fb-feed .fb-post-media img,
+  .fb-feed .fb-post-media video {
+    max-height: 360px;
+    object-fit: cover;
+  }
+
+  .fb-feed .fb-post-stats {
+    padding-top: 4px;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .fb-feed .fb-post-actions {
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+
+  .fb-feed .fb-post-action-btn {
+    font-size: 12px;
+    padding: 4px 0;
+    gap: 4px;
+  }
+}
