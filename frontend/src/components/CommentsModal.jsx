@@ -77,6 +77,8 @@ export default function CommentsModal({
   API_URL: propApiUrl,
   token: propToken,
   userId: propUserId,
+  focusCommentId = null,
+  fromNotification = false,
   targetType = "post",
 }) {
   const nav = useNavigate();
@@ -118,6 +120,7 @@ export default function CommentsModal({
   const commentsListRef = useRef(null);
   const commentsRefs = useRef({});
   const longPressTimer = useRef(null);
+  const hasFocusedComment = useRef(false);
 
   useEffect(() => {
     let abort = false;
@@ -154,6 +157,23 @@ export default function CommentsModal({
     // ensure visibleCommentsCount not larger than total
     setVisibleCommentsCount((v) => Math.min(v, (post?.comments?.length || 0)));
   }, [post?.comments?.length]);
+
+  useEffect(() => {
+    if (!fromNotification || !focusCommentId) return;
+    if (loading) return;
+
+    const timer = setTimeout(() => {
+      if (hasFocusedComment.current) return;
+      const commentEl = document.getElementById(`comment-${focusCommentId}`);
+      if (!commentEl) return;
+      hasFocusedComment.current = true;
+      commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      commentEl.classList.add("comment-highlight");
+      setTimeout(() => commentEl.classList.remove("comment-highlight"), 2500);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [fromNotification, focusCommentId, loading, post?.comments?.length]);
 
   const safeFetch = useCallback((url, opts = {}) => {
     const headers = { ...(opts.headers || {}) };
@@ -452,7 +472,12 @@ export default function CommentsModal({
               const summary = getReactionSummary(c.reactions);
               const mediaItems = normalizeMedia(c.media);
               return (
-                <div className="cm-comment-wrap" key={c._id} ref={(el) => (commentsRefs.current[c._id] = el)}>
+                <div
+                  className="cm-comment-wrap"
+                  key={c._id}
+                  id={`comment-${c._id}`}
+                  ref={(el) => (commentsRefs.current[c._id] = el)}
+                >
                   <div className="cm-comment">
                     <button
                       type="button"

@@ -156,9 +156,17 @@ export default function NotificationItem({ notif, onHandled }) {
       return;
     }
 
-    if (["like", "comment", "reply"].includes(actionType) && notif.relatedId) {
+    if (["like", "comment", "reply", "share"].includes(actionType)) {
       await deleteById?.(notif._id);
-      navigate(`/fb/post/${notif.relatedId}`);
+      navigate("/fb", {
+        state: {
+          fromNotification: true,
+          focusPostId:
+            notif.postId || notif.post?._id || notif.relatedId || null,
+          focusCommentId: notif.commentId || notif.comment?._id || null,
+          focusAction: actionType || null,
+        },
+      });
       return;
     }
 

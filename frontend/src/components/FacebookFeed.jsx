@@ -3,7 +3,7 @@ import StoriesFB from "../components/StoriesFB";
 import CreatePostFB from "./CreatePostFB";
 import SkeletonPost from "./SkeletonPost";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/facebook-feed.css";
 import "../styles/post.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
@@ -179,6 +179,7 @@ export default function FacebookFeed() {
 
   const API_URL = import.meta.env.VITE_API_URL;
   const nav = useNavigate();
+  const location = useLocation();
 
   const textButtonStyle = {
     background: "none",
@@ -208,6 +209,13 @@ export default function FacebookFeed() {
   /* =================================================================
         STATES DU FEED (AUCUN COMMENTAIRE ICI)
   ================================================================= */
+  const [fromNotification, setFromNotification] = useState(false);
+  const [focusPostId, setFocusPostId] = useState(null);
+  const [focusCommentId, setFocusCommentId] = useState(null);
+  const [focusAction, setFocusAction] = useState(null);
+  const [openCommentsForPostId, setOpenCommentsForPostId] = useState(null);
+  const [feedToast, setFeedToast] = useState("");
+
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
@@ -246,6 +254,28 @@ export default function FacebookFeed() {
   const [sharingPostIds, setSharingPostIds] = useState({});
 
   const socketRef = useRef(null);
+  const hasFocusedPost = useRef(false);
+  const hasOpenedComments = useRef(false);
+  const hasNotifiedMissing = useRef(false);
+
+  useEffect(() => {
+    const st = location.state;
+    if (st?.fromNotification) {
+      setFromNotification(true);
+      setFocusPostId(st.focusPostId || null);
+      setFocusCommentId(st.focusCommentId || null);
+      setFocusAction(st.focusAction || null);
+      if (st.focusPostId && st.focusCommentId) {
+        setOpenCommentsForPostId(st.focusPostId);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.fromNotification) {
+      nav("/fb", { replace: true });
+    }
+  }, []);
 
   const addOptimisticPost = (post) => {
     if (!post) return;
@@ -391,6 +421,63 @@ export default function FacebookFeed() {
   useEffect(() => {
     loadPosts(1, true);
   }, []);
+
+  useEffect(() => {
+    if (!fromNotification || !focusPostId) return;
+
+    if (!posts?.length) {
+      if (!loadingInitial && !hasNotifiedMissing.current) {
+        setFeedToast("Cette publication n’est plus disponible.");
+        hasNotifiedMissing.current = true;
+        setTimeout(() => setFeedToast(""), 3500);
+      }
+      return;
+    }
+
+    const el = document.getElementById(`post-${focusPostId}`);
+    if (!el) {
+      if (!loadingInitial && !hasNotifiedMissing.current) {
+        setFeedToast("Cette publication n’est plus disponible.");
+        hasNotifiedMissing.current = true;
+        setTimeout(() => setFeedToast(""), 3500);
+      }
+      return;
+    }
+
+    if (hasFocusedPost.current) return;
+    hasFocusedPost.current = true;
+
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("post-highlight");
+      setTimeout(() => el.classList.remove("post-highlight"), 2500);
+    });
+  }, [fromNotification, focusPostId, posts, loadingInitial]);
+
+  useEffect(() => {
+    if (!fromNotification || !focusPostId || !posts?.length) return;
+    const shouldOpenComments =
+      Boolean(focusCommentId) || ["comment", "reply"].includes(focusAction);
+    if (!shouldOpenComments) return;
+
+    const post = posts.find((p) => String(p._id) === String(focusPostId));
+    if (!post) return;
+    if (hasOpenedComments.current) return;
+    if (openCommentsForPostId === post._id && isCommentsModalOpen) return;
+
+    setOpenCommentsForPostId(post._id);
+    setActivePostForComments(post);
+    setIsCommentsModalOpen(true);
+    hasOpenedComments.current = true;
+  }, [
+    fromNotification,
+    focusAction,
+    focusCommentId,
+    focusPostId,
+    posts,
+    openCommentsForPostId,
+    isCommentsModalOpen,
+  ]);
 
   /* =================================================================
         SOCKET REALTIME
@@ -835,7 +922,11 @@ export default function FacebookFeed() {
             : "";
 
           return (
-            <article key={post._id} className="fb-post">
+            <article
+              key={post._id}
+              id={`post-${post._id}`}
+              className="fb-post"
+            >
 
               {/* HEADER */}
               <div className="fb-post-header">
@@ -1192,6 +1283,7 @@ export default function FacebookFeed() {
         </div>
       )}
 
+      {feedToast && <div className="fb-sponsor-toast">{feedToast}</div>}
       {sponsorToast && <div className="fb-sponsor-toast">{sponsorToast}</div>}
 
       {/* =================================================================
@@ -1278,6 +1370,8 @@ export default function FacebookFeed() {
         <CommentsModal
           post={activePostForComments}
           onClose={closeCommentsModal}
+          focusCommentId={focusCommentId}
+          fromNotification={fromNotification}
         />
       )}
     </div>
