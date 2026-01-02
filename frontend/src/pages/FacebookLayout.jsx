@@ -23,12 +23,13 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const { notifications: notifList = [] } = useNotifications() || {};
 
   const isJobsFeed = location.pathname.startsWith("/emplois");
+  const isCompleteProfile = location.pathname === "/complete-profile";
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 768px)").matches;
   });
   const isFullLayout = location.pathname.startsWith("/fb");
-  const isHeaderOnly = headerOnly || isJobsFeed;
+  const isHeaderOnly = headerOnly || isJobsFeed || isCompleteProfile;
   const isCompactLayout = isHeaderOnly || !isFullLayout;
   const isPagesFeed = location.pathname.startsWith("/fb/pages-feed");
   const isCandidateSpace = [
@@ -1291,7 +1292,17 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  const header = hideHeader ? null : (
+  const header = hideHeader ? null : isCompleteProfile ? (
+    <header className="fb-header fb-header--minimal">
+      <div className="fb-header-inner fb-header-inner--minimal">
+        <div className="fb-header-brand" onClick={() => nav("/fb")}>
+          <div className="fb-logo"><span>EF</span></div>
+          <span className="fb-logo-label">EmploisFacile</span>
+        </div>
+        <div className="fb-header-minimal-text">Complétez votre profil</div>
+      </div>
+    </header>
+  ) : (
     <header
       className="fb-header"
     >

@@ -8,6 +8,19 @@ import {
 
 const AuthContext = createContext(null);
 
+const computeProfileCompleted = (user) => {
+  if (!user) return false;
+  if (typeof user.profileCompleted === "boolean") return user.profileCompleted;
+
+  const hasName = Boolean(user.name?.trim());
+  const hasBio = Boolean(user.bio?.trim());
+  const avatar = user.avatar || "";
+  const hasCustomAvatar =
+    Boolean(avatar) && !avatar.includes("default-avatar");
+
+  return hasName && hasBio && hasCustomAvatar;
+};
+
 export function AuthProvider({ children }) {
   /* ============================================================
      ÉTATS
@@ -21,6 +34,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const isAuthenticated = !!token;
+  const profileCompleted = computeProfileCompleted(user);
 
   /* ============================================================
      🔥 fetchUser — pour recharger le user depuis /auth/me
@@ -127,6 +141,12 @@ export function AuthProvider({ children }) {
     fetchUser(token);
   }
 
+  function updateUser(nextUser) {
+    if (!nextUser) return;
+    setUser(nextUser);
+    localStorage.setItem("user", JSON.stringify(nextUser));
+  }
+
   /* ============================================================
      CONTEXTE
   ============================================================ */
@@ -135,10 +155,12 @@ export function AuthProvider({ children }) {
     token,
     loading,
     isAuthenticated,
+    profileCompleted,
     role: user?.role || null,
     login,
     logout,
     refreshUser,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
