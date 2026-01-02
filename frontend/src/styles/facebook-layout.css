@@ -348,7 +348,9 @@
   padding-top: 12px;
   height: 100%;
   align-self: stretch;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .fb-left-section {
