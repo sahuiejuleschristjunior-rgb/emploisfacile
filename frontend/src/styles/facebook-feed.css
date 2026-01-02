@@ -4,7 +4,7 @@
    WRAPPER GLOBAL DU FEED
 ================================ */
 .fb-feed {
-  padding: 12px 8px 80px;
+  padding: var(--fb-content-top-offset) 8px 80px;
   max-width: 600px;
   margin: 0 auto;
 }
