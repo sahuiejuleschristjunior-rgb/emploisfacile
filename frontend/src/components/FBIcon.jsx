@@ -96,13 +96,52 @@ export default function FBIcon({ name, size = 26 }) {
         <svg
           width={size}
           height={size}
+          viewBox="0 0 24 24"
           fill="none"
-          stroke={color}
-          strokeWidth="2.5"
-          viewBox="0 0 28 28"
+          aria-hidden="true"
         >
-          <rect x="4" y="8" width="20" height="14" rx="2" />
-          <path d="M18 8V6a5 5 0 0 0-10 0v2" />
+          <defs>
+            <linearGradient id={`${uniqueId}-grad-main`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#60A5FA" />
+              <stop offset="100%" stopColor="#2563EB" />
+            </linearGradient>
+            <linearGradient id={`${uniqueId}-grad-orange`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#FDBA74" />
+              <stop offset="100%" stopColor="#F97316" />
+            </linearGradient>
+          </defs>
+
+          <rect
+            x="2"
+            y="4"
+            width="20"
+            height="16"
+            rx="3"
+            fill={`url(#${uniqueId}-grad-main)`}
+            stroke="#F97316"
+            strokeWidth="1"
+          />
+          <rect
+            x="9"
+            y="2"
+            width="6"
+            height="4"
+            rx="1.5"
+            fill={`url(#${uniqueId}-grad-orange)`}
+          />
+          <rect
+            x="4"
+            y="7"
+            width="16"
+            height="11"
+            rx="2"
+            fill={`url(#${uniqueId}-grad-main)`}
+            stroke="#FDBA74"
+            strokeWidth="0.8"
+          />
+          <circle cx="8.5" cy="12" r="2" fill="#FFF7ED" />
+          <rect x="12" y="11" width="6" height="1.5" rx="0.75" fill="#FFF7ED" />
+          <rect x="12" y="14" width="5" height="1.5" rx="0.75" fill="#FFF7ED" />
         </svg>
       );
 
