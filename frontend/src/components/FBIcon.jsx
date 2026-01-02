@@ -1,5 +1,8 @@
+import { useId } from "react";
+
 export default function FBIcon({ name, size = 26 }) {
   const color = "#ffffff"; // Blanc pur visible comme Facebook
+  const uniqueId = useId();
 
   switch (name) {
 
@@ -237,6 +240,101 @@ export default function FBIcon({ name, size = 26 }) {
           <circle cx="20" cy="14" r="4" stroke={color} strokeWidth="1.8" />
           <path d="M22.5 11.5L24 10" stroke={color} strokeWidth="1.8" />
           <path d="M22.5 16.5L24 18" stroke={color} strokeWidth="1.8" />
+        </svg>
+      );
+    case "dashboard":
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 256 256"
+          role="img"
+          aria-hidden="true"
+        >
+          <defs>
+            <filter id={`glow-${uniqueId}`} x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feColorMatrix
+                in="blur"
+                type="matrix"
+                values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.65 0"
+                result="coloredBlur"
+              />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            <linearGradient id={`cyan-${uniqueId}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#39F3FF" />
+              <stop offset="1" stopColor="#00C8FF" />
+            </linearGradient>
+
+            <filter id={`inner-${uniqueId}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feOffset dx="0" dy="1" />
+              <feGaussianBlur stdDeviation="1.2" result="offBlur" />
+              <feComposite
+                in="offBlur"
+                in2="SourceAlpha"
+                operator="arithmetic"
+                k2="-1"
+                k3="1"
+                result="innerShadow"
+              />
+              <feColorMatrix
+                in="innerShadow"
+                type="matrix"
+                values="0 0 0 0 0
+                0 0 0 0 0.25
+                0 0 0 0 0.35
+                0 0 0 0.35 0"
+              />
+              <feComposite in2="SourceGraphic" operator="over" />
+            </filter>
+          </defs>
+
+          <g filter={`url(#glow-${uniqueId})`}>
+            <rect
+              x="28"
+              y="152"
+              width="44"
+              height="76"
+              rx="14"
+              fill={`url(#cyan-${uniqueId})`}
+              filter={`url(#inner-${uniqueId})`}
+            />
+            <rect
+              x="84"
+              y="88"
+              width="44"
+              height="140"
+              rx="14"
+              fill={`url(#cyan-${uniqueId})`}
+              filter={`url(#inner-${uniqueId})`}
+            />
+            <rect
+              x="140"
+              y="116"
+              width="44"
+              height="112"
+              rx="14"
+              fill={`url(#cyan-${uniqueId})`}
+              filter={`url(#inner-${uniqueId})`}
+            />
+            <rect
+              x="196"
+              y="44"
+              width="44"
+              height="184"
+              rx="14"
+              fill={`url(#cyan-${uniqueId})`}
+              filter={`url(#inner-${uniqueId})`}
+            />
+          </g>
         </svg>
       );
     default:
