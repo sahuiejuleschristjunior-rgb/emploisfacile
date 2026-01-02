@@ -339,7 +339,7 @@
 /* ========================= */
 
 .fb-left-column {
-  width: 280px;
+  width: 260px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -351,47 +351,41 @@
 }
 
 .fb-left-section {
-  background: transparent;
-  padding: 8px 6px;
+  background: #111;
+  padding: 16px;
   border-radius: 12px;
-  border: 1px solid transparent;
+  border: 1px solid #222;
 }
 
 .fb-sidebar-group {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .fb-sidebar-group-header {
-  font-size: 14px;
-  font-weight: 600;
-  opacity: 0.85;
-  margin: 12px 8px 8px;
+  font-size: 13px;
+  opacity: 0.7;
+  margin-bottom: 8px;
 }
 
 .fb-sidebar-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s ease;
-  color: inherit;
-  background: transparent;
-  border: none;
-  width: 100%;
-  text-align: left;
 }
 
 .fb-sidebar-item:hover {
-  background: #242526;
+  background: #1d1d1d;
 }
 
 /* 💥 AVATAR DANS LE SIDEBAR GAUCHE */
 .fb-sidebar-item-icon {
-  width: 34px;
-  height: 34px;
-  background: #2d2f34;
+  width: 36px;
+  height: 36px;
+  background: #222;
   border-radius: 50%; /* Changé à 50% pour l'avatar rond */
   display: flex;
   align-items: center;
@@ -399,42 +393,7 @@
   /* Ajout pour l'image de fond */
   background-size: cover !important;
   background-position: center !important;
-  font-size: 16px;
-  color: #fff;
-}
-
-.fb-sidebar-item-icon--emoji {
-  font-size: 18px;
-}
-
-.fb-sidebar-item-icon--ai {
-  background: radial-gradient(circle at top, #8a9bff 0%, #5b6cff 45%, #3f4fcf 100%);
-  font-weight: 700;
-  color: #fff;
-}
-
-.fb-sidebar-item--toggle {
-  font-weight: 600;
-}
-
-.fb-sidebar-divider {
-  height: 1px;
-  background: #2f3134;
-  margin: 4px 8px 12px;
-  border: none;
-}
-
-.fb-sidebar-submenu--expanded {
-  margin-top: 4px;
-  padding-left: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fb-sidebar-subitem.fb-sidebar-subitem-nested {
-  padding-left: 16px;
-  font-size: 13px;
+  font-size: 20px; /* Taille de l'emoji si pas d'avatar */
 }
 
 /* ========================= */

@@ -85,7 +85,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   const socketRef = useRef(null);
   const notifIdsRef = useRef(new Set());
@@ -181,7 +180,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setShowJobsMenu(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
-    setShowMoreMenu(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -191,7 +189,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setSearchOpen(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
-    setShowMoreMenu(false);
   }, [headerOnly]);
 
   useEffect(() => {
@@ -201,7 +198,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setSearchOpen(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
-    setShowMoreMenu(false);
   }, [isJobsFeed]);
 
   useEffect(() => {
@@ -1161,9 +1157,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const leftMenuContent = (
     <div className="fb-left-section">
-      <div className="fb-sidebar-group fb-sidebar-group--primary">
+      <div className="fb-sidebar-group">
         <div
-          className="fb-sidebar-item fb-sidebar-item--profile"
+          className="fb-sidebar-item"
           onClick={() => handleLeftMenuNavigate(`/profil/${currentUser?._id}`)}
         >
           <div className="fb-sidebar-item-icon" style={avatarStyle}>
@@ -1176,171 +1172,91 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       </div>
 
       <div className="fb-sidebar-group">
+        <div className="fb-sidebar-group-header">Navigation</div>
+
         <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb")}>
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--ai">◎</div>
-          <div className="fb-sidebar-item-label">Meta AI</div>
+          <FBIcon name="home" size={20} />
+          <div className="fb-sidebar-item-label">Accueil</div>
+        </div>
+
+        <div
+          className="fb-sidebar-item"
+          onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
+        >
+          <FBIcon name="friends" size={20} />
+          <div className="fb-sidebar-item-label">Feed des pages</div>
+        </div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
+          <FBIcon name="ads" size={20} />
+          <div className="fb-sidebar-item-label">Publicités</div>
+        </div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
+          <FBIcon name="jobs" size={20} />
+          <div className="fb-sidebar-item-label">Emplois</div>
+        </div>
+
+        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
+          <FBIcon name="profile" size={20} />
+          <div className="fb-sidebar-item-label">Pages</div>
+        </div>
+
+        <div
+          className="fb-sidebar-item"
+          onClick={() => handleLeftMenuNavigate("/notifications")}
+        >
+          <FBIcon name="notif" size={20} />
+          <div className="fb-sidebar-item-label">Notifications</div>
         </div>
 
         <div
           className="fb-sidebar-item"
           onClick={() => handleLeftMenuNavigate("/fb/relations")}
         >
-          <div className="fb-sidebar-item-icon">
-            <FBIcon name="friends" size={18} />
-          </div>
-          <div className="fb-sidebar-item-label">Ami(e)s</div>
+          <FBIcon name="friends" size={20} />
+          <div className="fb-sidebar-item-label">Relations</div>
         </div>
 
-        <div className="fb-sidebar-item">
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">🕘</div>
-          <div className="fb-sidebar-item-label">Souvenirs</div>
-        </div>
-
-        <div className="fb-sidebar-item">
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">🔖</div>
-          <div className="fb-sidebar-item-label">Enregistrements</div>
-        </div>
-
-        <div className="fb-sidebar-item">
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">👥</div>
-          <div className="fb-sidebar-item-label">Groupes</div>
-        </div>
-
-        <div className="fb-sidebar-item">
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">🎬</div>
-          <div className="fb-sidebar-item-label">Reels</div>
-        </div>
-
-        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">🏪</div>
-          <div className="fb-sidebar-item-label">Marketplace</div>
-        </div>
-
-        <button
-          type="button"
-          className="fb-sidebar-item fb-sidebar-item--toggle"
-          onClick={() => setShowMoreMenu((prev) => !prev)}
+        <div
+          className="fb-sidebar-item fb-sidebar-settings"
+          onClick={() => setShowSettings((prev) => !prev)}
         >
-          <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">
-            {showMoreMenu ? "▲" : "▼"}
-          </div>
-          <div className="fb-sidebar-item-label">
-            {showMoreMenu ? "Voir moins" : "Voir plus"}
-          </div>
-        </button>
+          <FBIcon name="settings" size={20} />
+          <div className="fb-sidebar-item-label">Paramètres</div>
+        </div>
 
-        {showMoreMenu && (
-          <div className="fb-sidebar-submenu fb-sidebar-submenu--expanded">
-            <div className="fb-sidebar-subitem" onClick={() => handleLeftMenuNavigate("/fb")}>
+        {showSettings && (
+          <div className="fb-sidebar-submenu">
+            <div
+              className="fb-sidebar-subitem"
+              onClick={() => {
+                handleLeftMenuNavigate("/fb/dashboard");
+                setShowSettings(false);
+              }}
+            >
               <FBIcon name="home" size={18} />
-              <span>Accueil</span>
-            </div>
-
-            <div
-              className="fb-sidebar-subitem"
-              onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
-            >
-              <FBIcon name="friends" size={18} />
-              <span>Feed des pages</span>
-            </div>
-
-            <div
-              className="fb-sidebar-subitem"
-              onClick={() => handleLeftMenuNavigate("/emplois")}
-            >
-              <FBIcon name="jobs" size={18} />
-              <span>Emplois</span>
-            </div>
-
-            <div
-              className="fb-sidebar-subitem"
-              onClick={() => handleLeftMenuNavigate("/pages/me")}
-            >
-              <FBIcon name="profile" size={18} />
-              <span>Pages</span>
-            </div>
-
-            <div
-              className="fb-sidebar-subitem"
-              onClick={() => handleLeftMenuNavigate("/notifications")}
-            >
-              <FBIcon name="notif" size={18} />
-              <span>Notifications</span>
+              <span>Tableau de bord</span>
             </div>
 
             <div
               className="fb-sidebar-subitem"
               onClick={() => {
-                setShowSettings((prev) => !prev);
+                handleLeftMenuNavigate("/fb/settings");
+                setShowSettings(false);
               }}
             >
               <FBIcon name="settings" size={18} />
-              <span>Paramètres</span>
+              <span>Général</span>
             </div>
 
-            {showSettings && (
-              <>
-                <div
-                  className="fb-sidebar-subitem fb-sidebar-subitem-nested"
-                  onClick={() => {
-                    handleLeftMenuNavigate("/fb/dashboard");
-                    setShowSettings(false);
-                  }}
-                >
-                  <FBIcon name="home" size={16} />
-                  <span>Tableau de bord</span>
-                </div>
-
-                <div
-                  className="fb-sidebar-subitem fb-sidebar-subitem-nested"
-                  onClick={() => {
-                    handleLeftMenuNavigate("/fb/settings");
-                    setShowSettings(false);
-                  }}
-                >
-                  <FBIcon name="settings" size={16} />
-                  <span>Général</span>
-                </div>
-
-                <div
-                  className="fb-sidebar-subitem fb-sidebar-subitem-nested fb-sidebar-subitem-logout"
-                  onClick={handleLogout}
-                >
-                  <FBIcon name="logout" size={16} />
-                  <span>Déconnexion</span>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="fb-sidebar-divider" />
-
-      <div className="fb-sidebar-group">
-        <div className="fb-sidebar-group-header">Vos raccourcis</div>
-
-        {pages.length > 0 ? (
-          pages.slice(0, 3).map((page) => (
             <div
-              key={page._id}
-              className="fb-sidebar-item"
-              onClick={() => nav(`/pages/${page.slug || page._id}`)}
+              className="fb-sidebar-subitem fb-sidebar-subitem-logout"
+              onClick={handleLogout}
             >
-              <div
-                className="fb-sidebar-item-icon"
-                style={{ backgroundImage: `url(${getImageUrl(page.avatar)})` }}
-              />
-              <div className="fb-sidebar-item-label">{page.name}</div>
+              <FBIcon name="logout" size={18} />
+              <span>Déconnexion</span>
             </div>
-          ))
-        ) : (
-          <div
-            className="fb-sidebar-item"
-            onClick={() => handleLeftMenuNavigate("/pages/me")}
-          >
-            <div className="fb-sidebar-item-icon fb-sidebar-item-icon--emoji">🏢</div>
-            <div className="fb-sidebar-item-label">EIS BTP</div>
           </div>
         )}
       </div>
