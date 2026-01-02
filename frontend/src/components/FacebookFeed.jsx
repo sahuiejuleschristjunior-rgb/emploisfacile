@@ -949,7 +949,11 @@ export default function FacebookFeed() {
 
               {/* TEXTE */}
               {post.text && (
-                <div className="fb-post-text">
+                <div
+                  className={`fb-post-text${
+                    expanded[post._id] ? " is-expanded" : ""
+                  }`}
+                >
                   {truncateText(post.text, post._id)}
                 </div>
               )}
