@@ -426,6 +426,10 @@
   display: block;
 }
 
+.fb-modal-leftmenu-hidden .fb-left-column {
+  display: none;
+}
+
 .fb-right-section {
   background: #111;
   padding: 16px;
