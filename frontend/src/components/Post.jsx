@@ -6,6 +6,7 @@ import FBIcon from "./FBIcon";
 import PostEditModal from "./PostEditModal"; // ⬅️ AJOUT IMPORTANT
 import MediaRenderer from "./MediaRenderer";
 import { getHiddenPostIds, rememberHiddenPost } from "../utils/hiddenPosts";
+import TextClamp from "./TextClamp";
 
 const API_URL = "https://emploisfacile.org";
 const API_BASE = import.meta.env.VITE_API_URL || `${API_URL}/api`;
@@ -563,7 +564,7 @@ export default function Post({
         {post.text && (
           <div className="fb-post-text">
             {post.title && <strong>{post.title}</strong>}
-            <div>{post.text}</div>
+            <TextClamp text={post.text} className="text-content" />
           </div>
         )}
 

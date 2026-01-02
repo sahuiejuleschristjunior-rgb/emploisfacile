@@ -410,7 +410,7 @@ export default function CommentsModal({
           <div className={`cm-post-text-wrap ${expandedMap.post ? "expanded" : ""}`}>
             {post.text && (
               <>
-                <div className="cm-post-text">{post.text}</div>
+                <div className="cm-post-text text-content">{post.text}</div>
                 {post.text.length > 220 && (
                   <button className="cm-toggle-text" onClick={() => toggleExpanded("post")}>
                     {expandedMap.post ? "Voir moins" : "Voir plus"}
@@ -480,7 +480,9 @@ export default function CommentsModal({
                           <span className="cm-comment-date muted">{new Date(c.createdAt).toLocaleString()}</span>
                         </div>
 
-                        <div className="cm-comment-text">{c.text}</div>
+                        <div className="cm-comment-text comment-text">
+                          {c.text}
+                        </div>
 
                         {c.text?.length > 200 && (
                           <button className="cm-toggle-text small" onClick={() => toggleExpanded(c._id)}>
@@ -613,7 +615,9 @@ export default function CommentsModal({
                               onTouchMove={cancelLongPress}
                             >
                               <div className="cm-reply-author">{r.user?.name} <span className="muted small"> {new Date(r.createdAt).toLocaleString()}</span></div>
-                              <div className="cm-reply-text">{r.text}</div>
+                              <div className="cm-reply-text comment-text">
+                                {r.text}
+                              </div>
 
                               {r.media && (
                                 <div className="cm-reply-media" style={{ marginTop: 8 }}>

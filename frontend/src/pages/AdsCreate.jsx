@@ -4,6 +4,7 @@ import { getMyPages, getPagePosts } from "../api/pagesApi";
 import "../styles/ads.css";
 import { getImageUrl } from "../utils/imageUtils";
 import { buildPaymentLink, loadLocalCampaigns, upsertLocalCampaign } from "../utils/adsStorage";
+import TextClamp from "../components/TextClamp";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://emploisfacile.org/api";
 const POSTS_PER_PAGE = 5;
@@ -44,7 +45,12 @@ function PostRow({ post, sourceLabel, onSelect, isSelected }) {
             {post?.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}
           </span>
         </div>
-        <div className="ads-post-text">{post?.text || "(Texte vide)"}</div>
+        <div className="ads-post-text">
+          <TextClamp
+            text={post?.text || "(Texte vide)"}
+            className="text-content"
+          />
+        </div>
         {previewUrl && (
           <div className="ads-post-thumb" style={{ backgroundImage: `url(${previewUrl})` }} />
         )}
