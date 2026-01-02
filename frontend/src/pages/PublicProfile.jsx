@@ -195,6 +195,25 @@ export default function PublicProfile() {
     [posts]
   );
 
+  const profileMediaItems = useMemo(() => {
+    const items = [];
+    if (user?.coverPhoto) {
+      items.push({
+        url: user.coverPhoto,
+        key: "profile-cover",
+        kind: "cover",
+      });
+    }
+    if (user?.avatar) {
+      items.push({
+        url: user.avatar,
+        key: "profile-avatar",
+        kind: "avatar",
+      });
+    }
+    return items;
+  }, [user]);
+
   useEffect(() => {
     setViewerItems(photoItems);
   }, [photoItems]);
@@ -302,6 +321,12 @@ export default function PublicProfile() {
       setViewerOpen(true);
     };
 
+    const openProfileMedia = (kind) => {
+      const index = profileMediaItems.findIndex((item) => item.kind === kind);
+      if (index < 0) return;
+      openViewer(profileMediaItems, index);
+    };
+
     /* ============================================================
         RENDER
     ============================================================ */
@@ -310,22 +335,38 @@ export default function PublicProfile() {
         <div className="profil-hero">
           {/* COUVERTURE */}
           <div className="profil-cover">
-            <img
-              src={user.coverPhoto}
-              alt="Couverture du profil"
-              className="profil-cover-media"
-              loading="lazy"
-            />
+            <button
+              type="button"
+              className="profil-cover-button"
+              onClick={() => openProfileMedia("cover")}
+              disabled={!user.coverPhoto}
+              aria-label="Afficher la photo de couverture"
+            >
+              <img
+                src={user.coverPhoto}
+                alt="Couverture du profil"
+                className="profil-cover-media"
+                loading="lazy"
+              />
+            </button>
             <div className="profil-cover-meta">Ratio 2.67:1 — 1200x450 px recommandé</div>
           </div>
 
           {/* ENTÊTE */}
           <div className="profil-hero-row">
-            <div className="profil-avatar-wrapper">
-              <div
-                className="profil-avatar profil-avatar-large"
-                style={{ backgroundImage: `url(${user.avatar})` }}
-              />
+            <div className="profil-avatar-wrapper profil-avatar-wrapper--interactive">
+              <button
+                type="button"
+                className="profil-avatar-button"
+                onClick={() => openProfileMedia("avatar")}
+                disabled={!user.avatar}
+                aria-label="Afficher la photo de profil"
+              >
+                <div
+                  className="profil-avatar profil-avatar-large"
+                  style={{ backgroundImage: `url(${user.avatar})` }}
+                />
+              </button>
             </div>
             <div className="profil-hero-main">
               <div className="profil-title-block">
