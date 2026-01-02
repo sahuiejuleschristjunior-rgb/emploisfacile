@@ -1157,109 +1157,125 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const leftMenuContent = (
     <div className="fb-left-section">
-      <div className="fb-sidebar-group">
-        <div
-          className="fb-sidebar-item"
+      <ul className="fb-left-menu">
+        <li
+          className="fb-left-item"
           onClick={() => handleLeftMenuNavigate(`/profil/${currentUser?._id}`)}
         >
-          <div className="fb-sidebar-item-icon" style={avatarStyle}>
+          <div className="fb-left-item-icon fb-left-item-avatar" style={avatarStyle}>
             {!currentUser?.avatar && <span>🙂</span>}
           </div>
-          <div className="fb-sidebar-item-label">
-            {currentUser?.name || "Mon Profil"}
-          </div>
-        </div>
-      </div>
+          <span>{currentUser?.name || "Mon Profil"}</span>
+        </li>
 
-      <div className="fb-sidebar-group">
-        <div className="fb-sidebar-group-header">Navigation</div>
+        <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb")}>
+          <span className="fb-left-item-icon">
+            <FBIcon name="home" size={20} />
+          </span>
+          <span>Accueil</span>
+        </li>
 
-        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb")}>
-          <FBIcon name="home" size={20} />
-          <div className="fb-sidebar-item-label">Accueil</div>
-        </div>
-
-        <div
-          className="fb-sidebar-item"
+        <li
+          className="fb-left-item"
           onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
         >
-          <FBIcon name="friends" size={20} />
-          <div className="fb-sidebar-item-label">Feed des pages</div>
-        </div>
+          <span className="fb-left-item-icon">
+            <FBIcon name="friends" size={20} />
+          </span>
+          <span>Feed des pages</span>
+        </li>
 
-        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
-          <FBIcon name="ads" size={20} />
-          <div className="fb-sidebar-item-label">Publicités</div>
-        </div>
+        <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
+          <span className="fb-left-item-icon">
+            <FBIcon name="ads" size={20} />
+          </span>
+          <span>Publicités</span>
+        </li>
 
-        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
-          <FBIcon name="jobs" size={20} />
-          <div className="fb-sidebar-item-label">Emplois</div>
-        </div>
+        <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
+          <span className="fb-left-item-icon">
+            <FBIcon name="jobs" size={20} />
+          </span>
+          <span>Emplois</span>
+        </li>
 
-        <div className="fb-sidebar-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
-          <FBIcon name="profile" size={20} />
-          <div className="fb-sidebar-item-label">Pages</div>
-        </div>
+        <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
+          <span className="fb-left-item-icon">
+            <FBIcon name="profile" size={20} />
+          </span>
+          <span>Pages</span>
+        </li>
 
-        <div
-          className="fb-sidebar-item"
+        <li
+          className="fb-left-item"
           onClick={() => handleLeftMenuNavigate("/notifications")}
         >
-          <FBIcon name="notif" size={20} />
-          <div className="fb-sidebar-item-label">Notifications</div>
-        </div>
+          <span className="fb-left-item-icon">
+            <FBIcon name="notif" size={20} />
+          </span>
+          <span>Notifications</span>
+        </li>
 
-        <div
-          className="fb-sidebar-item"
+        <li
+          className="fb-left-item"
           onClick={() => handleLeftMenuNavigate("/fb/relations")}
         >
-          <FBIcon name="friends" size={20} />
-          <div className="fb-sidebar-item-label">Relations</div>
-        </div>
+          <span className="fb-left-item-icon">
+            <FBIcon name="friends" size={20} />
+          </span>
+          <span>Relations</span>
+        </li>
 
-        <div
-          className="fb-sidebar-item fb-sidebar-settings"
+        <li
+          className="fb-left-item fb-left-item-settings"
           onClick={() => setShowSettings((prev) => !prev)}
         >
-          <FBIcon name="settings" size={20} />
-          <div className="fb-sidebar-item-label">Paramètres</div>
-        </div>
+          <span className="fb-left-item-icon">
+            <FBIcon name="settings" size={20} />
+          </span>
+          <span>Paramètres</span>
+        </li>
+      </ul>
 
-        {showSettings && (
-          <div className="fb-sidebar-submenu">
-            <div
-              className="fb-sidebar-subitem"
-              onClick={() => {
-                handleLeftMenuNavigate("/fb/dashboard");
-                setShowSettings(false);
-              }}
-            >
+      {showSettings && (
+        <ul className="fb-left-submenu">
+          <li
+            className="fb-left-subitem"
+            onClick={() => {
+              handleLeftMenuNavigate("/fb/dashboard");
+              setShowSettings(false);
+            }}
+          >
+            <span className="fb-left-item-icon">
               <FBIcon name="home" size={18} />
-              <span>Tableau de bord</span>
-            </div>
+            </span>
+            <span>Tableau de bord</span>
+          </li>
 
-            <div
-              className="fb-sidebar-subitem"
-              onClick={() => {
-                handleLeftMenuNavigate("/fb/settings");
-                setShowSettings(false);
-              }}
-            >
+          <li
+            className="fb-left-subitem"
+            onClick={() => {
+              handleLeftMenuNavigate("/fb/settings");
+              setShowSettings(false);
+            }}
+          >
+            <span className="fb-left-item-icon">
               <FBIcon name="settings" size={18} />
-              <span>Général</span>
-            </div>
+            </span>
+            <span>Général</span>
+          </li>
 
-            <div
-              className="fb-sidebar-subitem fb-sidebar-subitem-logout"
-              onClick={handleLogout}
-            >
+          <li
+            className="fb-left-subitem fb-left-subitem-logout"
+            onClick={handleLogout}
+          >
+            <span className="fb-left-item-icon">
               <FBIcon name="logout" size={18} />
-              <span>Déconnexion</span>
-            </div>
-          </div>
-        )}
-      </div>
+            </span>
+            <span>Déconnexion</span>
+          </li>
+        </ul>
+      )}
     </div>
   );
 
