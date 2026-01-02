@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaHeart, FaRegComment, FaShare } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import MediaRenderer from "../components/MediaRenderer";
+import TextClamp from "../components/TextClamp";
 
 export default function Feed() {
   const [posts, setPosts] = useState([]);
@@ -131,7 +132,9 @@ export default function Feed() {
               </div>
 
               {/* TEXTE */}
-              {post.text && <p className="post-text">{post.text}</p>}
+              {post.text && (
+                <TextClamp text={post.text} className="post-text" />
+              )}
 
               {/* MÉDIAS */}
               {post.media?.map((m, idx) => {

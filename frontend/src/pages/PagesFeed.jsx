@@ -6,6 +6,7 @@ import MediaRenderer from "../components/MediaRenderer";
 import FBIcon from "../components/FBIcon";
 import SkeletonPost from "../components/SkeletonPost";
 import StoriesFB from "../components/StoriesFB";
+import TextClamp from "../components/TextClamp";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import { sharePost } from "../api/posts";
 import "../styles/facebook-feed.css";
@@ -32,7 +33,6 @@ export default function PagesFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [expanded, setExpanded] = useState({});
   const [activePostForComments, setActivePostForComments] = useState(null);
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
   const [sponsorModalPost, setSponsorModalPost] = useState(null);
@@ -227,42 +227,6 @@ export default function PagesFeed() {
     setIsCommentsModalOpen(false);
   };
 
-  const truncateText = (text, postId) => {
-    if (!text) return "";
-    const limit = 180;
-    const isExpanded = expanded[postId];
-
-    if (text.length <= limit || isExpanded) {
-      return (
-        <>
-          {text}
-          {text.length > limit && (
-            <button
-              onClick={() =>
-                setExpanded((prev) => ({ ...prev, [postId]: false }))
-              }
-              className="fb-see-more-btn"
-            >
-              Voir moins
-            </button>
-          )}
-        </>
-      );
-    }
-
-    return (
-      <>
-        {text.slice(0, limit)}…
-        <button
-          onClick={() => setExpanded((prev) => ({ ...prev, [postId]: true }))}
-          className="fb-see-more-btn"
-        >
-          Voir plus
-        </button>
-      </>
-    );
-  };
-
   const resolveMediaUrl = (media) => {
     if (!media?.url && !media?.previewUrl) return null;
 
@@ -439,7 +403,7 @@ export default function PagesFeed() {
 
               {post.text && (
                 <div className="fb-post-text">
-                  {truncateText(post.text, post._id)}
+                  <TextClamp text={post.text} className="text-content" />
                 </div>
               )}
 
