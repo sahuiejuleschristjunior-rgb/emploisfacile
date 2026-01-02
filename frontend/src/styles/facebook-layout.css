@@ -398,15 +398,15 @@
 }
 
 .fb-left-item-avatar {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background-size: cover !important;
   background-position: center !important;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 /* ========================= */
