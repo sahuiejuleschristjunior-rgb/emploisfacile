@@ -24,7 +24,13 @@
 }
 
 .menu-item .icon {
-  font-size: 22px;
+  font-size: 28px;
+  display: inline-block;
+  background: linear-gradient(135deg, #ff6b6b, #ffd166, #5ddcff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .menu-item:hover {
@@ -48,7 +54,7 @@
   }
   
   .menu-item .icon {
-    font-size: 20px;
+    font-size: 26px;
   }
 }
 .notif-icon-wrapper {

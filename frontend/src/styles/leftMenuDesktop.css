@@ -114,8 +114,13 @@
 }
 
 .left-desktop-icon {
-  font-size: 20px;
-  color: #9ca3af;
+  font-size: 26px;
+  display: inline-block;
+  background: linear-gradient(135deg, #ff6b6b, #ffd166, #5ddcff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 
 .left-desktop-text {
