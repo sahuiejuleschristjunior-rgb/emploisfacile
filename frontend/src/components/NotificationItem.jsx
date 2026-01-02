@@ -50,13 +50,11 @@ export default function NotificationItem({ notif, onHandled }) {
 
   switch (actionType) {
     case "like":
-    case "like_post":
       message = "a aimé votre publication.";
       icon = "👍";
       break;
 
     case "comment":
-    case "comment_post":
       message = `a commenté votre publication : "${(notif.text || "").slice(0, 40)}"`;
       icon = "💬";
       break;
@@ -129,9 +127,6 @@ export default function NotificationItem({ notif, onHandled }) {
     if (isFriendRequest) return;
 
     const notifConversationId = getNotifConversationId(notif);
-    const postId = notif.postId || notif.relatedId || null;
-    const commentId = notif.commentId || null;
-    const isPostNotification = ["like_post", "comment_post"].includes(actionType);
 
     if (actionType === "message_request") {
       await deleteByRelated?.(notif.relatedId);
@@ -158,20 +153,6 @@ export default function NotificationItem({ notif, onHandled }) {
           },
         });
       }
-      return;
-    }
-
-    if (isPostNotification && postId) {
-      await deleteById?.(notif._id);
-      removeNotifications?.((item) => item._id === notif._id);
-      onHandled?.(notif._id, { handled: true });
-      navigate("/fb", {
-        state: {
-          focusPostId: postId,
-          focusCommentId: commentId || null,
-          source: "notification",
-        },
-      });
       return;
     }
 
