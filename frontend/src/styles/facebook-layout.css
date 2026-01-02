@@ -351,49 +351,61 @@
 }
 
 .fb-left-section {
-  background: #111;
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid #222;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  border: none;
 }
 
-.fb-sidebar-group {
-  margin-bottom: 18px;
+.fb-left-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.fb-sidebar-group-header {
-  font-size: 13px;
-  opacity: 0.7;
-  margin-bottom: 8px;
-}
-
-.fb-sidebar-item {
+.fb-left-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 8px;
+  gap: 12px;
+  padding: 10px 8px;
   cursor: pointer;
+  color: #e4e6eb;
+  border-radius: 8px;
   transition: background 0.15s ease;
 }
 
-.fb-sidebar-item:hover {
-  background: #1d1d1d;
+.fb-left-item:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* 💥 AVATAR DANS LE SIDEBAR GAUCHE */
-.fb-sidebar-item-icon {
-  width: 36px;
-  height: 36px;
-  background: #222;
-  border-radius: 50%; /* Changé à 50% pour l'avatar rond */
-  display: flex;
+.fb-left-item span {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.fb-left-item-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Ajout pour l'image de fond */
+}
+
+.fb-left-item-icon svg {
+  display: block;
+}
+
+.fb-left-item-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-size: cover !important;
   background-position: center !important;
-  font-size: 20px; /* Taille de l'emoji si pas d'avatar */
+  font-size: 18px;
 }
 
 /* ========================= */
@@ -809,7 +821,7 @@ body { background: #18191a !important; }
   border: none !important; 
   box-shadow: none !important; 
 }
-.fb-card, .fb-left-section, .fb-right-section { 
+.fb-card, .fb-right-section { 
   background: #242526 !important; 
   border-radius: 10px; 
   border: 1px solid #3a3b3c !important; /* Bordure ajustée */
@@ -968,36 +980,37 @@ body { background: #18191a !important; }
 /* SOUS-MENU PARAMÈTRES      */
 /* ========================= */
 
-.fb-sidebar-submenu {
-  margin-left: 14px;
-  margin-top: 6px;
+.fb-left-submenu {
+  list-style: none;
+  padding: 4px 0 0 28px;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
-.fb-sidebar-subitem {
+.fb-left-subitem {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px;
+  padding: 8px;
   border-radius: 8px;
   cursor: pointer;
-  background: #2c2c2c;
+  color: #e4e6eb;
   font-size: 14px;
+  transition: background 0.15s ease;
 }
 
-.fb-sidebar-subitem:hover {
-  background: #3a3a3a;
+.fb-left-subitem:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* Déconnexion */
-.fb-sidebar-subitem-logout {
+.fb-left-subitem-logout {
   color: #ff3b30;
   font-weight: 600;
 }
 
-.fb-sidebar-subitem-logout:hover {
+.fb-left-subitem-logout:hover {
   background: rgba(255, 59, 48, 0.12);
 }
 /* ===================== */
