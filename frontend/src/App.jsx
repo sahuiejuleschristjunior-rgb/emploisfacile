@@ -24,6 +24,7 @@ import EmploisPage from "./pages/EmploisPage";
 import SettingsPage from "./pages/SettingsPage";
 import PostPage from "./pages/PostPage";
 import ChatPage from "./pages/ChatPage";
+import CompleteProfile from "./pages/CompleteProfile";
 
 import Messages from "./pages/Messages.jsx";
 import JobDetailPage from "./pages/JobDetailPage";
@@ -190,6 +191,7 @@ export default function App() {
                 </Route>
 
                 {/* Pages compactes mais avec le header présent */}
+                <Route path="/complete-profile" element={<CompleteProfile />} />
                 <Route path="/profil" element={<ProfilPage />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/messages/:id" element={<ChatPage />} />

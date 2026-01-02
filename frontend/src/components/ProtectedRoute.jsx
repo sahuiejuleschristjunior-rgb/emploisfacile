@@ -9,8 +9,9 @@ export default function ProtectedRoute({
   redirectIfAuth = false,
   to = "/fb",
 }) {
-  const { loading, isAuthenticated, user } = useAuth();
+  const { loading, isAuthenticated, user, profileCompleted } = useAuth();
   const location = useLocation();
+  const isCompleteProfileRoute = location.pathname === "/complete-profile";
 
   /* ============================================================
      1) Pendant chargement global → loader (évite écran noir)
@@ -48,6 +49,13 @@ export default function ProtectedRoute({
   ============================================================ */
   if (!user) {
     return <PageLoader />;
+  }
+
+  /* ============================================================
+     4.5) Profil incomplet → redirection forcée
+  ============================================================ */
+  if (!profileCompleted && !isCompleteProfileRoute) {
+    return <Navigate to="/complete-profile" replace />;
   }
 
   /* ============================================================

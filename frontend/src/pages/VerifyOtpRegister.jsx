@@ -147,9 +147,9 @@ export default function VerifyOtpRegister() {
       }
 
       /* --------------------------------------------------------
-         🔥 Nouveau flow : redirection directe vers /fb
+         🔥 Nouveau flow : redirection directe vers /complete-profile
       -------------------------------------------------------- */
-      nav("/fb");
+      nav("/complete-profile");
 
     } catch (err) {
       console.error("OTP ERROR:", err);
