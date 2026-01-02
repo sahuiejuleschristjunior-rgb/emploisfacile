@@ -1158,6 +1158,16 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const leftMenuContent = (
     <div className="fb-left-section">
       <ul className="fb-left-menu">
+        <li
+          className="fb-left-item"
+          onClick={() => handleLeftMenuNavigate(`/profil/${currentUser?._id}`)}
+        >
+          <div className="fb-left-item-icon fb-left-item-avatar" style={avatarStyle}>
+            {!currentUser?.avatar && <span>🙂</span>}
+          </div>
+          <span>{currentUser?.name || "Mon Profil"}</span>
+        </li>
+
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb")}>
           <span className="fb-left-item-icon">
             <FBIcon name="home" size={20} />
@@ -1198,12 +1208,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <li
           className="fb-left-item"
-          onClick={() => handleLeftMenuNavigate("/reels")}
+          onClick={() => handleLeftMenuNavigate("/notifications")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="reels" size={20} />
+            <FBIcon name="notif" size={20} />
           </span>
-          <span>Reels</span>
+          <span>Notifications</span>
         </li>
 
         <li
@@ -1214,16 +1224,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <FBIcon name="friends" size={20} />
           </span>
           <span>Relations</span>
-        </li>
-
-        <li
-          className="fb-left-item"
-          onClick={() => handleLeftMenuNavigate("/fb/dashboard")}
-        >
-          <span className="fb-left-item-icon">
-            <FBIcon name="home" size={20} />
-          </span>
-          <span>Tableau de bord</span>
         </li>
 
         <li
@@ -1242,14 +1242,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           <li
             className="fb-left-subitem"
             onClick={() => {
-              handleLeftMenuNavigate("/fb/settings");
+              handleLeftMenuNavigate("/fb/dashboard");
               setShowSettings(false);
             }}
           >
             <span className="fb-left-item-icon">
-              <FBIcon name="settings" size={18} />
+              <FBIcon name="home" size={18} />
             </span>
-            <span>Paramètres du compte</span>
+            <span>Tableau de bord</span>
           </li>
 
           <li
@@ -1262,20 +1262,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             <span className="fb-left-item-icon">
               <FBIcon name="settings" size={18} />
             </span>
-            <span>Sécurité</span>
-          </li>
-
-          <li
-            className="fb-left-subitem"
-            onClick={() => {
-              handleLeftMenuNavigate("/fb/settings");
-              setShowSettings(false);
-            }}
-          >
-            <span className="fb-left-item-icon">
-              <FBIcon name="settings" size={18} />
-            </span>
-            <span>Confidentialité</span>
+            <span>Général</span>
           </li>
 
           <li

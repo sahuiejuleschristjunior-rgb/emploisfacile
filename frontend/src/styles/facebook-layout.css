@@ -4,7 +4,6 @@
 
 :root {
   --fb-header-height: 40px;
-  --fb-content-top-offset: 12px;
 }
 
 .fb-app {
@@ -349,7 +348,6 @@
   height: 100%;
   align-self: stretch;
   overflow: hidden;
-  padding-top: var(--fb-content-top-offset);
 }
 
 .fb-left-section {
