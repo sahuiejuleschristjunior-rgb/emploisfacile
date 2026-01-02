@@ -1218,6 +1218,18 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <li
           className="fb-left-item"
+          onClick={() =>
+            handleLeftMenuNavigate("/reels?videoId=6952d0241d5f1313686981a6")
+          }
+        >
+          <span className="fb-left-item-icon">
+            <FBIcon name="reels" size={24} />
+          </span>
+          <span>Reels</span>
+        </li>
+
+        <li
+          className="fb-left-item"
           onClick={() => handleLeftMenuNavigate("/notifications")}
         >
           <span className="fb-left-item-icon">
