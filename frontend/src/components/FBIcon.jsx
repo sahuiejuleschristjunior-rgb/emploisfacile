@@ -152,47 +152,62 @@ export default function FBIcon({ name, size = 26 }) {
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id={`${uniqueId}-grad-main`} x1="0" y1="0" x2="1" y2="1">
+            <linearGradient
+              id={`${uniqueId}-bagGrad`}
+              x1="3"
+              y1="6"
+              x2="21"
+              y2="20"
+              gradientUnits="userSpaceOnUse"
+            >
               <stop offset="0%" stopColor="#60A5FA" />
               <stop offset="100%" stopColor="#2563EB" />
             </linearGradient>
-            <linearGradient id={`${uniqueId}-grad-orange`} x1="0" y1="0" x2="1" y2="1">
+            <linearGradient
+              id={`${uniqueId}-orangeGrad`}
+              x1="8"
+              y1="2"
+              x2="16"
+              y2="8"
+              gradientUnits="userSpaceOnUse"
+            >
               <stop offset="0%" stopColor="#FDBA74" />
               <stop offset="100%" stopColor="#F97316" />
             </linearGradient>
           </defs>
 
           <rect
-            x="2"
-            y="4"
-            width="20"
-            height="16"
+            x="3"
+            y="6"
+            width="18"
+            height="14"
             rx="3"
-            fill={`url(#${uniqueId}-grad-main)`}
+            fill={`url(#${uniqueId}-bagGrad)`}
             stroke="#F97316"
+            strokeWidth="1.2"
+          />
+          <path
+            d="M6 10.2h12c.9 0 1.6.7 1.6 1.6v5.8c0 1.2-1 2.2-2.2 2.2H6.6C5.2 19.8 4 18.6 4 17.2v-5.4c0-.9.7-1.6 1.6-1.6z"
+            fill="rgba(255,255,255,0.10)"
+            stroke="#F97316"
+            strokeWidth="0.9"
+          />
+          <path
+            d="M9 6V5.2C9 4 10 3 11.2 3h1.6C14 3 15 4 15 5.2V6"
+            stroke={`url(#${uniqueId}-orangeGrad)`}
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <circle cx="8.2" cy="13" r="1.8" fill="#E0F2FE" stroke="#F97316" strokeWidth="0.8" />
+          <path
+            d="M7.6 13l.4.4 1-1"
+            stroke="#2563EB"
             strokeWidth="1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <rect
-            x="9"
-            y="2"
-            width="6"
-            height="4"
-            rx="1.5"
-            fill={`url(#${uniqueId}-grad-orange)`}
-          />
-          <rect
-            x="4"
-            y="7"
-            width="16"
-            height="11"
-            rx="2"
-            fill={`url(#${uniqueId}-grad-main)`}
-            stroke="#FDBA74"
-            strokeWidth="0.8"
-          />
-          <circle cx="8.5" cy="12" r="2" fill="#FFF7ED" />
-          <rect x="12" y="11" width="6" height="1.5" rx="0.75" fill="#FFF7ED" />
-          <rect x="12" y="14" width="5" height="1.5" rx="0.75" fill="#FFF7ED" />
+          <rect x="11.3" y="12.2" width="7" height="1.6" rx="0.8" fill="#F8FAFC" opacity="0.95" />
+          <rect x="11.3" y="14.9" width="5.8" height="1.6" rx="0.8" fill="#F8FAFC" opacity="0.95" />
         </svg>
       );
 
