@@ -164,7 +164,6 @@ export default function NotificationItem({ notif, onHandled }) {
           focusPostId:
             notif.postId || notif.post?._id || notif.relatedId || null,
           focusCommentId: notif.commentId || notif.comment?._id || null,
-          focusAction: actionType || null,
         },
       });
       return;

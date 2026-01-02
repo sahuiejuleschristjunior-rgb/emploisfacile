@@ -209,10 +209,7 @@ export default function FacebookFeed() {
   /* =================================================================
         STATES DU FEED (AUCUN COMMENTAIRE ICI)
   ================================================================= */
-  const [fromNotification, setFromNotification] = useState(false);
-  const [focusPostId, setFocusPostId] = useState(null);
-  const [focusCommentId, setFocusCommentId] = useState(null);
-  const [focusAction, setFocusAction] = useState(null);
+  const [notifPayload, setNotifPayload] = useState(null);
   const [openCommentsForPostId, setOpenCommentsForPostId] = useState(null);
   const [feedToast, setFeedToast] = useState("");
 
@@ -259,23 +256,21 @@ export default function FacebookFeed() {
   const hasNotifiedMissing = useRef(false);
 
   useEffect(() => {
-    const st = location.state;
-    if (st?.fromNotification) {
-      setFromNotification(true);
-      setFocusPostId(st.focusPostId || null);
-      setFocusCommentId(st.focusCommentId || null);
-      setFocusAction(st.focusAction || null);
-      if (st.focusPostId && st.focusCommentId) {
-        setOpenCommentsForPostId(st.focusPostId);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (location.state?.fromNotification) {
+    const state = location.state;
+    if (state?.fromNotification) {
+      setNotifPayload({
+        postId: state.focusPostId,
+        commentId: state.focusCommentId,
+      });
       nav("/fb", { replace: true });
     }
-  }, []);
+  }, [location.key, nav]);
+
+  useEffect(() => {
+    hasFocusedPost.current = false;
+    hasOpenedComments.current = false;
+    hasNotifiedMissing.current = false;
+  }, [notifPayload?.postId, notifPayload?.commentId]);
 
   const addOptimisticPost = (post) => {
     if (!post) return;
@@ -423,8 +418,7 @@ export default function FacebookFeed() {
   }, []);
 
   useEffect(() => {
-    if (!fromNotification || !focusPostId) return;
-
+    if (!notifPayload?.postId) return;
     if (!posts?.length) {
       if (!loadingInitial && !hasNotifiedMissing.current) {
         setFeedToast("Cette publication n’est plus disponible.");
@@ -434,7 +428,7 @@ export default function FacebookFeed() {
       return;
     }
 
-    const el = document.getElementById(`post-${focusPostId}`);
+    const el = document.getElementById(`post-${notifPayload.postId}`);
     if (!el) {
       if (!loadingInitial && !hasNotifiedMissing.current) {
         setFeedToast("Cette publication n’est plus disponible.");
@@ -452,15 +446,15 @@ export default function FacebookFeed() {
       el.classList.add("post-highlight");
       setTimeout(() => el.classList.remove("post-highlight"), 2500);
     });
-  }, [fromNotification, focusPostId, posts, loadingInitial]);
+  }, [notifPayload, posts, loadingInitial]);
 
   useEffect(() => {
-    if (!fromNotification || !focusPostId || !posts?.length) return;
-    const shouldOpenComments =
-      Boolean(focusCommentId) || ["comment", "reply"].includes(focusAction);
-    if (!shouldOpenComments) return;
+    if (!notifPayload?.postId || !posts?.length) return;
+    if (!notifPayload.commentId) return;
 
-    const post = posts.find((p) => String(p._id) === String(focusPostId));
+    const post = posts.find(
+      (p) => String(p._id) === String(notifPayload.postId)
+    );
     if (!post) return;
     if (hasOpenedComments.current) return;
     if (openCommentsForPostId === post._id && isCommentsModalOpen) return;
@@ -470,10 +464,7 @@ export default function FacebookFeed() {
     setIsCommentsModalOpen(true);
     hasOpenedComments.current = true;
   }, [
-    fromNotification,
-    focusAction,
-    focusCommentId,
-    focusPostId,
+    notifPayload,
     posts,
     openCommentsForPostId,
     isCommentsModalOpen,
@@ -922,11 +913,12 @@ export default function FacebookFeed() {
             : "";
 
           return (
-            <article
+            <div
               key={post._id}
               id={`post-${post._id}`}
-              className="fb-post"
+              className="fb-post-wrapper"
             >
+              <article className="fb-post">
 
               {/* HEADER */}
               <div className="fb-post-header">
@@ -1181,7 +1173,8 @@ export default function FacebookFeed() {
                   </button>
                 )}
               </div>
-            </article>
+              </article>
+            </div>
           );
         })}
 
@@ -1370,8 +1363,8 @@ export default function FacebookFeed() {
         <CommentsModal
           post={activePostForComments}
           onClose={closeCommentsModal}
-          focusCommentId={focusCommentId}
-          fromNotification={fromNotification}
+          focusCommentId={notifPayload?.commentId || null}
+          fromNotification={Boolean(notifPayload)}
         />
       )}
     </div>
