@@ -5,6 +5,8 @@ export default function FBIcon({ name, size = 26 }) {
   const uniqueId = useId();
   const blueGradientId = `${uniqueId}-blueGrad`;
   const orangeGradientId = `${uniqueId}-orangeGrad`;
+  const relationGradientId = `${uniqueId}-relationGrad`;
+  const relationAccentId = `${uniqueId}-relationAccent`;
 
   switch (name) {
 
@@ -27,6 +29,55 @@ export default function FBIcon({ name, size = 26 }) {
           <circle cx="9" cy="11" r="5" />
           <circle cx="19" cy="11" r="5" />
           <path d="M3 25c1-6 5-9 7-9h8c2 0 6 3 7 9H3z" />
+        </svg>
+      );
+
+    /* ============================
+       RELATION — Left menu icon
+    ============================ */
+    case "relation":
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient id={relationGradientId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#60A5FA" />
+              <stop offset="100%" stopColor="#34D399" />
+            </linearGradient>
+            <linearGradient id={relationAccentId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#FBBF24" />
+              <stop offset="100%" stopColor="#F97316" />
+            </linearGradient>
+          </defs>
+          <circle cx="7" cy="7" r="3" fill={`url(#${relationGradientId})`} />
+          <rect
+            x="3.5"
+            y="11"
+            width="7"
+            height="7"
+            rx="3.5"
+            fill={`url(#${relationGradientId})`}
+          />
+          <circle cx="17" cy="7" r="3" fill={`url(#${relationGradientId})`} />
+          <rect
+            x="13.5"
+            y="11"
+            width="7"
+            height="7"
+            rx="3.5"
+            fill={`url(#${relationGradientId})`}
+          />
+          <path
+            d="M9.5 12 C11 10.5, 13 10.5, 14.5 12"
+            stroke={`url(#${relationAccentId})`}
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       );
 
