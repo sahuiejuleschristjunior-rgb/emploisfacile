@@ -1170,7 +1170,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="home" size={20} />
+            <FBIcon name="home" size={24} />
           </span>
           <span>Accueil</span>
         </li>
@@ -1180,28 +1180,28 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="friends" size={20} />
+            <FBIcon name="friends" size={24} />
           </span>
           <span>Feed des pages</span>
         </li>
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="ads" size={20} />
+            <FBIcon name="ads" size={24} />
           </span>
           <span>Publicités</span>
         </li>
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="jobs" size={20} />
+            <FBIcon name="jobs" size={24} />
           </span>
           <span>Emplois</span>
         </li>
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="profile" size={20} />
+            <FBIcon name="profile" size={24} />
           </span>
           <span>Pages</span>
         </li>
@@ -1211,7 +1211,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/notifications")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="notif" size={20} />
+            <FBIcon name="notif" size={24} />
           </span>
           <span>Notifications</span>
         </li>
@@ -1221,7 +1221,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/relations")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="friends" size={20} />
+            <FBIcon name="friends" size={24} />
           </span>
           <span>Relations</span>
         </li>
@@ -1231,7 +1231,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => setShowSettings((prev) => !prev)}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="settings" size={20} />
+            <FBIcon name="settings" size={24} />
           </span>
           <span>Paramètres</span>
         </li>
@@ -1242,25 +1242,12 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           <li
             className="fb-left-subitem"
             onClick={() => {
-              handleLeftMenuNavigate("/fb/dashboard");
-              setShowSettings(false);
-            }}
-          >
-            <span className="fb-left-item-icon">
-              <FBIcon name="home" size={18} />
-            </span>
-            <span>Tableau de bord</span>
-          </li>
-
-          <li
-            className="fb-left-subitem"
-            onClick={() => {
               handleLeftMenuNavigate("/fb/settings");
               setShowSettings(false);
             }}
           >
             <span className="fb-left-item-icon">
-              <FBIcon name="settings" size={18} />
+              <FBIcon name="settings" size={22} />
             </span>
             <span>Général</span>
           </li>
@@ -1270,7 +1257,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             onClick={handleLogout}
           >
             <span className="fb-left-item-icon">
-              <FBIcon name="logout" size={18} />
+              <FBIcon name="logout" size={22} />
             </span>
             <span>Déconnexion</span>
           </li>
