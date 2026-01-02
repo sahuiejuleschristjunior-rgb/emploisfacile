@@ -120,13 +120,6 @@ export default function CommentsModal({
   const longPressTimer = useRef(null);
 
   useEffect(() => {
-    document.body.classList.add("fb-modal-leftmenu-hidden");
-    return () => {
-      document.body.classList.remove("fb-modal-leftmenu-hidden");
-    };
-  }, []);
-
-  useEffect(() => {
     let abort = false;
     const load = async () => {
       if (!initialPost || !initialPost._id) {
