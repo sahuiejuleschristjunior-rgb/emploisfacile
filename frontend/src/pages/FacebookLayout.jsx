@@ -1180,7 +1180,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="friends" size={24} />
+            <FBIcon name="pages-feed" size={24} />
           </span>
           <span>Feed des pages</span>
         </li>

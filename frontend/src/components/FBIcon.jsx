@@ -31,6 +31,29 @@ export default function FBIcon({ name, size = 26 }) {
       );
 
     /* ============================
+       PAGES FEED — Facebook style icon
+    ============================ */
+    case "pages-feed":
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <rect x="2" y="2" width="20" height="20" rx="4" fill="#1DA1F2" />
+          <rect x="5" y="5" width="14" height="9" rx="1.5" fill="#EAF4FF" />
+          <path
+            d="M9.5 12C8.1 12 7 11.1 7 10C7 8.9 8 8 9.2 8C9.6 6.8 10.8 6 12 6C13.6 6 14.9 7.2 15 8.7C16.2 8.9 17 9.8 17 10.8C17 11.6 16.3 12 15.5 12Z"
+            fill="#1DA1F2"
+          />
+          <rect x="6" y="16.5" width="7" height="1.5" rx="0.75" fill="#EAF4FF" />
+          <rect x="15" y="16.5" width="3" height="1.5" rx="0.75" fill="#EAF4FF" />
+        </svg>
+      );
+
+    /* ============================
        MESSAGES — Messenger Bold
     ============================ */
     case "messages":
