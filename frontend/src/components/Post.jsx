@@ -317,36 +317,38 @@ export default function Post({
       if (isImage) {
         const imageIndex = imageIndexMap.get(index) ?? 0;
         return (
-          <button
-            type="button"
-            key={index}
-            className="fb-post-image-btn"
-            onClick={() => onMediaClick?.(imageItems, imageIndex)}
-            aria-label="Afficher les photos de la publication"
-          >
-            <MediaRenderer
-              media={m}
-              src={mediaUrl}
-              type={m.type}
-              mimeType={m.mimeType}
-              mediaClassName="fb-post-image"
-              alt="media"
-            />
-          </button>
+          <div className="fb-post-media-box" key={index}>
+            <button
+              type="button"
+              className="fb-post-image-btn"
+              onClick={() => onMediaClick?.(imageItems, imageIndex)}
+              aria-label="Afficher les photos de la publication"
+            >
+              <MediaRenderer
+                media={m}
+                src={mediaUrl}
+                type={m.type}
+                mimeType={m.mimeType}
+                mediaClassName="fb-post-image"
+                alt="media"
+              />
+            </button>
+          </div>
         );
       }
 
       if (m.type === "video") {
         return (
-          <MediaRenderer
-            key={index}
-            media={m}
-            src={mediaUrl}
-            type={m.type}
-            mimeType={m.mimeType}
-            mediaClassName="fb-post-video"
-            controls
-          />
+          <div className="fb-post-media-box" key={index}>
+            <MediaRenderer
+              media={m}
+              src={mediaUrl}
+              type={m.type}
+              mimeType={m.mimeType}
+              mediaClassName="fb-post-video"
+              controls
+            />
+          </div>
         );
       }
 
