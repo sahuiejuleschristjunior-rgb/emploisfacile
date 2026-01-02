@@ -1211,7 +1211,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="profile" size={24} />
+            <FBIcon name="pages" size={24} />
           </span>
           <span>Pages</span>
         </li>
