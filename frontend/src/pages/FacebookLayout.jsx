@@ -1243,7 +1243,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/relations")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="friends" size={24} />
+            <FBIcon name="relation" size={24} />
           </span>
           <span>Relations</span>
         </li>
