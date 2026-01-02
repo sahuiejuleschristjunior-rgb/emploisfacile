@@ -1547,7 +1547,60 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           className="fb-bottom-nav-item"
           onClick={() => safeNavigate("/emplois")}
         >
-          <FBIcon name="jobs" size={22} />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <rect
+              x="3"
+              y="6"
+              width="18"
+              height="14"
+              rx="3"
+              stroke="#FFFFFF"
+              strokeWidth="1.6"
+            />
+            <path
+              d="M9 6V5.2C9 4 10 3 11.2 3h1.6C14 3 15 4 15 5.2V6"
+              stroke="#FFFFFF"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <path
+              d="M4.6 10.5h14.8"
+              stroke="#FFFFFF"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="8.2"
+              cy="13"
+              r="1.6"
+              stroke="#FFFFFF"
+              strokeWidth="1.4"
+            />
+            <line
+              x1="11.2"
+              y1="12.8"
+              x2="18"
+              y2="12.8"
+              stroke="#FFFFFF"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+            <line
+              x1="11.2"
+              y1="15.4"
+              x2="16.8"
+              y2="15.4"
+              stroke="#FFFFFF"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+          </svg>
           <div>Emplois</div>
         </div>
 
