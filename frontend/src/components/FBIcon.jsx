@@ -457,47 +457,47 @@ export default function FBIcon({ name, size = 26 }) {
         <svg
           width={size}
           height={size}
-          viewBox="0 0 256 256"
+          viewBox="0 0 24 24"
           role="img"
           aria-label="Megaphone icon"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
             <linearGradient id={`ads-gradient-${uniqueId}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#FFB3C7" />
-              <stop offset="45%" stopColor="#FF9F7A" />
-              <stop offset="75%" stopColor="#C77DFF" />
-              <stop offset="100%" stopColor="#7B5CFF" />
+              <stop offset="0%" stopColor="#F59E0B" />
+              <stop offset="100%" stopColor="#EF4444" />
             </linearGradient>
-            <filter
-              id={`ads-glow-${uniqueId}`}
-              x="-30%"
-              y="-30%"
-              width="160%"
-              height="160%"
-            >
-              <feGaussianBlur stdDeviation="10" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
+            <linearGradient id={`ads-sound-${uniqueId}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#60A5FA" />
+              <stop offset="100%" stopColor="#2563EB" />
+            </linearGradient>
           </defs>
-          <circle
-            cx="128"
-            cy="128"
-            r="92"
-            fill={`url(#ads-gradient-${uniqueId})`}
-            filter={`url(#ads-glow-${uniqueId})`}
+          <path d="M4 10v4h3l5 4V6L7 10H4z" fill={`url(#ads-gradient-${uniqueId})`} />
+          <path
+            d="M15 9c1.2 1 1.2 5 0 6"
+            stroke={`url(#ads-sound-${uniqueId})`}
+            strokeWidth="1.8"
+            strokeLinecap="round"
           />
-          <g fill="#ffffff" opacity="0.95">
-            <path d="M64 116 L140 92 L140 164 L64 140 Z" />
-            <rect x="92" y="140" width="22" height="48" rx="8" />
-            <rect x="140" y="104" width="16" height="48" rx="6" />
-          </g>
-          <g fill="none" stroke="#ffffff" strokeWidth="8" opacity="0.85">
-            <path d="M168 108 Q196 128 168 148" />
-            <path d="M184 96 Q224 128 184 160" />
-          </g>
+          <path
+            d="M17.5 7.5c2.2 2.2 2.2 6.8 0 9"
+            stroke={`url(#ads-sound-${uniqueId})`}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+          <rect x="14.5" y="14.5" width="6.5" height="4" rx="1.4" fill="#22C55E" />
+          <text
+            x="17.8"
+            y="17"
+            fill="#FFFFFF"
+            fontSize="3"
+            fontFamily="Arial, sans-serif"
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            ADS
+          </text>
         </svg>
       );
     case "dashboard":
