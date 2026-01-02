@@ -175,45 +175,41 @@ export default function FBIcon({ name, size = 26 }) {
         <svg
           width={size}
           height={size}
-          viewBox="0 0 128 128"
+          viewBox="0 0 24 24"
           role="img"
           aria-label="Reels icon"
         >
           <defs>
-            <linearGradient id={blueGradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2EE6FF" />
-              <stop offset="100%" stopColor="#0AB3E6" />
+            <linearGradient id={blueGradientId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#EC4899" />
+              <stop offset="50%" stopColor="#8B5CF6" />
+              <stop offset="100%" stopColor="#6366F1" />
             </linearGradient>
-            <linearGradient id={orangeGradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#FFB38A" />
-              <stop offset="100%" stopColor="#FF8A4C" />
+            <linearGradient id={orangeGradientId} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#FDBA74" />
+              <stop offset="100%" stopColor="#F97316" />
             </linearGradient>
           </defs>
           <rect
-            x="18"
-            y="20"
-            width="16"
-            height="88"
-            rx="8"
+            x="2"
+            y="3"
+            width="20"
+            height="18"
+            rx="4"
             fill={`url(#${blueGradientId})`}
           />
-          <path
-            d="
-              M 34 24
-              H 92
-              C 98 24 102 28 102 34
-              V 52
-              H 86
-              C 82 52 80 54 80 58
-              C 80 62 82 64 86 64
-              H 102
-              V 94
-              C 102 100 98 104 92 104
-              H 34
-              Z
-            "
+          <rect
+            x="2"
+            y="3"
+            width="20"
+            height="5"
+            rx="4"
             fill={`url(#${orangeGradientId})`}
           />
+          <rect x="5" y="4.2" width="3" height="1.2" rx="0.6" fill="#FFFFFF" />
+          <rect x="9.5" y="4.2" width="3" height="1.2" rx="0.6" fill="#FFFFFF" />
+          <rect x="14" y="4.2" width="3" height="1.2" rx="0.6" fill="#FFFFFF" />
+          <polygon points="10,9 16,12 10,15" fill="#FFFFFF" />
         </svg>
       );
 
