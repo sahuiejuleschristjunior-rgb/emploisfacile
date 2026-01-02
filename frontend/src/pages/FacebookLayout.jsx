@@ -1170,7 +1170,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="home" size={24} />
+            <FBIcon name="home" size={28} />
           </span>
           <span>Accueil</span>
         </li>
@@ -1180,14 +1180,14 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/pages-feed")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="pages-feed" size={24} />
+            <FBIcon name="pages-feed" size={28} />
           </span>
           <span>Feed des pages</span>
         </li>
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="ads" size={24} />
+            <FBIcon name="ads" size={28} />
           </span>
           <span>Publicités</span>
         </li>
@@ -1197,21 +1197,21 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/dashboard")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="dashboard" size={24} />
+            <FBIcon name="dashboard" size={28} />
           </span>
           <span>Tableau de bord</span>
         </li>
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="jobs" size={24} />
+            <FBIcon name="jobs" size={28} />
           </span>
           <span>Emplois</span>
         </li>
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/pages/me")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="pages" size={24} />
+            <FBIcon name="pages" size={28} />
           </span>
           <span>Pages</span>
         </li>
@@ -1223,7 +1223,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           }
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="reels" size={24} />
+            <FBIcon name="reels" size={28} />
           </span>
           <span>Reels</span>
         </li>
@@ -1233,7 +1233,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/notifications")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="notif" size={24} />
+            <FBIcon name="notif" size={28} />
           </span>
           <span>Notifications</span>
         </li>
@@ -1243,7 +1243,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => handleLeftMenuNavigate("/fb/relations")}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="relation" size={24} />
+            <FBIcon name="relation" size={28} />
           </span>
           <span>Relations</span>
         </li>
@@ -1253,7 +1253,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           onClick={() => setShowSettings((prev) => !prev)}
         >
           <span className="fb-left-item-icon">
-            <FBIcon name="settings" size={24} />
+            <FBIcon name="settings" size={28} />
           </span>
           <span>Paramètres</span>
         </li>
@@ -1269,7 +1269,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             }}
           >
             <span className="fb-left-item-icon">
-              <FBIcon name="settings" size={22} />
+              <FBIcon name="settings" size={26} />
             </span>
             <span>Général</span>
           </li>
@@ -1279,7 +1279,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
             onClick={handleLogout}
           >
             <span className="fb-left-item-icon">
-              <FBIcon name="logout" size={22} />
+              <FBIcon name="logout" size={26} />
             </span>
             <span>Déconnexion</span>
           </li>
