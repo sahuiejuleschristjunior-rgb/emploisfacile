@@ -74,6 +74,7 @@ const normalizeMedia = (m) => {
 export default function CommentsModal({
   post: initialPost,
   onClose,
+  focusCommentId = null,
   API_URL: propApiUrl,
   token: propToken,
   userId: propUserId,
@@ -104,6 +105,7 @@ export default function CommentsModal({
 
   const [commentInput, setCommentInput] = useState("");
   const [commentMedia, setCommentMedia] = useState(null);
+  const [highlightCommentId, setHighlightCommentId] = useState(null);
 
   const [replyInput, setReplyInput] = useState({});
   const [replyMedia, setReplyMedia] = useState({});
@@ -154,6 +156,37 @@ export default function CommentsModal({
     // ensure visibleCommentsCount not larger than total
     setVisibleCommentsCount((v) => Math.min(v, (post?.comments?.length || 0)));
   }, [post?.comments?.length]);
+
+  useEffect(() => {
+    if (!focusCommentId || !post?.comments?.length) return;
+
+    const hasComment = post.comments.some(
+      (comment) => String(comment._id) === String(focusCommentId)
+    );
+    if (!hasComment) return;
+
+    if (visibleCommentsCount < post.comments.length) {
+      setVisibleCommentsCount(post.comments.length);
+    }
+
+    setHighlightCommentId(focusCommentId);
+
+    const scrollTimer = setTimeout(() => {
+      const target = commentsRefs.current[focusCommentId];
+      if (target?.scrollIntoView) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 160);
+
+    const clearTimer = setTimeout(() => {
+      setHighlightCommentId(null);
+    }, 2600);
+
+    return () => {
+      clearTimeout(scrollTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [focusCommentId, post?.comments, visibleCommentsCount]);
 
   const safeFetch = useCallback((url, opts = {}) => {
     const headers = { ...(opts.headers || {}) };
@@ -467,7 +500,9 @@ export default function CommentsModal({
 
                     <div className="cm-comment-body">
                       <div
-                        className={`cm-comment-bubble ${expandedMap[c._id] ? "expanded" : ""}`}
+                        className={`cm-comment-bubble ${expandedMap[c._id] ? "expanded" : ""} ${
+                          highlightCommentId === c._id ? "cm-comment-highlight" : ""
+                        }`}
                         onMouseDown={() => startLongPress(() => openReactionMenu("comment", c._id))}
                         onMouseUp={cancelLongPress}
                         onMouseLeave={cancelLongPress}

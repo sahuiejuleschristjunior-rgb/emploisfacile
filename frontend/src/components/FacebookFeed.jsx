@@ -3,7 +3,7 @@ import StoriesFB from "../components/StoriesFB";
 import CreatePostFB from "./CreatePostFB";
 import SkeletonPost from "./SkeletonPost";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/facebook-feed.css";
 import "../styles/post.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
@@ -179,6 +179,7 @@ export default function FacebookFeed() {
 
   const API_URL = import.meta.env.VITE_API_URL;
   const nav = useNavigate();
+  const location = useLocation();
 
   const textButtonStyle = {
     background: "none",
@@ -204,6 +205,8 @@ export default function FacebookFeed() {
     }
   }
   const isAdmin = (userRole || "").toLowerCase() === "admin";
+  const focusStatePostId = location.state?.focusPostId || null;
+  const focusStateCommentId = location.state?.focusCommentId || null;
 
   /* =================================================================
         STATES DU FEED (AUCUN COMMENTAIRE ICI)
@@ -244,8 +247,13 @@ export default function FacebookFeed() {
   const [actionMenuPostId, setActionMenuPostId] = useState(null);
   const [editModalPost, setEditModalPost] = useState(null);
   const [sharingPostIds, setSharingPostIds] = useState({});
+  const [highlightPostId, setHighlightPostId] = useState(null);
+  const [focusAlert, setFocusAlert] = useState("");
+  const [focusCommentId, setFocusCommentId] = useState(null);
 
   const socketRef = useRef(null);
+  const postRefs = useRef({});
+  const focusHandledRef = useRef(null);
 
   const addOptimisticPost = (post) => {
     if (!post) return;
@@ -356,6 +364,24 @@ export default function FacebookFeed() {
     if (!tempId) return;
     setPosts((prev) => filterVisiblePosts(prev.filter((p) => p._id !== tempId)));
   };
+
+  const fetchPostById = useCallback(
+    async (postId) => {
+      if (!postId) return null;
+      try {
+        const res = await fetch(`${API_URL}/posts/${postId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const data = await res.json();
+        if (!res.ok) return null;
+        return data?.post || data;
+      } catch (err) {
+        console.error("FETCH POST ERROR:", err);
+        return null;
+      }
+    },
+    [API_URL, token]
+  );
 
   /* =================================================================
         LOAD POSTS
@@ -578,7 +604,75 @@ export default function FacebookFeed() {
   const closeCommentsModal = () => {
     setActivePostForComments(null);
     setIsCommentsModalOpen(false);
+    setFocusCommentId(null);
   };
+
+  // Gestion du focus depuis les notifications (post + commentaire).
+  useEffect(() => {
+    if (!focusStatePostId || loadingInitial) return;
+
+    const focusPostId = String(focusStatePostId);
+    if (focusHandledRef.current === focusPostId) return;
+
+    const runFocusFlow = async () => {
+      let targetPost = posts.find((post) => String(post._id) === focusPostId);
+
+      if (!targetPost) {
+        targetPost = await fetchPostById(focusPostId);
+        if (targetPost?._id) {
+          setPosts((prev) =>
+            filterVisiblePosts([
+              targetPost,
+              ...prev.filter((p) => String(p._id) !== String(targetPost._id)),
+            ])
+          );
+        }
+      }
+
+      if (!targetPost?._id) {
+        setFocusAlert("Cette publication n’est plus disponible");
+        focusHandledRef.current = focusPostId;
+        nav(location.pathname, { replace: true });
+        return;
+      }
+
+      setPosts((prev) =>
+        filterVisiblePosts([
+          targetPost,
+          ...prev.filter((p) => String(p._id) !== String(targetPost._id)),
+        ])
+      );
+      setFocusAlert("");
+      setHighlightPostId(targetPost._id);
+      setTimeout(() => setHighlightPostId(null), 2500);
+
+      setTimeout(() => {
+        const postEl = postRefs.current[targetPost._id];
+        if (postEl?.scrollIntoView) {
+          postEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 120);
+
+      if (focusStateCommentId) {
+        setFocusCommentId(focusStateCommentId);
+        openCommentsModal(targetPost);
+      }
+
+      focusHandledRef.current = focusPostId;
+      nav(location.pathname, { replace: true });
+    };
+
+    runFocusFlow();
+  }, [
+    focusStatePostId,
+    focusStateCommentId,
+    loadingInitial,
+    posts,
+    fetchPostById,
+    filterVisiblePosts,
+    nav,
+    location.pathname,
+  ]);
 
   const resolveMediaUrl = (media) => {
     if (!media?.url && !media?.previewUrl) return null;
@@ -778,6 +872,7 @@ export default function FacebookFeed() {
         onPostError={removeOptimisticPost}
       />
       <StoriesFB />
+      {focusAlert && <div className="fb-empty">{focusAlert}</div>}
 
       {/* LOADER INITIAL */}
       {loadingInitial &&
@@ -835,7 +930,13 @@ export default function FacebookFeed() {
             : "";
 
           return (
-            <article key={post._id} className="fb-post">
+            <article
+              key={post._id}
+              className={`fb-post${highlightPostId === post._id ? " post-highlight" : ""}`}
+              ref={(el) => {
+                if (el) postRefs.current[post._id] = el;
+              }}
+            >
 
               {/* HEADER */}
               <div className="fb-post-header">
@@ -1278,6 +1379,7 @@ export default function FacebookFeed() {
         <CommentsModal
           post={activePostForComments}
           onClose={closeCommentsModal}
+          focusCommentId={focusCommentId}
         />
       )}
     </div>
