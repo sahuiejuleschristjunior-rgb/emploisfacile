@@ -8,6 +8,7 @@ import MobileMenu from "../components/MobileMenu";
 import CreatePostModal from "../components/CreatePostModal";
 import CommentSection from "../components/CommentSection";
 import { sharePost } from "../api/posts";
+import TextClamp from "../components/TextClamp";
 
 import "./feed.css";
 import "../styles/menus.css";
@@ -540,7 +541,7 @@ export default function FeedPage() {
             {post.text && (
               <div className="feed-post-text">
                 {post.title && <strong>{post.title}</strong>}
-                <div>{post.text}</div>
+                <TextClamp text={post.text} className="feed-text" />
               </div>
             )}
 

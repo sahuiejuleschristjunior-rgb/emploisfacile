@@ -14,6 +14,7 @@ import PostEditModal from "./PostEditModal";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 import { sharePost } from "../api/posts";
 import FacebookImage from "./FacebookImage";
+import TextClamp from "./TextClamp";
 
 /* Nouveau composant commentaires */
 import CommentsModal from "../components/CommentsModal";
@@ -215,7 +216,6 @@ export default function FacebookFeed() {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const [expanded, setExpanded] = useState({});
   const filterVisiblePosts = useCallback(
     (list) => filterHiddenPosts(list, userId),
     [userId]
@@ -520,47 +520,6 @@ export default function FacebookFeed() {
         return next;
       });
     }
-  };
-
-  /* =================================================================
-        TEXTE TRONQUÉ
-  ================================================================= */
-  const truncateText = (text, postId) => {
-    if (!text) return "";
-    const limit = 180;
-    const isExpanded = expanded[postId];
-
-    if (text.length <= limit || isExpanded) {
-      return (
-        <>
-          {text}
-          {text.length > limit && (
-            <button
-              onClick={() =>
-                setExpanded((prev) => ({ ...prev, [postId]: false }))
-              }
-              className="fb-see-more-btn"
-            >
-              Voir moins
-            </button>
-          )}
-        </>
-      );
-    }
-
-    return (
-      <>
-        {text.slice(0, limit)}…
-        <button
-          onClick={() =>
-            setExpanded((prev) => ({ ...prev, [postId]: true }))
-          }
-          className="fb-see-more-btn"
-        >
-          Voir plus
-        </button>
-      </>
-    );
   };
 
   /* =================================================================
@@ -949,12 +908,8 @@ export default function FacebookFeed() {
 
               {/* TEXTE */}
               {post.text && (
-                <div
-                  className={`fb-post-text${
-                    expanded[post._id] ? " is-expanded" : ""
-                  }`}
-                >
-                  {truncateText(post.text, post._id)}
+                <div className="fb-post-text">
+                  <TextClamp text={post.text} className="text-content" />
                 </div>
               )}
 

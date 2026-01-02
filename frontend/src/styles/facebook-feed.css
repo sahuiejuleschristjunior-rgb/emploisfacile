@@ -4807,16 +4807,6 @@
     font-size: 14px;
     line-height: 1.4;
     margin-bottom: 6px;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-  }
-
-  .fb-feed .fb-post-text.is-expanded {
-    display: block;
-    -webkit-line-clamp: unset;
-    overflow: visible;
   }
 
   .fb-feed .fb-post-media-wrapper {
