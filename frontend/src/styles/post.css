@@ -163,6 +163,17 @@
   grid-auto-rows: 1fr;
 }
 
+@media (min-width: 901px) {
+  .fb-post-media-grid {
+    height: clamp(220px, 40vw, 360px);
+    max-height: 360px;
+  }
+
+  .fb-post-image {
+    max-height: 520px;
+  }
+}
+
 .fb-post-media-grid.single {
   grid-template-columns: 1fr;
   grid-template-rows: 1fr;
