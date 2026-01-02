@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/post.css";
 import FBIcon from "./FBIcon";
 import PostEditModal from "./PostEditModal"; // ⬅️ AJOUT IMPORTANT
+import MegaphoneIcon from "./MegaphoneIcon";
 import MediaRenderer from "./MediaRenderer";
 import { getHiddenPostIds, rememberHiddenPost } from "../utils/hiddenPosts";
 
@@ -531,16 +532,7 @@ export default function Post({
                 {canSponsor && (
                   <button className="fb-sponsor-menu" onClick={handleOpenSponsorModal}>
                     <span className="fb-sponsor-icon" aria-hidden="true">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M4 14.5V5.8c0-.6.4-1.1 1-1.3l10.3-3.3c.8-.2 1.6.4 1.6 1.2V6l2.3.7c.5.2.8.6.8 1.1v4.4c0 .5-.3 1-.8 1.1l-2.3.7v3.5c0 .8-.8 1.4-1.6 1.2L5 15.7c-.6-.2-1-.7-1-1.2Z" />
-                        <path d="M4 18.5c0-1 .9-1.8 2-1.5l2.4.7c.9.3 1.6 1.1 1.6 2v2.5c0 1-.9 1.8-2 1.5l-2.4-.7c-.9-.3-1.6-1.1-1.6-2v-2.5Z" />
-                      </svg>
+                      <MegaphoneIcon size={18} aria-hidden="true" focusable="false" />
                     </span>
                     Sponsoriser
                   </button>
