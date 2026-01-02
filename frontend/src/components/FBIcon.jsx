@@ -239,24 +239,6 @@ export default function FBIcon({ name, size = 26 }) {
           <path d="M22.5 16.5L24 18" stroke={color} strokeWidth="1.8" />
         </svg>
       );
-    case "reels":
-      return (
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 28 28"
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="4" y="6" width="20" height="16" rx="3" />
-          <path d="M9 6l4 6" />
-          <path d="M16 6l4 6" />
-          <path d="M12 12l6 4-6 4z" fill={color} stroke="none" />
-        </svg>
-      );
     default:
       return null;
   }
