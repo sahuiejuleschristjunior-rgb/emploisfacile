@@ -3,6 +3,8 @@ import { useId } from "react";
 export default function FBIcon({ name, size = 26 }) {
   const color = "#ffffff"; // Blanc pur visible comme Facebook
   const uniqueId = useId();
+  const blueGradientId = `${uniqueId}-blueGrad`;
+  const orangeGradientId = `${uniqueId}-orangeGrad`;
 
   switch (name) {
 
@@ -89,6 +91,56 @@ export default function FBIcon({ name, size = 26 }) {
         <svg width={size} height={size} fill={color} viewBox="0 0 28 28">
           <circle cx="14" cy="9" r="6" />
           <path d="M5 25c1-7 8-9 9-9s8 2 9 9" />
+        </svg>
+      );
+
+    /* ============================
+       PAGES — Bookmark flag icon
+    ============================ */
+    case "pages":
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 128 128"
+          role="img"
+          aria-label="Bookmark flag icon"
+        >
+          <defs>
+            <linearGradient id={blueGradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2EE6FF" />
+              <stop offset="100%" stopColor="#0AB3E6" />
+            </linearGradient>
+            <linearGradient id={orangeGradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFB38A" />
+              <stop offset="100%" stopColor="#FF8A4C" />
+            </linearGradient>
+          </defs>
+          <rect
+            x="18"
+            y="20"
+            width="16"
+            height="88"
+            rx="8"
+            fill={`url(#${blueGradientId})`}
+          />
+          <path
+            d="
+              M 34 24
+              H 92
+              C 98 24 102 28 102 34
+              V 52
+              H 86
+              C 82 52 80 54 80 58
+              C 80 62 82 64 86 64
+              H 102
+              V 94
+              C 102 100 98 104 92 104
+              H 34
+              Z
+            "
+            fill={`url(#${orangeGradientId})`}
+          />
         </svg>
       );
 
