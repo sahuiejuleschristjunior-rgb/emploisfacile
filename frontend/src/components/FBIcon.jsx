@@ -458,40 +458,47 @@ export default function FBIcon({ name, size = 26 }) {
           width={size}
           height={size}
           viewBox="0 0 24 24"
-          role="img"
-          aria-label="Megaphone icon"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            <linearGradient id={`ads-gradient-${uniqueId}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#F59E0B" />
-              <stop offset="100%" stopColor="#EF4444" />
-            </linearGradient>
-            <linearGradient id={`ads-sound-${uniqueId}`} x1="0" y1="0" x2="1" y2="1">
+            <linearGradient id={`ads-circle-${uniqueId}`} x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stopColor="#60A5FA" />
               <stop offset="100%" stopColor="#2563EB" />
             </linearGradient>
+            <linearGradient id={`ads-megaphone-${uniqueId}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#F59E0B" />
+              <stop offset="100%" stopColor="#EF4444" />
+            </linearGradient>
           </defs>
-          <path d="M4 10v4h3l5 4V6L7 10H4z" fill={`url(#ads-gradient-${uniqueId})`} />
+
+          <circle
+            cx="12"
+            cy="12"
+            r="11.5"
+            fill={`url(#ads-circle-${uniqueId})`}
+            stroke="#F97316"
+            strokeWidth="1.5"
+          />
+          <path d="M6.4 10.5v3h2.1l3.5 2.8V7.7L8.5 10.5H6.4z" fill={`url(#ads-megaphone-${uniqueId})`} />
           <path
-            d="M15 9c1.2 1 1.2 5 0 6"
-            stroke={`url(#ads-sound-${uniqueId})`}
-            strokeWidth="1.8"
+            d="M14.6 9.8c1 1 1 4.4 0 5.4"
+            stroke="#FFFFFF"
+            strokeWidth="1.4"
             strokeLinecap="round"
           />
           <path
-            d="M17.5 7.5c2.2 2.2 2.2 6.8 0 9"
-            stroke={`url(#ads-sound-${uniqueId})`}
-            strokeWidth="1.8"
+            d="M16.8 8.6c1.8 1.8 1.8 6 0 7.8"
+            stroke="#FFFFFF"
+            strokeWidth="1.4"
             strokeLinecap="round"
           />
-          <rect x="14.5" y="14.5" width="6.5" height="4" rx="1.4" fill="#22C55E" />
+          <rect x="12.8" y="14.2" width="5.2" height="3.4" rx="1" fill="#22C55E" />
           <text
-            x="17.8"
-            y="17"
+            x="15.4"
+            y="16"
             fill="#FFFFFF"
-            fontSize="3"
+            fontSize="2.6"
             fontFamily="Arial, sans-serif"
             textAnchor="middle"
             dominantBaseline="middle"

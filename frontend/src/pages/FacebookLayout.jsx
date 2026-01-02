@@ -1187,7 +1187,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/fb/ads")}>
           <span className="fb-left-item-icon">
-            <FBIcon name="ads" size={28} />
+            <FBIcon name="ads" size={32} />
           </span>
           <span>Publicités</span>
         </li>
