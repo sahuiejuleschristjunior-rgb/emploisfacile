@@ -1192,6 +1192,16 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           <span>Publicités</span>
         </li>
 
+        <li
+          className="fb-left-item"
+          onClick={() => handleLeftMenuNavigate("/fb/dashboard")}
+        >
+          <span className="fb-left-item-icon">
+            <FBIcon name="home" size={24} />
+          </span>
+          <span>Tableau de bord</span>
+        </li>
+
         <li className="fb-left-item" onClick={() => handleLeftMenuNavigate("/emplois")}>
           <span className="fb-left-item-icon">
             <FBIcon name="jobs" size={24} />
