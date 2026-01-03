@@ -131,12 +131,6 @@
   color: #b0b3b8;
 }
 
-.messages-mobile-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
 .messages-list {
   flex: 1;
   overflow-y: auto;
@@ -581,20 +575,6 @@
 }
 
 @media (max-width: 768px) {
-  .messages-mobile-wrapper {
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - var(--fb-header-height));
-    overflow: hidden;
-  }
-
-  .messages-list {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 80px;
-  }
-
   .messages-sidebar {
     width: 100%;
     min-width: 100%;
