@@ -419,12 +419,6 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-@media (max-width: 600px) {
-  .fb-post-card {
-    border: none;
-  }
-}
-
 @media (max-width: 900px) {
   .fb-center-column {
     width: 100% !important;
