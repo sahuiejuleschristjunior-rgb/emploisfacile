@@ -78,6 +78,7 @@ export default function CommentsModal({
   token: propToken,
   userId: propUserId,
   focusCommentId = null,
+  focusReplyId = null,
   fromNotification = false,
   targetType = "post",
 }) {
@@ -121,6 +122,12 @@ export default function CommentsModal({
   const commentsRefs = useRef({});
   const longPressTimer = useRef(null);
   const hasFocusedComment = useRef(false);
+  const hasFocusedReply = useRef(false);
+
+  useEffect(() => {
+    hasFocusedComment.current = false;
+    hasFocusedReply.current = false;
+  }, [focusCommentId, focusReplyId]);
 
   useEffect(() => {
     let abort = false;
@@ -159,8 +166,16 @@ export default function CommentsModal({
   }, [post?.comments?.length]);
 
   useEffect(() => {
+    if (!fromNotification || (!focusCommentId && !focusReplyId)) return;
+    const total = post?.comments?.length || 0;
+    if (total <= 0) return;
+    setVisibleCommentsCount((v) => Math.max(v, total));
+  }, [fromNotification, focusCommentId, focusReplyId, post?.comments?.length]);
+
+  useEffect(() => {
     if (!fromNotification || !focusCommentId) return;
     if (loading) return;
+    if (focusReplyId) return;
 
     const timer = setTimeout(() => {
       if (hasFocusedComment.current) return;
@@ -174,6 +189,33 @@ export default function CommentsModal({
 
     return () => clearTimeout(timer);
   }, [fromNotification, focusCommentId, loading, post?.comments?.length]);
+
+  useEffect(() => {
+    if (!fromNotification || !focusReplyId) return;
+    if (loading) return;
+
+    const commentIdForReply =
+      focusCommentId ||
+      post?.comments?.find((comment) =>
+        (comment.replies || []).some((reply) => String(reply._id) === String(focusReplyId))
+      )?._id;
+
+    if (commentIdForReply) {
+      setShowAllReplies((prev) => ({ ...prev, [commentIdForReply]: true }));
+    }
+
+    const timer = setTimeout(() => {
+      if (hasFocusedReply.current) return;
+      const replyEl = document.getElementById(`reply-${focusReplyId}`);
+      if (!replyEl) return;
+      hasFocusedReply.current = true;
+      replyEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      replyEl.classList.add("reply-highlight");
+      setTimeout(() => replyEl.classList.remove("reply-highlight"), 2500);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [fromNotification, focusReplyId, focusCommentId, loading, post?.comments]);
 
   const safeFetch = useCallback((url, opts = {}) => {
     const headers = { ...(opts.headers || {}) };
@@ -619,7 +661,7 @@ export default function CommentsModal({
                       {(showAllReplies[c._id] ? c.replies : (c.replies || []).slice(-3)).map((r) => {
                         const sum = getReactionSummary(r.reactions);
                         return (
-                          <div key={r._id} className="cm-reply">
+                          <div key={r._id} className="cm-reply" id={`reply-${r._id}`}>
                             <button
                               type="button"
                               className="cm-reply-avatar avatar-link"

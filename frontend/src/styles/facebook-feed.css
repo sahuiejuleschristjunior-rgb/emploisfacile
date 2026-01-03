@@ -4873,6 +4873,10 @@
   animation: highlightFlash 2.5s ease;
 }
 
+.reply-highlight {
+  animation: highlightFlash 2.5s ease;
+}
+
 @keyframes highlightFlash {
   0% {
     background: rgba(24, 119, 242, 0.25);

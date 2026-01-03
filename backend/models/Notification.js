@@ -35,6 +35,24 @@ const NotificationSchema = new mongoose.Schema(
       index: true,
     },
 
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+      index: true,
+    },
+
+    commentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+      index: true,
+    },
+
+    replyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+      index: true,
+    },
+
     // Expéditeur / auteur de l’action (optionnel pour affichage)
     from: {
       type: mongoose.Schema.Types.ObjectId,
