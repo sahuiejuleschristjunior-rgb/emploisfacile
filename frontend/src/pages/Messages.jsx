@@ -2426,117 +2426,115 @@ export default function Messages() {
 
         {infoBanner && <div className="messages-banner">{infoBanner}</div>}
 
-        <div className="messages-mobile-wrapper">
-          <div className="messages-list">
-            {listTab === "conversations" ? (
-              <>
-                {loadingConversations ? (
-                  <div className="messages-loading">
-                    Chargement des conversations…
-                  </div>
-                ) : errorFriends ? (
-                  <div className="messages-empty">{errorFriends}</div>
-                ) : displayedFriends.length === 0 && !isDirectConversation ? (
-                  <div className="messages-empty">
-                    Aucune conversation pour l’instant
-                  </div>
-                ) : (
-                  displayedFriends.map((friend) => {
-                    const convId = getFriendId(friend);
-                    const isActive =
-                      activeChat?._id && getFriendId(activeChat) === convId;
-                    const hasUnread = friend.hasUnread ?? conversationHasUnread(friend);
-                    const isHighlighted = Boolean(friend.isHighlighted || friend.__uiHighlight);
+        <div className="messages-list">
+          {listTab === "conversations" ? (
+            <>
+              {loadingConversations ? (
+                <div className="messages-loading">
+                  Chargement des conversations…
+                </div>
+              ) : errorFriends ? (
+                <div className="messages-empty">{errorFriends}</div>
+              ) : displayedFriends.length === 0 && !isDirectConversation ? (
+                <div className="messages-empty">
+                  Aucune conversation pour l’instant
+                </div>
+              ) : (
+                displayedFriends.map((friend) => {
+                  const convId = getFriendId(friend);
+                  const isActive =
+                    activeChat?._id && getFriendId(activeChat) === convId;
+                  const hasUnread = friend.hasUnread ?? conversationHasUnread(friend);
+                  const isHighlighted = Boolean(friend.isHighlighted || friend.__uiHighlight);
 
-                    return (
-                      <div
-                        key={convId || friend._id}
-                        className={`conversation-item ${isActive ? "active" : ""} ${
-                          isHighlighted ? "is-highlighted" : ""
-                        }`}
-                        data-conversation-id={friend._id}
-                        data-conv-id={convId}
-                        onClick={() => handleConversationClick(friend)}
-                      >
-                        <img
-                          src={resolveUrl(friend.avatar)}
-                          alt={friend.name}
-                          className="conversation-avatar"
-                          loading="lazy"
-                        />
-
-                        <div className="conversation-info">
-                          <div className="conversation-name">
-                            {friend.name}
-                            {hasUnread && <span className="inbox-badge-new">Nouveau</span>}
-                          </div>
-                          <div className="conversation-last-message">
-                            {getLastMessagePreview(friend)}
-                          </div>
-                        </div>
-
-                        {friend.unreadCount > 0 && (
-                          <div className="conv-unread-badge">{friend.unreadCount}</div>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </>
-            ) : (
-              <>
-                {loadingRequests && (
-                  <div className="messages-empty">Chargement…</div>
-                )}
-                {!loadingRequests && requestsError && (
-                  <div className="messages-empty">{requestsError}</div>
-                )}
-                {!loadingRequests && !requestsError && requests.length === 0 && (
-                  <div className="messages-empty">Aucune demande reçue</div>
-                )}
-                {requests.map((req) => (
-                  <div key={req._id} className="request-item">
-                    <div className="request-main">
+                  return (
+                    <div
+                      key={convId || friend._id}
+                      className={`conversation-item ${isActive ? "active" : ""} ${
+                        isHighlighted ? "is-highlighted" : ""
+                      }`}
+                      data-conversation-id={friend._id}
+                      data-conv-id={convId}
+                      onClick={() => handleConversationClick(friend)}
+                    >
                       <img
-                        src={resolveUrl(req?.fromUser?.avatar)}
-                        alt={req?.fromUser?.name || "Utilisateur"}
+                        src={resolveUrl(friend.avatar)}
+                        alt={friend.name}
                         className="conversation-avatar"
                         loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default-avatar.png";
-                        }}
                       />
-                      <div className="request-info">
+
+                      <div className="conversation-info">
                         <div className="conversation-name">
-                          {req?.fromUser?.name || "Utilisateur"}
+                          {friend.name}
+                          {hasUnread && <span className="inbox-badge-new">Nouveau</span>}
                         </div>
-                        <div className="request-message">
-                          {req.message || "Nouvelle demande de message"}
+                        <div className="conversation-last-message">
+                          {getLastMessagePreview(friend)}
                         </div>
                       </div>
+
+                      {friend.unreadCount > 0 && (
+                        <div className="conv-unread-badge">{friend.unreadCount}</div>
+                      )}
                     </div>
-                    <div className="request-actions">
-                      <button onClick={() => handleAcceptRequest(req)}>
-                        Accepter
-                      </button>
-                      <button
-                        className="ghost"
-                        onClick={() => handleDeclineRequest(req)}
-                      >
-                        Refuser
-                      </button>
-                      <button
-                        className="danger"
-                        onClick={() => handleBlockRequest(req)}
-                      >
-                        Bloquer
-                      </button>
+                  );
+                })
+              )}
+            </>
+          ) : (
+            <>
+              {loadingRequests && (
+                <div className="messages-empty">Chargement…</div>
+              )}
+              {!loadingRequests && requestsError && (
+                <div className="messages-empty">{requestsError}</div>
+              )}
+              {!loadingRequests && !requestsError && requests.length === 0 && (
+                <div className="messages-empty">Aucune demande reçue</div>
+              )}
+              {requests.map((req) => (
+                <div key={req._id} className="request-item">
+                  <div className="request-main">
+                    <img
+                      src={resolveUrl(req?.fromUser?.avatar)}
+                      alt={req?.fromUser?.name || "Utilisateur"}
+                      className="conversation-avatar"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = "/default-avatar.png";
+                      }}
+                    />
+                    <div className="request-info">
+                      <div className="conversation-name">
+                        {req?.fromUser?.name || "Utilisateur"}
+                      </div>
+                      <div className="request-message">
+                        {req.message || "Nouvelle demande de message"}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </>
-            )}
-          </div>
+                  <div className="request-actions">
+                    <button onClick={() => handleAcceptRequest(req)}>
+                      Accepter
+                    </button>
+                    <button
+                      className="ghost"
+                      onClick={() => handleDeclineRequest(req)}
+                    >
+                      Refuser
+                    </button>
+                    <button
+                      className="danger"
+                      onClick={() => handleBlockRequest(req)}
+                    >
+                      Bloquer
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </aside>
 
