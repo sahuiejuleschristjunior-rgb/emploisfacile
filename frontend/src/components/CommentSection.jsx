@@ -54,7 +54,7 @@ export default function CommentSection({
         const isCommentAuthor = String(c.user?._id) === String(currentUser?._id);
 
         return (
-          <div key={c._id} className="comment-item">
+          <div key={c._id} id={`comment-${c._id}`} className="comment-item">
             <div className="comment-avatar" />
 
             <div className="comment-content">
@@ -91,7 +91,7 @@ export default function CommentSection({
                   const isReplyAuthor = String(r.user?._id) === String(currentUser?._id);
 
                   return (
-                    <div key={r._id} className="reply-item">
+                    <div key={r._id} id={`reply-${r._id}`} className="reply-item">
                       <div className="reply-avatar" />
 
                       <div className="reply-content">

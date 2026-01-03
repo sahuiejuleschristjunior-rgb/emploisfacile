@@ -86,7 +86,14 @@ export default function NotificationsBell() {
 
     if (["like", "comment", "reply"].includes(actionType) && n.relatedId) {
       deleteById?.(n._id);
-      navigate(`/fb/post/${n.relatedId}`);
+      navigate("/fb", {
+        state: {
+          fromNotification: true,
+          focusPostId: n.postId || n.post?._id || n.relatedId,
+          focusCommentId: n.commentId || n.comment?._id || null,
+        },
+      });
+      setOpen(false);
       return;
     }
 
