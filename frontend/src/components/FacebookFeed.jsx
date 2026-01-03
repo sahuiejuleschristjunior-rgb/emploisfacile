@@ -261,6 +261,7 @@ export default function FacebookFeed() {
       setNotifPayload({
         postId: state.focusPostId,
         commentId: state.focusCommentId,
+        replyId: state.focusReplyId,
       });
       nav("/fb", { replace: true });
     }
@@ -450,7 +451,7 @@ export default function FacebookFeed() {
 
   useEffect(() => {
     if (!notifPayload?.postId || !posts?.length) return;
-    if (!notifPayload.commentId) return;
+    if (!notifPayload.commentId && !notifPayload.replyId) return;
 
     const post = posts.find(
       (p) => String(p._id) === String(notifPayload.postId)
@@ -1364,6 +1365,7 @@ export default function FacebookFeed() {
           post={activePostForComments}
           onClose={closeCommentsModal}
           focusCommentId={notifPayload?.commentId || null}
+          focusReplyId={notifPayload?.replyId || null}
           fromNotification={Boolean(notifPayload)}
         />
       )}

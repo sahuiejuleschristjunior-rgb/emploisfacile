@@ -39,6 +39,9 @@ async function pushNotification(userId, data) {
     type: "public",
     actionType: data.actionType,
     relatedId: data.relatedId,
+    postId: data.postId || data.relatedId || null,
+    commentId: data.commentId || null,
+    replyId: data.replyId || null,
     text: data.text,
   });
 
@@ -376,6 +379,8 @@ exports.comment = async (req, res) => {
         from: userId,
         actionType: "comment",
         relatedId: post._id,
+        postId: post._id,
+        commentId: comment._id,
         text: "A commenté votre publication.",
       });
     }
@@ -416,6 +421,7 @@ exports.like = async (req, res) => {
           from: userId,
           actionType: "like",
           relatedId: post._id,
+          postId: post._id,
           text: "A aimé votre publication.",
         });
       }
@@ -510,6 +516,9 @@ exports.reply = async (req, res) => {
         from: req.userId,
         actionType: "reply",
         relatedId: post._id,
+        postId: post._id,
+        commentId: comment._id,
+        replyId: reply._id,
         text: "A répondu à votre commentaire.",
       });
     }
