@@ -1,6 +1,6 @@
 // src/pages/FeedPage.jsx
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import LeftMenuDesktop from "../components/LeftMenuDesktop";
 import RightMenu from "../components/MenuRight";
@@ -180,6 +180,7 @@ function StoryViewer({ stories, startIndex, onClose }) {
 /* ========================================================= */
 export default function FeedPage() {
   const nav = useNavigate();
+  const location = useLocation();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -193,6 +194,7 @@ export default function FeedPage() {
   const [storyIndex, setStoryIndex] = useState(0);
   const [showPostModal, setShowPostModal] = useState(false);
   const [sharingPostIds, setSharingPostIds] = useState({});
+  const lastFocusRef = useRef({ postId: null, commentId: null });
 
   const textButtonStyle = {
     background: "none",
@@ -286,6 +288,48 @@ export default function FeedPage() {
   useEffect(() => {
     postsRef.current = posts;
   }, [posts]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const focusPostId = location.state?.focusPostId;
+    if (!focusPostId) return;
+
+    const focusCommentId = location.state?.focusCommentId || null;
+    const lastFocus = lastFocusRef.current;
+    if (
+      String(lastFocus.postId) === String(focusPostId) &&
+      String(lastFocus.commentId) === String(focusCommentId)
+    ) {
+      return;
+    }
+
+    lastFocusRef.current = { postId: focusPostId, commentId: focusCommentId };
+
+    const scrollToTarget = () => {
+      const postElement = document.getElementById(`post-${focusPostId}`);
+      if (postElement) {
+        postElement.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      if (focusCommentId) {
+        const commentElement =
+          document.getElementById(`comment-${focusCommentId}`) ||
+          document.getElementById(`reply-${focusCommentId}`);
+        if (commentElement) {
+          commentElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+
+      const commentBox = document.getElementById(`comment-box-${focusPostId}`);
+      if (commentBox) {
+        commentBox.focus();
+      }
+    };
+
+    const timer = setTimeout(scrollToTarget, 200);
+    return () => clearTimeout(timer);
+  }, [loading, location.state]);
   /* ========================================================= */
   /* ACTIONS : CREATE / DELETE / LIKE / COMMENT FIXÉES         */
   /* ========================================================= */
@@ -495,7 +539,7 @@ export default function FeedPage() {
         const commentsCount = (post.comments || []).length;
 
         return (
-          <article key={id} className="feed-post-card">
+          <article key={id} id={`post-${id}`} className="feed-post-card">
             {/* --- HEADER --- */}
             <div className="feed-post-header">
               <button
