@@ -17,6 +17,12 @@
   width: 100%;
 }
 
+@media (max-width: 600px) {
+  .fb-post-card {
+    border: none;
+  }
+}
+
 /* HEADER */
 .fb-post-header {
   display: flex;
