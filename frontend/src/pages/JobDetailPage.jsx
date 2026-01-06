@@ -28,6 +28,7 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(!location.state?.job);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
+  const [applyMessage, setApplyMessage] = useState("");
 
   const handleBack = useCallback(() => {
     if (location.state?.from === "/emplois") {
@@ -158,6 +159,35 @@ export default function JobDetailPage() {
     };
   }, [job]);
 
+  const handleApply = useCallback(() => {
+    console.warn("[JobDetail] Bouton Postuler cliqué", { jobId: id, title: job?.title });
+    setApplyMessage("");
+
+    if (!token) {
+      setApplyMessage("Veuillez vous connecter pour poursuivre votre candidature.");
+      navigate("/login", {
+        replace: false,
+        state: {
+          from: location.pathname + location.search,
+          message: "Connectez-vous pour postuler à cette offre.",
+        },
+      });
+      return;
+    }
+
+    if (jobDetails?.recruiterEmail && jobDetails.recruiterEmail !== "Email non communiqué") {
+      setApplyMessage("Ouverture de votre messagerie pour contacter le recruteur...");
+      const subject = encodeURIComponent(`Candidature - ${job?.title || "Offre"}`);
+      const body = encodeURIComponent(
+        "Bonjour,\n\nJe suis intéressé(e) par votre offre et souhaite postuler.\n\nMerci,"
+      );
+      window.location.href = `mailto:${jobDetails.recruiterEmail}?subject=${subject}&body=${body}`;
+      return;
+    }
+
+    setApplyMessage("Votre intérêt est enregistré. Le recruteur n'a pas encore renseigné d'email.");
+  }, [id, job?.title, jobDetails?.recruiterEmail, location.pathname, location.search, navigate, token]);
+
   if (loading) {
     return (
       <div className="job-detail-page" role="main">
@@ -222,13 +252,18 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              <button className="primary-btn" type="button">
+              <button className="primary-btn" type="button" onClick={handleApply}>
                 Postuler maintenant
               </button>
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur
               </button>
             </div>
+            {applyMessage ? (
+              <p className="hero__hint" role="status">
+                {applyMessage}
+              </p>
+            ) : null}
           </div>
           <div className="hero__highlights">
             <div className="hero-chip">
