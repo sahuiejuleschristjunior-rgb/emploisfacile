@@ -23,10 +23,6 @@ export default function StoriesViewer({ stories, startIndex, onClose }) {
   /* NOUVELLE FONCTION : Gestionnaire de clic pour retirer le focus et le contour bleu */
   function handleTouchZoneClick(action) {
     action(); // Exécute goNext ou goPrev
-    /* Retire manuellement l'état de focus de l'élément cliqué */
-    if (document.activeElement) {
-        document.activeElement.blur(); 
-    }
   }
 
   /* LOGIQUE DE NAVIGATION */
@@ -51,7 +47,7 @@ export default function StoriesViewer({ stories, startIndex, onClose }) {
 
     if (!current) {
         clearInterval(intervalRef.current);
-        return;
+        return () => {};
     }
     
     /* Définir une temporisation de sécurité (5 secondes) */
@@ -80,7 +76,7 @@ export default function StoriesViewer({ stories, startIndex, onClose }) {
         clearInterval(intervalRef.current);
         clearTimeout(fallbackTimeout);
     };
-  }, [index, paused, current]); 
+  }, [index, paused, current]);
 
 
   // ===============================================
@@ -148,7 +144,7 @@ export default function StoriesViewer({ stories, startIndex, onClose }) {
       <div className="story-progress">
         {stories.map((s, i) => (
           <div
-            key={i}
+            key={s?._id || s?.id || s?.media?.url || s?.user?._id || `story-${i}`}
             className="story-progress-segment"
           >
             <div
