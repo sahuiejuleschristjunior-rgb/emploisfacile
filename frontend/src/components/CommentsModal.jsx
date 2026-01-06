@@ -14,12 +14,6 @@ const REACTION_CONFIG = {
   angry: { label: "Grrr", emoji: "😡" },
 };
 const REACTION_TYPES = Object.keys(REACTION_CONFIG);
-const COMMENT_SKELETON_KEYS = [
-  "comment-skel-1",
-  "comment-skel-2",
-  "comment-skel-3",
-  "comment-skel-4",
-];
 
 /* ----------------------------
    Simple Carousel component
@@ -27,12 +21,9 @@ const COMMENT_SKELETON_KEYS = [
      - items: array of {type: 'image'|'video', url}
      - maxHeight optional
 ----------------------------*/
-  function MediaCarousel({ items = [], maxHeight = "70vh" }) {
+function MediaCarousel({ items = [], maxHeight = "70vh" }) {
   const [index, setIndex] = useState(0);
-  useEffect(() => {
-    setIndex(0);
-    return () => {};
-  }, [items]);
+  useEffect(() => setIndex(0), [items]);
   if (!items || items.length === 0) return null;
 
   const next = () => setIndex((i) => (i + 1) % items.length);
@@ -126,37 +117,16 @@ export default function CommentsModal({
   const [actionMenu, setActionMenu] = useState({ open: false, context: null, commentId: null, replyId: null });
 
   const [expandedMap, setExpandedMap] = useState({}); // "post" or commentId
-  const [highlightedCommentId, setHighlightedCommentId] = useState(null);
-  const [highlightedReplyId, setHighlightedReplyId] = useState(null);
 
   const commentsListRef = useRef(null);
   const commentsRefs = useRef({});
-  const replyRefs = useRef({});
   const longPressTimer = useRef(null);
   const hasFocusedComment = useRef(false);
   const hasFocusedReply = useRef(false);
-  const commentHighlightTimeoutRef = useRef(null);
-  const replyHighlightTimeoutRef = useRef(null);
-  const postTextRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (commentHighlightTimeoutRef.current) {
-        clearTimeout(commentHighlightTimeoutRef.current);
-      }
-      if (replyHighlightTimeoutRef.current) {
-        clearTimeout(replyHighlightTimeoutRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     hasFocusedComment.current = false;
     hasFocusedReply.current = false;
-    return () => {
-      hasFocusedComment.current = false;
-      hasFocusedReply.current = false;
-    };
   }, [focusCommentId, focusReplyId]);
 
   useEffect(() => {
@@ -193,46 +163,36 @@ export default function CommentsModal({
   useEffect(() => {
     // ensure visibleCommentsCount not larger than total
     setVisibleCommentsCount((v) => Math.min(v, (post?.comments?.length || 0)));
-    return () => {};
   }, [post?.comments?.length]);
 
   useEffect(() => {
-    if (!fromNotification || (!focusCommentId && !focusReplyId)) return () => {};
+    if (!fromNotification || (!focusCommentId && !focusReplyId)) return;
     const total = post?.comments?.length || 0;
-    if (total <= 0) return () => {};
+    if (total <= 0) return;
     setVisibleCommentsCount((v) => Math.max(v, total));
-    return () => {};
   }, [fromNotification, focusCommentId, focusReplyId, post?.comments?.length]);
 
   useEffect(() => {
-    let timer;
-    if (!fromNotification || !focusCommentId || loading || focusReplyId) {
-      return () => {};
-    }
+    if (!fromNotification || !focusCommentId) return;
+    if (loading) return;
+    if (focusReplyId) return;
 
-    timer = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (hasFocusedComment.current) return;
-      const commentEl = commentsRefs.current[focusCommentId];
+      const commentEl = document.getElementById(`comment-${focusCommentId}`);
       if (!commentEl) return;
       hasFocusedComment.current = true;
       commentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (commentHighlightTimeoutRef.current) {
-        clearTimeout(commentHighlightTimeoutRef.current);
-      }
-      setHighlightedCommentId(focusCommentId);
-      commentHighlightTimeoutRef.current = setTimeout(() => {
-        setHighlightedCommentId(null);
-      }, 2500);
+      commentEl.classList.add("comment-highlight");
+      setTimeout(() => commentEl.classList.remove("comment-highlight"), 2500);
     }, 400);
 
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [fromNotification, focusCommentId, loading, post?.comments?.length]);
 
   useEffect(() => {
-    let timer;
-    if (!fromNotification || !focusReplyId || loading) return () => {};
+    if (!fromNotification || !focusReplyId) return;
+    if (loading) return;
 
     const commentIdForReply =
       focusCommentId ||
@@ -244,24 +204,17 @@ export default function CommentsModal({
       setShowAllReplies((prev) => ({ ...prev, [commentIdForReply]: true }));
     }
 
-    timer = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (hasFocusedReply.current) return;
-      const replyEl = replyRefs.current[focusReplyId];
+      const replyEl = document.getElementById(`reply-${focusReplyId}`);
       if (!replyEl) return;
       hasFocusedReply.current = true;
       replyEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      if (replyHighlightTimeoutRef.current) {
-        clearTimeout(replyHighlightTimeoutRef.current);
-      }
-      setHighlightedReplyId(focusReplyId);
-      replyHighlightTimeoutRef.current = setTimeout(() => {
-        setHighlightedReplyId(null);
-      }, 2500);
+      replyEl.classList.add("reply-highlight");
+      setTimeout(() => replyEl.classList.remove("reply-highlight"), 2500);
     }, 500);
 
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [fromNotification, focusReplyId, focusCommentId, loading, post?.comments]);
 
   const safeFetch = useCallback((url, opts = {}) => {
@@ -463,7 +416,7 @@ export default function CommentsModal({
   const toggleExpanded = (key) => {
     setExpandedMap((p) => ({ ...p, [key]: !p[key] }));
     setTimeout(() => {
-      const el = key === "post" ? postTextRef.current : commentsRefs.current[key];
+      const el = key === "post" ? document.querySelector(".cm-post-text") : commentsRefs.current[key];
       if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 320);
   };
@@ -519,9 +472,7 @@ export default function CommentsModal({
           <div className={`cm-post-text-wrap ${expandedMap.post ? "expanded" : ""}`}>
             {post.text && (
               <>
-                <div className="cm-post-text text-content" ref={postTextRef}>
-                  {post.text}
-                </div>
+                <div className="cm-post-text text-content">{post.text}</div>
                 {post.text.length > 220 && (
                   <button className="cm-toggle-text" onClick={() => toggleExpanded("post")}>
                     {expandedMap.post ? "Voir moins" : "Voir plus"}
@@ -552,8 +503,8 @@ export default function CommentsModal({
               </div>
             )}
 
-            { loading && COMMENT_SKELETON_KEYS.map((key) => (
-              <div key={key} className="cm-skeleton">
+            { loading && [...Array(4)].map((_, i) => (
+              <div key={i} className="cm-skeleton">
                 <div className="cm-sk-avatar" />
                 <div className="cm-sk-lines"><div className="cm-sk-line long" /><div className="cm-sk-line short" /></div>
               </div>
@@ -564,15 +515,10 @@ export default function CommentsModal({
               const mediaItems = normalizeMedia(c.media);
               return (
                 <div
-                  className={`cm-comment-wrap${
-                    highlightedCommentId === c._id ? " comment-highlight" : ""
-                  }`}
+                  className="cm-comment-wrap"
                   key={c._id}
                   id={`comment-${c._id}`}
-                  ref={(el) => {
-                    if (el) commentsRefs.current[c._id] = el;
-                    else delete commentsRefs.current[c._id];
-                  }}
+                  ref={(el) => (commentsRefs.current[c._id] = el)}
                 >
                   <div className="cm-comment">
                     <button
@@ -715,17 +661,7 @@ export default function CommentsModal({
                       {(showAllReplies[c._id] ? c.replies : (c.replies || []).slice(-3)).map((r) => {
                         const sum = getReactionSummary(r.reactions);
                         return (
-                          <div
-                            key={r._id}
-                            className={`cm-reply${
-                              highlightedReplyId === r._id ? " reply-highlight" : ""
-                            }`}
-                            id={`reply-${r._id}`}
-                            ref={(el) => {
-                              if (el) replyRefs.current[r._id] = el;
-                              else delete replyRefs.current[r._id];
-                            }}
-                          >
+                          <div key={r._id} className="cm-reply" id={`reply-${r._id}`}>
                             <button
                               type="button"
                               className="cm-reply-avatar avatar-link"
@@ -752,14 +688,7 @@ export default function CommentsModal({
 
                               {r.media && (
                                 <div className="cm-reply-media" style={{ marginTop: 8 }}>
-                                  {normalizeMedia(r.media).map((m, i) => {
-                                    const mediaKey = m._id || m.url || m.previewUrl || `${r._id}-media-${i}`;
-                                    return m.type === "image" ? (
-                                      <img key={mediaKey} src={getImageUrl(m.url)} alt="" loading="lazy" />
-                                    ) : (
-                                      <video key={mediaKey} controls src={getImageUrl(m.url)} />
-                                    );
-                                  })}
+                                  {normalizeMedia(r.media).map((m, i) => m.type === "image" ? <img key={i} src={getImageUrl(m.url)} alt="" loading="lazy" /> : <video key={i} controls src={getImageUrl(m.url)} />)}
                                 </div>
                               )}
 
