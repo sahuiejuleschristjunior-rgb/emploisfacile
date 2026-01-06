@@ -47,10 +47,16 @@
   width: 100%;
   min-height: 100%;
   overflow-y: auto;
-  padding-top: var(--fb-header-height);
-  padding-bottom: 5px;
+  padding-top: 0;
+  padding-bottom: 0;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+}
+
+.jobs-mobile-content {
+  min-height: calc(100vh - var(--fb-header-height));
+  padding: calc(var(--fb-header-height) + 8px) 12px 80px;
+  box-sizing: border-box;
 }
 
 .jobs-left-drawer-backdrop {

@@ -1658,7 +1658,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   if (isJobsFeed && isMobile) {
     return (
-      <div className="jobs-mobile-shell">
+      <div className="jobs-mobile-layout">
         {header}
 
         <main className="jobs-mobile-content">
