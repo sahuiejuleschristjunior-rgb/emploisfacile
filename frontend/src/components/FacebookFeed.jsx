@@ -60,6 +60,7 @@ const svgThumb = (
 );
 
 let activeVideoRef = null;
+const SKELETON_KEYS = ["skeleton-a", "skeleton-b", "skeleton-c", "skeleton-d"];
 
 function FeedVideoMedia({ media, onClick, onExpand }) {
   const MIN_FEED_VIDEO_RATIO = 4 / 5; // Empêche les vidéos trop hautes
@@ -227,7 +228,11 @@ export default function FacebookFeed() {
   );
 
   useEffect(() => {
-    setPosts((prev) => filterVisiblePosts(prev));
+    let cancelled = false;
+    setPosts((prev) => (cancelled ? prev : filterVisiblePosts(prev)));
+    return () => {
+      cancelled = true;
+    };
   }, [filterVisiblePosts]);
 
   /* Nouveau système modal commentaires */
@@ -249,15 +254,31 @@ export default function FacebookFeed() {
   const [actionMenuPostId, setActionMenuPostId] = useState(null);
   const [editModalPost, setEditModalPost] = useState(null);
   const [sharingPostIds, setSharingPostIds] = useState({});
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
 
   const socketRef = useRef(null);
   const hasFocusedPost = useRef(false);
   const hasOpenedComments = useRef(false);
   const hasNotifiedMissing = useRef(false);
+  const isMountedRef = useRef(true);
+  const postRefs = useRef({});
+  const highlightTimeoutRef = useRef(null);
+  const feedToastTimeoutRef = useRef(null);
+  const scrollAnimationRef = useRef(null);
 
   useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (feedToastTimeoutRef.current) clearTimeout(feedToastTimeoutRef.current);
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+      if (scrollAnimationRef.current) cancelAnimationFrame(scrollAnimationRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     const state = location.state;
-    if (state?.fromNotification) {
+    if (!cancelled && state?.fromNotification) {
       setNotifPayload({
         postId: state.focusPostId,
         commentId: state.focusCommentId,
@@ -265,12 +286,20 @@ export default function FacebookFeed() {
       });
       nav("/fb", { replace: true });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [location.key, nav]);
 
   useEffect(() => {
     hasFocusedPost.current = false;
     hasOpenedComments.current = false;
     hasNotifiedMissing.current = false;
+    return () => {
+      hasFocusedPost.current = false;
+      hasOpenedComments.current = false;
+      hasNotifiedMissing.current = false;
+    };
   }, [notifPayload?.postId, notifPayload?.commentId]);
 
   const addOptimisticPost = (post) => {
@@ -383,71 +412,115 @@ export default function FacebookFeed() {
     setPosts((prev) => filterVisiblePosts(prev.filter((p) => p._id !== tempId)));
   };
 
+  const showFeedToast = useCallback((message) => {
+    if (feedToastTimeoutRef.current) {
+      clearTimeout(feedToastTimeoutRef.current);
+    }
+    setFeedToast(message);
+    feedToastTimeoutRef.current = setTimeout(() => {
+      if (isMountedRef.current) setFeedToast("");
+    }, 3500);
+  }, []);
+
   /* =================================================================
         LOAD POSTS
   ================================================================= */
-  const loadPosts = async (pageToLoad = page, isInitial = false) => {
-    try {
-      if (isInitial) setLoadingInitial(true);
-      else setLoadingMore(true);
+  const loadPosts = useCallback(
+    async ({ pageToLoad = page, isInitial = false, signal } = {}) => {
+      try {
+        if (!isMountedRef.current) return;
+        if (isInitial) setLoadingInitial(true);
+        else setLoadingMore(true);
 
-      const res = await fetch(
-        `${API_URL}/posts/paginated?page=${pageToLoad}&limit=${limit}&includeAds=1`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+        const res = await fetch(
+          `${API_URL}/posts/paginated?page=${pageToLoad}&limit=${limit}&includeAds=1`,
+          { headers: { Authorization: `Bearer ${token}` }, signal }
+        );
 
-      const data = await res.json();
-      if (!res.ok || !Array.isArray(data.posts)) {
-        if (isInitial) setPosts([]);
-        return;
+        if (signal?.aborted || !isMountedRef.current) return;
+
+        const data = await res.json();
+        if (!res.ok || !Array.isArray(data.posts)) {
+          if (isInitial && isMountedRef.current) setPosts([]);
+          return;
+        }
+
+        if (!isMountedRef.current) return;
+        if (isInitial) setPosts(filterVisiblePosts(data.posts));
+        else setPosts((prev) => filterVisiblePosts([...prev, ...data.posts]));
+
+        setHasMore(Boolean(data.hasMore));
+        setPage(pageToLoad);
+      } catch (err) {
+        if (!signal?.aborted) {
+          console.error("LOAD POSTS ERROR:", err);
+        }
+      } finally {
+        if (!signal?.aborted && isMountedRef.current) {
+          isInitial ? setLoadingInitial(false) : setLoadingMore(false);
+        }
       }
-
-      if (isInitial) setPosts(filterVisiblePosts(data.posts));
-      else setPosts((prev) => filterVisiblePosts([...prev, ...data.posts]));
-
-      setHasMore(Boolean(data.hasMore));
-      setPage(pageToLoad);
-    } catch (err) {
-      console.error("LOAD POSTS ERROR:", err);
-    } finally {
-      isInitial ? setLoadingInitial(false) : setLoadingMore(false);
-    }
-  };
+    },
+    [API_URL, token, filterVisiblePosts, limit, page]
+  );
 
   useEffect(() => {
-    loadPosts(1, true);
-  }, []);
+    const controller = new AbortController();
+    loadPosts({ pageToLoad: 1, isInitial: true, signal: controller.signal });
+    return () => {
+      controller.abort();
+    };
+  }, [loadPosts]);
 
   useEffect(() => {
-    if (!notifPayload?.postId) return;
+    if (!notifPayload?.postId) return () => {};
     if (!posts?.length) {
       if (!loadingInitial && !hasNotifiedMissing.current) {
-        setFeedToast("Cette publication n’est plus disponible.");
+        showFeedToast("Cette publication n’est plus disponible.");
         hasNotifiedMissing.current = true;
-        setTimeout(() => setFeedToast(""), 3500);
       }
-      return;
+      return () => {};
     }
 
-    const el = document.getElementById(`post-${notifPayload.postId}`);
-    if (!el) {
+    const targetPost = posts.find(
+      (p) => String(p._id) === String(notifPayload.postId)
+    );
+    const el = postRefs.current[notifPayload.postId];
+    if (!el || !targetPost) {
       if (!loadingInitial && !hasNotifiedMissing.current) {
-        setFeedToast("Cette publication n’est plus disponible.");
+        showFeedToast("Cette publication n’est plus disponible.");
         hasNotifiedMissing.current = true;
-        setTimeout(() => setFeedToast(""), 3500);
       }
-      return;
+      return () => {};
     }
 
-    if (hasFocusedPost.current) return;
+    if (hasFocusedPost.current) return () => {};
     hasFocusedPost.current = true;
 
-    requestAnimationFrame(() => {
+    if (scrollAnimationRef.current) {
+      cancelAnimationFrame(scrollAnimationRef.current);
+    }
+    scrollAnimationRef.current = requestAnimationFrame(() => {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("post-highlight");
-      setTimeout(() => el.classList.remove("post-highlight"), 2500);
     });
-  }, [notifPayload, posts, loadingInitial]);
+
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    setHighlightedPostId(targetPost._id);
+    highlightTimeoutRef.current = setTimeout(() => {
+      if (isMountedRef.current) setHighlightedPostId(null);
+    }, 2500);
+
+    return () => {
+      if (scrollAnimationRef.current) {
+        cancelAnimationFrame(scrollAnimationRef.current);
+      }
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, [notifPayload, posts, loadingInitial, showFeedToast]);
 
   useEffect(() => {
     if (!notifPayload?.postId || !posts?.length) return;
@@ -464,6 +537,7 @@ export default function FacebookFeed() {
     setActivePostForComments(post);
     setIsCommentsModalOpen(true);
     hasOpenedComments.current = true;
+    return () => {};
   }, [
     notifPayload,
     posts,
@@ -607,7 +681,6 @@ export default function FacebookFeed() {
   const openMediaViewer = (postId, index) => {
     setMediaViewer({ postId, index });
     setMediaViewerOpen(true);
-    document.body.classList.add("fb-no-scroll");
   };
 
   const openReels = (postId) => {
@@ -618,8 +691,16 @@ export default function FacebookFeed() {
   const closeMediaViewer = () => {
     setMediaViewerOpen(false);
     setMediaViewer({ postId: null, index: 0 });
-    document.body.classList.remove("fb-no-scroll");
   };
+
+  useEffect(() => {
+    if (mediaViewerOpen) {
+      document.body.classList.add("fb-no-scroll");
+    } else {
+      document.body.classList.remove("fb-no-scroll");
+    }
+    return () => document.body.classList.remove("fb-no-scroll");
+  }, [mediaViewerOpen]);
 
   const showNextMedia = () => {
     setMediaViewer((prev) => {
@@ -859,8 +940,7 @@ export default function FacebookFeed() {
       <StoriesFB />
 
       {/* LOADER INITIAL */}
-      {loadingInitial &&
-        [...Array(4)].map((_, i) => <SkeletonPost key={i} />)}
+      {loadingInitial && SKELETON_KEYS.map((key) => <SkeletonPost key={key} />)}
 
       {/* POSTS */}
       {!loadingInitial &&
@@ -917,7 +997,16 @@ export default function FacebookFeed() {
             <div
               key={post._id}
               id={`post-${post._id}`}
-              className="fb-post-wrapper"
+              className={`fb-post-wrapper${
+                highlightedPostId === post._id ? " post-highlight" : ""
+              }`}
+              ref={(node) => {
+                if (node) {
+                  postRefs.current[post._id] = node;
+                } else {
+                  delete postRefs.current[post._id];
+                }
+              }}
             >
               <article className="fb-post">
 

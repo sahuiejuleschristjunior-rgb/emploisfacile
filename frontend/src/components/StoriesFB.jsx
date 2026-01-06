@@ -6,6 +6,14 @@ import "./../styles/stories.css";
 // 💥 NOUVEL IMPORT : La fonction pour générer l'URL complète
 import { getImageUrl } from "../utils/imageUtils";
 
+const STORY_SKELETON_KEYS = [
+  "story-skeleton-1",
+  "story-skeleton-2",
+  "story-skeleton-3",
+  "story-skeleton-4",
+  "story-skeleton-5",
+];
+
 export default function StoriesFB() {
   const [isUploading, setIsUploading] = useState(false);
   const [stories, setStories] = useState([]);
@@ -35,13 +43,6 @@ export default function StoriesFB() {
   const openStory = (index, event) => {
     setStartIndex(index);
     setIsViewerOpen(true);
-    
-    // CORRECTION JS : Retire le focus de l'élément cliqué
-    if (event && event.currentTarget) {
-        event.currentTarget.blur();
-    } else if (document.activeElement) {
-        document.activeElement.blur();
-    }
   };
 
   // Ferme le viewer
@@ -53,45 +54,49 @@ export default function StoriesFB() {
   /* =======================================
      CHARGEMENT DES STORIES
      ======================================= */
-  // ... (Code de useEffect et loadStories inchangé) ...
   useEffect(() => {
-    loadStories();
+    const controller = new AbortController();
+    loadStories(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  const loadStories = async () => {
+  const loadStories = async (signal) => {
     setStoriesLoading(true);
     try {
       const res = await fetch(`${API}/api/stories`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        signal,
       });
+
+      if (signal?.aborted) return;
 
       if (res.ok) {
         const data = await res.json();
-        setStories(Array.isArray(data) ? data : []);
+        if (!signal?.aborted) {
+          setStories(Array.isArray(data) ? data : []);
+        }
       } else {
         console.error("Échec du chargement des stories:", res.status);
       }
     } catch (error) {
-      console.error("Erreur réseau/serveur lors du chargement des stories:", error);
+      if (!signal?.aborted) {
+        console.error("Erreur réseau/serveur lors du chargement des stories:", error);
+      }
     }
-    setStoriesLoading(false);
+    if (!signal?.aborted) {
+      setStoriesLoading(false);
+    }
   };
   
   /* =======================================
      LOGIQUE D'UPLOAD
      ======================================= */
   
-  const handleCreateStoryClick = (event) => { 
+  const handleCreateStoryClick = (event) => {
     if (fileInputRef.current && !isUploading) {
       fileInputRef.current.click();
-    }
-    // CORRECTION JS pour la carte Créer
-    if (event && event.currentTarget) {
-        event.currentTarget.blur();
-    } else if (document.activeElement) {
-        document.activeElement.blur();
     }
   };
   
@@ -170,8 +175,8 @@ export default function StoriesFB() {
 
         {/* 3. STORIES EXISTANTES (Cliquables) */}
         {storiesLoading
-          ? Array.from({ length: 5 }).map((_, index) => (
-              <div key={`story-skeleton-${index}`} className="fb-story fb-story-skeleton">
+          ? STORY_SKELETON_KEYS.map((key) => (
+              <div key={key} className="fb-story fb-story-skeleton">
                 <div className="fb-story-skeleton-avatar" />
                 <div className="fb-story-skeleton-text" />
               </div>
