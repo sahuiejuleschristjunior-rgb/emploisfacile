@@ -294,7 +294,11 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
                     <button
                       type="button"
                       className="jobs-link"
-                      onClick={() => navigate(`/emplois/${job._id}`, { state: { job } })}
+                      onClick={() =>
+                        navigate(`/emplois/${job._id}`, {
+                          state: { job, from: "/emplois" },
+                        })
+                      }
                     >
                       Voir
                     </button>

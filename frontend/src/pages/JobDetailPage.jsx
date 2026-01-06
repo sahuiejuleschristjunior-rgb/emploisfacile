@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
 
@@ -20,6 +20,7 @@ const resolveCompanyName = (job) =>
 export default function JobDetailPage() {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem("token");
 
@@ -27,6 +28,19 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(!location.state?.job);
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
+
+  const handleBack = useCallback(() => {
+    if (location.state?.from === "/emplois") {
+      navigate("/emplois");
+      return;
+    }
+
+    if (window.history.state?.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate("/emplois");
+    }
+  }, [location.state?.from, navigate]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -181,6 +195,17 @@ export default function JobDetailPage() {
   return (
     <div className="job-detail-page" role="main">
       <div className="job-detail-wrapper">
+        <div className="job-detail-header">
+          <button className="ghost-link job-detail-back" type="button" onClick={handleBack}>
+            ← Retour aux offres
+          </button>
+          <div className="job-detail-breadcrumbs" aria-label="Fil d'ariane">
+            <span>Emplois</span>
+            <span>›</span>
+            <span>Détail</span>
+          </div>
+        </div>
+
         <section className="hero job-detail-hero" aria-label="Résumé de l'offre">
           <div className="hero__info">
             <span className="hero__badge">Offre en détail</span>

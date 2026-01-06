@@ -26,6 +26,15 @@
   flex-wrap: wrap;
 }
 
+.job-detail-back {
+  gap: 8px;
+  font-weight: 700;
+}
+
+.job-detail-back::after {
+  content: none;
+}
+
 .job-detail-breadcrumbs {
   display: flex;
   align-items: center;
