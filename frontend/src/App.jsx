@@ -162,6 +162,24 @@ export default function App() {
                   </Route>
                 </Route>
 
+                {/* Emplois — accessible sans le FacebookLayout pour éviter les conflits mobiles */}
+                <Route
+                  path="/emplois"
+                  element={
+                    <ProtectedRoute>
+                      <EmploisPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/emplois/:id"
+                  element={
+                    <ProtectedRoute>
+                      <JobDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+
                 {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
                 <Route
                   element={
@@ -207,8 +225,6 @@ export default function App() {
                 <Route path="/pages/me" element={<MyPages />} />
                 <Route path="/pages/:slug" element={<PageProfile />} />
                 <Route path="/post/:id" element={<PostPage />} />
-                <Route path="/emplois" element={<EmploisPage />} />
-                <Route path="/emplois/:id" element={<JobDetailPage />} />
                 <Route path="/likes/:postId" element={<LikesPage />} />
                 <Route path="/reels" element={<ReelsPage />} />
 
