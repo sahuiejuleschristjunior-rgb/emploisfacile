@@ -49,17 +49,17 @@ export default function JobConnectInterviews() {
     });
   };
 
-  const interviewApps = data.groupedApps.interview;
+  const interviewApps = data.groupedApps.inReview;
 
   return (
     <CandidateLayout user={data.user} onLogout={handleLogout}>
       <section className="hero">
         <div className="hero__info">
-          <p className="eyebrow">Entretiens</p>
-          <h3>Préparez vos entretiens</h3>
+          <p className="eyebrow">Suivi</p>
+          <h3>Préparez vos revues de candidature</h3>
           <p className="hero__subtitle">
-            Retrouvez vos entretiens planifiés, contactez les recruteurs et relisez les offres avant
-            le jour J.
+            Retrouvez les candidatures en cours d'étude, contactez les recruteurs et gardez vos
+            informations à jour.
           </p>
           <div className="hero__actions">
             <button className="primary-btn" onClick={() => nav("/fb/dashboard")}>Découvrir d'autres offres</button>
@@ -83,13 +83,13 @@ export default function JobConnectInterviews() {
 
       <section className="card" aria-label="Entretiens planifiés">
         <div className="card-header">
-          <h3>Vos entretiens à venir</h3>
+          <h3>Vos dossiers en revue</h3>
           <button className="ghost-link" onClick={() => nav("/candidate/agenda")}>Voir l'agenda</button>
         </div>
 
         {data.loadingApps && <div className="loader">Chargement…</div>}
         {!data.loadingApps && interviewApps.length === 0 && (
-          <div className="empty-state">Aucun entretien prévu pour l'instant.</div>
+          <div className="empty-state">Aucune candidature n'est en cours d'étude pour l'instant.</div>
         )}
 
         <div className="applications-list">

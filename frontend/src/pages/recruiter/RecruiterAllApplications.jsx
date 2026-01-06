@@ -116,35 +116,22 @@ export default function RecruiterAllApplications() {
   };
 
   const renderStatusBadge = (status) => {
-    let label = status || "Inconnu";
-    let className = "status-pill status-blue";
+    const normalized = (status || "pending").toLowerCase();
+    const labels = {
+      pending: "En attente",
+      reviewed: "En cours d'étude",
+      accepted: "Accepté",
+      rejected: "Rejeté",
+    };
 
-    switch (status) {
-      case "Pending":
-        label = "En attente";
-        className = "status-pill status-amber";
-        break;
-      case "Reviewing":
-        label = "En cours d'étude";
-        className = "status-pill status-blue";
-        break;
-      case "Interview":
-        label = "Entretien";
-        className = "status-pill status-indigo";
-        break;
-      case "Accepted":
-        label = "Accepté";
-        className = "status-pill status-emerald";
-        break;
-      case "Rejected":
-        label = "Rejeté";
-        className = "status-pill status-rose";
-        break;
-      default:
-        break;
-    }
+    const classes = {
+      pending: "status-pill status-amber",
+      reviewed: "status-pill status-blue",
+      accepted: "status-pill status-emerald",
+      rejected: "status-pill status-rose",
+    };
 
-    return <span className={className}>{label}</span>;
+    return <span className={classes[normalized] || "status-pill status-blue"}>{labels[normalized] || normalized}</span>;
   };
 
   const sortedJobs = useMemo(() => {
@@ -169,12 +156,14 @@ export default function RecruiterAllApplications() {
       const job = app.job || {};
       const jobId = job._id || "unknown";
 
-      if (selectedJobId !== "all" && jobId !== selectedJobId) continue;
-      if (selectedStatus !== "all" && app.status !== selectedStatus) continue;
+      const normalizedStatus = (app.status || "").toLowerCase();
 
-      const candidate = app.candidate || {};
+      if (selectedJobId !== "all" && jobId !== selectedJobId) continue;
+      if (selectedStatus !== "all" && normalizedStatus !== selectedStatus) continue;
+
+      const candidate = app.applicant || {};
       const target =
-        ((candidate.name || "") + " " + (candidate.email || "")).toLowerCase();
+        `${(app.applicantName || candidate.name || "").toLowerCase()} ${(app.applicantEmail || candidate.email || "").toLowerCase()}`.trim();
 
       if (search && !target.includes(search.toLowerCase())) continue;
 
@@ -204,12 +193,15 @@ export default function RecruiterAllApplications() {
   }, [applications, sortedJobs, selectedJobId, selectedStatus, search]);
 
   const totalApplications = applications.length;
-  const totalPending = applications.filter((a) => a.status === "Pending").length;
-  const totalAccepted = applications.filter((a) => a.status === "Accepted").length;
-  const totalRejected = applications.filter((a) => a.status === "Rejected").length;
+  const totalPending = applications.filter((a) => (a.status || "").toLowerCase() === "pending").length;
+  const totalReviewed = applications.filter((a) => (a.status || "").toLowerCase() === "reviewed").length;
+  const totalAccepted = applications.filter((a) => (a.status || "").toLowerCase() === "accepted").length;
+  const totalRejected = applications.filter((a) => (a.status || "").toLowerCase() === "rejected").length;
 
   const renderApplicationItem = (app) => {
-    const candidate = app.candidate || {};
+    const candidate = app.applicant || {};
+    const name = app.applicantName || candidate.name || "Candidat";
+    const email = app.applicantEmail || candidate.email || "Email indisponible";
     const job = app.job || {};
 
     return (
@@ -218,17 +210,17 @@ export default function RecruiterAllApplications() {
           <div className="application-card__profile">
             <div className="application-avatar">
             {candidate.avatar ? (
-              <img src={candidate.avatar} alt={candidate.name} loading="lazy" />
+              <img src={candidate.avatar} alt={name} loading="lazy" />
             ) : (
               <div className="application-avatar__fallback">
-                {(candidate.name || "?").charAt(0).toUpperCase()}
+                {(name || "?").charAt(0).toUpperCase()}
               </div>
             )}
             </div>
 
             <div className="application-details">
-              <h4 className="application-title">{candidate.name || "Candidat"}</h4>
-              <p className="application-sub">{candidate.email || "Email indisponible"}</p>
+              <h4 className="application-title">{name}</h4>
+              <p className="application-sub">{email}</p>
 
               <div className="application-meta">
                 <span>
@@ -254,11 +246,10 @@ export default function RecruiterAllApplications() {
               disabled={updatingId === app._id}
               onChange={(e) => handleStatusChange(app._id, e.target.value)}
             >
-              <option value="Pending">En attente</option>
-              <option value="Reviewing">En cours d'étude</option>
-              <option value="Interview">Entretien</option>
-              <option value="Accepted">Accepté</option>
-              <option value="Rejected">Rejeté</option>
+              <option value="pending">En attente</option>
+              <option value="reviewed">En cours d'étude</option>
+              <option value="accepted">Accepté</option>
+              <option value="rejected">Rejeté</option>
             </select>
           </div>
 
@@ -312,8 +303,8 @@ export default function RecruiterAllApplications() {
             <strong>{totalPending}</strong>
           </div>
           <div className="hero-chip">
-            <span>Entretiens</span>
-            <strong>{applications.filter((a) => a.status === "Interview").length}</strong>
+            <span>En revue</span>
+            <strong>{totalReviewed}</strong>
           </div>
         </div>
       </section>
@@ -328,6 +319,11 @@ export default function RecruiterAllApplications() {
           <p className="stat-label">En attente</p>
           <p className="stat-value text-orange">{totalPending}</p>
           <p className="stat-hint">À traiter rapidement pour répondre aux candidats.</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-label">En revue</p>
+          <p className="stat-value text-blue">{totalReviewed}</p>
+          <p className="stat-hint">Candidatures analysées par vos équipes.</p>
         </div>
         <div className="stat-card">
           <p className="stat-label">Acceptées</p>
@@ -369,11 +365,10 @@ export default function RecruiterAllApplications() {
             onChange={(e) => setSelectedStatus(e.target.value)}
           >
             <option value="all">Tous les statuts</option>
-            <option value="Pending">En attente</option>
-            <option value="Reviewing">En cours d'étude</option>
-            <option value="Interview">Entretien</option>
-            <option value="Accepted">Accepté</option>
-            <option value="Rejected">Rejeté</option>
+            <option value="pending">En attente</option>
+            <option value="reviewed">En cours d'étude</option>
+            <option value="accepted">Accepté</option>
+            <option value="rejected">Rejeté</option>
           </select>
 
           <input

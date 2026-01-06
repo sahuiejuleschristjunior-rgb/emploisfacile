@@ -30,6 +30,7 @@ export default function JobDetailPage() {
   const [similarJobs, setSimilarJobs] = useState([]);
   const [applyMessage, setApplyMessage] = useState("");
   const [isApplying, setIsApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
 
   const currentUser = useMemo(() => {
     try {
@@ -143,6 +144,39 @@ export default function JobDetailPage() {
     return () => controller.abort();
   }, [API_URL, job, token]);
 
+  useEffect(() => {
+    if (!token) {
+      setHasApplied(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`${API_URL}/applications/status?jobId=${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+        const already = Boolean(data?.hasApplied);
+        setHasApplied(already);
+        if (already) setApplyMessage("Vous avez déjà postulé");
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        console.error("APPLICATION_STATUS_ERROR", err);
+      }
+    };
+
+    fetchStatus();
+
+    return () => controller.abort();
+  }, [API_URL, id, token]);
+
   const jobDetails = useMemo(() => {
     if (!job) return null;
 
@@ -191,6 +225,11 @@ export default function JobDetailPage() {
       return;
     }
 
+    if (hasApplied) {
+      setApplyMessage("Vous avez déjà postulé à cette offre.");
+      return;
+    }
+
     const applicantName =
       currentUser?.name || currentUser?.fullName || currentUser?.companyName || "Candidat EmploisFacile";
     const applicantEmail =
@@ -220,8 +259,6 @@ export default function JobDetailPage() {
         },
         body: JSON.stringify({
           jobId: id,
-          applicantName,
-          applicantEmail,
           message: defaultMessage,
         }),
       });
@@ -231,10 +268,17 @@ export default function JobDetailPage() {
         throw new Error(data?.message || data?.error || "Impossible d'envoyer votre candidature.");
       }
 
+      setHasApplied(true);
       setApplyMessage("Candidature envoyée");
     } catch (err) {
       console.error("APPLY_ERROR", err);
-      setApplyMessage(err.message || "Erreur lors de l'envoi de votre candidature.");
+      const duplicate = err.message?.toLowerCase().includes("déjà postulé") || err.status === 400;
+      if (duplicate) {
+        setHasApplied(true);
+        setApplyMessage("Vous avez déjà postulé à cette offre.");
+      } else {
+        setApplyMessage(err.message || "Erreur lors de l'envoi de votre candidature.");
+      }
     } finally {
       setIsApplying(false);
     }
@@ -249,6 +293,7 @@ export default function JobDetailPage() {
     location.search,
     navigate,
     token,
+    hasApplied,
   ]);
 
   if (loading) {
@@ -315,8 +360,8 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              <button className="primary-btn" type="button" onClick={handleApply} disabled={isApplying}>
-                {isApplying ? "Envoi..." : "Postuler maintenant"}
+              <button className="primary-btn" type="button" onClick={handleApply} disabled={isApplying || hasApplied}>
+                {hasApplied ? "Vous avez déjà postulé" : isApplying ? "Envoi..." : "Postuler maintenant"}
               </button>
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur

@@ -2,51 +2,49 @@ const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema(
   {
-    // Offre associée
     job: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Job',
       required: true,
     },
-
-    // Candidat
-    candidate: {
+    recruiter: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-
-    // Statut de la candidature
-    status: {
-      type: String,
-      enum: ['Pending', 'Reviewing', 'Interview', 'Accepted', 'Rejected'],
-      default: 'Pending',
+    applicant: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
     },
-
-    // Message facultatif du candidat
+    applicantName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    applicantEmail: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+    },
     message: {
       type: String,
       default: '',
+      trim: true,
     },
-
-    // CV associé à cette candidature
-    cvUrl: {
+    status: {
       type: String,
-      default: '',
-    },
-
-    // Dates automatiques
-    createdAt: {
-      type: Date,
-      default: Date.now,
+      enum: ['pending', 'reviewed', 'accepted', 'rejected'],
+      default: 'pending',
     },
   },
   {
-    timestamps: true, // createdAt + updatedAt automatiques
+    timestamps: true,
+    collection: 'jobApplications',
   }
 );
 
-// Empêcher double candidature
-applicationSchema.index({ job: 1, candidate: 1 }, { unique: true });
+applicationSchema.index({ job: 1, applicantEmail: 1 }, { unique: true });
 
 module.exports = mongoose.model('Application', applicationSchema);

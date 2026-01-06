@@ -60,7 +60,7 @@ export default function RecruiterDashboard() {
   const cvCandidates = useMemo(() => {
     const seen = new Set();
     return data.applications
-      .map((app) => app.candidate)
+      .map((app) => app.applicant)
       .filter((candidate) => candidate && (candidate.cvData || candidate.cvName))
       .filter((candidate) => {
         const key = candidate._id || candidate.email;
@@ -288,63 +288,85 @@ export default function RecruiterDashboard() {
           )}
 
           <div className="applications-list">
-            {data.recentApplications.map((app) => (
-              <div key={app._id} className="application-card" onClick={() => openJob(app.job?._id)}>
-                <div className="application-card__profile">
-                  <div className="application-avatar">
-                    {app.candidate?.avatar ? (
-                      <img src={app.candidate.avatar} alt={app.candidate?.name || "Candidat"} loading="lazy" />
-                    ) : (
-                      <div className="application-avatar__fallback">
-                        {(app.candidate?.name || "?").charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+            {data.recentApplications.map((app) => {
+              const normalizedStatus = (app.status || "pending").toLowerCase();
+              const statusClass =
+                {
+                  pending: "status-pill status-amber",
+                  reviewed: "status-pill status-blue",
+                  accepted: "status-pill status-emerald",
+                  rejected: "status-pill status-rose",
+                }[normalizedStatus] || "status-pill status-blue";
 
-                  <div className="application-details">
-                    <div className="application-card__header">
-                      <div>
-                        <p className="application-title">{app.candidate?.name || "Candidat"}</p>
-                        <p className="application-sub">{app.job?.title || "Poste"}</p>
-                      </div>
-                      <span className="status-pill status-blue">{app.status || "Pending"}</span>
+              const statusLabel =
+                {
+                  pending: "En attente",
+                  reviewed: "En cours d'étude",
+                  accepted: "Accepté",
+                  rejected: "Rejeté",
+                }[normalizedStatus] || normalizedStatus;
+
+              const name = app.applicantName || app.applicant?.name || "Candidat";
+              const email = app.applicantEmail || app.applicant?.email || "Email non renseigné";
+
+              return (
+                <div key={app._id} className="application-card" onClick={() => openJob(app.job?._id)}>
+                  <div className="application-card__profile">
+                    <div className="application-avatar">
+                      {app.applicant?.avatar ? (
+                        <img src={app.applicant.avatar} alt={app.applicant?.name || "Candidat"} loading="lazy" />
+                      ) : (
+                        <div className="application-avatar__fallback">
+                          {(name || "?").charAt(0).toUpperCase()}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="application-meta">
-                      <span>
-                        Reçue le {" "}
-                        {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "-"}
-                      </span>
-                      <span className="muted">{app.candidate?.email || "Email non renseigné"}</span>
-                    </div>
+                    <div className="application-details">
+                      <div className="application-card__header">
+                        <div>
+                          <p className="application-title">{name}</p>
+                          <p className="application-sub">{app.job?.title || "Poste"}</p>
+                        </div>
+                        <span className={statusClass}>{statusLabel}</span>
+                      </div>
 
-                    <div className="application-actions">
-                      <div className="application-hint">{app.candidate?.experience || "Profil en attente"}</div>
-                      <div className="inline-actions">
-                        <button
-                          className="primary-btn ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            contactCandidate(app.candidate, app.job);
-                          }}
-                        >
-                          Contacter
-                        </button>
-                        <button
-                          className="primary-btn ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            callCandidate(app.candidate);
-                          }}
-                        >
-                          Appel vidéo
-                        </button>
+                      <div className="application-meta">
+                        <span>
+                          Reçue le {" "}
+                          {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "-"}
+                        </span>
+                        <span className="muted">{email}</span>
+                      </div>
+
+                      <div className="application-actions">
+                        <div className="application-hint">{app.applicant?.experience || "Profil en attente"}</div>
+                        <div className="inline-actions">
+                          <button
+                            className="primary-btn ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              contactCandidate(app.applicant, app.job);
+                            }}
+                          >
+                            Contacter
+                          </button>
+                          <button
+                            className="primary-btn ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              callCandidate(app.applicant);
+                            }}
+                          >
+                            Appel vidéo
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

@@ -56,14 +56,14 @@ export default function CandidateDashboard() {
 
   const nextAction = useMemo(() => {
     if (data.upcomingInterviews > 0) {
-      const soonestInterview = data.groupedApps.interview
-        .map((app) => new Date(app.interviewDate || app.updatedAt || app.createdAt))
+      const soonestReview = data.groupedApps.inReview
+        .map((app) => new Date(app.reviewedAt || app.updatedAt || app.createdAt))
         .sort((a, b) => a.getTime() - b.getTime())[0];
 
       return {
-        title: "Préparez votre prochain entretien",
-        subtitle: soonestInterview
-          ? `Planifié le ${soonestInterview.toLocaleDateString()} à ${soonestInterview.toLocaleTimeString()}`
+        title: "Votre dossier est en cours d'étude",
+        subtitle: soonestReview
+          ? `Dernière mise à jour le ${soonestReview.toLocaleDateString()} à ${soonestReview.toLocaleTimeString()}`
           : "Consolidez vos notes et relisez l'offre",
         ctaLabel: "Ouvrir l'agenda",
         ctaAction: () => nav("/candidate/agenda"),
@@ -98,17 +98,17 @@ export default function CandidateDashboard() {
       ctaAction: () => nav("/fb/dashboard"),
       hint: "Filtrez par rôle ou niveau d'expérience pour gagner du temps.",
     };
-  }, [data.upcomingInterviews, data.groupedApps.interview, data.recommendedJobs, data.savedJobs, nav]);
+  }, [data.upcomingInterviews, data.groupedApps.inReview, data.recommendedJobs, data.savedJobs, nav]);
 
   const upcomingAgenda = useMemo(() => {
-    return data.groupedApps.interview.slice(0, 3).map((app) => ({
-      title: app.job?.title || "Entretien prévu",
+    return data.groupedApps.inReview.slice(0, 3).map((app) => ({
+      title: app.job?.title || "Candidature en revue",
       company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
-      when: app.interviewDate || app.updatedAt || app.createdAt,
+      when: app.reviewedAt || app.updatedAt || app.createdAt,
       recruiter: app.job?.recruiter,
       job: app.job,
     }));
-  }, [data.groupedApps.interview]);
+  }, [data.groupedApps.inReview]);
 
   return (
     <CandidateLayout user={data.user} onLogout={logout}>
@@ -177,7 +177,7 @@ export default function CandidateDashboard() {
             groupedApps={{
               applied: data.groupedApps.applied.slice(0, 3),
               inReview: data.groupedApps.inReview.slice(0, 3),
-              interview: data.groupedApps.interview.slice(0, 3),
+              interview: [],
               offer: data.groupedApps.offer.slice(0, 3),
               rejected: data.groupedApps.rejected.slice(0, 3),
             }}
@@ -193,7 +193,7 @@ export default function CandidateDashboard() {
 
           <div className="agenda-list">
             {upcomingAgenda.length === 0 && (
-              <p className="empty-state small">Aucun entretien programmé pour le moment.</p>
+              <p className="empty-state small">Aucune mise à jour planifiée pour vos candidatures.</p>
             )}
 
             {upcomingAgenda.map((event, idx) => (

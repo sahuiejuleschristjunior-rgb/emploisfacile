@@ -189,7 +189,6 @@ export function RecruiterPipeline({ groupedApps, onOpen }) {
   const lanes = [
     { key: "applied", label: "Nouvelles", color: "blue" },
     { key: "inReview", label: "En revue", color: "amber" },
-    { key: "interview", label: "Entretiens", color: "indigo" },
     { key: "offer", label: "Offres", color: "emerald" },
     { key: "rejected", label: "Refusées", color: "rose" },
   ];
@@ -213,9 +212,9 @@ export function RecruiterPipeline({ groupedApps, onOpen }) {
               <div
                 key={app._id}
                 className="lane-card"
-                onClick={() => onOpen?.(app.job?._id, app.candidate?._id)}
+                onClick={() => onOpen?.(app.job?._id, app.applicant?._id)}
               >
-                <p className="lane-card__title">{app.candidate?.name || "Candidat"}</p>
+                <p className="lane-card__title">{app.applicantName || app.applicant?.name || "Candidat"}</p>
                 <p className="lane-card__subtitle">{app.job?.title || "Poste"}</p>
                 <div className="lane-card__footer">
                   <span>
