@@ -1,6 +1,13 @@
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
+const escapeHtml = (value = "") =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 /* ============================================================
    1. TRANSPORT SMTP POUR INSCRIPTION
@@ -109,6 +116,50 @@ exports.sendTemplateEmail = async (
   } catch (err) {
     console.error("EMAIL ERROR", err.message || err);
     // On renvoie l’erreur pour que le contrôleur puisse réagir
+    throw err;
+  }
+};
+
+/* ============================================================
+   5. ENVOI D’UN EMAIL DE CANDIDATURE
+============================================================ */
+exports.sendApplicationEmail = async ({
+  to,
+  subject,
+  applicantName,
+  applicantEmail,
+  message,
+  jobTitle,
+  recruiterName,
+}) => {
+  try {
+    const from = process.env.FROM_EMAIL_NO_REPLY;
+    const safeApplicant = escapeHtml(applicantName || "Candidat");
+    const safeEmail = escapeHtml(applicantEmail || "Email non communiqué");
+    const safeJob = escapeHtml(jobTitle || "Offre");
+    const safeRecruiter = escapeHtml(recruiterName || "recruteur");
+    const safeMessage = escapeHtml(message || "Aucun message fourni").replace(/\n/g, "<br>");
+
+    const html = `
+      <p>Bonjour ${safeRecruiter},</p>
+      <p>${safeApplicant} (${safeEmail}) a postulé pour le poste <strong>${safeJob}</strong>.</p>
+      <p><strong>Message du candidat :</strong></p>
+      <p>${safeMessage}</p>
+      <p>Merci d'utiliser EmploisFacile pour vos recrutements.</p>
+    `;
+
+    const info = await transporterNoReply.sendMail({
+      from,
+      to,
+      subject,
+      html,
+      replyTo: applicantEmail || undefined,
+    });
+
+    console.log("EMAIL APPLICATION SENT", { to, subject, messageId: info?.messageId || null });
+    return info;
+  } catch (err) {
+    console.error("EMAIL APPLICATION ERROR", err.message || err);
     throw err;
   }
 };
