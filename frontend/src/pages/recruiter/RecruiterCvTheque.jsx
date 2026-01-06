@@ -54,7 +54,7 @@ export default function RecruiterCvTheque() {
     data.applications.forEach((app) => {
       const job = app.job || {};
       const jobId = job._id || app.jobId || app.job || "unknown";
-      const candidate = app.candidate || {};
+      const candidate = app.applicant || {};
 
       if (!candidate || (!candidate.cvData && !candidate.cvName)) return;
 
@@ -86,7 +86,7 @@ export default function RecruiterCvTheque() {
   const cvCandidates = useMemo(() => {
     const seen = new Set();
     return data.applications
-      .map((app) => app.candidate)
+      .map((app) => app.applicant)
       .filter((candidate) => candidate && (candidate.cvData || candidate.cvName))
       .filter((candidate) => {
         const key = candidate._id || candidate.email;

@@ -4,105 +4,83 @@ const Job = require("../models/Job");
 const User = require("../models/User");
 const mailer = require("../utils/mailer");
 
+const normalizeEmail = (value = "") => String(value).trim().toLowerCase();
+const normalizeText = (value = "") => String(value).trim();
+
 /* ============================================================
    POST /api/applications
    ➤ Le candidat postule à une offre
 ============================================================ */
 exports.applyToJob = async (req, res) => {
-  const { jobId, message, applicantName, applicantEmail } = req.body;
-  const candidateId = req.user.id;
+  const { jobId, message } = req.body || {};
+  const applicantId = req.user?.id;
 
-  let application = null;
+  if (!mongoose.Types.ObjectId.isValid(jobId)) {
+    return res.status(400).json({ message: "Identifiant d'offre invalide." });
+  }
 
   try {
-    if (!mongoose.Types.ObjectId.isValid(jobId)) {
-      return res.status(400).json({ message: "Identifiant d'offre invalide." });
-    }
-
-    // Vérifier que le job existe
     const job = await Job.findById(jobId).populate("recruiter", "name email companyName");
+
     if (!job) {
       return res.status(404).json({ message: "Offre d'emploi introuvable." });
     }
 
-    const recruiterEmail = job.recruiter?.email;
-    if (!recruiterEmail) {
+    const recruiter = job.recruiter;
+    if (!recruiter || !recruiter.email) {
       return res.status(400).json({ message: "Aucun contact recruteur disponible pour cette offre." });
     }
 
-    // Empêcher la double candidature
-    const existing = await Application.findOne({
-      job: jobId,
-      candidate: candidateId,
-    });
-
-    if (existing) {
-      return res.status(400).json({
-        message: "Vous avez déjà postulé à cette offre.",
-      });
+    const applicant = await User.findById(applicantId).select("name email role");
+    if (!applicant) {
+      return res.status(401).json({ message: "Profil candidat introuvable." });
     }
 
-    const candidate = await User.findById(candidateId).select("name email role");
-    const applicantDisplayName =
-      (typeof applicantName === "string" && applicantName.trim()) ||
-      candidate?.name ||
-      "Candidat EmploisFacile";
-    const applicantDisplayEmail =
-      (typeof applicantEmail === "string" && applicantEmail.trim()) || candidate?.email;
-
-    if (!applicantDisplayEmail) {
-      return res.status(400).json({ message: "Email candidat manquant. Mettez à jour votre profil pour postuler." });
+    const applicantEmail = normalizeEmail(applicant.email);
+    if (!applicantEmail) {
+      return res.status(400).json({ message: "Votre profil ne contient pas d'email valide." });
     }
 
-    const finalMessage =
-      typeof message === "string" && message.trim().length
-        ? message.trim()
-        : `Bonjour,\n\nJe souhaite postuler au poste ${job.title} au sein de ${job.recruiter?.companyName || job.recruiter?.name || "votre entreprise"}.\n\n${applicantDisplayName}`;
+    const applicantName = normalizeText(applicant.name) || applicantEmail || "Candidat EmploisFacile";
 
-    // Créer la candidature
-    application = await Application.create({
+    const duplicate = await Application.findOne({ job: jobId, applicantEmail });
+    if (duplicate) {
+      return res.status(400).json({ message: "Vous avez déjà postulé à cette offre." });
+    }
+
+    const recruiterName = normalizeText(recruiter.companyName || recruiter.name);
+    const fallbackMessage = `Bonjour,\n\nJe souhaite postuler au poste ${job.title || ""} chez ${recruiterName || "votre entreprise"}.\n\n${applicantName}`;
+    const finalMessage = normalizeText(message) || fallbackMessage;
+
+    const application = await Application.create({
       job: jobId,
-      candidate: candidateId,
+      recruiter: recruiter._id || recruiter,
+      applicant: applicant._id,
+      applicantName,
+      applicantEmail,
       message: finalMessage,
-      status: "Pending",
     });
 
-    // Ajouter la candidature dans le Job
-    await Job.findByIdAndUpdate(jobId, {
-      $push: { applications: application._id },
-    });
+    await Job.findByIdAndUpdate(jobId, { $addToSet: { applications: application._id } });
 
-    const mailSubject = `Nouvelle candidature – ${job.title || "Offre"}`;
+    const subject = `Nouvelle candidature – ${job.title || "Offre"}`;
     await mailer.sendApplicationEmail({
-      to: recruiterEmail,
-      subject: mailSubject,
-      applicantName: applicantDisplayName,
-      applicantEmail: applicantDisplayEmail,
+      to: recruiter.email,
+      subject,
+      applicantName,
+      applicantEmail,
       message: finalMessage,
       jobTitle: job.title,
-      recruiterName: job.recruiter?.name || job.recruiter?.companyName,
+      recruiterName: recruiterName || recruiter.email,
     });
 
-    return res.status(201).json({
-      success: true,
-      message: "Candidature envoyée avec succès.",
-      application,
-    });
-
+    return res.status(201).json({ success: true, applicationId: application._id });
   } catch (error) {
-    console.error("APPLY_TO_JOB_ERROR", error);
-
-    if (application?._id) {
-      try {
-        await Application.findByIdAndDelete(application._id);
-        await Job.findByIdAndUpdate(jobId, {
-          $pull: { applications: application._id },
-        });
-      } catch (cleanupError) {
-        console.error("APPLY_TO_JOB_CLEANUP_ERROR", cleanupError);
-      }
+    if (error?.code === 11000) {
+      return res.status(400).json({ message: "Vous avez déjà postulé à cette offre." });
     }
 
+    console.error("APPLY_TO_JOB_ERROR", error);
     return res.status(500).json({
       error: "Erreur serveur lors de la création de la candidature.",
       details: error.message,
@@ -115,22 +93,18 @@ exports.applyToJob = async (req, res) => {
    ➤ Candidat : voir ses propres candidatures
 ============================================================ */
 exports.getMyApplications = async (req, res) => {
-  const candidateId = req.user.id;
+  const applicantId = req.user.id;
 
   try {
-    const applications = await Application.find({ candidate: candidateId })
+    const applications = await Application.find({ applicant: applicantId })
       .populate({
         path: "job",
         select: "title location contractType salaryRange recruiter",
-        populate: {
-          path: "recruiter",
-          select: "name companyName email avatar",
-        },
+        populate: { path: "recruiter", select: "name companyName email avatar" },
       })
       .sort({ createdAt: -1 });
 
     return res.status(200).json(applications);
-
   } catch (error) {
     return res.status(500).json({
       error: "Erreur serveur lors de la récupération des candidatures.",
@@ -145,18 +119,20 @@ exports.getMyApplications = async (req, res) => {
 ============================================================ */
 exports.getApplicationStatus = async (req, res) => {
   const { jobId } = req.query;
-  const candidateId = req.user.id;
+  const applicantId = req.user.id;
 
   try {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
       return res.status(400).json({ message: "Identifiant d'offre invalide." });
     }
 
-    const existing = await Application.findOne({
-      job: jobId,
-      candidate: candidateId,
-    }).select("_id");
+    const applicant = await User.findById(applicantId).select("email");
+    const applicantEmail = normalizeEmail(applicant?.email);
+    if (!applicantEmail) {
+      return res.status(400).json({ message: "Profil candidat incomplet." });
+    }
 
+    const existing = await Application.findOne({ job: jobId, applicantEmail }).select("_id");
     return res.status(200).json({ hasApplied: Boolean(existing) });
   } catch (error) {
     return res.status(500).json({
@@ -179,21 +155,17 @@ exports.getJobApplications = async (req, res) => {
       return res.status(400).json({ message: "Identifiant d'offre invalide." });
     }
 
-    // Vérifier que le job appartient au recruteur
     const job = await Job.findOne({ _id: jobId, recruiter: recruiterId });
-
     if (!job) {
-      return res.status(404).json({
-        message: "Offre introuvable ou non autorisée.",
-      });
+      return res.status(404).json({ message: "Offre introuvable ou non autorisée." });
     }
 
     const applications = await Application.find({ job: jobId })
-      .populate("candidate", "name email role avatar")
-      .sort({ createdAt: 1 });
+      .populate("applicant", "name email avatar role")
+      .sort({ createdAt: -1 })
+      .populate("job", "title location contractType workMode salaryRange");
 
     return res.status(200).json(applications);
-
   } catch (error) {
     return res.status(500).json({
       error: "Erreur serveur lors de la récupération des candidats.",
@@ -216,27 +188,17 @@ exports.updateApplicationStatus = async (req, res) => {
       return res.status(400).json({ message: "Identifiant de candidature invalide." });
     }
 
-    const application = await Application.findById(applicationId)
-      .populate("job", "recruiter");
+    const application = await Application.findById(applicationId).populate("job", "recruiter");
 
     if (!application) {
       return res.status(404).json({ message: "Candidature introuvable." });
     }
 
-    if (String(application.job.recruiter) !== recruiterId) {
-      return res.status(403).json({
-        message: "Vous n'êtes pas autorisé à modifier cette candidature.",
-      });
+    if (String(application.recruiter || application.job?.recruiter) !== recruiterId) {
+      return res.status(403).json({ message: "Vous n'êtes pas autorisé à modifier cette candidature." });
     }
 
-    const allowedStatuses = [
-      "Pending",
-      "Reviewing",
-      "Interview",
-      "Accepted",
-      "Rejected",
-    ];
-
+    const allowedStatuses = ["pending", "reviewed", "accepted", "rejected"];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: "Statut invalide." });
     }
@@ -249,7 +211,6 @@ exports.updateApplicationStatus = async (req, res) => {
       message: `Statut mis à jour : ${status}`,
       application,
     });
-
   } catch (error) {
     return res.status(500).json({
       error: "Erreur serveur lors de la mise à jour du statut.",
@@ -259,40 +220,19 @@ exports.updateApplicationStatus = async (req, res) => {
 };
 
 /* ============================================================
-   GET /api/applications/recruiter/all
+   GET /api/applications/recruiter
    ➤ Recruteur : voir toutes ses candidatures globales
 ============================================================ */
-exports.getAllApplicationsForRecruiter = async (req, res) => {
+exports.getRecruiterApplications = async (req, res) => {
   const recruiterId = req.user.id;
 
   try {
-    // 1️⃣ Récupérer les jobs du recruteur
-    const jobs = await Job.find({ recruiter: recruiterId }).select("_id title");
+    const applications = await Application.find({ recruiter: recruiterId })
+      .populate("applicant", "name email avatar role")
+      .populate("job", "title location contractType workMode salaryRange")
+      .sort({ createdAt: -1 });
 
-    const jobIds = jobs.map((j) => j._id);
-
-    // 2️⃣ Toutes les candidatures des jobs
-    const applications = await Application.find({
-      job: { $in: jobIds },
-    })
-      .populate("candidate", "name email avatar role")
-      .populate("job", "title location contractType")
-      .lean();
-
-    // 3️⃣ Trier : actifs en haut, rejetés en bas
-    const sorted = applications.sort((a, b) => {
-      const order = {
-        Pending: 1,
-        Reviewing: 2,
-        Interview: 3,
-        Accepted: 4,
-        Rejected: 5,
-      };
-      return order[a.status] - order[b.status];
-    });
-
-    return res.status(200).json(sorted);
-
+    return res.status(200).json(applications);
   } catch (error) {
     return res.status(500).json({
       error: "Erreur serveur lors de la récupération des candidatures recruteur.",
@@ -300,3 +240,8 @@ exports.getAllApplicationsForRecruiter = async (req, res) => {
     });
   }
 };
+
+/* ============================================================
+   LEGACY: GET /api/applications/recruiter/all (compat)
+============================================================ */
+exports.getAllApplicationsForRecruiter = exports.getRecruiterApplications;

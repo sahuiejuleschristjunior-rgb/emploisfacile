@@ -258,7 +258,7 @@ exports.getMyJobs = async (req, res) => {
             .populate({
                 path: "applications",
                 populate: {
-                    path: "candidate",
+                    path: "applicant",
                     select: "name email avatar role",
                 },
             })
@@ -290,9 +290,17 @@ exports.applyToJob = async (req, res) => {
         }
 
         // Vérifier doublon
+        const candidate = await require("../models/User").findById(candidateId).select("name email");
+
+        if (!candidate?.email) {
+            return res.status(400).json({
+                message: "Votre profil ne contient pas d'email valide.",
+            });
+        }
+
         const existing = await Application.findOne({
             job: jobId,
-            candidate: candidateId,
+            applicantEmail: (candidate.email || "").toLowerCase().trim(),
         });
 
         if (existing) {
@@ -304,8 +312,11 @@ exports.applyToJob = async (req, res) => {
         // Créer candidature
         const application = await Application.create({
             job: jobId,
-            candidate: candidateId,
-            status: "Pending",
+            recruiter: job.recruiter,
+            applicant: candidateId,
+            applicantName: candidate.name || candidate.email,
+            applicantEmail: (candidate.email || "").toLowerCase().trim(),
+            status: "pending",
         });
 
         // 🔥 AJOUT AUTOMATIQUE SUR LE JOB

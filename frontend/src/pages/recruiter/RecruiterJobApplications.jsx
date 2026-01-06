@@ -103,14 +103,18 @@ export default function RecruiterJobApplications() {
   ============================================================ */
   const renderStatusBadge = (status) => {
     const labels = {
-      Pending: "En attente",
-      Reviewing: "En cours d'étude",
-      Interview: "Entretien",
-      Accepted: "Accepté",
-      Rejected: "Rejeté",
+      pending: "En attente",
+      reviewed: "En cours d'étude",
+      accepted: "Accepté",
+      rejected: "Rejeté",
     };
 
-    return <span className={`status-badge status-badge--${status.toLowerCase()}`}>{labels[status]}</span>;
+    const normalized = (status || "pending").toLowerCase();
+    return (
+      <span className={`status-badge status-badge--${normalized}`}>
+        {labels[normalized] || normalized}
+      </span>
+    );
   };
 
   /* ============================================================
@@ -153,7 +157,9 @@ export default function RecruiterJobApplications() {
      AFFICHAGE D'UNE CANDIDATURE
   ============================================================ */
   const renderApplicationItem = (app) => {
-    const c = app.candidate || {};
+    const c = app.applicant || {};
+    const name = app.applicantName || c.name || "Candidat";
+    const email = app.applicantEmail || c.email || "Email non communiqué";
 
     return (
       <div key={app._id} className="recruiter-app-item">
@@ -163,18 +169,18 @@ export default function RecruiterJobApplications() {
         <div className="recruiter-app-main">
           <div className="recruiter-app-avatar">
             {c.avatar ? (
-              <img src={c.avatar} alt={c.name} loading="lazy" />
+              <img src={c.avatar} alt={name} loading="lazy" />
             ) : (
               <div className="recruiter-app-avatar-fallback">
-                {(c.name || "?").charAt(0).toUpperCase()}
+                {(name || "?").charAt(0).toUpperCase()}
               </div>
             )}
           </div>
 
           <div className="recruiter-app-info">
             <div className="recruiter-app-name-row">
-              <div className="recruiter-app-name">{c.name || "Candidat"}</div>
-              <div className="recruiter-app-email">{c.email}</div>
+              <div className="recruiter-app-name">{name}</div>
+              <div className="recruiter-app-email">{email}</div>
             </div>
 
             <div className="recruiter-app-meta">
@@ -198,11 +204,10 @@ export default function RecruiterJobApplications() {
               disabled={updatingId === app._id}
               onChange={(e) => handleStatusChange(app._id, e.target.value)}
             >
-              <option value="Pending">En attente</option>
-              <option value="Reviewing">En cours d'étude</option>
-              <option value="Interview">Entretien</option>
-              <option value="Accepted">Accepté</option>
-              <option value="Rejected">Rejeté</option>
+              <option value="pending">En attente</option>
+              <option value="reviewed">En cours d'étude</option>
+              <option value="accepted">Accepté</option>
+              <option value="rejected">Rejeté</option>
             </select>
           </div>
 
@@ -243,21 +248,21 @@ export default function RecruiterJobApplications() {
             </button>
           </div>
         </div>
-        <div className="hero__highlights">
-          <div className="hero-chip">
-            <span>Total</span>
-            <strong>{applications.length}</strong>
+          <div className="hero__highlights">
+            <div className="hero-chip">
+              <span>Total</span>
+              <strong>{applications.length}</strong>
+            </div>
+            <div className="hero-chip">
+              <span>En attente</span>
+              <strong>{applications.filter((app) => (app.status || "").toLowerCase() === "pending").length}</strong>
+            </div>
+            <div className="hero-chip">
+              <span>Revues</span>
+              <strong>{applications.filter((app) => (app.status || "").toLowerCase() === "reviewed").length}</strong>
+            </div>
           </div>
-          <div className="hero-chip">
-            <span>En attente</span>
-            <strong>{applications.filter((app) => app.status === "Pending").length}</strong>
-          </div>
-          <div className="hero-chip">
-            <span>Entretiens</span>
-            <strong>{applications.filter((app) => app.status === "Interview").length}</strong>
-          </div>
-        </div>
-      </section>
+        </section>
 
       <section className="card recruiter-apps-card">
         <div className="card-header recruiter-apps-card-header">

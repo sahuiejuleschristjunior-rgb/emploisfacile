@@ -128,16 +128,14 @@ export default function useCandidateDashboardData() {
     const groups = {
       applied: [],
       inReview: [],
-      interview: [],
       offer: [],
       rejected: [],
     };
 
     for (const app of applications) {
-      const status = (app.status || "Pending").toLowerCase();
+      const status = (app.status || "pending").toLowerCase();
       if (status === "pending") groups.applied.push(app);
-      else if (status === "reviewing") groups.inReview.push(app);
-      else if (status === "interview") groups.interview.push(app);
+      else if (status === "reviewed") groups.inReview.push(app);
       else if (status === "accepted") groups.offer.push(app);
       else if (status === "rejected") groups.rejected.push(app);
       else groups.applied.push(app);
@@ -146,7 +144,7 @@ export default function useCandidateDashboardData() {
   }, [applications]);
 
   const totalApplications = applications.length;
-  const upcomingInterviews = groupedApps.interview.length;
+  const upcomingInterviews = groupedApps.inReview.length;
 
   const profileCompletion = Math.min(
     Math.max(Number(user?.profileCompletion || user?.completion || 0), 0),
@@ -167,14 +165,14 @@ export default function useCandidateDashboardData() {
   }, [applications]);
 
   const upcomingAgenda = useMemo(() => {
-    return groupedApps.interview.slice(0, 3).map((app) => ({
-      title: app.job?.title || "Entretien prévu",
+    return groupedApps.inReview.slice(0, 3).map((app) => ({
+      title: app.job?.title || "Candidature en revue",
       company: app.job?.recruiter?.companyName || app.job?.recruiter?.name,
-      when: app.interviewDate || app.updatedAt || app.createdAt,
+      when: app.reviewedAt || app.updatedAt || app.createdAt,
       recruiter: app.job?.recruiter,
       job: app.job,
     }));
-  }, [groupedApps.interview]);
+  }, [groupedApps.inReview]);
 
   return {
     user,

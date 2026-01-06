@@ -67,16 +67,14 @@ export default function useRecruiterDashboardData() {
     const groups = {
       applied: [],
       inReview: [],
-      interview: [],
       offer: [],
       rejected: [],
     };
 
     for (const app of applications) {
-      const status = (app.status || "Pending").toLowerCase();
+      const status = (app.status || "pending").toLowerCase();
       if (status === "pending") groups.applied.push(app);
-      else if (status === "reviewing") groups.inReview.push(app);
-      else if (status === "interview") groups.interview.push(app);
+      else if (status === "reviewed") groups.inReview.push(app);
       else if (status === "accepted") groups.offer.push(app);
       else if (status === "rejected") groups.rejected.push(app);
       else groups.applied.push(app);
@@ -96,14 +94,14 @@ export default function useRecruiterDashboardData() {
   }, [applications]);
 
   const upcomingInterviews = useMemo(() => {
-    return groupedApps.interview
+    return groupedApps.inReview
       .map((app) => ({
         ...app,
-        when: app.interviewDate || app.updatedAt || app.createdAt,
+        when: app.reviewedAt || app.updatedAt || app.createdAt,
       }))
       .sort((a, b) => new Date(a.when) - new Date(b.when))
       .slice(0, 3);
-  }, [groupedApps.interview]);
+  }, [groupedApps.inReview]);
 
   const activeJobs = jobs.length;
   const totalApplications = applications.length;

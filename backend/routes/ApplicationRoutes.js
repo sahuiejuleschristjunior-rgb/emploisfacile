@@ -60,6 +60,14 @@ router.get(
 // GET /api/applications/all
 // ➤ Recruteur : voir toutes ses candidatures (tous jobs confondus)
 router.get(
+    '/recruiter',
+    isAuthenticated,
+    isRecruiter,
+    ApplicationController.getRecruiterApplications
+);
+
+// GET /api/applications/all (legacy)
+router.get(
     '/all',
     isAuthenticated,
     isRecruiter,
