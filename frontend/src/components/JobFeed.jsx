@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../api/config";
 import { getImageUrl } from "../utils/imageUtils";
 import "../styles/JobFeed.css";
 
@@ -15,9 +16,7 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
   const [cityFilter, setCityFilter] = useState("");
   const [contractFilter, setContractFilter] = useState("");
   const [modeFilter, setModeFilter] = useState("");
-
   const token = localStorage.getItem("token");
-  const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
   const navigate = useNavigate();
   const searchAbortRef = useRef(null);
 
@@ -108,7 +107,7 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [API_URL, token, searchQuery, cityFilter, contractFilter, modeFilter]);
+  }, [token, searchQuery, cityFilter, contractFilter, modeFilter]);
 
   const cityOptions = useMemo(() => {
     const values = collectOptions(jobs.map((job) => job.location || job.city));
