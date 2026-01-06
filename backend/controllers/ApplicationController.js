@@ -2,14 +2,17 @@ const mongoose = require("mongoose");
 const Application = require("../models/Application");
 const Job = require("../models/Job");
 const User = require("../models/User");
+const mailer = require("../utils/mailer");
 
 /* ============================================================
    POST /api/applications
    ➤ Le candidat postule à une offre
 ============================================================ */
 exports.applyToJob = async (req, res) => {
-  const { jobId, message } = req.body;
+  const { jobId, message, applicantName, applicantEmail } = req.body;
   const candidateId = req.user.id;
+
+  let application = null;
 
   try {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
@@ -17,9 +20,14 @@ exports.applyToJob = async (req, res) => {
     }
 
     // Vérifier que le job existe
-    const job = await Job.findById(jobId);
+    const job = await Job.findById(jobId).populate("recruiter", "name email companyName");
     if (!job) {
       return res.status(404).json({ message: "Offre d'emploi introuvable." });
+    }
+
+    const recruiterEmail = job.recruiter?.email;
+    if (!recruiterEmail) {
+      return res.status(400).json({ message: "Aucun contact recruteur disponible pour cette offre." });
     }
 
     // Empêcher la double candidature
@@ -34,17 +42,45 @@ exports.applyToJob = async (req, res) => {
       });
     }
 
+    const candidate = await User.findById(candidateId).select("name email role");
+    const applicantDisplayName =
+      (typeof applicantName === "string" && applicantName.trim()) ||
+      candidate?.name ||
+      "Candidat EmploisFacile";
+    const applicantDisplayEmail =
+      (typeof applicantEmail === "string" && applicantEmail.trim()) || candidate?.email;
+
+    if (!applicantDisplayEmail) {
+      return res.status(400).json({ message: "Email candidat manquant. Mettez à jour votre profil pour postuler." });
+    }
+
+    const finalMessage =
+      typeof message === "string" && message.trim().length
+        ? message.trim()
+        : `Bonjour,\n\nJe souhaite postuler au poste ${job.title} au sein de ${job.recruiter?.companyName || job.recruiter?.name || "votre entreprise"}.\n\n${applicantDisplayName}`;
+
     // Créer la candidature
-    const application = await Application.create({
+    application = await Application.create({
       job: jobId,
       candidate: candidateId,
-      message: message || "",
+      message: finalMessage,
       status: "Pending",
     });
 
     // Ajouter la candidature dans le Job
     await Job.findByIdAndUpdate(jobId, {
       $push: { applications: application._id },
+    });
+
+    const mailSubject = `Nouvelle candidature – ${job.title || "Offre"}`;
+    await mailer.sendApplicationEmail({
+      to: recruiterEmail,
+      subject: mailSubject,
+      applicantName: applicantDisplayName,
+      applicantEmail: applicantDisplayEmail,
+      message: finalMessage,
+      jobTitle: job.title,
+      recruiterName: job.recruiter?.name || job.recruiter?.companyName,
     });
 
     return res.status(201).json({
@@ -54,6 +90,19 @@ exports.applyToJob = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("APPLY_TO_JOB_ERROR", error);
+
+    if (application?._id) {
+      try {
+        await Application.findByIdAndDelete(application._id);
+        await Job.findByIdAndUpdate(jobId, {
+          $pull: { applications: application._id },
+        });
+      } catch (cleanupError) {
+        console.error("APPLY_TO_JOB_CLEANUP_ERROR", cleanupError);
+      }
+    }
+
     return res.status(500).json({
       error: "Erreur serveur lors de la création de la candidature.",
       details: error.message,

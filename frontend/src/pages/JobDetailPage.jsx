@@ -29,6 +29,17 @@ export default function JobDetailPage() {
   const [error, setError] = useState(null);
   const [similarJobs, setSimilarJobs] = useState([]);
   const [applyMessage, setApplyMessage] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
+
+  const currentUser = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (err) {
+      console.error("USER_PARSE_ERROR", err);
+      return null;
+    }
+  }, []);
 
   const handleBack = useCallback(() => {
     if (location.state?.from === "/emplois") {
@@ -159,9 +170,14 @@ export default function JobDetailPage() {
     };
   }, [job]);
 
-  const handleApply = useCallback(() => {
-    console.warn("[JobDetail] Bouton Postuler cliqué", { jobId: id, title: job?.title });
+  const handleApply = useCallback(async () => {
+    console.info("[JobDetail] Bouton Postuler cliqué", { jobId: id, title: job?.title });
     setApplyMessage("");
+
+    if (!jobDetails) {
+      setApplyMessage("Offre non disponible pour le moment.");
+      return;
+    }
 
     if (!token) {
       setApplyMessage("Veuillez vous connecter pour poursuivre votre candidature.");
@@ -175,18 +191,65 @@ export default function JobDetailPage() {
       return;
     }
 
-    if (jobDetails?.recruiterEmail && jobDetails.recruiterEmail !== "Email non communiqué") {
-      setApplyMessage("Ouverture de votre messagerie pour contacter le recruteur...");
-      const subject = encodeURIComponent(`Candidature - ${job?.title || "Offre"}`);
-      const body = encodeURIComponent(
-        "Bonjour,\n\nJe suis intéressé(e) par votre offre et souhaite postuler.\n\nMerci,"
-      );
-      window.location.href = `mailto:${jobDetails.recruiterEmail}?subject=${subject}&body=${body}`;
+    const applicantName =
+      currentUser?.name || currentUser?.fullName || currentUser?.companyName || "Candidat EmploisFacile";
+    const applicantEmail =
+      currentUser?.email ||
+      currentUser?.professionalProfile?.email ||
+      currentUser?.candidateProfile?.email ||
+      null;
+
+    if (!applicantEmail) {
+      setApplyMessage("Votre profil ne contient pas d'email valide pour envoyer la candidature.");
       return;
     }
 
-    setApplyMessage("Votre intérêt est enregistré. Le recruteur n'a pas encore renseigné d'email.");
-  }, [id, job?.title, jobDetails?.recruiterEmail, location.pathname, location.search, navigate, token]);
+    const defaultMessage = `Bonjour,\n\nJe souhaite postuler au poste ${job?.title || ""} chez ${
+      jobDetails.companyName || resolveCompanyName(job)
+    }.\n\n${applicantName}\n${applicantEmail}`;
+
+    try {
+      setIsApplying(true);
+      setApplyMessage("Envoi de votre candidature en cours...");
+
+      const res = await fetch(`${API_URL}/applications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          jobId: id,
+          applicantName,
+          applicantEmail,
+          message: defaultMessage,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || "Impossible d'envoyer votre candidature.");
+      }
+
+      setApplyMessage("Candidature envoyée");
+    } catch (err) {
+      console.error("APPLY_ERROR", err);
+      setApplyMessage(err.message || "Erreur lors de l'envoi de votre candidature.");
+    } finally {
+      setIsApplying(false);
+    }
+  }, [
+    API_URL,
+    currentUser,
+    id,
+    job,
+    job?.title,
+    jobDetails,
+    location.pathname,
+    location.search,
+    navigate,
+    token,
+  ]);
 
   if (loading) {
     return (
@@ -252,8 +315,8 @@ export default function JobDetailPage() {
             </div>
             <p className="hero__hint">Offre publiée le {jobDetails.publishedAt}</p>
             <div className="hero__actions">
-              <button className="primary-btn" type="button" onClick={handleApply}>
-                Postuler maintenant
+              <button className="primary-btn" type="button" onClick={handleApply} disabled={isApplying}>
+                {isApplying ? "Envoi..." : "Postuler maintenant"}
               </button>
               <button className="primary-btn ghost" type="button">
                 Contacter le recruteur
