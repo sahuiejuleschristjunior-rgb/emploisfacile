@@ -1,9 +1,9 @@
 import { useEffect, useState, useId } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Post from "../components/Post";
+import PostFeed from "../components/PostFeed";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import "../styles/profil.css";
-import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
+import { filterHiddenPosts } from "../utils/hiddenPosts";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -211,26 +211,13 @@ export default function ProfilPage() {
       const list = await res.json();
 
       if (res.ok && Array.isArray(list)) {
-        const normalized = list.map((p) => ({
-          ...p,
-          media: p.media?.map((m) => ({
-            ...m,
-            url: fixUrl(m.url),
-          })),
-        }));
-
-        setPosts(filterHiddenPosts(normalized, currentUser?._id));
+        setPosts(filterHiddenPosts(list, currentUser?._id));
       }
     } catch (err) {
       console.error("POST ERROR:", err);
     }
 
     setLoading(false);
-  };
-
-  const handleHidePost = (postId) => {
-    rememberHiddenPost(postId, currentUser?._id);
-    setPosts((prev) => filterHiddenPosts(prev, currentUser?._id));
   };
 
   const photoItems = posts
@@ -261,6 +248,7 @@ export default function ProfilPage() {
   }
 
   const isOwner = currentUser?._id === profileId;
+  const isAdmin = (currentUser?.role || "").toLowerCase() === "admin";
 
   const coverURL = user.coverPhoto || "/default-cover.jpg";
   const avatarURL = user.avatar || "/default-avatar.png";
@@ -477,18 +465,20 @@ export default function ProfilPage() {
 
             <div className="profil-col">
               <div className="profil-posts">
-                {posts.length === 0 ? (
+                {posts.length === 0 && !loading ? (
                   <div className="profil-empty">Aucune publication.</div>
                 ) : (
-                  posts.map((p) => (
-                    <Post
-                      key={p._id}
-                      post={p}
-                      currentUser={currentUser}
-                      onMediaClick={(items, start) => openPhotoViewer(items, start)}
-                      onHidePost={handleHidePost}
-                    />
-                  ))
+                  <PostFeed
+                    posts={posts}
+                    setPosts={setPosts}
+                    currentUserId={currentUser?._id}
+                    isAdmin={isAdmin}
+                    token={token}
+                    apiUrl={API_URL}
+                    filterPosts={(list) => filterHiddenPosts(list, currentUser?._id)}
+                    context="profile"
+                    loadingInitial={loading}
+                  />
                 )}
               </div>
             </div>
