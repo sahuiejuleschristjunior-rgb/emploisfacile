@@ -371,75 +371,77 @@ export default function PostCard({
       data-context={context}
     >
       <article className="fb-post">
-        <div className="fb-post-header">
-          <button
-            type="button"
-            className="fb-post-avatar avatar-link"
-            style={postAvatarStyle}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (authorProfilePath) nav(authorProfilePath);
-            }}
-            aria-label="Ouvrir le profil"
-          />
-          <div className="fb-post-user">
-            <div className="fb-post-author">{displayName}</div>
-            <div className="fb-post-meta">
-              {new Date(post.createdAt).toLocaleString()}
-              {isSponsored && (
-                <span className="fb-sponsored-badge">Sponsorisé</span>
-              )}
-            </div>
-            {isSharedPost && (
-              <div className="fb-post-meta fb-post-meta-shared">
-                Partagé par {sharedByName || "un utilisateur"}
+        <div className="fb-post-content">
+          <div className="fb-post-header">
+            <button
+              type="button"
+              className="fb-post-avatar avatar-link"
+              style={postAvatarStyle}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (authorProfilePath) nav(authorProfilePath);
+              }}
+              aria-label="Ouvrir le profil"
+            />
+            <div className="fb-post-user">
+              <div className="fb-post-author">{displayName}</div>
+              <div className="fb-post-meta">
+                {new Date(post.createdAt).toLocaleString()}
+                {isSponsored && (
+                  <span className="fb-sponsored-badge">Sponsorisé</span>
+                )}
               </div>
-            )}
-          </div>
-          <div className="fb-post-menu fb-post-menu-container">
-            <button className="fb-post-menu-btn" onClick={toggleMenu}>
-              ⋯
-            </button>
-
-            <div
-              className={`fb-post-menu-popup ${isMenuOpen ? "open" : ""}`}
-              onClick={(event) => event.stopPropagation()}
-            >
-              {permissions.canEdit && (
-                <button onClick={() => onOpenEditPost?.(post)}>
-                  Modifier la publication
-                </button>
-              )}
-
-              {permissions.canDelete && (
-                <button
-                  className="danger"
-                  onClick={() => onDeletePost?.(post._id)}
-                >
-                  Supprimer
-                </button>
-              )}
-
-              {permissions.canHide && (
-                <button onClick={() => onHidePost?.(post._id)}>
-                  Masquer la publication
-                </button>
-              )}
-
-              {permissions.canReport && (
-                <button onClick={() => onReportPost?.(post)}>
-                  Signaler
-                </button>
+              {isSharedPost && (
+                <div className="fb-post-meta fb-post-meta-shared">
+                  Partagé par {sharedByName || "un utilisateur"}
+                </div>
               )}
             </div>
-          </div>
-        </div>
+            <div className="fb-post-menu fb-post-menu-container">
+              <button className="fb-post-menu-btn" onClick={toggleMenu}>
+                ⋯
+              </button>
 
-        {post.text && (
-          <div className="fb-post-text">
-            <TextClamp text={post.text} className="text-content" />
+              <div
+                className={`fb-post-menu-popup ${isMenuOpen ? "open" : ""}`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {permissions.canEdit && (
+                  <button onClick={() => onOpenEditPost?.(post)}>
+                    Modifier la publication
+                  </button>
+                )}
+
+                {permissions.canDelete && (
+                  <button
+                    className="danger"
+                    onClick={() => onDeletePost?.(post._id)}
+                  >
+                    Supprimer
+                  </button>
+                )}
+
+                {permissions.canHide && (
+                  <button onClick={() => onHidePost?.(post._id)}>
+                    Masquer la publication
+                  </button>
+                )}
+
+                {permissions.canReport && (
+                  <button onClick={() => onReportPost?.(post)}>
+                    Signaler
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-        )}
+
+          {post.text && (
+            <div className="fb-post-text">
+              <TextClamp text={post.text} className="text-content" />
+            </div>
+          )}
+        </div>
 
         {(imageMedia.length > 0 || otherMedia.length > 0) && (
           <div
@@ -533,75 +535,80 @@ export default function PostCard({
           </div>
         )}
 
-        <div className="fb-post-stats">
-          <div className="fb-post-stats-left">
-            {likes > 0 && (
-              <>
-                <span className="fb-reactions-bubble">
-                  <FBIcon name="like" size={14} />
+        <div className="fb-post-content fb-post-content--footer">
+          <div className="fb-post-stats">
+            <div className="fb-post-stats-left">
+              {likes > 0 && (
+                <>
+                  <span className="fb-reactions-bubble">
+                    <FBIcon name="like" size={14} />
+                  </span>
+                  <button
+                    type="button"
+                    className="fb-post-stats-text"
+                    style={textButtonStyle}
+                    onClick={handleOpenLikesCount}
+                  >
+                    {likes} j’aime
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="fb-post-stats-right">
+              <button
+                type="button"
+                className="fb-post-stats-text fb-comments-link"
+                style={textButtonStyle}
+                onClick={handleOpenCommentsCount}
+              >
+                {commentsCount} commentaires
+              </button>
+            </div>
+          </div>
+
+          <div className="fb-post-actions">
+            <button
+              className="fb-post-action-btn"
+              onClick={() => onLike?.(post)}
+            >
+              <FBIcon name="like" size={18} /> J’aime
+            </button>
+
+            <button className="fb-post-action-btn" onClick={handleOpenComments}>
+              <FBIcon name="comment" size={18} /> Commenter
+            </button>
+
+            <button
+              className="fb-post-action-btn"
+              disabled={sharingPostIds[post._id] || !canShare}
+              onClick={() => onShare?.(post)}
+            >
+              <FBIcon name="share" size={18} />
+              {sharingPostIds[post._id] ? "Partage…" : "Partager"}
+            </button>
+
+            {canSponsor && (
+              <button
+                className="fb-post-action-btn fb-sponsor-menu"
+                onClick={() => onSponsor?.(post)}
+              >
+                <span className="fb-sponsor-icon" aria-hidden="true">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M4 14.5V5.8c0-.6.4-1.1 1-1.3l10.3-3.3c.8-.2 1.6.4 1.6 1.2V6l2.3.7c.5.2.8.6.8 1.1v4.4c0 .5-.3 1-.8 1.1l-2.3.7v3.5c0 .8-.8 1.4-1.6 1.2L5 15.7c-.6-.2-1-.7-1-1.2Z" />
+                    <path d="M4 18.5c0-1 .9-1.8 2-1.5l2.4.7c.9.3 1.6 1.1 1.6 2v2.5c0 1-.9 1.8-2 1.5l-2.4-.7c-.9-.3-1.6-1.1-1.6-2v-2.5Z" />
+                  </svg>
                 </span>
-                <button
-                  type="button"
-                  className="fb-post-stats-text"
-                  style={textButtonStyle}
-                  onClick={handleOpenLikesCount}
-                >
-                  {likes} j’aime
-                </button>
-              </>
+                Sponsoriser
+              </button>
             )}
           </div>
-
-          <div className="fb-post-stats-right">
-            <button
-              type="button"
-              className="fb-post-stats-text fb-comments-link"
-              style={textButtonStyle}
-              onClick={handleOpenCommentsCount}
-            >
-              {commentsCount} commentaires
-            </button>
-          </div>
-        </div>
-
-        <div className="fb-post-actions">
-          <button className="fb-post-action-btn" onClick={() => onLike?.(post)}>
-            <FBIcon name="like" size={18} /> J’aime
-          </button>
-
-          <button className="fb-post-action-btn" onClick={handleOpenComments}>
-            <FBIcon name="comment" size={18} /> Commenter
-          </button>
-
-          <button
-            className="fb-post-action-btn"
-            disabled={sharingPostIds[post._id] || !canShare}
-            onClick={() => onShare?.(post)}
-          >
-            <FBIcon name="share" size={18} />
-            {sharingPostIds[post._id] ? "Partage…" : "Partager"}
-          </button>
-
-          {canSponsor && (
-            <button
-              className="fb-post-action-btn fb-sponsor-menu"
-              onClick={() => onSponsor?.(post)}
-            >
-              <span className="fb-sponsor-icon" aria-hidden="true">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M4 14.5V5.8c0-.6.4-1.1 1-1.3l10.3-3.3c.8-.2 1.6.4 1.6 1.2V6l2.3.7c.5.2.8.6.8 1.1v4.4c0 .5-.3 1-.8 1.1l-2.3.7v3.5c0 .8-.8 1.4-1.6 1.2L5 15.7c-.6-.2-1-.7-1-1.2Z" />
-                  <path d="M4 18.5c0-1 .9-1.8 2-1.5l2.4.7c.9.3 1.6 1.1 1.6 2v2.5c0 1-.9 1.8-2 1.5l-2.4-.7c-.9-.3-1.6-1.1-1.6-2v-2.5Z" />
-                </svg>
-              </span>
-              Sponsoriser
-            </button>
-          )}
         </div>
       </article>
     </div>
