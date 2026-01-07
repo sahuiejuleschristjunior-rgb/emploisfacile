@@ -104,6 +104,14 @@ const messageSchema = new mongoose.Schema(
         type: String,
         default: "audio/webm",
       },
+      mimeType: {
+        type: String,
+        default: "audio/webm",
+      },
+      size: {
+        type: Number,
+        default: 0,
+      },
     },
 
     // Réponse à un autre message (optionnel)

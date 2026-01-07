@@ -3,6 +3,7 @@ import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import "../styles/messages.css";
 import VideoCallOverlay from "../components/VideoCallOverlay";
+import VoiceRecorderOverlay from "../components/VoiceRecorderOverlay";
 import {
   acceptMessageRequest,
   blockMessageRequest,
@@ -11,10 +12,12 @@ import {
   fetchInbox,
   sendMessagePayload,
   uploadMessageFile,
+  uploadVoiceNote,
 } from "../api/messagesApi";
 import { fetchFriends } from "../api/socialApi";
 import { useActiveConversation } from "../context/ActiveConversationContext";
 import { useNotifications } from "../context/NotificationContext";
+import useVoiceRecorder from "../hooks/useVoiceRecorder";
 
 const API_URL = import.meta.env.VITE_API_URL;
 const API_HOST = API_URL?.replace(/\/?api$/, "");
@@ -30,6 +33,8 @@ const ALLOWED_MESSAGE_MIME_TYPES = new Set([
   "image/png",
 ]);
 const MESSAGE_FILE_ACCEPT = ".pdf,.doc,.docx,image/jpeg,image/png";
+const CANCEL_THRESHOLD_X = 80;
+const LOCK_THRESHOLD_Y = 60;
 
 const ensureJsonResponse = async (res) => {
   const contentType = res.headers.get("content-type");
@@ -232,7 +237,6 @@ export default function Messages() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [pendingFile, setPendingFile] = useState(null);
-  const [pendingAudio, setPendingAudio] = useState(null);
   const [reactionPicker, setReactionPicker] = useState({
     messageId: null,
     anchor: null,
@@ -257,18 +261,27 @@ export default function Messages() {
       if (pendingFile?.previewUrl) {
         URL.revokeObjectURL(pendingFile.previewUrl);
       }
-      if (pendingAudio?.previewUrl) {
-        URL.revokeObjectURL(pendingAudio.previewUrl);
-      }
     };
-  }, [pendingFile, pendingAudio]);
+  }, [pendingFile]);
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordCanceled, setRecordCanceled] = useState(false);
-  const [recordLocked, setRecordLocked] = useState(false);
-  const [recordTime, setRecordTime] = useState(0);
-  const [recordOffset, setRecordOffset] = useState(0);
-  const [recordLevel, setRecordLevel] = useState(0);
+  const {
+    status: voiceStatus,
+    timeSec: voiceTimeSec,
+    waveformLevel,
+    previewBlob,
+    previewUrl,
+    durationSec,
+    mimeType: voiceMimeType,
+    errorMessage: voiceErrorMessage,
+    start: startVoiceRecording,
+    stop: stopVoiceRecording,
+    cancel: cancelVoiceRecording,
+    lock: lockVoiceRecording,
+    reset: resetVoiceRecording,
+  } = useVoiceRecorder();
+
+  const [voiceCancelFeedback, setVoiceCancelFeedback] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
 
   const [audioStatus, setAudioStatus] = useState({});
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
@@ -280,19 +293,6 @@ export default function Messages() {
     offer: null,
     otherUser: null,
   });
-
-  const recordStartRef = useRef(null);
-  const recordTimerRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordingChunksRef = useRef([]);
-  const audioContextRef = useRef(null);
-  const audioAnalyserRef = useRef(null);
-  const audioGainRef = useRef(null);
-  const audioFilterRef = useRef(null);
-  const recordVizFrame = useRef(null);
-  const recordLevelBarRef = useRef(null);
-  const recordCanceledRef = useRef(false);
-  const activeStreamRef = useRef(null);
 
   const audioRefs = useRef({});
   const fileInputRef = useRef(null);
@@ -313,6 +313,8 @@ export default function Messages() {
   const inputRef = useRef(null);
   const messageRefs = useRef({});
   const [typingState, setTypingState] = useState({});
+  const actionButtonRef = useRef(null);
+  const voiceGestureRef = useRef(null);
 
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -342,6 +344,26 @@ export default function Messages() {
   }, [lockedConversationId]);
 
   const navigationHandledRef = useRef(null);
+
+  useEffect(() => {
+    if (voiceErrorMessage) {
+      setInfoBanner(voiceErrorMessage);
+    }
+  }, [voiceErrorMessage]);
+
+  useEffect(() => {
+    const isActive = voiceStatus === "recording" || voiceStatus === "locked";
+    document.body.classList.toggle("voice-recording-active", isActive);
+    return () => document.body.classList.remove("voice-recording-active");
+  }, [voiceStatus]);
+
+  useEffect(() => {
+    setPreviewPlaying(false);
+    if (audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      audioPreviewRef.current.currentTime = 0;
+    }
+  }, [previewUrl]);
 
   /* =====================================================
      HELPERS
@@ -1735,8 +1757,6 @@ export default function Messages() {
   const submitMessage = async () => {
     if (editingMessage) {
       await saveEditedMessage();
-    } else if (pendingAudio) {
-      await sendAudioMessage(replyTo);
     } else if (pendingFile) {
       await sendFileMessage();
     } else {
@@ -1876,266 +1896,104 @@ export default function Messages() {
   /* =====================================================
      AUDIO
   ===================================================== */
-  const stopRecordVisualization = () => {
-    if (recordVizFrame.current) {
-      cancelAnimationFrame(recordVizFrame.current);
-      recordVizFrame.current = null;
-    }
-  };
-
-  const cleanupAudioContext = () => {
-    if (activeStreamRef.current) {
-      activeStreamRef.current.getTracks().forEach((t) => t.stop());
-      activeStreamRef.current = null;
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    audioAnalyserRef.current = null;
-    audioGainRef.current = null;
-    audioFilterRef.current = null;
-  };
-
-  const startRecording = async (event) => {
-    if (!activeChat || isRecording || pendingAudio || pendingFile) return;
-    clearInterval(recordTimerRef.current);
-    stopRecordVisualization();
-
-    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-
-    recordStartRef.current = { at: Date.now(), x: clientX, y: clientY };
-    setRecordTime(0);
-    setRecordOffset(0);
-    setRecordCanceled(false);
-    setRecordLocked(false);
-    setRecordLevel(0);
-    recordCanceledRef.current = false;
-    recordingChunksRef.current = [];
-
-    recordTimerRef.current = setInterval(() => {
-      setRecordTime(Date.now() - (recordStartRef.current?.at || Date.now()));
-    }, 200);
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          noiseSuppression: true,
-          echoCancellation: true,
-          autoGainControl: true,
-        },
-      });
-      activeStreamRef.current = stream;
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = 3.2;
-
-      const highPassFilter = audioContext.createBiquadFilter();
-      highPassFilter.type = "highpass";
-      highPassFilter.frequency.value = 140;
-      highPassFilter.Q.value = 0.7;
-
-      const noiseCutFilter = audioContext.createBiquadFilter();
-      noiseCutFilter.type = "lowpass";
-      noiseCutFilter.frequency.value = 7200;
-      noiseCutFilter.Q.value = 0.9;
-
-      const echoReducer = audioContext.createDynamicsCompressor();
-      echoReducer.threshold.setValueAtTime(-48, audioContext.currentTime);
-      echoReducer.knee.setValueAtTime(20, audioContext.currentTime);
-      echoReducer.ratio.setValueAtTime(8, audioContext.currentTime);
-      echoReducer.attack.setValueAtTime(0.002, audioContext.currentTime);
-      echoReducer.release.setValueAtTime(0.25, audioContext.currentTime);
-
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      const destination = audioContext.createMediaStreamDestination();
-
-      source.connect(gainNode);
-      gainNode.connect(highPassFilter);
-      highPassFilter.connect(noiseCutFilter);
-      noiseCutFilter.connect(echoReducer);
-      echoReducer.connect(analyser);
-      analyser.connect(destination);
-
-      const preferredMime = "audio/webm;codecs=opus";
-      const fallbackMime = "audio/webm";
-      const mimeType = MediaRecorder.isTypeSupported?.(preferredMime)
-        ? preferredMime
-        : fallbackMime;
-      const recorder = new MediaRecorder(destination.stream, { mimeType });
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          recordingChunksRef.current.push(e.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        const duration = Date.now() - (recordStartRef.current?.at || Date.now());
-        const canceled = recordCanceledRef.current || duration < 300;
-        stopRecordVisualization();
-        clearInterval(recordTimerRef.current);
-        setIsRecording(false);
-        if (canceled || !recordingChunksRef.current.length) {
-          recordingChunksRef.current = [];
-          cleanupAudioContext();
-          setRecordLevel(0);
-          return;
-        }
-        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
-        recordingChunksRef.current = [];
-        cleanupAudioContext();
-        setRecordLevel(0);
-        if (blob.size > 0) {
-          prepareAudioPreview(blob);
-        }
-      };
-
-      const animateLevel = () => {
-        const analyserNode = audioAnalyserRef.current;
-        if (!analyserNode) return;
-        const buffer = new Uint8Array(analyserNode.frequencyBinCount);
-        analyserNode.getByteFrequencyData(buffer);
-        const max = buffer.reduce((m, v) => Math.max(m, v), 0) / 255;
-        const level = Math.min(1, max * 1.4);
-        setRecordLevel(level);
-        if (recordLevelBarRef.current) {
-          recordLevelBarRef.current.style.setProperty("--record-level", level.toString());
-        }
-        recordVizFrame.current = requestAnimationFrame(animateLevel);
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      audioContextRef.current = audioContext;
-      audioAnalyserRef.current = analyser;
-      audioGainRef.current = gainNode;
-      audioFilterRef.current = highPassFilter;
-      setIsRecording(true);
-      animateLevel();
-    } catch (err) {
-      console.error("Erreur accès micro", err);
-      clearInterval(recordTimerRef.current);
-      stopRecordVisualization();
-      cleanupAudioContext();
-      setIsRecording(false);
-      setRecordLevel(0);
-      recordStartRef.current = null;
-    }
-  };
-
-  const updateRecordingDrag = (event) => {
-    if (!isRecording || !recordStartRef.current) return;
-    const clientX = event?.touches?.[0]?.clientX || event?.clientX || 0;
-    const clientY = event?.touches?.[0]?.clientY || event?.clientY || 0;
-    const deltaX = clientX - (recordStartRef.current.x || clientX);
-    const deltaY = clientY - (recordStartRef.current.y || clientY);
-
-    if (deltaY < -70) {
-      setRecordLocked(true);
-    }
-
-    if (recordLocked) {
-      setRecordCanceled(false);
-      recordCanceledRef.current = false;
-      return;
-    }
-
-    const boundedOffset = Math.max(-140, Math.min(140, deltaX));
-
-    setRecordOffset(boundedOffset);
-    const canceled = deltaX < -80;
-    setRecordCanceled(canceled);
-    recordCanceledRef.current = canceled;
-  };
-
-  const stopRecording = (forceCancel = false) => {
-    if (!isRecording) return;
-    if (forceCancel) {
-      recordCanceledRef.current = true;
-      setRecordCanceled(true);
-      setRecordTime(0);
-      recordingChunksRef.current = [];
-    }
-    clearInterval(recordTimerRef.current);
-    setRecordLocked(false);
-    setRecordLevel(0);
-    stopRecordVisualization();
-    if (recordLevelBarRef.current) {
-      recordLevelBarRef.current.style.setProperty("--record-level", "0");
-    }
-    const recorder = mediaRecorderRef.current;
-    mediaRecorderRef.current = null;
-    if (recorder && recorder.state !== "inactive") {
-      recorder.stop();
-    }
-    if (!recorder) {
-      cleanupAudioContext();
-      setIsRecording(false);
-    }
-  };
-
-  const getAudioDuration = (blob) =>
-    new Promise((resolve) => {
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onloadedmetadata = () => {
-        const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-        URL.revokeObjectURL(url);
-        resolve(duration);
-      };
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(0);
-      };
-    });
-
-  function resetPendingAudio() {
-    if (pendingAudio?.previewUrl) {
-      URL.revokeObjectURL(pendingAudio.previewUrl);
-    }
+  const resetVoicePreview = () => {
     if (audioPreviewRef.current) {
       audioPreviewRef.current.pause();
       audioPreviewRef.current.currentTime = 0;
     }
-    setPendingAudio(null);
-  }
-
-  const prepareAudioPreview = async (blob) => {
-    const duration = await getAudioDuration(blob);
-    const previewUrl = URL.createObjectURL(blob);
-    setPendingAudio({
-      blob,
-      previewUrl,
-      duration,
-      mime: "audio/webm",
-    });
+    setPreviewPlaying(false);
+    resetVoiceRecording();
   };
 
   const togglePreviewAudio = () => {
     const audio = audioPreviewRef.current;
     if (!audio) return;
     if (audio.paused) {
-      audio.play();
+      audio
+        .play()
+        .then(() => setPreviewPlaying(true))
+        .catch(() => setPreviewPlaying(false));
     } else {
       audio.pause();
+      setPreviewPlaying(false);
     }
   };
 
-  const sendAudioMessage = async (replyTarget = null) => {
+  const handleVoiceActionPointerDown = (event) => {
+    if (!activeChat || pendingFile || previewBlob || editingMessage) return;
+    if (input.trim()) return;
+    if (voiceStatus !== "idle") return;
+    event.preventDefault();
+    setVoiceCancelFeedback(false);
+    inputRef.current?.blur();
+    const { clientX, clientY, pointerId } = event;
+    voiceGestureRef.current = { startX: clientX, startY: clientY, action: null };
+    actionButtonRef.current?.setPointerCapture(pointerId);
+    startVoiceRecording();
+  };
+
+  const handleVoiceActionPointerMove = (event) => {
+    if (voiceStatus !== "recording" || !voiceGestureRef.current) return;
+    event.preventDefault();
+    const { startX, startY, action } = voiceGestureRef.current;
+    if (action) return;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (absX < CANCEL_THRESHOLD_X && absY < LOCK_THRESHOLD_Y) return;
+
+    if (absX > absY && deltaX <= -CANCEL_THRESHOLD_X) {
+      voiceGestureRef.current.action = "cancel";
+      setVoiceCancelFeedback(true);
+      cancelVoiceRecording();
+      setTimeout(() => setVoiceCancelFeedback(false), 800);
+      return;
+    }
+
+    if (absY > absX && deltaY <= -LOCK_THRESHOLD_Y) {
+      voiceGestureRef.current.action = "lock";
+      lockVoiceRecording();
+    }
+  };
+
+  const handleVoiceActionPointerUp = () => {
+    if (voiceStatus === "recording") {
+      stopVoiceRecording();
+    }
+    voiceGestureRef.current = null;
+  };
+
+  const handleVoiceActionPointerCancel = () => {
+    if (voiceStatus === "recording") {
+      cancelVoiceRecording();
+      setVoiceCancelFeedback(true);
+      setTimeout(() => setVoiceCancelFeedback(false), 800);
+    }
+    voiceGestureRef.current = null;
+  };
+
+  const sendVoiceMessage = async (replyTarget = null) => {
     const receiverId = getConversationTargetId();
-    if (!activeChat || !receiverId || !pendingAudio?.blob || !token) {
+    if (!activeChat || !receiverId || !previewBlob || !token) {
       setInfoBanner(loadErrorMessage);
       return;
     }
-    const fileName = `voice-${Date.now()}.webm`;
+
+    const mime = voiceMimeType || previewBlob.type || "audio/webm";
+    const extensionMap = {
+      "audio/webm": "webm",
+      "audio/ogg": "ogg",
+      "audio/mp4": "mp4",
+    };
+    const extension = extensionMap[mime] || "webm";
+    const fileName = `voice-${Date.now()}.${extension}`;
+    const file = new File([previewBlob], fileName, { type: mime });
 
     const { replyId, preview: replyPreview } = buildReplyData(replyTarget);
-
-    const tempUrl = pendingAudio.previewUrl;
     const clientTempId = `temp-${Date.now()}`;
+    const tempUrl = previewUrl;
     const tempMessage = {
       _id: clientTempId,
       sender: me?._id,
@@ -2143,8 +2001,10 @@ export default function Messages() {
       type: "audio",
       audio: {
         url: tempUrl,
-        duration: pendingAudio.duration || 0,
-        mime: "audio/webm",
+        duration: durationSec || 0,
+        mime: mime,
+        mimeType: mime,
+        size: previewBlob.size,
       },
       audioUrl: tempUrl,
       content: "",
@@ -2156,23 +2016,13 @@ export default function Messages() {
 
     setMessages((prev) => [...prev, tempMessage]);
 
-    const formData = new FormData();
-    formData.append("audio", pendingAudio.blob, fileName);
-    formData.append("duration", String(pendingAudio.duration || 0));
-    if (replyId) {
-      formData.append("replyTo", replyId);
-    }
-
     try {
-      const res = await fetch(`${API_URL}/messages/audio`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+      const data = await uploadVoiceNote(file, {
+        duration: durationSec || 0,
+        mimeType: mime,
       });
-      const data = await ensureJsonResponse(res);
-      if (res.ok && data?.audio) {
+
+      if (data?.audio) {
         const { ok, data: sendData } = await sendMessagePayload({
           receiver: receiverId,
           type: "audio",
@@ -2199,7 +2049,7 @@ export default function Messages() {
       );
     } finally {
       setTimeout(() => scrollToBottom(true), 30);
-      resetPendingAudio();
+      resetVoicePreview();
       setReplyTo(null);
     }
   };
@@ -2394,7 +2244,7 @@ export default function Messages() {
   const handleFileSelection = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (pendingAudio) {
+    if (previewBlob) {
       setInfoBanner("Envoyez ou supprimez la note vocale avant d'ajouter un fichier.");
       event.target.value = "";
       return;
@@ -2468,7 +2318,7 @@ export default function Messages() {
   }, [activeChat?._id]);
 
   useEffect(() => {
-    resetPendingAudio();
+    resetVoicePreview();
   }, [activeChat?._id]);
 
   useEffect(() => {
@@ -2700,6 +2550,10 @@ export default function Messages() {
   };
 
   const topPinnedMessage = pinnedMessages[0] || null;
+  const hasText = input.trim().length > 0;
+  const hasVoicePreview = voiceStatus === "preview" && Boolean(previewBlob);
+  const isVoiceRecording = voiceStatus === "recording" || voiceStatus === "locked";
+  const isSendAction = hasText || pendingFile || editingMessage;
 
   /* =====================================================
      UI
@@ -3061,39 +2915,40 @@ export default function Messages() {
                 </button>
               </div>
             )}
-            {pendingAudio && (
-              <div className="audio-preview-bar">
-                <div className="audio-preview-player">
+            {hasVoicePreview && (
+              <div className="voice-preview-card">
+                <div className="voice-preview-player">
                   <button
                     type="button"
-                    className="audio-preview-play"
+                    className="voice-preview-play"
                     onClick={togglePreviewAudio}
                   >
-                    ▶️ Écouter
+                    {previewPlaying ? "⏸️ Pause" : "▶️ Écouter"}
                   </button>
-                  <span className="audio-preview-duration">
-                    {formatTime(pendingAudio.duration)}
+                  <span className="voice-preview-duration">
+                    {formatTime(durationSec)}
                   </span>
                   <audio
                     ref={audioPreviewRef}
-                    src={pendingAudio.previewUrl}
+                    src={previewUrl}
                     preload="metadata"
+                    onEnded={() => setPreviewPlaying(false)}
                   />
                 </div>
-                <div className="audio-preview-actions">
+                <div className="voice-preview-actions">
                   <button
                     type="button"
-                    className="audio-preview-remove"
-                    onClick={resetPendingAudio}
+                    className="voice-preview-remove"
+                    onClick={resetVoicePreview}
                   >
-                    ❌ Supprimer
+                    Supprimer
                   </button>
                   <button
                     type="button"
-                    className="audio-preview-send"
-                    onClick={() => sendAudioMessage(replyTo)}
+                    className="voice-preview-send"
+                    onClick={() => sendVoiceMessage(replyTo)}
                   >
-                    📤 Envoyer
+                    Envoyer
                   </button>
                 </div>
               </div>
@@ -3130,140 +2985,86 @@ export default function Messages() {
                 </button>
               </div>
             )}
-            <div
-              className="chat-input-bar"
-              onMouseMove={updateRecordingDrag}
-              onTouchMove={updateRecordingDrag}
-              onMouseUp={
-                isRecording && !recordLocked ? () => stopRecording(false) : undefined
-              }
-              onTouchEnd={
-                isRecording && !recordLocked ? () => stopRecording(false) : undefined
-              }
-            >
-              <div className="attach-wrapper">
+            <VoiceRecorderOverlay
+              status={voiceStatus}
+              timeSec={voiceTimeSec}
+              waveformLevel={waveformLevel}
+              isCanceling={voiceCancelFeedback}
+              onStop={stopVoiceRecording}
+            />
+            <div className="chat-input-bar">
+              <div className="chat-input-left">
+                <div className="attach-wrapper">
+                  <button
+                    className="chat-attach-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Pièces jointes"
+                  >
+                    <span role="img" aria-hidden>
+                      📎
+                    </span>
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept={MESSAGE_FILE_ACCEPT}
+                    className="file-input-hidden"
+                    onChange={handleFileSelection}
+                    disabled={Boolean(editingMessage)}
+                  />
+                </div>
                 <button
-                  className="chat-attach-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  aria-label="Pièces jointes"
+                  className="emoji-btn"
+                  type="button"
+                  onClick={() => {
+                    if (!messages.length) return;
+                    const lastMessage = messages[messages.length - 1];
+                    setReactionPicker({ messageId: lastMessage._id, anchor: "input" });
+                  }}
+                  aria-label="Réagir"
                 >
-                  <span role="img" aria-hidden>
-                    📎
-                  </span>
+                  <EmojiIcon />
                 </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept={MESSAGE_FILE_ACCEPT}
-                  className="file-input-hidden"
-                  onChange={handleFileSelection}
-                  disabled={Boolean(editingMessage)}
-                />
               </div>
 
-              {isRecording ? (
-                <div className={`recording-banner ${recordCanceled ? "canceled" : ""}`}>
-                  <div className="recording-icon">
-                    <MicIcon pulse={!recordCanceled} />
-                  </div>
-                  <div className="recording-info">
-                    <div className="recording-timer">
-                      {formatTime(Math.floor(recordTime / 1000))}
-                    </div>
-                    <div className="recording-hint">
-                      {recordCanceled
-                        ? "Annulé"
-                        : recordLocked
-                        ? "Verrouillé — appuie pour envoyer"
-                        : "Glisser vers la gauche pour annuler / vers la droite pour envoyer / vers le haut pour verrouiller"}
-                    </div>
-                    <div className="recording-level">
-                      <div
-                        className="recording-level-bar"
-                        ref={recordLevelBarRef}
-                        style={{ "--record-level": recordLevel }}
-                      />
-                    </div>
-                  </div>
-                  <div className="recording-actions">
-                    <div
-                      className="recording-slider"
-                      style={{
-                        transform: `translateX(${Math.max(
-                          -140,
-                          Math.min(140, recordOffset)
-                        )}px)`,
-                      }}
-                    />
-                    {recordLocked && (
-                      <button
-                        className="recording-send"
-                        type="button"
-                        onClick={() => stopRecording(false)}
-                        aria-label="Envoyer la note vocale"
-                      >
-                        <SendIcon />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <input
-                    className="chat-input"
-                    placeholder={
-                      editingMessage
-                        ? "Modifier le message"
-                        : pendingAudio
-                        ? "Envoyer la note vocale"
-                        : pendingFile
-                        ? "Envoyer le fichier"
-                        : "Message..."
-                    }
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => handleInputChange(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && submitMessage()}
-                    disabled={Boolean(pendingFile || pendingAudio)}
-                  />
+              <input
+                className="chat-input"
+                placeholder={
+                  editingMessage
+                    ? "Modifier le message"
+                    : hasVoicePreview
+                    ? "Envoyer la note vocale"
+                    : pendingFile
+                    ? "Envoyer le fichier"
+                    : "Message..."
+                }
+                ref={inputRef}
+                value={input}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitMessage()}
+                disabled={Boolean(pendingFile || hasVoicePreview || isVoiceRecording)}
+              />
 
-                  <button
-                    className="emoji-btn"
-                    type="button"
-                    onClick={() => {
-                      if (!messages.length) return;
-                      const lastMessage = messages[messages.length - 1];
-                      setReactionPicker({ messageId: lastMessage._id, anchor: "input" });
-                    }}
-                    aria-label="Réagir"
-                  >
-                    <EmojiIcon />
-                  </button>
-
-                  {!pendingAudio && (
-                    <button
-                      className={`chat-mic-btn ${isRecording ? "recording" : ""}`}
-                      type="button"
-                      onMouseDown={startRecording}
-                      onTouchStart={startRecording}
-                      aria-label="Enregistrer une note vocale"
-                      disabled={Boolean(pendingFile || isRecording)}
-                    >
-                      🎙️
-                    </button>
-                  )}
-
-                  {input.trim().length > 0 || pendingFile || pendingAudio ? (
-                    <button className="chat-send-btn" onClick={submitMessage}>
-                      <SendIcon />
-                    </button>
-                  ) : (
-                    <button className="chat-send-btn" disabled>
-                      <SendIcon />
-                    </button>
-                  )}
-                </>
-              )}
+              <button
+                ref={actionButtonRef}
+                className={`chat-input-action-btn ${isSendAction ? "send" : "mic"} ${
+                  isVoiceRecording ? "recording" : ""
+                }`}
+                type="button"
+                onClick={isSendAction ? submitMessage : undefined}
+                onPointerDown={!isSendAction ? handleVoiceActionPointerDown : undefined}
+                onPointerMove={!isSendAction ? handleVoiceActionPointerMove : undefined}
+                onPointerUp={!isSendAction ? handleVoiceActionPointerUp : undefined}
+                onPointerCancel={!isSendAction ? handleVoiceActionPointerCancel : undefined}
+                aria-label={isSendAction ? "Envoyer" : "Enregistrer une note vocale"}
+                disabled={
+                  isSendAction
+                    ? !hasText && !pendingFile
+                    : Boolean(pendingFile || hasVoicePreview || voiceStatus === "locked")
+                }
+              >
+                {isSendAction ? <SendIcon /> : <MicIcon pulse={isVoiceRecording} />}
+              </button>
             </div>
 
             {reactionPicker.messageId && (
