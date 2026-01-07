@@ -128,6 +128,7 @@ export default function useCandidateDashboardData() {
     const groups = {
       applied: [],
       inReview: [],
+      interview: [],
       offer: [],
       rejected: [],
     };
@@ -136,6 +137,7 @@ export default function useCandidateDashboardData() {
       const status = (app.status || "pending").toLowerCase();
       if (status === "pending") groups.applied.push(app);
       else if (status === "reviewed") groups.inReview.push(app);
+      else if (status === "interview") groups.interview.push(app);
       else if (status === "accepted") groups.offer.push(app);
       else if (status === "rejected") groups.rejected.push(app);
       else groups.applied.push(app);

@@ -147,40 +147,45 @@ export function ApplicationPipeline({ groupedApps, onOpen }) {
     { key: "rejected", label: "Refusée", color: "rose" },
   ];
 
+  const getLaneApps = (key) => groupedApps?.[key] ?? [];
+
   return (
     <div className="lanes">
-      {lanes.map((lane) => (
-        <div key={lane.key} className="lane">
-          <div className="lane-header">
-            <span className={`lane-dot lane-${lane.color}`}></span>
-            <div>
-              <p className="lane-title">{lane.label}</p>
-              <p className="lane-count">{groupedApps[lane.key].length} offre(s)</p>
+      {lanes.map((lane) => {
+        const laneApps = getLaneApps(lane.key);
+        return (
+          <div key={lane.key} className="lane">
+            <div className="lane-header">
+              <span className={`lane-dot lane-${lane.color}`}></span>
+              <div>
+                <p className="lane-title">{lane.label}</p>
+                <p className="lane-count">{laneApps.length} offre(s)</p>
+              </div>
+            </div>
+            <div className="lane-body">
+              {laneApps.length === 0 && (
+                <p className="empty-state small">Aucune offre dans cette étape.</p>
+              )}
+              {laneApps.map((app) => (
+                <div key={app._id} className="lane-card" onClick={() => onOpen(app.job?._id)}>
+                  <p className="lane-card__title">{app.job?.title || "Poste"}</p>
+                  <p className="lane-card__subtitle">
+                    {app.job?.recruiter?.companyName || app.job?.recruiter?.name || "Entreprise"}
+                  </p>
+                  <div className="lane-card__footer">
+                    <span>
+                      {app.updatedAt || app.createdAt
+                        ? new Date(app.updatedAt || app.createdAt).toLocaleDateString()
+                        : "-"}
+                    </span>
+                    <span className="ghost-link">Ouvrir</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div className="lane-body">
-            {groupedApps[lane.key].length === 0 && (
-              <p className="empty-state small">Aucune offre dans cette étape.</p>
-            )}
-            {groupedApps[lane.key].map((app) => (
-              <div key={app._id} className="lane-card" onClick={() => onOpen(app.job?._id)}>
-                <p className="lane-card__title">{app.job?.title || "Poste"}</p>
-                <p className="lane-card__subtitle">
-                  {app.job?.recruiter?.companyName || app.job?.recruiter?.name || "Entreprise"}
-                </p>
-                <div className="lane-card__footer">
-                  <span>
-                    {app.updatedAt || app.createdAt
-                      ? new Date(app.updatedAt || app.createdAt).toLocaleDateString()
-                      : "-"}
-                  </span>
-                  <span className="ghost-link">Ouvrir</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -193,22 +198,26 @@ export function RecruiterPipeline({ groupedApps, onOpen }) {
     { key: "rejected", label: "Refusées", color: "rose" },
   ];
 
+  const getLaneApps = (key) => groupedApps?.[key] ?? [];
+
   return (
     <div className="lanes">
-      {lanes.map((lane) => (
+      {lanes.map((lane) => {
+        const laneApps = getLaneApps(lane.key);
+        return (
         <div key={lane.key} className="lane">
           <div className="lane-header">
             <span className={`lane-dot lane-${lane.color}`}></span>
             <div>
               <p className="lane-title">{lane.label}</p>
-              <p className="lane-count">{groupedApps[lane.key].length} candidat(s)</p>
+              <p className="lane-count">{laneApps.length} candidat(s)</p>
             </div>
           </div>
           <div className="lane-body">
-            {groupedApps[lane.key].length === 0 && (
+            {laneApps.length === 0 && (
               <p className="empty-state small">Aucun candidat dans cette étape.</p>
             )}
-            {groupedApps[lane.key].map((app) => (
+            {laneApps.map((app) => (
               <div
                 key={app._id}
                 className="lane-card"
@@ -228,7 +237,8 @@ export function RecruiterPipeline({ groupedApps, onOpen }) {
             ))}
           </div>
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 }
