@@ -259,7 +259,7 @@ exports.getMyJobs = async (req, res) => {
                 path: "applications",
                 populate: {
                     path: "applicant",
-                    select: "name email avatar role",
+                    select: "name email avatar role bio professionalProfile",
                 },
             })
             .sort({ createdAt: -1 });
