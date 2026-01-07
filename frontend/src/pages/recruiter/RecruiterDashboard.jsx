@@ -70,48 +70,6 @@ export default function RecruiterDashboard() {
       });
   }, [data.applications]);
 
-  const candidateProfiles = useMemo(() => {
-    const profiles = new Map();
-
-    data.applications.forEach((app) => {
-      const candidate = app.applicant || {};
-      const name = app.applicantName || candidate.name || "Candidat";
-      const email = app.applicantEmail || candidate.email || "";
-      const key = candidate._id || email || name;
-      if (!key) return;
-
-      if (!profiles.has(key)) {
-        const rawSkills = candidate.skills || candidate.skill || "";
-        const skills = Array.isArray(rawSkills)
-          ? rawSkills
-          : typeof rawSkills === "string"
-          ? rawSkills.split(",")
-          : [];
-
-        profiles.set(key, {
-          key,
-          candidate,
-          name,
-          email,
-          title: candidate.title || candidate.jobTitle || candidate.profession || "",
-          experience: candidate.experience || "",
-          bio: candidate.bio || "",
-          skills: skills.map((skill) => skill.trim()).filter(Boolean),
-          jobs: [],
-        });
-      }
-
-      const profile = profiles.get(key);
-      const jobTitle = app.job?.title || app.jobTitle || "Offre";
-      const jobId = app.job?._id || app.jobId || jobTitle;
-      if (!profile.jobs.some((job) => job.id === jobId)) {
-        profile.jobs.push({ id: jobId, title: jobTitle });
-      }
-    });
-
-    return Array.from(profiles.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [data.applications]);
-
   const downloadCv = (candidate) => {
     if (!candidate?.cvData) return;
     const link = document.createElement("a");
@@ -453,78 +411,6 @@ export default function RecruiterDashboard() {
           </div>
         </section>
       </div>
-
-      <section className="card candidate-profiles" aria-label="Profils candidats">
-        <div className="card-header">
-          <div>
-            <p className="eyebrow">Profils</p>
-            <h3>Profils candidats</h3>
-          </div>
-          <span className="mini-count">{candidateProfiles.length}</span>
-        </div>
-
-        {candidateProfiles.length === 0 ? (
-          <div className="empty-state">Aucun profil candidat pour le moment.</div>
-        ) : (
-          <div className="candidate-profiles-grid">
-            {candidateProfiles.map((profile) => (
-              <article key={profile.key} className="candidate-profile-card">
-                <div className="candidate-profile-head">
-                  <div className="candidate-profile-avatar">
-                    {profile.candidate?.avatar ? (
-                      <img
-                        src={profile.candidate.avatar}
-                        alt={profile.name}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span>{profile.name.charAt(0).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div>
-                    <p className="candidate-profile-name">{profile.name}</p>
-                    <p className="candidate-profile-title">
-                      {profile.title || "Profil professionnel"}
-                    </p>
-                    <p className="candidate-profile-meta">
-                      {profile.email || "Email non renseigné"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="candidate-profile-body">
-                  <p className="candidate-profile-bio">
-                    {profile.bio || "Aucune présentation ajoutée pour le moment."}
-                  </p>
-                  <p className="candidate-profile-experience">
-                    {profile.experience || "Expérience non renseignée."}
-                  </p>
-                  {profile.skills.length > 0 && (
-                    <div className="candidate-profile-skills">
-                      {profile.skills.slice(0, 6).map((skill) => (
-                        <span key={skill} className="candidate-skill">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="candidate-profile-jobs">
-                  <p className="candidate-profile-label">Offres postulées</p>
-                  <div className="candidate-job-tags">
-                    {profile.jobs.map((job) => (
-                      <span key={job.id} className="candidate-job-tag">
-                        {job.title}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
 
       <section className="card cv-library" aria-label="CV thèque">
         <div className="card-header">
