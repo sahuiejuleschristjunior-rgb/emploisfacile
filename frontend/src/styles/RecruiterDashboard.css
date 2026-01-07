@@ -1489,3 +1489,130 @@ body {
     overflow: hidden;
   }
 }
+
+.recruiter-profiles-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.recruiter-profile-card {
+  background: var(--card-muted);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recruiter-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.recruiter-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.recruiter-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recruiter-profile-avatar__fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.35), rgba(6, 182, 212, 0.3));
+}
+
+.recruiter-profile-meta {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.recruiter-profile-bio {
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.recruiter-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.recruiter-profile-tags span {
+  background: rgba(124, 58, 237, 0.18);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.recruiter-profile-details {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.recruiter-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recruiter-profile-offers h5 {
+  margin-bottom: 10px;
+}
+
+.recruiter-profile-offers ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recruiter-profile-offers li {
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+}
+
+.recruiter-profile-offer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .recruiter-profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recruiter-profile-offer-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
