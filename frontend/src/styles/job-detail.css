@@ -173,6 +173,70 @@
   color: var(--text, #e2e8f0);
 }
 
+.job-detail-contact-form {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.job-detail-contact-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.job-detail-contact-grid label,
+.job-detail-contact-message {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.job-detail-contact-grid input,
+.job-detail-contact-message textarea {
+  border-radius: 10px;
+  border: 1px solid var(--border, #1f2937);
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.job-detail-contact-grid input:disabled,
+.job-detail-contact-message textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.job-detail-contact-message textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+.job-detail-contact-hint {
+  font-size: 12px;
+  color: var(--muted, #94a3b8);
+}
+
+.job-detail-contact-status {
+  font-size: 13px;
+  margin: 0;
+}
+
+.job-detail-contact-status.success {
+  color: #22c55e;
+}
+
+.job-detail-contact-status.error {
+  color: #f87171;
+}
+
+.job-detail-contact-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .job-detail-divider {
   height: 1px;
   background: var(--border, #1f2937);

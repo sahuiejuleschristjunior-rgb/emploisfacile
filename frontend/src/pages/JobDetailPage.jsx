@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { createJobConversation } from "../api/jobChatApi";
+import { sendMessagePayload } from "../api/messagesApi";
 import "../styles/RecruiterDashboard.css";
 import "../styles/job-detail.css";
 
@@ -31,6 +33,18 @@ export default function JobDetailPage() {
   const [applyMessage, setApplyMessage] = useState("");
   const [isApplying, setIsApplying] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [contactFields, setContactFields] = useState({
+    recruiterName: "",
+    jobTitle: "",
+    keySkill: "",
+    candidateName: "",
+  });
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactMessageTouched, setContactMessageTouched] = useState(false);
+  const [contactStatus, setContactStatus] = useState(null);
+  const [isSendingContact, setIsSendingContact] = useState(false);
+  const contactSectionRef = useRef(null);
+  const contactSkillRef = useRef(null);
 
   const currentUser = useMemo(() => {
     try {
@@ -41,6 +55,8 @@ export default function JobDetailPage() {
       return null;
     }
   }, []);
+  const currentRole = (currentUser?.role || "").toLowerCase();
+  const isCandidate = currentRole === "candidate" || currentRole === "candidat";
 
   const handleBack = useCallback(() => {
     if (location.state?.from === "/emplois") {
@@ -204,6 +220,49 @@ export default function JobDetailPage() {
     };
   }, [job]);
 
+  const recruiter = job?.recruiter || null;
+  const recruiterId = recruiter?._id || recruiter;
+  const recruiterName =
+    recruiter?.name || recruiter?.companyName || jobDetails?.companyName || "";
+  const candidateName =
+    currentUser?.name ||
+    currentUser?.fullName ||
+    currentUser?.candidateProfile?.name ||
+    currentUser?.professionalProfile?.name ||
+    "";
+
+  const contactEnabled = Boolean(token && isCandidate && hasApplied && recruiterId);
+
+  const buildContactMessage = useCallback(
+    ({ recruiterName: name, jobTitle, keySkill, candidateName: senderName }) => {
+      const resolvedRecruiter = name || "[Nom]";
+      const resolvedJobTitle = jobTitle || "[Intitulé du poste]";
+      const resolvedSkill = keySkill || "[1 compétence clé]";
+      const resolvedCandidate = senderName || "[Prénom Nom]";
+      return `Bonjour ${resolvedRecruiter},\n` +
+        `\n` +
+        `J’ai postulé à votre offre ${resolvedJobTitle} et je souhaitais vous contacter brièvement pour confirmer mon intérêt.\n` +
+        `Mon profil correspond notamment sur ${resolvedSkill}.\n` +
+        `Merci pour votre temps,\n` +
+        `${resolvedCandidate}`;
+    },
+    []
+  );
+
+  useEffect(() => {
+    setContactFields((prev) => ({
+      recruiterName: recruiterName || prev.recruiterName,
+      jobTitle: job?.title || prev.jobTitle,
+      keySkill: prev.keySkill || "",
+      candidateName: candidateName || prev.candidateName,
+    }));
+  }, [recruiterName, job?.title, candidateName]);
+
+  useEffect(() => {
+    if (contactMessageTouched) return;
+    setContactMessage(buildContactMessage(contactFields));
+  }, [buildContactMessage, contactFields, contactMessageTouched]);
+
   const handleApply = useCallback(async () => {
     console.info("[JobDetail] Bouton Postuler cliqué", { jobId: id, title: job?.title });
     setApplyMessage("");
@@ -296,6 +355,103 @@ export default function JobDetailPage() {
     hasApplied,
   ]);
 
+  const handleContactFieldChange = useCallback((field, value) => {
+    setContactFields((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleContactScroll = useCallback(() => {
+    if (contactSectionRef.current) {
+      contactSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (contactSkillRef.current) {
+      contactSkillRef.current.focus();
+    }
+  }, []);
+
+  const handleContactSubmit = useCallback(
+    async (event) => {
+      event.preventDefault();
+      setContactStatus(null);
+
+      if (!contactEnabled) {
+        setContactStatus({
+          type: "error",
+          message:
+            "Veuillez finaliser votre candidature pour activer le contact recruteur.",
+        });
+        return;
+      }
+
+      if (!contactFields.keySkill.trim()) {
+        setContactStatus({
+          type: "error",
+          message: "Ajoutez une compétence clé pour personnaliser votre message.",
+        });
+        return;
+      }
+
+      const trimmedMessage = contactMessage.trim();
+      if (!trimmedMessage) {
+        setContactStatus({
+          type: "error",
+          message: "Le message ne peut pas être vide.",
+        });
+        return;
+      }
+
+      try {
+        setIsSendingContact(true);
+        const conversation = await createJobConversation({
+          participants: [currentUser?._id, recruiterId],
+          jobId: id,
+        });
+        const { ok, data } = await sendMessagePayload({
+          receiver: recruiterId,
+          content: trimmedMessage,
+          jobId: id,
+          conversationId: conversation?._id,
+        });
+
+        if (!ok) {
+          throw new Error(data?.message || data?.error || "Impossible d'envoyer le message.");
+        }
+
+        setContactStatus({
+          type: "success",
+          message: data?.message || "Message envoyé au recruteur.",
+        });
+
+        const basePath = currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
+        navigate(`${basePath}/${conversation?._id || recruiterId}`, {
+          state: {
+            jobId: id,
+            jobTitle: job?.title,
+            otherParticipant: recruiter,
+          },
+        });
+      } catch (err) {
+        setContactStatus({
+          type: "error",
+          message: err.message || "Erreur lors de l'envoi du message.",
+        });
+      } finally {
+        setIsSendingContact(false);
+      }
+    },
+    [
+      contactEnabled,
+      contactFields.keySkill,
+      contactMessage,
+      currentRole,
+      currentUser?._id,
+      id,
+      job?.title,
+      navigate,
+      recruiter,
+      recruiterId,
+    ]
+  );
+
   if (loading) {
     return (
       <div className="job-detail-page" role="main">
@@ -363,7 +519,7 @@ export default function JobDetailPage() {
               <button className="primary-btn" type="button" onClick={handleApply} disabled={isApplying || hasApplied}>
                 {hasApplied ? "Vous avez déjà postulé" : isApplying ? "Envoi..." : "Postuler maintenant"}
               </button>
-              <button className="primary-btn ghost" type="button">
+              <button className="primary-btn ghost" type="button" onClick={handleContactScroll}>
                 Contacter le recruteur
               </button>
             </div>
@@ -446,7 +602,7 @@ export default function JobDetailPage() {
             </div>
           </section>
 
-          <aside className="card job-detail-card" aria-label="Contact recruteur">
+          <aside className="card job-detail-card" aria-label="Contact recruteur" ref={contactSectionRef}>
             <div className="card-header">
               <div>
                 <p className="eyebrow">Recruteur</p>
@@ -458,10 +614,98 @@ export default function JobDetailPage() {
                 <p className="job-detail-contact-title">{jobDetails.companyName}</p>
                 <p className="job-detail-muted">{jobDetails.recruiterEmail}</p>
               </div>
-              <button className="primary-btn ghost" type="button">
+              <button
+                className="primary-btn ghost"
+                type="button"
+                onClick={handleContactScroll}
+                disabled={!contactEnabled}
+              >
                 Envoyer un message
               </button>
             </div>
+            <form className="job-detail-contact-form" onSubmit={handleContactSubmit}>
+              <div className="job-detail-contact-grid">
+                <label>
+                  Nom du recruteur
+                  <input
+                    type="text"
+                    value={contactFields.recruiterName}
+                    onChange={(event) =>
+                      handleContactFieldChange("recruiterName", event.target.value)
+                    }
+                    disabled={!contactEnabled}
+                  />
+                </label>
+                <label>
+                  Intitulé du poste
+                  <input
+                    type="text"
+                    value={contactFields.jobTitle}
+                    onChange={(event) =>
+                      handleContactFieldChange("jobTitle", event.target.value)
+                    }
+                    disabled={!contactEnabled}
+                  />
+                </label>
+                <label>
+                  Compétence clé
+                  <input
+                    type="text"
+                    value={contactFields.keySkill}
+                    onChange={(event) =>
+                      handleContactFieldChange("keySkill", event.target.value)
+                    }
+                    disabled={!contactEnabled}
+                    required={contactEnabled}
+                    ref={contactSkillRef}
+                    placeholder="Ex. gestion de projet"
+                  />
+                </label>
+                <label>
+                  Votre nom
+                  <input
+                    type="text"
+                    value={contactFields.candidateName}
+                    onChange={(event) =>
+                      handleContactFieldChange("candidateName", event.target.value)
+                    }
+                    disabled={!contactEnabled}
+                    required={contactEnabled}
+                    placeholder="Prénom Nom"
+                  />
+                </label>
+              </div>
+              <label className="job-detail-contact-message">
+                Message au recruteur
+                <textarea
+                  rows={6}
+                  value={contactMessage}
+                  onChange={(event) => {
+                    setContactMessage(event.target.value);
+                    setContactMessageTouched(true);
+                  }}
+                  disabled={!contactEnabled}
+                />
+                <span className="job-detail-contact-hint">
+                  Le message est pré-rempli pour confirmer votre intérêt, vous pouvez le modifier.
+                </span>
+              </label>
+              {!contactEnabled && (
+                <p className="job-detail-contact-hint">
+                  Postulez à l'offre pour activer le formulaire de contact.
+                </p>
+              )}
+              {contactStatus && (
+                <p className={`job-detail-contact-status ${contactStatus.type}`}>
+                  {contactStatus.message}
+                </p>
+              )}
+              <div className="job-detail-contact-actions">
+                <button className="primary-btn" type="submit" disabled={!contactEnabled || isSendingContact}>
+                  {isSendingContact ? "Envoi en cours..." : "Envoyer le message"}
+                </button>
+              </div>
+            </form>
             <div className="job-detail-info">
               <div>
                 <span>Type de contrat</span>
