@@ -42,6 +42,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     "/recruiter/dashboard",
     "/recruiter/candidatures",
     "/recruiter/offres",
+    "/recruiter/profils-candidats",
     "/recruiter/cv-theque",
     "/recruiter/job",
     "/recruiter/create-job",
