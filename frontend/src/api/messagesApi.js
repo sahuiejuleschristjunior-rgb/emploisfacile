@@ -150,3 +150,27 @@ export async function sendMessagePayload(payload) {
   const data = await parseJsonResponse(res);
   return { ok: res.ok, data };
 }
+
+export async function uploadMessageFile(file) {
+  const token = getToken();
+  if (!token) {
+    throw new Error("Vous devez être connecté pour envoyer un fichier.");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/messages/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await parseJsonResponse(res);
+  if (!res.ok) {
+    throw new Error(data?.message || "Upload impossible.");
+  }
+  return data;
+}

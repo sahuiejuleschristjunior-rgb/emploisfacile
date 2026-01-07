@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSocket } from "../../context/SocketContext";
-import { sendMessagePayload } from "../../api/messagesApi";
+import { sendMessagePayload, uploadMessageFile } from "../../api/messagesApi";
 import {
   fetchConversationMessages,
   fetchJobConversation,
@@ -312,10 +312,62 @@ export default function JobConversationPage() {
     };
   }, [socket, conversationId, jobId, otherParticipant]);
 
+  useEffect(() => {
+    if (!socket || !conversationId) return undefined;
+    socket.emit("conversation:join", { conversationId });
+    return () => {
+      socket.emit("conversation:leave", { conversationId });
+    };
+  }, [socket, conversationId]);
+
   const otherName =
     otherParticipant?.name || otherParticipant?.companyName || "Conversation";
   const otherRole = otherParticipant?.role === "recruiter" ? "Recruteur" : "Candidat";
   const jobTitle = job?.title || location.state?.jobTitle || "Offre";
+
+  const handleSendFile = async (file) => {
+    if (!otherParticipant || !file) return;
+
+    const tempUrl = URL.createObjectURL(file);
+    const payload = {
+      sender: user?._id,
+      receiver: getId(otherParticipant),
+      conversationId,
+      jobId,
+      type: "file",
+      file: {
+        name: file.name,
+        size: file.size,
+        mime: file.type,
+        url: tempUrl,
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    pendingAutoScrollRef.current = true;
+    setMessages((prev) => [...prev, payload]);
+
+    try {
+      const upload = await uploadMessageFile(file);
+      const { ok, data } = await sendMessagePayload({
+        receiver: payload.receiver,
+        jobId: payload.jobId,
+        conversationId: payload.conversationId,
+        type: "file",
+        file: upload?.file,
+      });
+
+      if (ok && data?.data) {
+        const message = data.data;
+        if (message?._id && !messageIdsRef.current.has(message._id)) {
+          messageIdsRef.current.add(message._id);
+          setMessages((prev) => [...prev.filter((msg) => msg !== payload), message]);
+        }
+      }
+    } catch (err) {
+      setError(err.message || "Impossible d'envoyer le fichier.");
+    }
+  };
 
   const handleSend = async (content) => {
     if (!otherParticipant) return;
@@ -412,6 +464,7 @@ export default function JobConversationPage() {
 
         <MessageInput
           onSend={handleSend}
+          onSendFile={handleSendFile}
           onTyping={handleTyping}
           disabled={!conversationId || !jobId || !otherParticipant}
         />

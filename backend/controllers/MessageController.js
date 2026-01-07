@@ -16,6 +16,46 @@ const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
 const REQUEST_MESSAGE_MAX = 500;
 const REQUEST_COOLDOWN_MS = 15 * 60 * 1000;
 const requestRateMap = new Map();
+const MESSAGE_UPLOAD_DIR = path.join(__dirname, "../uploads/messages");
+const MAX_MESSAGE_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_MESSAGE_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+]);
+
+function ensureMessageUploadDir() {
+  if (!fs.existsSync(MESSAGE_UPLOAD_DIR)) {
+    fs.mkdirSync(MESSAGE_UPLOAD_DIR, { recursive: true });
+  }
+  return MESSAGE_UPLOAD_DIR;
+}
+
+function getSafeFileName(fileName) {
+  return path.basename(fileName || "");
+}
+
+function buildMessageFileUrl(fileName) {
+  return `/api/messages/files/${fileName}`;
+}
+
+function isAllowedMessageMime(mime) {
+  return ALLOWED_MESSAGE_MIME_TYPES.has(mime);
+}
+
+function getFileUrlPath(fileUrl) {
+  if (!fileUrl) return "";
+  if (fileUrl.startsWith("http")) {
+    try {
+      return new URL(fileUrl).pathname;
+    } catch (err) {
+      return "";
+    }
+  }
+  return fileUrl;
+}
 
 function isUserParticipant(message, userId) {
   if (!message || !userId) return false;
@@ -191,6 +231,94 @@ async function buildMessageRequest({ senderUser, receiverUser, content }) {
   }
 
 /* ============================================================
+POST /api/messages/upload
+➤ Upload d'un fichier pour message
+============================================================ */
+exports.uploadMessageFile = async (req, res) => {
+  try {
+    ensureMessageUploadDir();
+    const sender = getSenderId(req);
+    if (!sender) {
+      return res.status(401).json({ message: "Authentification requise." });
+    }
+
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ message: "Fichier manquant." });
+    }
+
+    if (!isAllowedMessageMime(file.mimetype)) {
+      return res.status(400).json({ message: "Type de fichier non autorisé." });
+    }
+
+    if (file.size > MAX_MESSAGE_FILE_SIZE) {
+      return res.status(400).json({ message: "Fichier trop volumineux." });
+    }
+
+    const fileUrl = buildMessageFileUrl(file.filename);
+
+    return res.status(201).json({
+      success: true,
+      file: {
+        name: file.originalname,
+        size: file.size,
+        mime: file.mimetype,
+        url: fileUrl,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de l'upload du fichier.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+GET /api/messages/files/:fileName
+➤ Télécharger un fichier de message
+============================================================ */
+exports.downloadMessageFile = async (req, res) => {
+  try {
+    const userId = getSenderId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Authentification requise." });
+    }
+
+    const fileName = getSafeFileName(req.params.fileName);
+    if (!fileName) {
+      return res.status(400).json({ message: "Nom de fichier invalide." });
+    }
+
+    const fileUrl = buildMessageFileUrl(fileName);
+    const message = await Message.findOne({
+      $or: [{ "file.url": fileUrl }, { fileUrl }],
+    });
+
+    if (!message) {
+      return res.status(404).json({ message: "Fichier introuvable." });
+    }
+
+    if (!isUserParticipant(message, userId)) {
+      return res.status(403).json({ message: "Accès interdit." });
+    }
+
+    const filePath = path.join(ensureMessageUploadDir(), fileName);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "Fichier introuvable." });
+    }
+
+    const downloadName = message.file?.name || fileName;
+    return res.download(filePath, downloadName);
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du téléchargement du fichier.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
 POST /api/messages
 ➤ Envoyer un message
 ============================================================ */
@@ -204,6 +332,8 @@ exports.sendMessage = async (req, res) => {
     const {
       receiver,
       content,
+      text,
+      file,
       applicationId,
       jobId,
       type,
@@ -213,10 +343,10 @@ exports.sendMessage = async (req, res) => {
 
     const receiverId = receiver;
 
-    if (!receiverId || !content) {
+    if (!receiverId) {
       return res
         .status(400)
-        .json({ message: "Receiver et content sont requis." });
+        .json({ message: "Receiver est requis." });
     }
 
     if (receiverId === sender) {
@@ -249,6 +379,48 @@ exports.sendMessage = async (req, res) => {
     const isFriend =
       areFriends(senderUser, receiverId) && areFriends(receiverUser, sender);
 
+    const messageType = type || (file ? "file" : "text");
+    const messageText = (content ?? text ?? "").trim();
+
+    let filePayload = null;
+    if (messageType === "file") {
+      const fileUrl = file?.url || "";
+      const mime = file?.mime || "";
+      const urlPath = getFileUrlPath(fileUrl);
+      const fileName = getSafeFileName(urlPath.split("/").pop());
+
+      if (!file?.name || !fileUrl || !fileName) {
+        return res.status(400).json({ message: "Fichier invalide." });
+      }
+
+      if (!isAllowedMessageMime(mime)) {
+        return res.status(400).json({ message: "Type de fichier non autorisé." });
+      }
+
+      const normalizedUrl = urlPath;
+      const expectedUrl = buildMessageFileUrl(fileName);
+      if (normalizedUrl !== expectedUrl) {
+        return res.status(400).json({ message: "URL de fichier invalide." });
+      }
+
+      try {
+        const filePath = path.join(ensureMessageUploadDir(), fileName);
+        const stats = await fs.promises.stat(filePath);
+        if (stats.size > MAX_MESSAGE_FILE_SIZE) {
+          return res.status(400).json({ message: "Fichier trop volumineux." });
+        }
+
+        filePayload = {
+          name: file.name,
+          size: stats.size,
+          mime,
+          url: expectedUrl,
+        };
+      } catch (err) {
+        return res.status(404).json({ message: "Fichier introuvable." });
+      }
+    }
+
     const existingConversation = await findExistingConversation(
       sender,
       receiverId
@@ -258,7 +430,7 @@ exports.sendMessage = async (req, res) => {
     // MESSAGE REQUEST FLOW
     // =====================
     if (!isFriend && !existingConversation) {
-      if (type && type !== "text") {
+      if (messageType !== "text") {
         return res
           .status(400)
           .json({ message: "Seuls les messages textes sont autorisés." });
@@ -268,7 +440,7 @@ exports.sendMessage = async (req, res) => {
         await buildMessageRequest({
           senderUser,
           receiverUser,
-          content,
+          content: messageText,
         });
 
       if (errorStatus) {
@@ -294,6 +466,14 @@ exports.sendMessage = async (req, res) => {
     // =====================
     // DIRECT FRIEND MESSAGE
     // =====================
+    if (messageType === "text" && !messageText) {
+      return res.status(400).json({ message: "Le message ne peut pas être vide." });
+    }
+
+    if (messageType === "file" && !filePayload) {
+      return res.status(400).json({ message: "Fichier invalide." });
+    }
+
     let replyPreview = null;
     let replyMessageId = null;
     if (replyTo) {
@@ -302,7 +482,10 @@ exports.sendMessage = async (req, res) => {
         replyMessageId = repliedMessage._id;
         replyPreview = {
           messageId: replyMessageId,
-          content: repliedMessage.content || "",
+          content:
+            repliedMessage.type === "file"
+              ? repliedMessage.file?.name || "Fichier"
+              : repliedMessage.content || "",
           type: repliedMessage.type || "text",
         };
       }
@@ -322,10 +505,13 @@ exports.sendMessage = async (req, res) => {
       sender,
       receiver: receiverId,
       conversation: conversation._id,
-      content,
+      content: messageType === "text" ? messageText : "",
+      text: messageType === "text" ? messageText : "",
       application: applicationId || null,
       job: jobId || null,
-      type: type || "text",
+      type: messageType,
+      file: filePayload,
+      fileUrl: filePayload?.url || null,
       clientTempId: clientTempId || null,
       replyTo: replyMessageId,
       replyPreview,
@@ -338,6 +524,8 @@ exports.sendMessage = async (req, res) => {
 
     /* 🔥 SOCKET.IO — MESSAGE TEMPS RÉEL */
     console.log("📩 Message API :", sender, "→", receiverId);
+    getIO().to(conversation._id.toString()).emit("message:new", message);
+
     getIO().to(receiverId.toString()).emit("new_message", {
       from: sender,
       to: receiverId,
@@ -1243,8 +1431,12 @@ exports.deleteMessage = async (req, res) => {
         if (message.audioUrl) {
           mediaPaths.push(path.join(__dirname, `..${message.audioUrl}`));
         }
-        if (message.fileUrl) {
-          mediaPaths.push(path.join(__dirname, `..${message.fileUrl}`));
+        const fileUrl = message.file?.url || message.fileUrl;
+        if (fileUrl) {
+          const fileName = getSafeFileName(getFileUrlPath(fileUrl).split("/").pop());
+          if (fileName) {
+            mediaPaths.push(path.join(ensureMessageUploadDir(), fileName));
+          }
         }
 
         await message.save();

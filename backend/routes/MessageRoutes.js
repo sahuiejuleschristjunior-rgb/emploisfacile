@@ -34,6 +34,36 @@ const audioUpload = multer({
   },
 });
 
+const messageFileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, "../uploads/messages");
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || "";
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+
+const messageFileUpload = multer({
+  storage: messageFileStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/png",
+    ];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Format fichier non supporté"));
+    }
+    cb(null, true);
+  },
+});
+
 const sendRateTracker = new Map();
 const SEND_WINDOW_MS = 60 * 1000;
 const SEND_MAX = 15;
@@ -75,6 +105,19 @@ router.post(
   isAuthenticated,
   rateLimitSend,
   MessageController.sendMessage
+);
+
+router.post(
+  "/upload",
+  isAuthenticated,
+  messageFileUpload.single("file"),
+  MessageController.uploadMessageFile
+);
+
+router.get(
+  "/files/:fileName",
+  isAuthenticated,
+  MessageController.downloadMessageFile
 );
 
 router.post(

@@ -97,6 +97,16 @@ function initSocket(server) {
     console.log("🔌 Socket connecté :", userId, "| ID :", socket.id);
     console.log("📌 Rooms rejointes :", Array.from(socket.rooms));
 
+    socket.on("conversation:join", ({ conversationId }) => {
+      if (!conversationId) return;
+      socket.join(String(conversationId));
+    });
+
+    socket.on("conversation:leave", ({ conversationId }) => {
+      if (!conversationId) return;
+      socket.leave(String(conversationId));
+    });
+
     /* ============================================================
        MESSAGES — TEMPS RÉEL
     ============================================================ */
