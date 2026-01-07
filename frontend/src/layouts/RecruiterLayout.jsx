@@ -6,6 +6,7 @@ const recruiterMenu = [
   { key: "create", label: "Publier une offre", path: "/recruiter/create-job" },
   { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
   { key: "applications", label: "Candidatures", path: "/recruiter/candidatures" },
+  { key: "profiles", label: "Profils candidats", path: "/recruiter/profils-candidats" },
   { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
   { key: "messages", label: "Messages", path: "/recruiter/messages" },
   { key: "company", label: "Entreprise", path: "/profil" },
