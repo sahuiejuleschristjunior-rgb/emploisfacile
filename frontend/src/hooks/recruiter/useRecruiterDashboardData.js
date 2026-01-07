@@ -58,10 +58,23 @@ export default function useRecruiterDashboardData() {
     }
   };
 
-  const applications = useMemo(
-    () => jobs.flatMap((job) => job.applications || []),
-    [jobs],
-  );
+  const applications = useMemo(() => {
+    return jobs.flatMap((job) =>
+      (job.applications || []).map((app) => {
+        const jobFromApp = app?.job && typeof app.job === "object" ? app.job : null;
+        const jobData = jobFromApp || job || {};
+        const jobId = jobData._id || app?.job || app?.jobId;
+
+        return {
+          ...app,
+          job: jobData,
+          jobId,
+          jobTitle: app?.jobTitle || jobData.title || job?.title || "",
+          jobLocation: app?.jobLocation || jobData.location || job?.location || "",
+        };
+      }),
+    );
+  }, [jobs]);
 
   const groupedApps = useMemo(() => {
     const groups = {
