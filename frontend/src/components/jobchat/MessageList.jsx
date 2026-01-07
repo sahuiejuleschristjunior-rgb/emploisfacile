@@ -58,6 +58,16 @@ const resolveMessageFile = (message) => {
   return null;
 };
 
+const getAudioDuration = (message) => {
+  const duration =
+    message?.audio?.duration || message?.audioDuration || message?.duration || 0;
+  if (!duration) return "";
+  const total = Math.floor(duration);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
 const MessageList = forwardRef(function MessageList(
   { messages, currentUserId, endRef, onScroll },
   ref
@@ -115,7 +125,18 @@ const MessageList = forwardRef(function MessageList(
             className={`job-chat-row ${isMe ? "me" : "other"}`}
           >
             <div className="job-chat-bubble">
-              {message.type === "file" && file ? (
+              {message.type === "audio" ? (
+                <div className="job-chat-audio">
+                  <audio
+                    controls
+                    preload="metadata"
+                    src={resolveUrl(message.audio?.url || message.audioUrl)}
+                  />
+                  <span className="job-chat-audio-duration">
+                    {getAudioDuration(message)}
+                  </span>
+                </div>
+              ) : message.type === "file" && file ? (
                 <div className="job-chat-file-card">
                   <span className="job-chat-file-icon">
                     {fileKind === "image"

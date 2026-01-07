@@ -7,17 +7,16 @@ const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
 const path = require("path");
 const fs = require("fs");
-const { execFile } = require("child_process");
-const { promisify } = require("util");
 
 const typingState = new Map();
-const execFileAsync = promisify(execFile);
 const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
 const REQUEST_MESSAGE_MAX = 500;
 const REQUEST_COOLDOWN_MS = 15 * 60 * 1000;
 const requestRateMap = new Map();
 const MESSAGE_UPLOAD_DIR = path.join(__dirname, "../uploads/messages");
+const MESSAGE_AUDIO_DIR = path.join(__dirname, "../uploads/messages/audio");
 const MAX_MESSAGE_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_MESSAGE_AUDIO_SIZE = 20 * 1024 * 1024;
 const ALLOWED_MESSAGE_MIME_TYPES = new Set([
   "application/pdf",
   "application/msword",
@@ -25,6 +24,7 @@ const ALLOWED_MESSAGE_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
 ]);
+const ALLOWED_AUDIO_MIME_TYPES = new Set(["audio/webm"]);
 
 function ensureMessageUploadDir() {
   if (!fs.existsSync(MESSAGE_UPLOAD_DIR)) {
@@ -33,12 +33,23 @@ function ensureMessageUploadDir() {
   return MESSAGE_UPLOAD_DIR;
 }
 
+function ensureMessageAudioUploadDir() {
+  if (!fs.existsSync(MESSAGE_AUDIO_DIR)) {
+    fs.mkdirSync(MESSAGE_AUDIO_DIR, { recursive: true });
+  }
+  return MESSAGE_AUDIO_DIR;
+}
+
 function getSafeFileName(fileName) {
   return path.basename(fileName || "");
 }
 
 function buildMessageFileUrl(fileName) {
   return `/api/messages/files/${fileName}`;
+}
+
+function buildMessageAudioUrl(fileName) {
+  return `/uploads/messages/audio/${fileName}`;
 }
 
 function isAllowedMessageMime(mime) {
@@ -55,6 +66,18 @@ function getFileUrlPath(fileUrl) {
     }
   }
   return fileUrl;
+}
+
+function getAudioUrlPath(audioUrl) {
+  if (!audioUrl) return "";
+  if (audioUrl.startsWith("http")) {
+    try {
+      return new URL(audioUrl).pathname;
+    } catch (err) {
+      return "";
+    }
+  }
+  return audioUrl;
 }
 
 function isUserParticipant(message, userId) {
@@ -334,6 +357,7 @@ exports.sendMessage = async (req, res) => {
       content,
       text,
       file,
+      audio,
       applicationId,
       jobId,
       type,
@@ -421,6 +445,48 @@ exports.sendMessage = async (req, res) => {
       }
     }
 
+    let audioPayload = null;
+    if (messageType === "audio") {
+      const audioUrl = audio?.url || "";
+      const duration = Number(audio?.duration);
+      const mime = audio?.mime || "audio/webm";
+      const audioUrlPath = getAudioUrlPath(audioUrl);
+      const audioFileName = getSafeFileName(audioUrlPath.split("/").pop());
+
+      if (!audioUrl || !audioFileName) {
+        return res.status(400).json({ message: "Audio invalide." });
+      }
+
+      if (!ALLOWED_AUDIO_MIME_TYPES.has(mime)) {
+        return res.status(400).json({ message: "Type audio non autorisé." });
+      }
+
+      const expectedUrl = buildMessageAudioUrl(audioFileName);
+      if (audioUrlPath !== expectedUrl) {
+        return res.status(400).json({ message: "URL audio invalide." });
+      }
+
+      if (!Number.isFinite(duration) || duration < 0) {
+        return res.status(400).json({ message: "Durée audio invalide." });
+      }
+
+      try {
+        const audioPath = path.join(ensureMessageAudioUploadDir(), audioFileName);
+        const stats = await fs.promises.stat(audioPath);
+        if (stats.size > MAX_MESSAGE_AUDIO_SIZE) {
+          return res.status(400).json({ message: "Audio trop volumineux." });
+        }
+      } catch (err) {
+        return res.status(404).json({ message: "Audio introuvable." });
+      }
+
+      audioPayload = {
+        url: expectedUrl,
+        duration,
+        mime: "audio/webm",
+      };
+    }
+
     const existingConversation = await findExistingConversation(
       sender,
       receiverId
@@ -473,6 +539,9 @@ exports.sendMessage = async (req, res) => {
     if (messageType === "file" && !filePayload) {
       return res.status(400).json({ message: "Fichier invalide." });
     }
+    if (messageType === "audio" && !audioPayload) {
+      return res.status(400).json({ message: "Audio invalide." });
+    }
 
     let replyPreview = null;
     let replyMessageId = null;
@@ -512,6 +581,8 @@ exports.sendMessage = async (req, res) => {
       type: messageType,
       file: filePayload,
       fileUrl: filePayload?.url || null,
+      audio: audioPayload,
+      audioUrl: audioPayload?.url || null,
       clientTempId: clientTempId || null,
       replyTo: replyMessageId,
       replyPreview,
@@ -894,149 +965,48 @@ exports.updateMessage = async (req, res) => {
 
 /* ============================================================
 POST /api/messages/audio
-➤ Envoyer un message vocal
+➤ Uploader un message vocal
 ============================================================ */
-function ensureAudioDir() {
-  const uploadDir = path.join(__dirname, "../uploads/audio");
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-  return uploadDir;
-}
-
-async function enhanceAudioQuality(filePath) {
-  const outputPath = `${filePath}.tmp.webm`;
-  const filters =
-    "loudnorm=I=-16:LRA=11:TP=-1.5,agate=threshold=-55dB:ratio=1.2:attack=5:release=100";
-
-  const args = [
-    "-i",
-    filePath,
-    "-af",
-    filters,
-    "-c:a",
-    "libopus",
-    "-b:a",
-    "32k",
-    "-ar",
-    "48000",
-    "-vn",
-    "-f",
-    "webm",
-    outputPath,
-  ];
-
-  await execFileAsync("ffmpeg", args);
-  fs.renameSync(outputPath, filePath);
-}
-
-exports.sendAudioMessage = async (req, res) => {
+exports.uploadAudioMessage = async (req, res) => {
   try {
-    ensureAudioDir();
-
     const sender = getSenderId(req);
     if (!sender) {
       return res.status(401).json({ message: "Authentification requise." });
     }
 
-    const { receiver, applicationId, jobId, content, clientTempId, replyTo } =
-      req.body;
-    const receiverId = receiver;
     const file = req.file;
-
-    if (receiverId === sender) {
-      return res
-        .status(400)
-        .json({ message: "Impossible d'envoyer un message à vous-même." });
+    if (!file) {
+      return res.status(400).json({ message: "Audio requis." });
     }
 
-    if (!receiverId || !file) {
-      return res.status(400).json({
-        message: "Receiver et audio sont requis.",
-      });
+    if (!ALLOWED_AUDIO_MIME_TYPES.has(file.mimetype)) {
+      return res.status(400).json({ message: "Format audio non supporté." });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
-      return res
-        .status(404)
-        .json({ message: "Destinataire introuvable." });
+    if (file.size > MAX_MESSAGE_AUDIO_SIZE) {
+      return res.status(400).json({ message: "Audio trop volumineux." });
     }
 
-    const receiverUser = await User.findById(receiverId);
-    if (!receiverUser) {
-      return res.status(404).json({ message: "Destinataire introuvable." });
-    }
+    const uploadDir = ensureMessageAudioUploadDir();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.webm`;
+    const destination = path.join(uploadDir, fileName);
 
-    await enhanceAudioQuality(file.path);
+    await fs.promises.writeFile(destination, file.buffer);
 
-    const audioUrl = `/uploads/audio/${file.filename}`;
-
-    let replyPreview = null;
-    let replyMessageId = null;
-    if (replyTo) {
-      const repliedMessage = await Message.findById(replyTo);
-      if (repliedMessage) {
-        replyMessageId = repliedMessage._id;
-        replyPreview = {
-          messageId: replyMessageId,
-          content: repliedMessage.content || "",
-          type: repliedMessage.type || "text",
-        };
-      }
-    }
-
-    const conversation = await findOrCreateConversation(sender, receiverId);
-
-    const message = await Message.create({
-      sender,
-      receiver: receiverId,
-      conversation: conversation._id,
-      content: content || "",
-      application: applicationId || null,
-      job: jobId || null,
-      type: "audio",
-      audioUrl,
-      clientTempId: clientTempId || null,
-      replyTo: replyMessageId,
-      replyPreview,
-      isRead: false,
-    });
-
-    conversation.lastMessage = message._id;
-    conversation.updatedAt = new Date();
-    await conversation.save();
-
-    getIO().to(receiverId.toString()).emit("new_message", {
-      from: sender,
-      to: receiverId,
-      message,
-    });
-
-    getIO().to(sender.toString()).emit("new_message", {
-      from: sender,
-      to: receiverId,
-      message,
-    });
-
-    getIO()
-      .to(receiverId.toString())
-      .to(sender.toString())
-      .emit("audio_message", { message });
-
-    await pushNotification(receiverId, {
-      from: sender,
-      type: "message",
-      text: "Nouvelle note vocale",
-    });
+    const duration = Number(req.body?.duration);
+    const normalizedDuration = Number.isFinite(duration) && duration >= 0 ? duration : 0;
 
     return res.status(201).json({
       success: true,
-      message: "Note vocale envoyée.",
-      data: message,
+      audio: {
+        url: buildMessageAudioUrl(fileName),
+        duration: normalizedDuration,
+        mime: "audio/webm",
+      },
     });
   } catch (error) {
     return res.status(500).json({
-      error: "Erreur lors de l'envoi de l'audio.",
+      error: "Erreur lors de l'upload de l'audio.",
       details: error.message,
     });
   }
@@ -1428,8 +1398,9 @@ exports.deleteMessage = async (req, res) => {
         message.deletedFor = [message.sender, message.receiver];
 
         const mediaPaths = [];
-        if (message.audioUrl) {
-          mediaPaths.push(path.join(__dirname, `..${message.audioUrl}`));
+        const audioUrl = message.audio?.url || message.audioUrl;
+        if (audioUrl) {
+          mediaPaths.push(path.join(__dirname, `..${audioUrl}`));
         }
         const fileUrl = message.file?.url || message.fileUrl;
         if (fileUrl) {

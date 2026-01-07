@@ -10,24 +10,11 @@ const MessageController = require("../controllers/MessageController");
 // Middleware sécurité
 const { isAuthenticated } = require("../middlewares/auth");
 
-const audioStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, "../uploads/audio");
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".webm";
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
-
 const audioUpload = multer({
-  storage: audioStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ["audio/webm", "audio/mpeg", "audio/mp3", "audio/ogg"];
-    if (!allowed.includes(file.mimetype)) {
+    if (file.mimetype !== "audio/webm") {
       return cb(new Error("Format audio non supporté"));
     }
     cb(null, true);
@@ -124,7 +111,7 @@ router.post(
   "/audio",
   isAuthenticated,
   audioUpload.single("audio"),
-  MessageController.sendAudioMessage
+  MessageController.uploadAudioMessage
 );
 
 router.post(
