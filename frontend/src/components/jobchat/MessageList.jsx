@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 const formatTime = (value) => {
   if (!value) return "";
@@ -10,9 +10,12 @@ const formatTime = (value) => {
   });
 };
 
-export default function MessageList({ messages, currentUserId }) {
+const MessageList = forwardRef(function MessageList(
+  { messages, currentUserId, endRef, onScroll },
+  ref
+) {
   return (
-    <div className="job-chat-messages">
+    <div className="job-chat-messages" ref={ref} onScroll={onScroll}>
       {messages.map((message) => {
         const senderId =
           typeof message.sender === "object" ? message.sender?._id : message.sender;
@@ -32,6 +35,9 @@ export default function MessageList({ messages, currentUserId }) {
           </div>
         );
       })}
+      <div ref={endRef} />
     </div>
   );
-}
+});
+
+export default MessageList;

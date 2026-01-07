@@ -67,8 +67,11 @@ export default function JobConversationPage() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
+  const chatListRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messageIdsRef = useRef(new Set());
+  const shouldAutoScrollRef = useRef(true);
+  const pendingAutoScrollRef = useRef(false);
 
   const basePath = role === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
 
@@ -232,9 +235,31 @@ export default function JobConversationPage() {
     };
   }, [conversationId, jobId, otherParticipant, token]);
 
+  const scrollToBottom = (behavior = "smooth") => {
+    if (!messages.length) return;
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  const handleScroll = () => {
+    const container = chatListRef.current;
+    if (!container) return;
+    const threshold = 80;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom <= threshold;
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length === 0) return;
+    if (!pendingAutoScrollRef.current && !shouldAutoScrollRef.current) return;
+    pendingAutoScrollRef.current = false;
+    scrollToBottom("smooth");
   }, [messages]);
+
+  useEffect(() => {
+    shouldAutoScrollRef.current = true;
+    pendingAutoScrollRef.current = true;
+  }, [conversationId, jobId]);
 
   useEffect(() => {
     if (!socket || !conversationId) return;
@@ -259,6 +284,7 @@ export default function JobConversationPage() {
       if (message?._id && messageIdsRef.current.has(message._id)) return;
       if (message?._id) messageIdsRef.current.add(message._id);
 
+      pendingAutoScrollRef.current = true;
       setMessages((prev) => [...prev, message]);
     };
 
@@ -296,6 +322,7 @@ export default function JobConversationPage() {
       createdAt: new Date().toISOString(),
     };
 
+    pendingAutoScrollRef.current = true;
     setMessages((prev) => [...prev, payload]);
 
     try {
@@ -364,13 +391,17 @@ export default function JobConversationPage() {
         {loading && <div className="job-chat-loading">Chargement…</div>}
         {error && <div className="job-chat-error">{error}</div>}
 
-        <MessageList messages={messages} currentUserId={user?._id} />
+        <MessageList
+          ref={chatListRef}
+          messages={messages}
+          currentUserId={user?._id}
+          endRef={messagesEndRef}
+          onScroll={handleScroll}
+        />
 
         {isTyping && (
           <div className="job-chat-typing">{otherName} est en train d'écrire…</div>
         )}
-
-        <div ref={messagesEndRef} />
 
         <MessageInput
           onSend={handleSend}
