@@ -16,6 +16,18 @@ const recruiterMenu = [
   { key: "settings", label: "Paramètres", path: "/settings" },
 ];
 
+const buildProfile = (candidate = {}) => {
+  const professional = candidate.professionalProfile || {};
+
+  return {
+    name: professional.name || candidate.name || "",
+    email: professional.email || candidate.email || "",
+    avatar: professional.avatar || candidate.avatar || "",
+    cvData: professional.cvData || candidate.cvData || "",
+    cvName: professional.cvName || candidate.cvName || "",
+  };
+};
+
 export default function RecruiterCvTheque() {
   const nav = useNavigate();
   const data = useRecruiterDashboardData();
@@ -56,15 +68,16 @@ export default function RecruiterCvTheque() {
       const job = app.job || {};
       const jobId = job._id || app.jobId || app.job || "unknown";
       const candidate = app.applicant || {};
+      const profile = buildProfile(candidate);
 
-      if (!candidate || (!candidate.cvData && !candidate.cvName)) return;
+      if (!profile.cvData && !profile.cvName) return;
 
       const group = ensureGroup(String(jobId), job);
       const candidateKey = candidate._id || candidate.email;
       if (!candidateKey || group.seen.has(candidateKey)) return;
 
       group.seen.add(candidateKey);
-      group.candidates.push(candidate);
+      group.candidates.push({ candidate, profile });
     });
 
     const result = [];
@@ -87,9 +100,15 @@ export default function RecruiterCvTheque() {
   const cvCandidates = useMemo(() => {
     const seen = new Set();
     return data.applications
-      .map((app) => app.applicant)
-      .filter((candidate) => candidate && (candidate.cvData || candidate.cvName))
-      .filter((candidate) => {
+      .map((app) => {
+        const candidate = app.applicant || {};
+        return {
+          candidate,
+          profile: buildProfile(candidate),
+        };
+      })
+      .filter(({ profile }) => profile.cvData || profile.cvName)
+      .filter(({ candidate }) => {
         const key = candidate._id || candidate.email;
         if (!key || seen.has(key)) return false;
         seen.add(key);
@@ -97,14 +116,14 @@ export default function RecruiterCvTheque() {
       });
   }, [data.applications]);
 
-  const downloadCv = (candidate) => {
-    if (!candidate?.cvData) return;
+  const downloadCv = (profile) => {
+    if (!profile?.cvData) return;
     const link = document.createElement("a");
-    const safeName = candidate.name
-      ? candidate.name.replace(/\s+/g, "-").toLowerCase()
+    const safeName = profile.name
+      ? profile.name.replace(/\s+/g, "-").toLowerCase()
       : "candidat";
-    link.href = candidate.cvData;
-    link.download = candidate.cvName || `cv-${safeName}.pdf`;
+    link.href = profile.cvData;
+    link.download = profile.cvName || `cv-${safeName}.pdf`;
     link.target = "_blank";
     link.rel = "noreferrer";
     document.body.appendChild(link);
@@ -113,8 +132,8 @@ export default function RecruiterCvTheque() {
   };
 
   const downloadAllCvs = () => {
-    cvCandidates.forEach((candidate, index) => {
-      setTimeout(() => downloadCv(candidate), index * 250);
+    cvCandidates.forEach(({ profile }, index) => {
+      setTimeout(() => downloadCv(profile), index * 250);
     });
   };
 
@@ -212,17 +231,17 @@ export default function RecruiterCvTheque() {
                     <div className="empty-state small">Aucun CV reçu pour cette offre.</div>
                   ) : (
                     <div className="cv-list">
-                      {group.candidates.map((candidate) => (
+                      {group.candidates.map(({ candidate, profile }) => (
                         <div
                           key={candidate._id || candidate.email}
                           className="cv-item"
                         >
                           <div className="cv-info">
-                            <p className="cv-name">{candidate.name || "Candidat"}</p>
-                            <p className="cv-meta">{candidate.email || "Email non renseigné"}</p>
-                            <p className="cv-file">{candidate.cvName || "CV disponible"}</p>
+                            <p className="cv-name">{profile.name || "Candidat"}</p>
+                            <p className="cv-meta">{profile.email || "Email non renseigné"}</p>
+                            <p className="cv-file">{profile.cvName || "CV disponible"}</p>
                           </div>
-                          <button className="ghost-btn" onClick={() => downloadCv(candidate)}>
+                          <button className="ghost-btn" onClick={() => downloadCv(profile)}>
                             Télécharger
                           </button>
                         </div>
