@@ -55,6 +55,8 @@ export default function MessageInput({
   const [pendingAudio, setPendingAudio] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
+  const hasText = value.trim().length > 0;
+  const hasSendContent = hasText || Boolean(selectedFile || pendingAudio);
 
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
@@ -330,26 +332,18 @@ export default function MessageInput({
           }}
           disabled={disabled || Boolean(selectedFile || pendingAudio)}
         />
-        {!pendingAudio && (
-          <button
-            type="button"
-            className="job-chat-mic"
-            onMouseDown={startRecording}
-            onMouseUp={stopRecording}
-            onTouchStart={startRecording}
-            onTouchEnd={stopRecording}
-            disabled={disabled || isRecording || Boolean(selectedFile)}
-          >
-            🎙️
-          </button>
-        )}
         <button
           type="button"
-          className="primary-btn"
-          onClick={handleSend}
-          disabled={disabled || (!selectedFile && !pendingAudio && !value.trim())}
+          className={`job-chat-action ${hasSendContent ? "is-send" : "is-mic"}`}
+          onClick={hasSendContent ? handleSend : undefined}
+          onMouseDown={hasSendContent ? undefined : startRecording}
+          onMouseUp={hasSendContent ? undefined : stopRecording}
+          onTouchStart={hasSendContent ? undefined : startRecording}
+          onTouchEnd={hasSendContent ? undefined : stopRecording}
+          disabled={disabled || (hasSendContent ? false : isRecording || Boolean(selectedFile))}
+          aria-label={hasSendContent ? "Envoyer" : "Enregistrer une note vocale"}
         >
-          Envoyer
+          {hasSendContent ? "➤" : "🎤"}
         </button>
       </div>
     </div>
