@@ -24,12 +24,7 @@ const ALLOWED_MESSAGE_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
 ]);
-const ALLOWED_AUDIO_MIME_TYPES = new Set(["audio/webm", "audio/ogg", "audio/mp4"]);
-const AUDIO_EXTENSION_MAP = {
-  "audio/webm": "webm",
-  "audio/ogg": "ogg",
-  "audio/mp4": "mp4",
-};
+const ALLOWED_AUDIO_MIME_TYPES = new Set(["audio/webm"]);
 
 function ensureMessageUploadDir() {
   if (!fs.existsSync(MESSAGE_UPLOAD_DIR)) {
@@ -454,7 +449,7 @@ exports.sendMessage = async (req, res) => {
     if (messageType === "audio") {
       const audioUrl = audio?.url || "";
       const duration = Number(audio?.duration);
-      const mime = audio?.mimeType || audio?.mime || "audio/webm";
+      const mime = audio?.mime || "audio/webm";
       const audioUrlPath = getAudioUrlPath(audioUrl);
       const audioFileName = getSafeFileName(audioUrlPath.split("/").pop());
 
@@ -475,11 +470,9 @@ exports.sendMessage = async (req, res) => {
         return res.status(400).json({ message: "Durée audio invalide." });
       }
 
-      let audioSize = 0;
       try {
         const audioPath = path.join(ensureMessageAudioUploadDir(), audioFileName);
         const stats = await fs.promises.stat(audioPath);
-        audioSize = stats.size;
         if (stats.size > MAX_MESSAGE_AUDIO_SIZE) {
           return res.status(400).json({ message: "Audio trop volumineux." });
         }
@@ -490,9 +483,7 @@ exports.sendMessage = async (req, res) => {
       audioPayload = {
         url: expectedUrl,
         duration,
-        mime,
-        mimeType: mime,
-        size: audioSize,
+        mime: "audio/webm",
       };
     }
 
@@ -997,11 +988,7 @@ exports.uploadAudioMessage = async (req, res) => {
     }
 
     const uploadDir = ensureMessageAudioUploadDir();
-    const extension =
-      AUDIO_EXTENSION_MAP[file.mimetype] ||
-      path.extname(file.originalname).replace(".", "") ||
-      "webm";
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.webm`;
     const destination = path.join(uploadDir, fileName);
 
     await fs.promises.writeFile(destination, file.buffer);
@@ -1014,9 +1001,7 @@ exports.uploadAudioMessage = async (req, res) => {
       audio: {
         url: buildMessageAudioUrl(fileName),
         duration: normalizedDuration,
-        mime: file.mimetype,
-        mimeType: file.mimetype,
-        size: file.size,
+        mime: "audio/webm",
       },
     });
   } catch (error) {

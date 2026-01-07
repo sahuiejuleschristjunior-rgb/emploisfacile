@@ -14,8 +14,7 @@ const audioUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ["audio/webm", "audio/ogg", "audio/mp4"];
-    if (!allowed.includes(file.mimetype)) {
+    if (file.mimetype !== "audio/webm") {
       return cb(new Error("Format audio non supporté"));
     }
     cb(null, true);
@@ -110,13 +109,6 @@ router.get(
 
 router.post(
   "/audio",
-  isAuthenticated,
-  audioUpload.single("audio"),
-  MessageController.uploadAudioMessage
-);
-
-router.post(
-  "/voice",
   isAuthenticated,
   audioUpload.single("audio"),
   MessageController.uploadAudioMessage
