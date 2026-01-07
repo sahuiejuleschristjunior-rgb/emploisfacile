@@ -10,6 +10,7 @@ import {
   fetchMessageRequests,
   fetchInbox,
   sendMessagePayload,
+  uploadMessageFile,
 } from "../api/messagesApi";
 import { fetchFriends } from "../api/socialApi";
 import { useActiveConversation } from "../context/ActiveConversationContext";
@@ -20,6 +21,15 @@ const API_HOST = API_URL?.replace(/\/?api$/, "");
 const SOCKET_URL = API_HOST || window.location.origin;
 const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 const loadErrorMessage = "Impossible de charger vos conversations";
+const MAX_MESSAGE_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_MESSAGE_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "image/jpeg",
+  "image/png",
+]);
+const MESSAGE_FILE_ACCEPT = ".pdf,.doc,.docx,image/jpeg,image/png";
 
 const ensureJsonResponse = async (res) => {
   const contentType = res.headers.get("content-type");
@@ -29,14 +39,29 @@ const ensureJsonResponse = async (res) => {
   return res.json();
 };
 
-const PlusIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
-    <path
-      fill="currentColor"
-      d="M12 4c.6 0 1 .4 1 1v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 0 1 0-2h6V5c0-.6.4-1 1-1Z"
-    />
-  </svg>
-);
+const formatFileSize = (size = 0) => {
+  if (!size && size !== 0) return "";
+  if (size < 1024) return `${size} o`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} Ko`;
+  return `${(size / (1024 * 1024)).toFixed(1)} Mo`;
+};
+
+const resolveFileKind = (file) => {
+  if (!file) return "file";
+  const mime = (file.type || "").toLowerCase();
+  const name = (file.name || "").toLowerCase();
+  if (mime.startsWith("image/") || /\.(png|jpe?g)$/i.test(name)) return "image";
+  if (mime === "application/pdf" || name.endsWith(".pdf")) return "pdf";
+  if (
+    mime === "application/msword" ||
+    mime ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    /\.(doc|docx)$/i.test(name)
+  ) {
+    return "doc";
+  }
+  return "file";
+};
 
 const MicIcon = ({ pulse = false }) => (
   <svg
@@ -206,7 +231,7 @@ export default function Messages() {
 
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
   const [reactionPicker, setReactionPicker] = useState({
     messageId: null,
     anchor: null,
@@ -225,6 +250,14 @@ export default function Messages() {
   useEffect(() => {
     deleteByType?.("public");
   }, [deleteByType]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingFile?.previewUrl) {
+        URL.revokeObjectURL(pendingFile.previewUrl);
+      }
+    };
+  }, [pendingFile]);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
@@ -258,6 +291,7 @@ export default function Messages() {
   const activeStreamRef = useRef(null);
 
   const audioRefs = useRef({});
+  const fileInputRef = useRef(null);
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
 
@@ -267,8 +301,6 @@ export default function Messages() {
 
   const messagesEndRef = useRef(null);
   const chatBodyRef = useRef(null);
-  const attachMenuRef = useRef(null);
-  const attachSwipeStart = useRef(null);
   const longPressTimer = useRef(null);
   const typingTimeoutRef = useRef(null);
   const socketRef = useRef(null);
@@ -545,8 +577,9 @@ export default function Messages() {
     const senderId = typeof msg.sender === "object" ? msg.sender?._id : msg.sender;
     const prefix = senderId === me?._id ? "Vous: " : "";
 
-    let content = msg.content || "";
+    let content = msg.content || msg.text || "";
     if (!content && msg.type === "audio") content = "Message vocal";
+    if (!content && msg.type === "file") content = msg.file?.name || "Fichier";
     if (!content && msg.fileUrl) content = "Fichier";
     if (!content) content = "Message";
 
@@ -579,7 +612,10 @@ export default function Messages() {
       replyId: target._id,
       preview: {
         messageId: target._id,
-        content: target.content || (target.type === "audio" ? getAudioPreviewText(target) : "Message"),
+        content:
+          target.type === "file"
+            ? target.file?.name || "Fichier"
+            : target.content || (target.type === "audio" ? getAudioPreviewText(target) : "Message"),
         type: target.type || "text",
       },
     };
@@ -1047,6 +1083,7 @@ export default function Messages() {
       });
     };
 
+    socket.on("message:new", handleMessage);
     socket.on("new_message", handleMessage);
     socket.on("audio_message", handleMessage);
     socket.on("reaction_update", handleReactionUpdate);
@@ -1062,6 +1099,7 @@ export default function Messages() {
     socket.on("call_hangup", handleCallHangup);
 
     return () => {
+      socket.off("message:new", handleMessage);
       socket.off("new_message", handleMessage);
       socket.off("audio_message", handleMessage);
       socket.off("reaction_update", handleReactionUpdate);
@@ -1079,6 +1117,16 @@ export default function Messages() {
       socketRef.current = null;
     };
   }, [activeChat, friends, loadFriendsAndConversations, loadRequests, token]);
+
+  useEffect(() => {
+    const conversationId = activeConversationIdValue;
+    const socket = socketRef.current;
+    if (!socket || !conversationId) return undefined;
+    socket.emit("conversation:join", { conversationId });
+    return () => {
+      socket.emit("conversation:leave", { conversationId });
+    };
+  }, [activeConversationIdValue]);
 
   /* =====================================================
      LOAD CONVERSATION
@@ -1512,6 +1560,70 @@ export default function Messages() {
   /* =====================================================
      SEND / EDIT MESSAGE
   ===================================================== */
+  const sendFileMessage = async () => {
+    const receiverId = getConversationTargetId();
+    if (!pendingFile || !activeChat || !receiverId) return;
+
+    setInput("");
+    setInfoBanner("");
+
+    const { replyId, preview: replyPreview } = buildReplyData(replyTo);
+    const clientTempId = `temp-file-${Date.now()}`;
+
+    const tempMessage = {
+      _id: clientTempId,
+      sender: me?._id,
+      receiver: receiverId,
+      type: "file",
+      content: "",
+      text: "",
+      file: {
+        name: pendingFile.file.name,
+        size: pendingFile.file.size,
+        mime: pendingFile.file.type,
+        url: pendingFile.previewUrl || "",
+      },
+      clientTempId,
+      replyTo: replyId,
+      replyPreview,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+    setTimeout(() => scrollToBottom(true), 10);
+    setReplyTo(null);
+
+    try {
+      const upload = await uploadMessageFile(pendingFile.file);
+      const { ok, data } = await sendMessagePayload({
+        receiver: receiverId,
+        type: "file",
+        file: upload?.file,
+        clientTempId,
+        replyTo: replyId,
+      });
+
+      if (ok && data?.data) {
+        upsertMessage(data.data);
+      } else if (data?.message) {
+        setInfoBanner(data.message);
+      }
+    } catch (err) {
+      console.error("Erreur upload fichier", err);
+      setInfoBanner(loadErrorMessage);
+      setMessages((prev) =>
+        prev.filter(
+          (m) =>
+            m.clientTempId !== clientTempId &&
+            m._id !== clientTempId &&
+            m.clientTempId !== tempMessage._id
+        )
+      );
+    } finally {
+      resetPendingFile();
+    }
+  };
+
   const sendMessage = async (contentOverride = null) => {
     const content = (contentOverride ?? input).trim();
     const receiverId = getConversationTargetId();
@@ -1613,6 +1725,8 @@ export default function Messages() {
   const submitMessage = async () => {
     if (editingMessage) {
       await saveEditedMessage();
+    } else if (pendingFile) {
+      await sendFileMessage();
     } else {
       await sendMessage();
     }
@@ -1702,7 +1816,12 @@ export default function Messages() {
       const preview = getAudioPreviewText(msg);
       return url ? `${preview}\n${url}` : preview;
     }
-    return msg.content || "";
+    if (msg.type === "file") {
+      const fileName = msg.file?.name || "Fichier";
+      const fileUrl = msg.file?.url ? resolveUrl(msg.file.url) : "";
+      return fileUrl ? `${fileName}\n${fileUrl}` : fileName;
+    }
+    return msg.content || msg.text || "";
   };
 
   const copyMessage = async (msg) => {
@@ -2149,36 +2268,6 @@ export default function Messages() {
   }, [reactionPicker.messageId, messageActions, deleteTarget]);
 
   /* =====================================================
-     ATTACH MENU
-  ===================================================== */
-  const handleAttachTouchStart = (event) => {
-    attachSwipeStart.current = event.touches?.[0]?.clientY || null;
-  };
-
-  const handleAttachTouchEnd = (event) => {
-    const end = event.changedTouches?.[0]?.clientY;
-    if (attachSwipeStart.current !== null && end !== undefined && end - attachSwipeStart.current > 30) {
-      setShowAttachMenu(false);
-    }
-    attachSwipeStart.current = null;
-  };
-
-  useEffect(() => {
-    const closeAttach = (e) => {
-      if (
-        showAttachMenu &&
-        attachMenuRef.current &&
-        !attachMenuRef.current.contains(e.target) &&
-        !e.target.closest?.(".attach-sheet")
-      ) {
-        setShowAttachMenu(false);
-      }
-    };
-    window.addEventListener("click", closeAttach);
-    return () => window.removeEventListener("click", closeAttach);
-  }, [showAttachMenu]);
-
-  /* =====================================================
      TYPING FLAG
   ===================================================== */
   const sendTypingFlag = (flag) => {
@@ -2201,6 +2290,40 @@ export default function Messages() {
     sendTypingFlag(true);
     clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => sendTypingFlag(false), 1200);
+  };
+
+  const resetPendingFile = () => {
+    if (pendingFile?.previewUrl) {
+      URL.revokeObjectURL(pendingFile.previewUrl);
+    }
+    setPendingFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileSelection = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const extensionAllowed = /\.(pdf|docx?|png|jpe?g)$/i.test(file.name || "");
+    if (!ALLOWED_MESSAGE_MIME_TYPES.has(file.type) && !extensionAllowed) {
+      setInfoBanner("Format de fichier non autorisé.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_MESSAGE_FILE_SIZE) {
+      setInfoBanner("Fichier trop volumineux (10 MB max).");
+      event.target.value = "";
+      return;
+    }
+
+    const kind = resolveFileKind(file);
+    const previewUrl = kind === "image" ? URL.createObjectURL(file) : "";
+    setPendingFile({ file, kind, previewUrl });
+    setInfoBanner("");
+    event.target.value = "";
   };
 
   const cancelEdit = () => {
@@ -2244,6 +2367,10 @@ export default function Messages() {
 
   useEffect(() => {
     resetCallOverlay();
+  }, [activeChat?._id]);
+
+  useEffect(() => {
+    resetPendingFile();
   }, [activeChat?._id]);
 
   useEffect(() => {
@@ -2337,12 +2464,111 @@ export default function Messages() {
       const source = findMessageById(preview.messageId);
       return getAudioPreviewText(source || preview);
     }
+    if (preview.type === "file") {
+      return preview.content || "Fichier";
+    }
     return preview.content || "Message";
+  };
+
+  const resolveMessageFile = (msg) => {
+    if (!msg) return null;
+    if (msg.file?.url) return msg.file;
+    if (msg.fileUrl) {
+      return {
+        name: msg.file?.name || "Fichier",
+        size: msg.file?.size || 0,
+        mime: msg.file?.mime || "",
+        url: msg.fileUrl,
+      };
+    }
+    return null;
+  };
+
+  const getMessageSummary = (msg) => {
+    if (!msg) return "Message";
+    if (msg.type === "audio") return getAudioPreviewText(msg);
+    if (msg.type === "file") {
+      const file = resolveMessageFile(msg);
+      return file?.name || "Fichier";
+    }
+    return msg.content || msg.text || "Message";
+  };
+
+  const downloadMessageFile = async (msg) => {
+    const file = resolveMessageFile(msg);
+    if (!file?.url) return;
+    const fileName = file.name || "fichier";
+    const fileUrl = file.url;
+
+    if (fileUrl.startsWith("blob:")) {
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+
+    try {
+      const res = await fetch(resolveUrl(fileUrl), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Téléchargement impossible.");
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Erreur téléchargement fichier", err);
+      setInfoBanner("Impossible de télécharger le fichier.");
+    }
+  };
+
+  const renderFileMessage = (msg) => {
+    const file = resolveMessageFile(msg);
+    if (!file) return null;
+    const kind = resolveFileKind({ name: file.name, type: file.mime });
+    const icon =
+      kind === "image" ? "🖼️" : kind === "pdf" ? "📄" : kind === "doc" ? "📝" : "📎";
+
+    return (
+      <div className="message-file-card">
+        <div className="message-file-icon" aria-hidden>
+          {icon}
+        </div>
+        <div className="message-file-info">
+          <div className="message-file-name">{file.name || "Fichier"}</div>
+          <div className="message-file-meta">{formatFileSize(file.size)}</div>
+        </div>
+        <button
+          type="button"
+          className="message-file-download"
+          onClick={() => downloadMessageFile(msg)}
+        >
+          Télécharger
+        </button>
+      </div>
+    );
   };
 
   const renderMessageContent = (msg) => {
     const preview = getReplyPreview(msg);
-    const content = msg.type === "audio" ? renderAudioBubble(msg) : msg.content;
+    const content =
+      msg.type === "audio"
+        ? renderAudioBubble(msg)
+        : msg.type === "file"
+        ? renderFileMessage(msg)
+        : msg.content || msg.text;
 
     return (
       <div className="message-content">
@@ -2628,9 +2854,7 @@ export default function Messages() {
                             : activeChat?.name || "Contact"}
                         </div>
                         <div className="pinned-text">
-                          {topPinnedMessage.type === "audio"
-                            ? getAudioPreviewText(topPinnedMessage)
-                            : topPinnedMessage.content || "Message"}
+                          {getMessageSummary(topPinnedMessage)}
                         </div>
                       </div>
 
@@ -2708,9 +2932,7 @@ export default function Messages() {
                 <div className="edit-banner-text">
                   <div className="edit-banner-title">Modification du message</div>
                   <div className="edit-banner-preview">
-                    {editingMessage.type === "audio"
-                      ? getAudioPreviewText(editingMessage)
-                      : editingMessage.content || "Message"}
+                    {getMessageSummary(editingMessage)}
                   </div>
                 </div>
                 <button
@@ -2729,7 +2951,7 @@ export default function Messages() {
                   <div className="reply-banner-title">
                     Répondre à {replyTo?.sender?.name || "ce message"}
                   </div>
-                  <div className="reply-banner-preview">{getAudioPreviewText(replyTo)}</div>
+                  <div className="reply-banner-preview">{getMessageSummary(replyTo)}</div>
                 </div>
                 <button
                   className="reply-banner-close"
@@ -2737,6 +2959,38 @@ export default function Messages() {
                   aria-label="Annuler la réponse"
                 >
                   <CloseIcon />
+                </button>
+              </div>
+            )}
+            {pendingFile && (
+              <div className="file-preview-bar">
+                {pendingFile.kind === "image" && pendingFile.previewUrl ? (
+                  <img
+                    src={pendingFile.previewUrl}
+                    alt={pendingFile.file.name}
+                    className="file-preview-thumb"
+                  />
+                ) : (
+                  <div className="file-preview-icon" aria-hidden>
+                    {pendingFile.kind === "pdf"
+                      ? "📄"
+                      : pendingFile.kind === "doc"
+                      ? "📝"
+                      : "📎"}
+                  </div>
+                )}
+                <div className="file-preview-info">
+                  <div className="file-preview-name">{pendingFile.file.name}</div>
+                  <div className="file-preview-meta">
+                    {formatFileSize(pendingFile.file.size)}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="file-preview-remove"
+                  onClick={resetPendingFile}
+                >
+                  Retirer
                 </button>
               </div>
             )}
@@ -2751,16 +3005,24 @@ export default function Messages() {
                 isRecording && !recordLocked ? () => stopRecording(false) : undefined
               }
             >
-              <div className="attach-wrapper" ref={attachMenuRef}>
+              <div className="attach-wrapper">
                 <button
                   className="chat-attach-btn"
-                  onClick={() => {
-                    setShowAttachMenu((p) => !p);
-                  }}
+                  onClick={() => fileInputRef.current?.click()}
                   aria-label="Pièces jointes"
                 >
-                  <PlusIcon />
+                  <span role="img" aria-hidden>
+                    📎
+                  </span>
                 </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept={MESSAGE_FILE_ACCEPT}
+                  className="file-input-hidden"
+                  onChange={handleFileSelection}
+                  disabled={Boolean(editingMessage)}
+                />
               </div>
 
               {isRecording ? (
@@ -2813,11 +3075,18 @@ export default function Messages() {
                 <>
                   <input
                     className="chat-input"
-                    placeholder={editingMessage ? "Modifier le message" : "Message..."}
+                    placeholder={
+                      editingMessage
+                        ? "Modifier le message"
+                        : pendingFile
+                        ? "Envoyer le fichier"
+                        : "Message..."
+                    }
                     ref={inputRef}
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submitMessage()}
+                    disabled={Boolean(pendingFile)}
                   />
 
                   <button
@@ -2833,41 +3102,18 @@ export default function Messages() {
                     <EmojiIcon />
                   </button>
 
-                  {input.trim().length > 0 ? (
+                  {input.trim().length > 0 || pendingFile ? (
                     <button className="chat-send-btn" onClick={submitMessage}>
                       <SendIcon />
                     </button>
                   ) : (
-                    <button
-                      className={`chat-mic-btn ${isRecording ? "recording" : ""}`}
-                      onMouseDown={startRecording}
-                      onTouchStart={startRecording}
-                      aria-label="Maintenir pour enregistrer"
-                      type="button"
-                    >
-                      <MicIcon />
+                    <button className="chat-send-btn" disabled>
+                      <SendIcon />
                     </button>
                   )}
                 </>
               )}
             </div>
-
-            {showAttachMenu && (
-              <div
-                className="attach-sheet"
-                role="dialog"
-                onTouchStart={handleAttachTouchStart}
-                onTouchEnd={handleAttachTouchEnd}
-              >
-                <div className="attach-sheet-handle" />
-                <div className="attach-options">
-                  <button className="attach-item">Fichier</button>
-                  <button className="attach-item">Image</button>
-                  <button className="attach-item">Caméra</button>
-                  <button className="attach-item">Localisation</button>
-                </div>
-              </div>
-            )}
 
             {reactionPicker.messageId && (
               <div className="reaction-picker">
@@ -2889,8 +3135,7 @@ export default function Messages() {
               <div className="message-actions-sheet" role="dialog">
                 <div className="message-actions-header">Action sur le message</div>
                 <div className="message-actions-preview">
-                  {messageActions.content ||
-                    (messageActions.type === "audio" ? "Message vocal" : "Message")}
+                  {getMessageSummary(messageActions)}
                 </div>
                 {!isMessageFromMe(messageActions) && (
                   <div className="message-actions-reactions">

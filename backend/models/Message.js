@@ -51,10 +51,37 @@ const messageSchema = new mongoose.Schema(
       default: "",
     },
 
+    // Texte brut (compatibilité front)
+    text: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     // URL d’un fichier (si type = file)
     fileUrl: {
       type: String,
       default: null,
+    },
+
+    // Détails du fichier (si type = file)
+    file: {
+      name: {
+        type: String,
+        default: "",
+      },
+      size: {
+        type: Number,
+        default: 0,
+      },
+      mime: {
+        type: String,
+        default: "",
+      },
+      url: {
+        type: String,
+        default: "",
+      },
     },
 
     // URL d'un audio (si type = audio)

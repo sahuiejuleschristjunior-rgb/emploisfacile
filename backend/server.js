@@ -60,6 +60,9 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 ============================================================ */
 // Serve uploaded files under both /uploads and /api/uploads for backward compatibility
 const uploadsPath = path.join(__dirname, "uploads");
+app.use("/uploads/messages", (req, res) => {
+  res.status(403).json({ message: "Accès interdit." });
+});
 app.use("/uploads", express.static(uploadsPath));
 app.use("/api/uploads", express.static(uploadsPath));
 

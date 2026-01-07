@@ -164,7 +164,10 @@ export default function RecruiterInbox() {
             const job = jobsById[String(jobId)] || conv?.job;
             const other = resolveOtherParticipant(conv?.participants, user?._id);
             const otherName = other?.name || other?.companyName || "Candidat";
-            const lastMessage = conv?.lastMessage?.content || "Aucun message";
+            const lastMessage =
+              conv?.lastMessage?.type === "file"
+                ? conv?.lastMessage?.file?.name || "Fichier"
+                : conv?.lastMessage?.content || "Aucun message";
             const jobTitle = job?.title || conv?.jobTitle || "Offre";
 
             return (
