@@ -232,6 +232,7 @@ export default function Messages() {
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
   const [pendingFile, setPendingFile] = useState(null);
+  const [pendingAudio, setPendingAudio] = useState(null);
   const [reactionPicker, setReactionPicker] = useState({
     messageId: null,
     anchor: null,
@@ -256,8 +257,11 @@ export default function Messages() {
       if (pendingFile?.previewUrl) {
         URL.revokeObjectURL(pendingFile.previewUrl);
       }
+      if (pendingAudio?.previewUrl) {
+        URL.revokeObjectURL(pendingAudio.previewUrl);
+      }
     };
-  }, [pendingFile]);
+  }, [pendingFile, pendingAudio]);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordCanceled, setRecordCanceled] = useState(false);
@@ -292,6 +296,7 @@ export default function Messages() {
 
   const audioRefs = useRef({});
   const fileInputRef = useRef(null);
+  const audioPreviewRef = useRef(null);
   const currentAudioRef = useRef(null);
   const currentAudioIdRef = useRef(null);
 
@@ -558,7 +563,12 @@ export default function Messages() {
     if (!msg || msg.type !== "audio") return null;
     const status = audioStatus[msg._id] || {};
     const duration =
-      status.duration || msg.audioDuration || msg.duration || msg.length || msg.audioLength;
+      status.duration ||
+      msg.audio?.duration ||
+      msg.audioDuration ||
+      msg.duration ||
+      msg.length ||
+      msg.audioLength;
     if (!duration || Number.isNaN(Number(duration))) return null;
     return Number(duration);
   };
@@ -1725,6 +1735,8 @@ export default function Messages() {
   const submitMessage = async () => {
     if (editingMessage) {
       await saveEditedMessage();
+    } else if (pendingAudio) {
+      await sendAudioMessage(replyTo);
     } else if (pendingFile) {
       await sendFileMessage();
     } else {
@@ -1812,7 +1824,7 @@ export default function Messages() {
   const getMessageShareText = (msg) => {
     if (!msg) return "";
     if (msg.type === "audio") {
-      const url = resolveUrl(msg.audioUrl);
+      const url = resolveUrl(msg.audio?.url || msg.audioUrl);
       const preview = getAudioPreviewText(msg);
       return url ? `${preview}\n${url}` : preview;
     }
@@ -1837,7 +1849,8 @@ export default function Messages() {
   const shareMessage = async (msg) => {
     if (!msg) return;
     const text = getMessageShareText(msg);
-    const url = msg.type === "audio" ? resolveUrl(msg.audioUrl) : undefined;
+    const url =
+      msg.type === "audio" ? resolveUrl(msg.audio?.url || msg.audioUrl) : undefined;
     const title = msg.type === "audio" ? "Message vocal" : "Message";
 
     if (navigator?.share) {
@@ -1885,7 +1898,7 @@ export default function Messages() {
   };
 
   const startRecording = async (event) => {
-    if (!activeChat || isRecording) return;
+    if (!activeChat || isRecording || pendingAudio || pendingFile) return;
     clearInterval(recordTimerRef.current);
     stopRecordVisualization();
 
@@ -1947,7 +1960,12 @@ export default function Messages() {
       echoReducer.connect(analyser);
       analyser.connect(destination);
 
-      const recorder = new MediaRecorder(destination.stream);
+      const preferredMime = "audio/webm;codecs=opus";
+      const fallbackMime = "audio/webm";
+      const mimeType = MediaRecorder.isTypeSupported?.(preferredMime)
+        ? preferredMime
+        : fallbackMime;
+      const recorder = new MediaRecorder(destination.stream, { mimeType });
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           recordingChunksRef.current.push(e.data);
@@ -1971,7 +1989,7 @@ export default function Messages() {
         cleanupAudioContext();
         setRecordLevel(0);
         if (blob.size > 0) {
-          uploadAudio(blob, replyTo);
+          prepareAudioPreview(blob);
         }
       };
 
@@ -2059,9 +2077,56 @@ export default function Messages() {
     }
   };
 
-  const uploadAudio = async (blob, replyTarget = null) => {
+  const getAudioDuration = (blob) =>
+    new Promise((resolve) => {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onloadedmetadata = () => {
+        const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+        URL.revokeObjectURL(url);
+        resolve(duration);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      };
+    });
+
+  function resetPendingAudio() {
+    if (pendingAudio?.previewUrl) {
+      URL.revokeObjectURL(pendingAudio.previewUrl);
+    }
+    if (audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      audioPreviewRef.current.currentTime = 0;
+    }
+    setPendingAudio(null);
+  }
+
+  const prepareAudioPreview = async (blob) => {
+    const duration = await getAudioDuration(blob);
+    const previewUrl = URL.createObjectURL(blob);
+    setPendingAudio({
+      blob,
+      previewUrl,
+      duration,
+      mime: "audio/webm",
+    });
+  };
+
+  const togglePreviewAudio = () => {
+    const audio = audioPreviewRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  };
+
+  const sendAudioMessage = async (replyTarget = null) => {
     const receiverId = getConversationTargetId();
-    if (!activeChat || !receiverId || !blob || blob.size === 0 || !token) {
+    if (!activeChat || !receiverId || !pendingAudio?.blob || !token) {
       setInfoBanner(loadErrorMessage);
       return;
     }
@@ -2069,13 +2134,18 @@ export default function Messages() {
 
     const { replyId, preview: replyPreview } = buildReplyData(replyTarget);
 
-    const tempUrl = URL.createObjectURL(blob);
+    const tempUrl = pendingAudio.previewUrl;
     const clientTempId = `temp-${Date.now()}`;
     const tempMessage = {
       _id: clientTempId,
       sender: me?._id,
       receiver: receiverId,
       type: "audio",
+      audio: {
+        url: tempUrl,
+        duration: pendingAudio.duration || 0,
+        mime: "audio/webm",
+      },
       audioUrl: tempUrl,
       content: "",
       clientTempId,
@@ -2087,9 +2157,8 @@ export default function Messages() {
     setMessages((prev) => [...prev, tempMessage]);
 
     const formData = new FormData();
-    formData.append("audio", blob, fileName);
-    formData.append("receiver", receiverId);
-    formData.append("clientTempId", clientTempId);
+    formData.append("audio", pendingAudio.blob, fileName);
+    formData.append("duration", String(pendingAudio.duration || 0));
     if (replyId) {
       formData.append("replyTo", replyId);
     }
@@ -2099,18 +2168,38 @@ export default function Messages() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
         body: formData,
       });
       const data = await ensureJsonResponse(res);
-      if (res.ok && data?.data) {
-        upsertMessage(data.data);
+      if (res.ok && data?.audio) {
+        const { ok, data: sendData } = await sendMessagePayload({
+          receiver: receiverId,
+          type: "audio",
+          audio: data.audio,
+          clientTempId,
+          replyTo: replyId,
+        });
+        if (ok && sendData?.data) {
+          upsertMessage(sendData.data);
+        } else if (sendData?.message) {
+          setInfoBanner(sendData.message);
+        }
       }
     } catch (err) {
       console.error("Erreur upload audio", err);
+      setInfoBanner(loadErrorMessage);
+      setMessages((prev) =>
+        prev.filter(
+          (m) =>
+            m.clientTempId !== clientTempId &&
+            m._id !== clientTempId &&
+            m.clientTempId !== tempMessage._id
+        )
+      );
     } finally {
       setTimeout(() => scrollToBottom(true), 30);
+      resetPendingAudio();
       setReplyTo(null);
     }
   };
@@ -2305,6 +2394,11 @@ export default function Messages() {
   const handleFileSelection = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (pendingAudio) {
+      setInfoBanner("Envoyez ou supprimez la note vocale avant d'ajouter un fichier.");
+      event.target.value = "";
+      return;
+    }
 
     const extensionAllowed = /\.(pdf|docx?|png|jpe?g)$/i.test(file.name || "");
     if (!ALLOWED_MESSAGE_MIME_TYPES.has(file.type) && !extensionAllowed) {
@@ -2374,6 +2468,10 @@ export default function Messages() {
   }, [activeChat?._id]);
 
   useEffect(() => {
+    resetPendingAudio();
+  }, [activeChat?._id]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setTypingState((prev) => {
         const now = Date.now();
@@ -2414,10 +2512,11 @@ export default function Messages() {
 
   const renderAudioBubble = (msg) => {
     const status = audioStatus[msg._id] || {};
-    const progress = status.duration
-      ? Math.min((status.currentTime / status.duration) * 100, 100)
+    const duration = status.duration || msg.audio?.duration || 0;
+    const progress = duration
+      ? Math.min((status.currentTime / duration) * 100, 100)
       : 0;
-    const url = resolveUrl(msg.audioUrl);
+    const url = resolveUrl(msg.audio?.url || msg.audioUrl);
 
     return (
       <div className="audio-bubble">
@@ -2433,11 +2532,11 @@ export default function Messages() {
         </div>
 
         <div className="audio-duration">
-          {formatTime(status.currentTime)} / {formatTime(status.duration)}
+          {formatTime(status.currentTime)} / {formatTime(duration)}
         </div>
 
-      <audio ref={(node) => bindAudioRef(msg, node)} src={url} preload="metadata" />
-    </div>
+        <audio ref={(node) => bindAudioRef(msg, node)} src={url} preload="metadata" />
+      </div>
     );
   };
 
@@ -2962,6 +3061,43 @@ export default function Messages() {
                 </button>
               </div>
             )}
+            {pendingAudio && (
+              <div className="audio-preview-bar">
+                <div className="audio-preview-player">
+                  <button
+                    type="button"
+                    className="audio-preview-play"
+                    onClick={togglePreviewAudio}
+                  >
+                    ▶️ Écouter
+                  </button>
+                  <span className="audio-preview-duration">
+                    {formatTime(pendingAudio.duration)}
+                  </span>
+                  <audio
+                    ref={audioPreviewRef}
+                    src={pendingAudio.previewUrl}
+                    preload="metadata"
+                  />
+                </div>
+                <div className="audio-preview-actions">
+                  <button
+                    type="button"
+                    className="audio-preview-remove"
+                    onClick={resetPendingAudio}
+                  >
+                    ❌ Supprimer
+                  </button>
+                  <button
+                    type="button"
+                    className="audio-preview-send"
+                    onClick={() => sendAudioMessage(replyTo)}
+                  >
+                    📤 Envoyer
+                  </button>
+                </div>
+              </div>
+            )}
             {pendingFile && (
               <div className="file-preview-bar">
                 {pendingFile.kind === "image" && pendingFile.previewUrl ? (
@@ -3078,6 +3214,8 @@ export default function Messages() {
                     placeholder={
                       editingMessage
                         ? "Modifier le message"
+                        : pendingAudio
+                        ? "Envoyer la note vocale"
                         : pendingFile
                         ? "Envoyer le fichier"
                         : "Message..."
@@ -3086,7 +3224,7 @@ export default function Messages() {
                     value={input}
                     onChange={(e) => handleInputChange(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && submitMessage()}
-                    disabled={Boolean(pendingFile)}
+                    disabled={Boolean(pendingFile || pendingAudio)}
                   />
 
                   <button
@@ -3102,7 +3240,20 @@ export default function Messages() {
                     <EmojiIcon />
                   </button>
 
-                  {input.trim().length > 0 || pendingFile ? (
+                  {!pendingAudio && (
+                    <button
+                      className={`chat-mic-btn ${isRecording ? "recording" : ""}`}
+                      type="button"
+                      onMouseDown={startRecording}
+                      onTouchStart={startRecording}
+                      aria-label="Enregistrer une note vocale"
+                      disabled={Boolean(pendingFile || isRecording)}
+                    >
+                      🎙️
+                    </button>
+                  )}
+
+                  {input.trim().length > 0 || pendingFile || pendingAudio ? (
                     <button className="chat-send-btn" onClick={submitMessage}>
                       <SendIcon />
                     </button>
