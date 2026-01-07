@@ -174,3 +174,33 @@ export async function uploadMessageFile(file) {
   }
   return data;
 }
+
+export async function uploadVoiceNote(file, meta = {}) {
+  const token = getToken();
+  if (!token) {
+    throw new Error("Vous devez être connecté pour envoyer un audio.");
+  }
+
+  const formData = new FormData();
+  formData.append("audio", file);
+  if (meta.duration !== undefined) {
+    formData.append("duration", String(meta.duration));
+  }
+  if (meta.mimeType) {
+    formData.append("mimeType", meta.mimeType);
+  }
+
+  const res = await fetch(`${API_URL}/messages/voice`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await parseJsonResponse(res);
+  if (!res.ok) {
+    throw new Error(data?.message || "Upload audio impossible.");
+  }
+  return data;
+}
