@@ -45,25 +45,18 @@
 
 .jobs-mobile-layout {
   width: 100%;
-  min-height: 100vh;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-y: auto;
   padding-top: 0;
   padding-bottom: 0;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
-  display: flex;
-  flex-direction: column;
-  background: #000;
 }
 
 .jobs-mobile-content {
-  flex: 1;
-  min-height: 0;
+  min-height: calc(100vh - var(--fb-header-height));
   padding: calc(var(--fb-header-height) + 8px) 12px 80px;
   box-sizing: border-box;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .jobs-left-drawer-backdrop {
