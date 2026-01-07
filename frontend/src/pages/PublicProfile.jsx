@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import Post from "../components/Post";
+import PostFeed from "../components/PostFeed";
 import RelationButton from "../components/social/RelationButton";
 import ProfilePhotoViewer from "../components/ProfilePhotoViewer";
 import FacebookLayout from "./FacebookLayout";
 import "../styles/profil.css";
 import { useAuth } from "../context/AuthContext";
-import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
+import { filterHiddenPosts } from "../utils/hiddenPosts";
 import useRelation from "../hooks/useRelation";
 import { fetchInbox, sendMessagePayload } from "../api/messagesApi";
 
@@ -99,15 +99,7 @@ export default function PublicProfile() {
     })
       .then((res) => res.json())
       .then((list) => {
-        const normalized = Array.isArray(list)
-          ? list.map((p) => ({
-              ...p,
-              media: p.media?.map((m) => ({
-                ...m,
-                url: fixUrl(m.url),
-              })),
-            }))
-          : [];
+        const normalized = Array.isArray(list) ? list : [];
         setPosts(filterHiddenPosts(normalized, viewerId));
         setLoading(false);
       })
@@ -116,11 +108,6 @@ export default function PublicProfile() {
         setLoading(false);
       });
   }, [id, token]);
-
-  const handleHidePost = (postId) => {
-    rememberHiddenPost(postId, viewerId);
-    setPosts((prev) => filterHiddenPosts(prev, viewerId));
-  };
 
   useEffect(() => {
     if (!viewerId) return;
@@ -486,19 +473,21 @@ export default function PublicProfile() {
             </div>
 
             <div className="profil-col">
-              {posts.length === 0 ? (
+              {posts.length === 0 && !loading ? (
                 <div className="profil-card profil-empty">Aucune publication.</div>
               ) : (
                 <div className="profil-posts">
-                  {posts.map((p) => (
-                    <Post
-                      key={p._id}
-                      post={p}
-                      currentUser={viewer}
-                      onMediaClick={(items, start) => openViewer(items, start)}
-                      onHidePost={handleHidePost}
-                    />
-                  ))}
+                  <PostFeed
+                    posts={posts}
+                    setPosts={setPosts}
+                    currentUserId={viewerId}
+                    isAdmin={(viewer?.role || "").toLowerCase() === "admin"}
+                    token={token}
+                    apiUrl={API_ROOT}
+                    filterPosts={(list) => filterHiddenPosts(list, viewerId)}
+                    context="public-profile"
+                    loadingInitial={loading}
+                  />
                 </div>
               )}
             </div>
