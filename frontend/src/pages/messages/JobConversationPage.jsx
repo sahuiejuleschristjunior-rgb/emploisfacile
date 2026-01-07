@@ -86,6 +86,13 @@ export default function JobConversationPage() {
   }, [deleteByType]);
 
   useEffect(() => {
+    document.body.classList.add("job-chat-fullscreen");
+    return () => {
+      document.body.classList.remove("job-chat-fullscreen");
+    };
+  }, []);
+
+  useEffect(() => {
     let active = true;
 
     const loadConversation = async () => {
@@ -360,7 +367,7 @@ export default function JobConversationPage() {
 
   if (accessDenied) {
     return (
-      <Layout user={user} onLogout={handleLogout}>
+      <Layout user={user} onLogout={handleLogout} shellClassName="job-chat-shell">
         <div className="job-chat-denied">
           <h3>Accès refusé</h3>
           <p>Vous n'êtes pas autorisé à accéder à cette conversation.</p>
@@ -373,7 +380,7 @@ export default function JobConversationPage() {
   }
 
   return (
-    <Layout user={user} onLogout={handleLogout}>
+    <Layout user={user} onLogout={handleLogout} shellClassName="job-chat-shell">
       <div className="job-chat-page">
         <header className="job-chat-header">
           <button className="ghost-link" onClick={() => nav(basePath)}>

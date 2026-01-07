@@ -20,6 +20,7 @@ export default function RecruiterLayout({
   eyebrow = "Espace recruteur",
   titlePrefix = "Bonjour",
   avatarFallback = "R",
+  shellClassName = "",
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
@@ -34,7 +35,7 @@ export default function RecruiterLayout({
   }, [sidebarOpen]);
 
   return (
-    <div className="candidate-dashboard">
+    <div className={`candidate-dashboard ${shellClassName}`.trim()}>
       <aside className={`cd-side ${sidebarOpen ? "cd-side-open" : ""}`}>
         <div className="side-header">
           <div className="side-brand">EmploisFacile</div>
