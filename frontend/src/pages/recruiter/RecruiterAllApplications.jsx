@@ -198,10 +198,24 @@ export default function RecruiterAllApplications() {
   const totalAccepted = applications.filter((a) => (a.status || "").toLowerCase() === "accepted").length;
   const totalRejected = applications.filter((a) => (a.status || "").toLowerCase() === "rejected").length;
 
+  const buildCandidateProfile = (candidate = {}, fallback = {}) => {
+    const professionalProfile = candidate.professionalProfile || {};
+    return {
+      name: professionalProfile.name || candidate.name || fallback.name || "Candidat",
+      email: professionalProfile.email || candidate.email || fallback.email || "Email indisponible",
+      avatar: professionalProfile.avatar || candidate.avatar || "",
+      title: professionalProfile.title || candidate.title || candidate.jobTitle || "",
+      location: professionalProfile.location || candidate.location || "",
+      availability: professionalProfile.availability || candidate.availability || "",
+    };
+  };
+
   const renderApplicationItem = (app) => {
     const candidate = app.applicant || {};
-    const name = app.applicantName || candidate.name || "Candidat";
-    const email = app.applicantEmail || candidate.email || "Email indisponible";
+    const profile = buildCandidateProfile(candidate, {
+      name: app.applicantName,
+      email: app.applicantEmail,
+    });
     const job = app.job || {};
 
     return (
@@ -209,20 +223,27 @@ export default function RecruiterAllApplications() {
         <div className="application-card__header">
           <div className="application-card__profile">
             <div className="application-avatar">
-            {candidate.avatar ? (
-              <img src={candidate.avatar} alt={name} loading="lazy" />
+            {profile.avatar ? (
+              <img src={profile.avatar} alt={profile.name} loading="lazy" />
             ) : (
               <div className="application-avatar__fallback">
-                {(name || "?").charAt(0).toUpperCase()}
+                {(profile.name || "?").charAt(0).toUpperCase()}
               </div>
             )}
             </div>
 
             <div className="application-details">
-              <h4 className="application-title">{name}</h4>
-              <p className="application-sub">{email}</p>
+              <h4 className="application-title">{profile.name}</h4>
+              <p className="application-sub">{profile.email}</p>
 
               <div className="application-meta">
+                {(profile.title || profile.location || profile.availability) && (
+                  <span>
+                    {[profile.title, profile.location, profile.availability]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                )}
                 <span>
                   Candidature du{" "}
                   {app.createdAt
