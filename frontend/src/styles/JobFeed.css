@@ -48,8 +48,8 @@
 @media (max-width: 900px) {
   .jobs-shell {
     grid-template-columns: 1fr;
-    min-height: auto;
-    height: auto;
+    min-height: calc(100svh - 28px);
+    height: calc(100svh - 28px);
     width: 100%;
     margin: 0 auto;
   }
@@ -61,7 +61,7 @@
   }
 
   .jobs-main {
-    height: auto;
+    height: 100%;
     width: 100%;
   }
 
@@ -74,13 +74,28 @@
   .job-feed-screen {
     padding-left: 12px;
     padding-right: 12px;
-    min-height: auto;
+    min-height: 100svh;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .jobs-shell {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  .jobs-main-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--card);
   }
 
   .jobs-main-scroll {
     padding-left: 12px;
     padding-right: 12px;
-    overflow: visible;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .jobs-list {
@@ -89,7 +104,8 @@
   }
 
   .jobs-main {
-    overflow: visible;
+    overflow: hidden;
+    height: 100%;
   }
 
   .jobs-left-menu {
