@@ -95,6 +95,7 @@ function initSocket(server) {
     socket.join(String(userId));
 
     console.log("🔌 Socket connecté :", userId, "| ID :", socket.id);
+    console.log("📌 Rooms rejointes :", Array.from(socket.rooms));
 
     /* ============================================================
        MESSAGES — TEMPS RÉEL
@@ -109,6 +110,7 @@ function initSocket(server) {
         createdAt: new Date(),
       };
 
+      console.log("📩 Message socket :", userId, "→", receiver);
       io.to(String(receiver)).emit("new_message", payload);
       io.to(String(userId)).emit("new_message", payload);
     });
