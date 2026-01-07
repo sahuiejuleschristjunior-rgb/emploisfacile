@@ -976,6 +976,66 @@
   cursor: pointer;
 }
 
+.audio-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  background: #1f2021;
+  border: 1px solid #2f3031;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+}
+
+.audio-preview-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.audio-preview-play {
+  border: none;
+  background: #2f3031;
+  color: #fff;
+  border-radius: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.audio-preview-duration {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.audio-preview-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.audio-preview-remove,
+.audio-preview-send {
+  border: none;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.audio-preview-remove {
+  background: transparent;
+  color: #e4e6eb;
+}
+
+.audio-preview-send {
+  background: #ff4d8d;
+  color: #fff;
+}
+
 .chat-attach-btn,
 .chat-mic-btn {
   height: 44px;

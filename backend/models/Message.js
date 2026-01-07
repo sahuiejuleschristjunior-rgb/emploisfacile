@@ -90,6 +90,22 @@ const messageSchema = new mongoose.Schema(
       default: null,
     },
 
+    // Détails audio (si type = audio)
+    audio: {
+      url: {
+        type: String,
+        default: "",
+      },
+      duration: {
+        type: Number,
+        default: 0,
+      },
+      mime: {
+        type: String,
+        default: "audio/webm",
+      },
+    },
+
     // Réponse à un autre message (optionnel)
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,

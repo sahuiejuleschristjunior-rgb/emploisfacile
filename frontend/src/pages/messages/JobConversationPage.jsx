@@ -410,6 +410,68 @@ export default function JobConversationPage() {
     }
   };
 
+  const handleSendAudio = async ({ blob, duration }) => {
+    if (!otherParticipant || !blob) return false;
+
+    const tempUrl = URL.createObjectURL(blob);
+    const payload = {
+      sender: user?._id,
+      receiver: getId(otherParticipant),
+      conversationId,
+      jobId,
+      type: "audio",
+      audio: {
+        url: tempUrl,
+        duration: duration || 0,
+        mime: "audio/webm",
+      },
+      audioUrl: tempUrl,
+      createdAt: new Date().toISOString(),
+    };
+
+    pendingAutoScrollRef.current = true;
+    setMessages((prev) => [...prev, payload]);
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", blob, `voice-${Date.now()}.webm`);
+      formData.append("duration", String(duration || 0));
+
+      const res = await fetch(`${API_URL}/messages/audio`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await ensureJsonResponse(res);
+      if (!res.ok || !data?.audio) {
+        throw new Error(data?.message || "Upload audio impossible.");
+      }
+
+      const { ok, data: sendData } = await sendMessagePayload({
+        receiver: payload.receiver,
+        jobId: payload.jobId,
+        conversationId: payload.conversationId,
+        type: "audio",
+        audio: data.audio,
+      });
+
+      if (ok && sendData?.data) {
+        const message = sendData.data;
+        if (message?._id && !messageIdsRef.current.has(message._id)) {
+          messageIdsRef.current.add(message._id);
+          setMessages((prev) => [...prev.filter((msg) => msg !== payload), message]);
+        }
+      }
+
+      return true;
+    } catch (err) {
+      setError(err.message || "Impossible d'envoyer la note vocale.");
+      return false;
+    }
+  };
+
   const handleTyping = (typingFlag) => {
     if (!socket || !otherParticipant) return;
     socket.emit("typing", { to: getId(otherParticipant), isTyping: typingFlag });
@@ -465,6 +527,7 @@ export default function JobConversationPage() {
         <MessageInput
           onSend={handleSend}
           onSendFile={handleSendFile}
+          onSendAudio={handleSendAudio}
           onTyping={handleTyping}
           disabled={!conversationId || !jobId || !otherParticipant}
         />

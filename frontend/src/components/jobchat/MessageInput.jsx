@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const MAX_MESSAGE_FILE_SIZE = 10 * 1024 * 1024;
 const MESSAGE_FILE_ACCEPT = ".pdf,.doc,.docx,image/jpeg,image/png";
@@ -15,6 +15,13 @@ const formatFileSize = (size = 0) => {
   if (size < 1024) return `${size} o`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} Ko`;
   return `${(size / (1024 * 1024)).toFixed(1)} Mo`;
+};
+
+const formatTime = (time = 0) => {
+  const total = Math.floor(time);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
 const resolveFileKind = (file) => {
@@ -34,11 +41,26 @@ const resolveFileKind = (file) => {
   return "file";
 };
 
-export default function MessageInput({ onSend, onSendFile, onTyping, disabled }) {
+export default function MessageInput({
+  onSend,
+  onSendFile,
+  onSendAudio,
+  onTyping,
+  disabled,
+}) {
   const [value, setValue] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState("");
   const [fileKind, setFileKind] = useState("file");
+  const [pendingAudio, setPendingAudio] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordTime, setRecordTime] = useState(0);
+
+  const mediaRecorderRef = useRef(null);
+  const recordingChunksRef = useRef([]);
+  const recordTimerRef = useRef(null);
+  const streamRef = useRef(null);
+  const audioPreviewRef = useRef(null);
 
   useEffect(() => {
     if (!onTyping) return undefined;
@@ -56,8 +78,20 @@ export default function MessageInput({ onSend, onSendFile, onTyping, disabled })
       if (filePreviewUrl) {
         URL.revokeObjectURL(filePreviewUrl);
       }
+      if (pendingAudio?.previewUrl) {
+        URL.revokeObjectURL(pendingAudio.previewUrl);
+      }
+      if (recordTimerRef.current) {
+        clearInterval(recordTimerRef.current);
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
     };
-  }, [filePreviewUrl]);
+  }, [filePreviewUrl, pendingAudio]);
 
   const resetFile = () => {
     if (filePreviewUrl) {
@@ -68,9 +102,115 @@ export default function MessageInput({ onSend, onSendFile, onTyping, disabled })
     setFileKind("file");
   };
 
+  const resetAudio = () => {
+    if (pendingAudio?.previewUrl) {
+      URL.revokeObjectURL(pendingAudio.previewUrl);
+    }
+    if (audioPreviewRef.current) {
+      audioPreviewRef.current.pause();
+      audioPreviewRef.current.currentTime = 0;
+    }
+    setPendingAudio(null);
+  };
+
+  const getAudioDuration = (blob) =>
+    new Promise((resolve) => {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onloadedmetadata = () => {
+        const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+        URL.revokeObjectURL(url);
+        resolve(duration);
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      };
+    });
+
+  const startRecording = async () => {
+    if (disabled || isRecording || pendingAudio) return;
+    setRecordTime(0);
+    recordingChunksRef.current = [];
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const preferredMime = "audio/webm;codecs=opus";
+      const fallbackMime = "audio/webm";
+      const mimeType = MediaRecorder.isTypeSupported?.(preferredMime)
+        ? preferredMime
+        : fallbackMime;
+      const recorder = new MediaRecorder(stream, { mimeType });
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        clearInterval(recordTimerRef.current);
+        setIsRecording(false);
+        const blob = new Blob(recordingChunksRef.current, { type: "audio/webm" });
+        recordingChunksRef.current = [];
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+        if (!blob.size) return;
+        const duration = await getAudioDuration(blob);
+        const previewUrl = URL.createObjectURL(blob);
+        setPendingAudio({
+          blob,
+          previewUrl,
+          duration,
+          mime: "audio/webm",
+        });
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      recordTimerRef.current = setInterval(() => {
+        setRecordTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      setIsRecording(false);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (!isRecording) return;
+    const recorder = mediaRecorderRef.current;
+    mediaRecorderRef.current = null;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  };
+
+  const sendAudio = async () => {
+    if (!pendingAudio?.blob || !onSendAudio || disabled) return;
+    const ok = await onSendAudio({
+      blob: pendingAudio.blob,
+      duration: pendingAudio.duration || 0,
+    });
+    if (ok) {
+      resetAudio();
+    }
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (pendingAudio) {
+      event.target.value = "";
+      return;
+    }
 
     const extensionAllowed = /\.(pdf|docx?|png|jpe?g)$/i.test(file.name || "");
     if (!ALLOWED_MESSAGE_MIME_TYPES.has(file.type) && !extensionAllowed) {
@@ -97,6 +237,10 @@ export default function MessageInput({ onSend, onSendFile, onTyping, disabled })
   };
 
   const handleSend = () => {
+    if (pendingAudio && onSendAudio && !disabled) {
+      sendAudio();
+      return;
+    }
     if (selectedFile && onSendFile && !disabled) {
       onSendFile(selectedFile);
       resetFile();
@@ -111,6 +255,27 @@ export default function MessageInput({ onSend, onSendFile, onTyping, disabled })
 
   return (
     <div className="job-chat-input">
+      {isRecording && (
+        <div className="job-chat-recording">
+          <span className="job-chat-recording-dot" />
+          <span>Enregistrement {formatTime(recordTime)}</span>
+        </div>
+      )}
+      {pendingAudio && (
+        <div className="job-chat-audio-preview">
+          <button type="button" onClick={() => audioPreviewRef.current?.play()}>
+            ▶️ Écouter
+          </button>
+          <span>{formatTime(pendingAudio.duration || 0)}</span>
+          <audio ref={audioPreviewRef} src={pendingAudio.previewUrl} preload="metadata" />
+          <button type="button" onClick={resetAudio}>
+            ❌ Supprimer
+          </button>
+          <button type="button" onClick={sendAudio} disabled={disabled}>
+            📤 Envoyer
+          </button>
+        </div>
+      )}
       {selectedFile && (
         <div className="job-chat-file-preview">
           {fileKind === "image" && filePreviewUrl ? (
@@ -148,7 +313,13 @@ export default function MessageInput({ onSend, onSendFile, onTyping, disabled })
         />
         <input
           type="text"
-          placeholder={selectedFile ? "Envoyer le fichier" : "Écrire un message…"}
+          placeholder={
+            pendingAudio
+              ? "Envoyer la note vocale"
+              : selectedFile
+              ? "Envoyer le fichier"
+              : "Écrire un message…"
+          }
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={(event) => {
@@ -157,13 +328,26 @@ export default function MessageInput({ onSend, onSendFile, onTyping, disabled })
               handleSend();
             }
           }}
-          disabled={disabled || Boolean(selectedFile)}
+          disabled={disabled || Boolean(selectedFile || pendingAudio)}
         />
+        {!pendingAudio && (
+          <button
+            type="button"
+            className="job-chat-mic"
+            onMouseDown={startRecording}
+            onMouseUp={stopRecording}
+            onTouchStart={startRecording}
+            onTouchEnd={stopRecording}
+            disabled={disabled || isRecording || Boolean(selectedFile)}
+          >
+            🎙️
+          </button>
+        )}
         <button
           type="button"
           className="primary-btn"
           onClick={handleSend}
-          disabled={disabled || (!selectedFile && !value.trim())}
+          disabled={disabled || (!selectedFile && !pendingAudio && !value.trim())}
         >
           Envoyer
         </button>
