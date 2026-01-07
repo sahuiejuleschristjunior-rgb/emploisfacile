@@ -1371,3 +1371,14 @@ body {
     flex-wrap: wrap;
   }
 }
+
+@media (max-width: 768px) {
+  .candidate-dashboard.job-chat-shell .cd-topbar {
+    display: none;
+  }
+
+  .candidate-dashboard.job-chat-shell .content {
+    padding: 0;
+    overflow: hidden;
+  }
+}

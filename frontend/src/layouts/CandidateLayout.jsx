@@ -21,6 +21,7 @@ export default function CandidateLayout({
   eyebrow = "Espace candidat",
   titlePrefix = "Bonjour",
   avatarFallback = "C",
+  shellClassName = "",
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
@@ -35,7 +36,7 @@ export default function CandidateLayout({
   }, [sidebarOpen]);
 
   return (
-    <div className="candidate-dashboard">
+    <div className={`candidate-dashboard ${shellClassName}`.trim()}>
       <aside className={`cd-side ${sidebarOpen ? "cd-side-open" : ""}`}>
         <div className="side-header">
           <div className="side-brand">EmploisFacile</div>
