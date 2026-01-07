@@ -337,6 +337,7 @@ exports.sendMessage = async (req, res) => {
     await conversation.save();
 
     /* 🔥 SOCKET.IO — MESSAGE TEMPS RÉEL */
+    console.log("📩 Message API :", sender, "→", receiverId);
     getIO().to(receiverId.toString()).emit("new_message", {
       from: sender,
       to: receiverId,
