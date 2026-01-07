@@ -4865,6 +4865,24 @@
   }
 }
 
+/* ===================================================== */
+/* MOBILE: FULLSCREEN POST CARDS                         */
+/* ===================================================== */
+@media (max-width: 768px) {
+  .fb-feed {
+    padding: 0 0 72px;
+    max-width: 100%;
+  }
+
+  .fb-feed .fb-post,
+  .fb-feed .fb-post-card {
+    margin: 0 0 12px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+}
+
 .post-highlight {
   animation: highlightFlash 2.5s ease;
 }
