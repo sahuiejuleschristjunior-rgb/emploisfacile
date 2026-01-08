@@ -927,7 +927,7 @@
 
 .fb-comments-modal-send {
   border: none;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   border-radius: 18px;
   padding: 6px 12px;
@@ -1039,7 +1039,7 @@
 
 .fb-comments-modal-send {
   border: none;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   border-radius: 18px;
   padding: 6px 12px;
@@ -1178,7 +1178,7 @@
 
 /* BOUTON ENVOYER */
 .fb-comments-modal-send {
-  background: #1877f2 !important;
+  background: #4b5563 !important;
   color: white !important;
   border-radius: 20px !important;
   padding: 8px 14px !important;
@@ -1667,7 +1667,7 @@
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  background: #1877f2;
+  background: #4b5563;
   color: white;
 }
 
@@ -1827,7 +1827,7 @@
 
 .fb-reply-send-btn {
   border: none;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   padding: 6px 12px;
   border-radius: 18px;
@@ -2384,7 +2384,7 @@
 
 .fb-reply-send-btn,
 .fb-comments-modal-send {
-  background: #1877f2;
+  background: #4b5563;
   border: none;
   padding: 8px 14px;
   border-radius: 20px;
@@ -2713,7 +2713,7 @@
   width: calc(100% - 32px);
   margin: 14px 16px 18px;
   padding: 10px 0;
-  background: #1877f2;
+  background: #4b5563;
   border: none;
   color: white;
   font-size: 15px;
@@ -3100,7 +3100,7 @@
 .fb-modal-submit {
   margin: 18px;
   margin-top: 10px;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -3315,7 +3315,7 @@
 .fb-modal-submit {
   margin: 16px;
   padding: 12px 0;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   border: none;
   font-size: 16px;
@@ -3393,7 +3393,7 @@
     border-radius: 999px !important; /* arrondi parfait */
     font-size: 16px !important;
     font-weight: 600 !important;
-    background: #1877f2 !important;
+    background: #4b5563 !important;
     position: sticky !important;
     bottom: 10px !important;
   }
@@ -3582,7 +3582,7 @@
   width: 92%;
   margin: 20px auto 18px;
   padding: 12px 0;
-  background: #1877f2;
+  background: #4b5563;
   border: none;
   color: white;
   font-size: 16px;
@@ -3801,7 +3801,7 @@
     width: 75%;
     margin: 10px auto 20px;
     padding: 14px 0;
-    background: #1877f2;
+    background: #4b5563;
     border: none;
     color: #fff;
     font-size: 16px;

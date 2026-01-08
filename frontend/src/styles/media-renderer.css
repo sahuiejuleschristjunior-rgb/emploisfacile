@@ -132,13 +132,13 @@
   position: absolute;
   inset: 0;
   width: 0;
-  background: linear-gradient(90deg, #0ea5e9, #1d9bf0);
+  background: linear-gradient(90deg, #4b5563, #4b5563);
   transition: width 0.1s linear;
 }
 
 .mr-volume input[type="range"] {
   width: 110px;
-  accent-color: #1d9bf0;
+  accent-color: #4b5563;
 }
 
 .mr-expand-btn {

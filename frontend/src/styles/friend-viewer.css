@@ -51,7 +51,7 @@
 
 .friend-viewer-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 24px rgba(17, 17, 17, 0.08);
 }
 
 .friend-avatar {

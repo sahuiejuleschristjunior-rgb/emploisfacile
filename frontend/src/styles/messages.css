@@ -88,7 +88,7 @@
 }
 
 .messages-tabs button.active {
-  background: #3b82f6;
+  background: #4b5563;
   border-color: #60a5fa;
   color: #fff;
 }
@@ -166,13 +166,13 @@
 
 .conversation-item.highlighted,
 .conversation-item.is-highlighted {
-  background: rgba(24, 119, 242, 0.1);
+  background: rgba(120, 120, 120, 0.1);
   animation: highlightFade 2.5s ease-in-out;
 }
 
 .conversation-item.highlighted:hover,
 .conversation-item.is-highlighted:hover {
-  background: rgba(24, 119, 242, 0.16);
+  background: rgba(120, 120, 120, 0.16);
 }
 
 .conversation-avatar {
@@ -211,7 +211,7 @@
 
 .conv-badge-new {
   margin-left: auto;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   font-size: 12px;
   padding: 3px 8px;
@@ -220,7 +220,7 @@
 }
 
 .inbox-badge-new {
-  background-color: #1877f2;
+  background-color: #4b5563;
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -240,7 +240,7 @@
 }
 
 .conv-unread-badge {
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   font-weight: 800;
   font-size: 12px;
@@ -511,7 +511,7 @@
 }
 
 .message-row.me .message-bubble {
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   border-bottom-right-radius: 6px;
 }
@@ -553,7 +553,7 @@
   padding: 0 16px;
   border: none;
   border-radius: 999px;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   font-weight: 800;
 }
@@ -683,7 +683,7 @@
 
 .message-file-download {
   border: none;
-  background: #1877f2;
+  background: #4b5563;
   color: #fff;
   padding: 6px 10px;
   border-radius: 999px;
@@ -1616,7 +1616,7 @@
 .vc-audio-remote {
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 30% 30%, #1e88e5, #0d47a1 60%);
+  background: radial-gradient(circle at 30% 30%, #3d3d3d, #2f2f2f 60%);
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1682,7 +1682,7 @@
   place-items: center;
   color: #fff;
   font-weight: 700;
-  background: linear-gradient(135deg, #1a73e8, #0c4fb8);
+  background: linear-gradient(135deg, #3d3d3d, #3d3d3d);
 }
 
 .vc-local-label {
@@ -1763,12 +1763,12 @@
 
 @keyframes convoHighlightFade {
   0% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-    background: rgba(59, 130, 246, 0.18);
+    box-shadow: 0 0 0 0 rgba(120, 120, 120, 0.4);
+    background: rgba(120, 120, 120, 0.18);
   }
   60% {
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.04);
-    background: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 6px rgba(120, 120, 120, 0.04);
+    background: rgba(120, 120, 120, 0.1);
   }
   100% {
     box-shadow: none;

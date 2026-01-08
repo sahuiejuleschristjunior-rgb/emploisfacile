@@ -4,7 +4,7 @@
 
 .job-detail-page {
   min-height: 100vh;
-  background: var(--bg, #0f172a);
+  background: var(--bg, #111111);
   color: var(--text, #e2e8f0);
   padding: 32px 20px 60px;
   font-family: "Inter", system-ui, sans-serif;
@@ -196,7 +196,7 @@
 .job-detail-contact-message textarea {
   border-radius: 10px;
   border: 1px solid var(--border, #1f2937);
-  background: #0f172a;
+  background: #111111;
   color: #e2e8f0;
   padding: 10px 12px;
   font-size: 14px;
