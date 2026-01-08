@@ -1,0 +1,39 @@
+.smart-video {
+  position: relative;
+  width: 100%;
+  display: block;
+  background: #000;
+}
+
+.smart-video__media {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #000;
+}
+
+.smart-video__play {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.smart-video__play-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.smart-video__play svg {
+  width: 28px;
+  height: 28px;
+}
