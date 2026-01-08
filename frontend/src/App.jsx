@@ -165,24 +165,6 @@ export default function App() {
                   </Route>
                 </Route>
 
-                {/* Emplois — accessible sans le FacebookLayout pour éviter les conflits mobiles */}
-                <Route
-                  path="/emplois"
-                  element={
-                    <ProtectedRoute>
-                      <EmploisPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/emplois/:id"
-                  element={
-                    <ProtectedRoute>
-                      <JobDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-
                 {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
                 <Route
                   element={
@@ -191,6 +173,8 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 >
+                  <Route path="/emplois" element={<EmploisPage />} />
+                  <Route path="/emplois/:id" element={<JobDetailPage />} />
                   {/* Groupe /fb avec colonnes latérales sur desktop */}
                   <Route path="/fb" element={<Outlet />}>
                     <Route index element={<FacebookFeed />} />
