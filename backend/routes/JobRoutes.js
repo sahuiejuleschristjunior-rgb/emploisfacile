@@ -23,6 +23,9 @@ router.get('/my-jobs', auth, isRecruiter, JobController.getMyJobs);
 // GET /api/jobs/search - Recherche backend (tous profils)
 router.get('/search', auth, JobController.searchJobs);
 
+// GET /api/jobs/latest - Dernière offre active (feed)
+router.get('/latest', auth, JobController.getLatestJob);
+
 // GET /api/jobs/recent - Offres récentes pour le feed
 router.get('/recent', auth, JobController.getRecentJobs);
 
