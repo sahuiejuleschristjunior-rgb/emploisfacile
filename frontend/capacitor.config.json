@@ -5,12 +5,5 @@
   "bundledWebRuntime": false,
   "android": {
     "allowMixedContent": true
-  },
-  "plugins": {
-    "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#0b0b0b",
-      "overlaysWebView": false
-    }
   }
 }

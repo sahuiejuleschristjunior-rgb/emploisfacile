@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import JobFeed from "../components/JobFeed";
 import EmploisMobile from "./EmploisMobile";
-import AppShell from "../layouts/AppShell";
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -40,9 +39,5 @@ export default function EmploisPage() {
     return <EmploisMobile />;
   }
 
-  return (
-    <AppShell className="emplois-shell">
-      <JobFeed {...outletContext} />
-    </AppShell>
-  );
+  return <JobFeed {...outletContext} />;
 }
