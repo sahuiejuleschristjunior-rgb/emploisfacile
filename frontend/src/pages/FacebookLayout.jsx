@@ -1684,6 +1684,8 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           {children || <Outlet />}
         </main>
 
+        {isJobsFeed && bottomNav}
+
         {toast && <div className="fb-toast">{toast}</div>}
       </div>
     );

@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getImageUrl } from "../utils/imageUtils";
+import PostCard from "./PostCard";
 import "../styles/JobFeed.css";
 
 const DEFAULT_CITY_OPTIONS = ["Abidjan", "Cocody", "Plateau"];
 const DEFAULT_MODE_OPTIONS = ["Remote", "Hybride", "Présentiel"];
 const DEFAULT_CONTRACT_OPTIONS = ["CDI", "CDD", "Stage", "Freelance", "Alternance", "Temps Partiel"];
 
-export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
+export default function JobFeed() {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
@@ -18,7 +17,6 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
 
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL; // https://emploisfacile.org/api
-  const navigate = useNavigate();
   const searchAbortRef = useRef(null);
 
   const collectOptions = (items) => {
@@ -34,14 +32,6 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
   const getContract = (job) => job.contractType || "Contrat non précisé";
   const getMode = (job) => job.workMode || job.mode || "Mode non précisé";
   const getSalary = (job) => job.salaryRange || "Salaire non précisé";
-
-  const getInitials = (name = "?") =>
-    name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
 
   const tags = (job) => {
     const rawTags = [job.category, job.experienceLevel, job.contractType, job.workMode].filter(Boolean);
@@ -146,73 +136,32 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
     setModeFilter("");
   };
 
-  const handleMenuClose = () => {
-    if (setJobsMenuOpen) {
-      setJobsMenuOpen(false);
-    }
-  };
-
   return (
-    <div className={`job-feed-screen${jobsMenuOpen ? " job-feed-screen--menu-open" : ""}`}>
-      <div className="jobs-shell">
-        <aside className="jobs-panel jobs-left-menu">
-          <h3>Menu</h3>
-          <nav className="jobs-nav">
-            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
-              <span>Accueil</span>
-              <span className="jobs-pill">Home</span>
-            </button>
-            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
-              <span>Offres</span>
-              <span className="jobs-pill">{jobs.length}</span>
-            </button>
-            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
-              <span>Entreprises</span>
-              <span className="jobs-pill">24</span>
-            </button>
-            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
-              <span>Candidatures</span>
-              <span className="jobs-pill">3</span>
-            </button>
-            <button type="button" className="jobs-nav-item" onClick={handleMenuClose}>
-              <span>Paramètres</span>
-              <span className="jobs-pill">⚙</span>
-            </button>
-          </nav>
-
-          <div className="jobs-spacer" />
-          <h3>Raccourcis</h3>
-          <div className="jobs-box jobs-small">
-            • Publier une offre<br />
-            • Voir les favoris<br />
-            • Alertes e-mail
-          </div>
-        </aside>
-
-        <main className="jobs-main">
-          <div className="jobs-main-header">
-            <div className="jobs-topbar">
-              <div className="jobs-brand">
-                <img src="/vite.svg" alt="Logo entreprise" />
-                <div>
-                  <h1>Offres d’emploi</h1>
-                  <div className="jobs-muted">
-                    Recherche par mot-clé, ville, type et mode de travail.
-                  </div>
-                </div>
-              </div>
-              <div className="jobs-count">{jobs.length} offre(s)</div>
+    <div className="job-feed-screen job-feed-screen--facebook">
+      <div className="fb-feed jobs-feed">
+        <section className="fb-post jobs-feed-card">
+          <div className="jobs-feed-header">
+            <div>
+              <h1>Offres d’emploi</h1>
+              <p>Recherche par mot-clé, ville, type et mode de travail.</p>
             </div>
+            <div className="jobs-feed-count">{jobs.length} offre(s)</div>
+          </div>
 
-            <div className="jobs-bar">
+          <div className="jobs-feed-filters">
+            <label className="jobs-feed-field" htmlFor="jobs-q">
+              <span>Recherche</span>
               <input
-                id="q"
+                id="jobs-q"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Titre, compétences, entreprise (ex: marketer, react…)"
               />
+            </label>
+            <label className="jobs-feed-field" htmlFor="jobs-city">
+              <span>Ville</span>
               <select
-                id="city"
+                id="jobs-city"
                 value={cityFilter}
                 onChange={(event) => setCityFilter(event.target.value)}
               >
@@ -223,8 +172,11 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="jobs-feed-field" htmlFor="jobs-type">
+              <span>Contrat</span>
               <select
-                id="type"
+                id="jobs-type"
                 value={contractFilter}
                 onChange={(event) => setContractFilter(event.target.value)}
               >
@@ -235,8 +187,11 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="jobs-feed-field" htmlFor="jobs-mode">
+              <span>Mode</span>
               <select
-                id="mode"
+                id="jobs-mode"
                 value={modeFilter}
                 onChange={(event) => setModeFilter(event.target.value)}
               >
@@ -247,101 +202,72 @@ export default function JobFeed({ jobsMenuOpen = false, setJobsMenuOpen }) {
                   </option>
                 ))}
               </select>
-              <button type="button" id="reset" onClick={handleReset}>
-                Réinitialiser
-              </button>
-            </div>
+            </label>
+            <button type="button" className="jobs-feed-reset" onClick={handleReset}>
+              Réinitialiser
+            </button>
           </div>
 
-          <div className="jobs-main-scroll">
-            {loading && <div className="jobs-loader">Chargement des offres...</div>}
-            {error && <div className="jobs-error">{error}</div>}
-            {!loading && !error && jobs.length === 0 && (
-              <div className="jobs-empty">Aucune offre ne correspond à votre recherche.</div>
-            )}
-
-            <div className="jobs-list">
-              {jobs.map((job) => {
-                const companyName = getRecruiterName(job);
-                const logoUrl = getImageUrl(job.recruiter?.avatar);
-                const jobTags = tags(job);
-
-                return (
-                  <div key={job._id} className="jobs-item">
-                    <div className="jobs-left">
-                      {logoUrl ? (
-                        <img className="jobs-mini-logo" src={logoUrl} alt={`Logo ${companyName}`} />
-                      ) : (
-                        <div className="jobs-mini-logo jobs-logo-fallback">{getInitials(companyName)}</div>
-                      )}
-                      <div className="jobs-info">
-                        <div className="jobs-title">
-                          {job.title} • {companyName}
-                        </div>
-                        <div className="jobs-meta">
-                          <span>{getLocation(job)}</span> • <span>{getContract(job)}</span> •{" "}
-                          <span>{getMode(job)}</span> • <span>{getSalary(job)}</span>
-                        </div>
-                        <div className="jobs-tags">
-                          {jobTags.map((tag) => (
-                            <span key={tag} className="jobs-tag">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      className="jobs-link"
-                      onClick={() =>
-                        navigate(`/emplois/${job._id}`, {
-                          state: { job, from: "/emplois" },
-                        })
-                      }
-                    >
-                      Voir
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </main>
-
-        <aside className="jobs-panel jobs-right-menu">
-          <h3>Filtres rapides</h3>
-          <div className="jobs-box jobs-small">
-            <strong>Top tags</strong>
-            <br />
+          <div className="jobs-feed-tags">
+            <span>Top tags :</span>
             {topTags.length ? (
               topTags.map((tag) => (
-                <div key={tag}>• {tag}</div>
+                <span key={tag} className="jobs-feed-tag">
+                  {tag}
+                </span>
               ))
             ) : (
               <>
-                • React
-                <br />
-                • Marketing
-                <br />
-                • SQL / BI
-                <br />
-                • Remote
+                <span className="jobs-feed-tag">React</span>
+                <span className="jobs-feed-tag">Marketing</span>
+                <span className="jobs-feed-tag">SQL / BI</span>
+                <span className="jobs-feed-tag">Remote</span>
               </>
             )}
           </div>
+        </section>
 
-          <div className="jobs-spacer" />
-          <h3>Infos</h3>
-          <div className="jobs-box jobs-small">
-            <strong>Conseil</strong> : utilise la recherche pour filtrer vite, et clique sur “Voir”
-            pour le détail.
-          </div>
+        {loading && <div className="fb-loader">Chargement des offres...</div>}
+        {error && <div className="fb-empty">{error}</div>}
+        {!loading && !error && jobs.length === 0 && (
+          <div className="fb-empty">Aucune offre ne correspond à votre recherche.</div>
+        )}
 
-          <div className="jobs-spacer" />
-          <h3>Publicité / Bannière</h3>
-          <div className="jobs-box jobs-small">Espace sponsor / annonce RH</div>
-        </aside>
+        <div className="jobs-feed-list">
+          {jobs.map((job) => {
+            const jobTags = tags(job);
+            const jobPost = {
+              _id: job._id,
+              createdAt: job.createdAt || job.updatedAt || new Date().toISOString(),
+              isJobPost: true,
+              jobData: {
+                ...job,
+                company: getRecruiterName(job),
+                description: job.description || job.summary || job.mission,
+                image: job.image || job.recruiter?.avatar,
+              },
+            };
+
+            return (
+              <div key={job._id} className="jobs-feed-post">
+                <PostCard post={jobPost} context="jobs" />
+                {jobTags.length > 0 && (
+                  <div className="jobs-feed-tagline">
+                    {jobTags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+                <div className="jobs-feed-meta">
+                  <span>{getLocation(job)}</span>
+                  <span>{getContract(job)}</span>
+                  <span>{getMode(job)}</span>
+                  <span>{getSalary(job)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
