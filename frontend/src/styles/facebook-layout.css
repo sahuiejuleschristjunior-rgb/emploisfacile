@@ -57,7 +57,7 @@
 
 .jobs-mobile-content {
   min-height: calc(var(--app-height) - var(--fb-header-height));
-  padding: calc(var(--fb-header-height) + 8px) 0 calc(var(--fb-bottom-nav-height) + 16px);
+  padding: calc(var(--fb-header-height) + 8px) 12px 80px;
   box-sizing: border-box;
 }
 
