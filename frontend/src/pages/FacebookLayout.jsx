@@ -180,7 +180,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     setSearchOpen(false);
     setShowMobileSearch(false);
     setShowMobileMenu(false);
-    setShowJobsMenu(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
@@ -221,12 +220,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isJobsFeed || !isMobile) {
-      setShowJobsMenu(false);
-    }
-  }, [isJobsFeed, isMobile]);
-
   const safeNavigate = useCallback(
     (path, options = {}) => {
       setShowMobileMenu(false);
@@ -234,7 +227,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       setSearchOpen(false);
       setIsDropdownOpen(false);
       setProfileSwitcherOpen(false);
-      setShowJobsMenu(false);
 
       requestAnimationFrame(() => {
         nav(path, options);
@@ -245,7 +237,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   const handleLeftMenuNavigate = useCallback(
     (path) => {
-      setShowJobsMenu(false);
       nav(path);
     },
     [nav]
