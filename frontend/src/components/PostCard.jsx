@@ -145,7 +145,6 @@ export default function PostCard({
   post,
   currentUser,
   currentUserId,
-  currentUserRole,
   isAdmin,
   context = "feed",
   actionMenuPostId,
@@ -169,13 +168,9 @@ export default function PostCard({
   resolveMediaUrl,
   isImageMedia,
   textButtonStyle = defaultTextButtonStyle,
-  apiUrl,
-  token,
 }) {
   const nav = useNavigate();
   const [localMenuOpen, setLocalMenuOpen] = useState(false);
-  const [hasApplied, setHasApplied] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
 
   if (!post) return null;
 
@@ -193,8 +188,6 @@ export default function PostCard({
     () => [jobTitle, jobDescription].filter(Boolean).join("\n"),
     [jobTitle, jobDescription]
   );
-  const isCandidate = (currentUserRole || "").toLowerCase() === "candidate";
-
   const resolvedUserId = currentUserId ?? currentUser?._id;
   const resolvedIsAdmin =
     isAdmin ?? (currentUser?.role || "").toLowerCase() === "admin";
@@ -401,53 +394,10 @@ export default function PostCard({
     nav(`/likes/${post._id}`);
   };
 
-  const checkApplicationStatus = useCallback(async () => {
-    if (!isJobPost || !jobData?._id || !apiUrl || !token || !isCandidate) return;
-
-    try {
-      const res = await fetch(`${apiUrl}/applications/status?jobId=${jobData._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setHasApplied(Boolean(data?.hasApplied));
-    } catch (err) {
-      console.error("CHECK APPLICATION STATUS ERROR:", err);
-    }
-  }, [apiUrl, isCandidate, isJobPost, jobData?._id, token]);
-
-  useEffect(() => {
-    checkApplicationStatus();
-  }, [checkApplicationStatus]);
-
-  const handleApply = useCallback(async () => {
-    if (!isJobPost || !jobData?._id || !apiUrl || !token) return;
-    if (hasApplied || isApplying || !isCandidate) return;
-
-    setIsApplying(true);
-    try {
-      const res = await fetch(`${apiUrl}/applications`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ jobId: jobData._id }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        console.error("APPLY ERROR:", data?.message || "Erreur candidature.");
-        return;
-      }
-
-      setHasApplied(true);
-    } catch (err) {
-      console.error("APPLY ERROR:", err);
-    } finally {
-      setIsApplying(false);
-    }
-  }, [apiUrl, hasApplied, isApplying, isCandidate, isJobPost, jobData?._id, token]);
+  const handleApply = useCallback(() => {
+    if (!isJobPost || !jobData?._id) return;
+    nav(`/emplois/${jobData._id}`);
+  }, [isJobPost, jobData?._id, nav]);
 
   const textContent = isJobPost ? jobText : post.text;
 
@@ -478,7 +428,9 @@ export default function PostCard({
                   <span className="fb-sponsored-badge">Sponsorisé</span>
                 )}
                 {isJobPost && (
-                  <span className="fb-sponsored-badge">Offre d’emploi</span>
+                  <span className="fb-sponsored-badge fb-sponsored-badge--job">
+                    Offre d’emploi
+                  </span>
                 )}
               </div>
               {isSharedPost && (
@@ -664,15 +616,10 @@ export default function PostCard({
           <div className="fb-post-actions">
             {isJobPost ? (
               <button
-                className="fb-post-action-btn"
+                className="fb-post-action-btn fb-post-action-btn--apply"
                 onClick={handleApply}
-                disabled={!isCandidate || !token || hasApplied || isApplying}
               >
-                {hasApplied
-                  ? "Vous avez déjà postulé"
-                  : isApplying
-                  ? "Postuler..."
-                  : "Postuler"}
+                Postuler
               </button>
             ) : (
               <>

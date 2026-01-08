@@ -63,6 +63,12 @@
   border: 1px solid rgba(45, 136, 255, 0.35);
 }
 
+.fb-sponsored-badge--job {
+  background: rgba(229, 57, 53, 0.18);
+  color: #ffb4b0;
+  border-color: rgba(229, 57, 53, 0.6);
+}
+
 /* MENU */
 .fb-post-menu {
   position: relative;
