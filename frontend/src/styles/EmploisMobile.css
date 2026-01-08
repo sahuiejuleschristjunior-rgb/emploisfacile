@@ -177,6 +177,78 @@
   transform: translateY(1px);
 }
 
+@media (prefers-color-scheme: dark) {
+  .emplois-mobile {
+    background: #0b1120;
+    color: #e2e8f0;
+  }
+
+  .emplois-mobile__eyebrow {
+    color: #94a3b8;
+  }
+
+  .emplois-mobile__subtitle {
+    color: #cbd5f5;
+  }
+
+  .emplois-mobile__field {
+    color: #cbd5f5;
+  }
+
+  .emplois-mobile__field input {
+    background: #111827;
+    border-color: #1e293b;
+    color: #e2e8f0;
+  }
+
+  .emplois-mobile__field input::placeholder {
+    color: #94a3b8;
+  }
+
+  .emplois-mobile__state {
+    background: #111827;
+    color: #cbd5f5;
+  }
+
+  .emplois-mobile__state--error {
+    color: #fecaca;
+    background: #3b0a0a;
+  }
+
+  .emplois-mobile__card {
+    background: #111827;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.4);
+  }
+
+  .emplois-mobile__company {
+    color: #94a3b8;
+  }
+
+  .emplois-mobile__logo {
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+
+  .emplois-mobile__meta {
+    color: #cbd5f5;
+  }
+
+  .emplois-mobile__meta span {
+    background: #1e293b;
+    color: #e2e8f0;
+  }
+
+  .emplois-mobile__cta {
+    background: #3b82f6;
+    color: #0b1120;
+  }
+
+  .emplois-mobile__load {
+    background: #1f2937;
+    color: #e2e8f0;
+  }
+}
+
 @media (min-width: 769px) {
   .emplois-mobile {
     max-width: 500px;
