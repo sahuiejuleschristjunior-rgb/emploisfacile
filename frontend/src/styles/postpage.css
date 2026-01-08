@@ -4,7 +4,7 @@
 
 .postpage-wrapper {
   color: #e4e6eb; /* Texte clair */
-  min-height: 100vh;
+  min-height: var(--app-height);
   /* Fond correspondant au reste du layout */
   background: #18191a; 
   /* Le header est fixe, donc on décale le contenu */

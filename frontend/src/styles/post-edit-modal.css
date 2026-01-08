@@ -223,8 +223,8 @@
   .post-edit-modal {
     width: 100%;
     border-radius: 0;
-    height: 100vh;
-    max-height: 100vh;
+    height: var(--app-height);
+    max-height: var(--app-height);
     padding: 16px;
   }
 

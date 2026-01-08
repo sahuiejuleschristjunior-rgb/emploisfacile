@@ -26,7 +26,7 @@ body {
 }
 
 .candidate-dashboard {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: var(--bg);
   padding: 0;
   position: relative;
@@ -44,7 +44,7 @@ body {
   top: 0;
   left: 0;
   width: var(--candidate-sidebar-width);
-  height: 100vh;
+  height: var(--app-height);
   overflow-y: auto;
   z-index: var(--z-sidebar);
 }
@@ -158,7 +158,7 @@ body {
   flex-direction: column;
   margin-left: var(--candidate-sidebar-width);
   width: calc(100% - var(--candidate-sidebar-width));
-  height: 100vh;
+  height: var(--app-height);
   overflow: hidden;
   position: relative;
   background: var(--bg);
@@ -1312,7 +1312,7 @@ body {
     top: 0;
     width: 80%;
     max-width: 280px;
-    height: 100vh;
+    height: var(--app-height);
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     z-index: var(--z-burger);
@@ -1325,7 +1325,7 @@ body {
   .cd-main {
     margin-left: 0;
     width: 100%;
-    height: 100vh;
+    height: var(--app-height);
   }
 
   .cd-topbar {

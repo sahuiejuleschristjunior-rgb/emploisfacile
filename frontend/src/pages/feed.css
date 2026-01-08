@@ -2,6 +2,12 @@
 /* GLOBAL                  */
 /* ======================= */
 
+:root {
+  --mobile-header-height: 65px;
+  --mobile-bottom-bar-height: 62px;
+  --mobile-bar-gap: 10px;
+}
+
 body, html {
   background: #757474 !important;
   color: white;
@@ -12,7 +18,7 @@ body, html {
 }
 
 .feed-wrapper {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: #969393;
 }
 
@@ -21,8 +27,9 @@ body, html {
 /* ======================= */
 
 .mobile-navbar {
-  height: 65px;
-  padding: 10px 12px;
+  min-height: calc(var(--mobile-header-height) + var(--sat));
+  padding: calc(10px + var(--sat)) calc(12px + var(--sar)) 10px
+    calc(12px + var(--sal));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -98,7 +105,7 @@ body, html {
     display: flex;
     justify-content: center;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--app-height);
     align-items: flex-start;
   }
 
@@ -182,7 +189,7 @@ body, html {
   /* ALIGNEMENT PARFAIT */
   position: sticky;
   top: 110px;
-  height: calc(100vh - 110px);
+  height: calc(var(--app-height) - 110px);
   overflow-y: auto;            /* SCROLL ACTIVÉ */
   display: flex;
   flex-direction: column;
@@ -275,10 +282,13 @@ body, html {
 /* ======================= */
 
 .feed-main-mobile {
-  margin-top: 75px;
-  margin-bottom: 75px;
+  margin-top: calc(var(--mobile-header-height) + var(--sat) + var(--mobile-bar-gap));
+  margin-bottom: calc(var(--mobile-bottom-bar-height) + var(--sab) + var(--mobile-bar-gap));
   padding: 0 12px 12px;
-  height: calc(100vh - 150px);
+  height: calc(
+    var(--app-height) - var(--mobile-header-height) - var(--mobile-bottom-bar-height) - var(--sat) - var(--sab) -
+      var(--mobile-bar-gap) - var(--mobile-bar-gap)
+  );
   overflow-y: auto;
 }
 
@@ -292,7 +302,9 @@ body, html {
   left: 0;
   right: 0;
   background: #000;
-  padding: 10px 12px;
+  min-height: calc(var(--mobile-bottom-bar-height) + var(--sab));
+  padding: 10px calc(12px + var(--sar)) max(var(--sab), 12px)
+    calc(12px + var(--sal));
   display: flex;
   align-items: center;
   gap: 10px;
@@ -439,7 +451,7 @@ body, html {
   padding: 18px;
   position: sticky;
   top: 110px;
-  max-height: calc(100vh - 130px); /* 💥 Permet la PUB de rester visible */
+  max-height: calc(var(--app-height) - 130px); /* 💥 Permet la PUB de rester visible */
   overflow-y: auto;                /* 💥 Active le scroll interne */
   box-shadow: 0 8px 35px rgba(0,0,0,0.45);
 }
@@ -1062,4 +1074,3 @@ body, html {
 .fb-menu-popup button:hover {
   background: #1a1a1a;
 }
-

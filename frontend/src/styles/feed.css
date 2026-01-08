@@ -1,7 +1,7 @@
 /* === LAYOUT GLOBAL DU FEED === */
 
 .feed-container {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: radial-gradient(circle at top, #1a1a1a 0, #0b0b0b 45%, #000 100%);
   color: #e5e7eb;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;

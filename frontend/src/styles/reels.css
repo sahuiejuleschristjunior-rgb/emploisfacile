@@ -1,7 +1,7 @@
 .reels-page {
   background: #000;
   color: #fff;
-  height: 100vh;
+  height: var(--app-height);
   width: 100%;
   overflow: hidden;
 }
@@ -25,7 +25,7 @@
 
 .reels-item {
   position: relative;
-  height: 100vh;
+  height: var(--app-height);
   width: 100%;
   display: flex;
   align-items: center;
@@ -67,7 +67,7 @@
 }
 
 .reels-status {
-  height: 100vh;
+  height: var(--app-height);
   display: flex;
   align-items: center;
   justify-content: center;

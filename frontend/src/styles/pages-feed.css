@@ -40,7 +40,7 @@
   position: sticky;
   top: 76px;
   align-self: flex-start;
-  max-height: calc(100vh - 90px);
+  max-height: calc(var(--app-height) - 90px);
   overflow-y: auto;
 }
 

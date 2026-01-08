@@ -28,7 +28,7 @@
   left: 0;
 
   width: 260px;
-  height: 100vh;
+  height: var(--app-height);
 
   background: #0d0d0d;
   padding: 20px;

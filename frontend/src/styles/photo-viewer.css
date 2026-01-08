@@ -178,7 +178,7 @@ body[data-theme="dark"] {
 .pv-fullscreen .pv-media {
   object-fit: contain;
   width: 100vw;
-  height: 100vh;
+  height: var(--app-height);
 }
 
 /* ===========================

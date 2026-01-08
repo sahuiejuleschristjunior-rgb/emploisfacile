@@ -12,7 +12,7 @@ html {
 }
 
 .feed-wrapper {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: #000;
 }
 
@@ -151,7 +151,7 @@ html {
   margin-top: 75px;            /* sous la navbar mobile */
   margin-bottom: 75px;         /* au-dessus de la barre basse */
   padding: 0 12px 12px;
-  height: calc(100vh - 75px - 75px);
+  height: calc(var(--app-height) - 75px - 75px);
   overflow-y: auto;
 }
 
@@ -304,7 +304,7 @@ html {
     display: flex;
     justify-content: center;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--app-height);
     padding-top: 72px;   /* compense la hauteur du header */
     box-sizing: border-box;
   }
@@ -394,7 +394,7 @@ html {
 
   position: sticky;
   top: 90px;
-  max-height: calc(100vh - 110px);
+  max-height: calc(var(--app-height) - 110px);
   overflow-y: auto;
 
   display: flex;

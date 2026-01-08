@@ -10,7 +10,7 @@
 
 /* GLOBAL AUTH */
 .auth-wrap{
-  min-height:100vh;
+  min-height:var(--app-height);
   display:flex;
   justify-content:center;
   align-items:center;

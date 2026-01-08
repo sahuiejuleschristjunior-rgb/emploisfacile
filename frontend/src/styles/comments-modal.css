@@ -32,7 +32,7 @@
 .cm-container {
   width: min(94%, 1180px);
   max-width: calc(100vw - 12px);
-  height: calc(100vh - 40px);
+  height: calc(var(--app-height) - 40px);
   background: linear-gradient(180deg,#111217,#0f1316); /* un peu plus lumineux */
   border-radius: 14px;
   display: grid;
@@ -58,7 +58,7 @@
   .cm-container {
     display: block;
     height: auto;
-    min-height: calc(100vh - 24px);
+    min-height: calc(var(--app-height) - 24px);
     width: 100%;
     max-width: 100%;
     border-radius: 12px;
