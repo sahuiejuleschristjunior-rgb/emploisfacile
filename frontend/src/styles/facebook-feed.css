@@ -431,6 +431,12 @@
   }
 }
 
+@media (max-width: 640px) {
+  .pages-feed .fb-post {
+    margin-bottom: 10px;
+  }
+}
+
 
 .fb-create-post-box {
   background: #1b1b1d;
