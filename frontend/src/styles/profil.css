@@ -660,6 +660,10 @@
     width: 100%;
   }
 
+  .profil-posts .fb-post-card {
+    margin-bottom: 0;
+  }
+
   /* Align intro / info column with feed on narrow screens */
   .profil-grid {
     display: flex;
