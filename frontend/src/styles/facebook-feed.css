@@ -306,9 +306,25 @@
   gap: 4px;
 }
 
+.fb-post-action-btn--apply {
+  background: #e53935;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.fb-post-action-btn--apply:hover {
+  background: #d32f2f;
+}
+
 .fb-post-action-btn:active {
   background: #3a3b3c;
   border-radius: 8px;
+}
+
+.fb-post-action-btn--apply:active {
+  background: #c62828;
 }
 
 .fb-action-icon {
