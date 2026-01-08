@@ -5,12 +5,6 @@
   --ads-text: #e4e6eb;
   --ads-subtext: #b0b3b8;
   --ads-primary: #2d88ff;
-  --ads-header-height: 72px;
-}
-
-.ads-shell {
-  background: var(--ads-bg);
-  color: var(--ads-text);
 }
 
 .ads-layout {
@@ -36,18 +30,17 @@
 }
 
 .ads-topbar {
-  height: var(--ads-header-height);
+  height: 72px;
   padding: 0 24px;
   border-bottom: 1px solid var(--ads-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
   background: rgba(24, 25, 26, 0.92);
   z-index: 10;
-  width: calc(100% - 260px);
-  margin-left: 260px;
-  box-sizing: border-box;
 }
 
 .ads-brand {
@@ -468,11 +461,6 @@
 @media (max-width: 960px) {
   .ads-shell {
     padding: 16px;
-  }
-
-  .ads-topbar {
-    width: 100%;
-    margin-left: 0;
   }
 }
 

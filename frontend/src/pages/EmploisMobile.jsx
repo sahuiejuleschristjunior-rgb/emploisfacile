@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getImageUrl } from "../utils/imageUtils";
-import AppShell from "../layouts/AppShell";
 import "../styles/EmploisMobile.css";
 
 const PAGE_SIZE = 6;
@@ -102,24 +101,18 @@ export default function EmploisMobile() {
 
   const visibleJobs = useMemo(() => jobs.slice(0, visibleCount), [jobs, visibleCount]);
 
-  const header = (
-    <header className="emplois-mobile__header">
-      <div>
-        <p className="emplois-mobile__eyebrow">EmploisFacile</p>
-        <h1>Offres d&apos;emploi</h1>
-        <p className="emplois-mobile__subtitle">
-          Trouvez rapidement un poste grâce à la recherche mobile.
-        </p>
-      </div>
-    </header>
-  );
-
   return (
-    <AppShell
-      className="emplois-mobile page--jobs"
-      header={header}
-      style={{ "--app-header-height": "var(--jobs-header-height)" }}
-    >
+    <div className="emplois-mobile page--jobs">
+      <header className="emplois-mobile__header">
+        <div>
+          <p className="emplois-mobile__eyebrow">EmploisFacile</p>
+          <h1>Offres d&apos;emploi</h1>
+          <p className="emplois-mobile__subtitle">
+            Trouvez rapidement un poste grâce à la recherche mobile.
+          </p>
+        </div>
+      </header>
+
       <div className="emplois-mobile__body">
         <section className="emplois-mobile__filters">
           <label className="emplois-mobile__field">
@@ -218,6 +211,6 @@ export default function EmploisMobile() {
           )}
         </section>
       </div>
-    </AppShell>
+    </div>
   );
 }
