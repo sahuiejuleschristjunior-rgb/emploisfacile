@@ -70,6 +70,7 @@ import { ActiveConversationProvider } from "./context/ActiveConversationContext"
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoadingOverlay from "./components/AppLoadingOverlay";
 import { getSafeAreaValues, isSafeAreaDebugEnabled } from "./utils/safeArea";
+import { initStatusBar, registerStatusBarListeners } from "./utils/capacitorStatusBar";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -114,6 +115,12 @@ class AppErrorBoundary extends Component {
 }
 
 export default function App() {
+  useEffect(() => {
+    initStatusBar();
+    const removeListener = registerStatusBarListeners();
+    return () => removeListener();
+  }, []);
+
   return (
     <>
       <AppLoadingOverlay />

@@ -44,17 +44,13 @@ body {
 }
 
 .page--dashboard .cd-topbar {
-  padding-top: calc(16px + var(--sat));
-  height: calc(var(--candidate-header-height) + var(--sat));
+  padding-top: 16px;
+  height: var(--candidate-header-height);
 }
 
 .page--dashboard .content {
-  padding-top: calc(var(--candidate-header-height) + var(--sat));
-  padding-bottom: calc(16px + var(--sab));
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  padding-top: 0;
+  padding-bottom: 16px;
 }
 
 .cd-side {
@@ -183,7 +179,8 @@ body {
   flex-direction: column;
   margin-left: var(--candidate-sidebar-width);
   width: calc(100% - var(--candidate-sidebar-width));
-  height: var(--app-height);
+  height: 100%;
+  min-height: 100%;
   overflow: hidden;
   position: relative;
   background: var(--bg);
@@ -197,11 +194,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: fixed;
-  top: 0;
-  left: var(--candidate-sidebar-width);
-  right: 0;
   height: var(--candidate-header-height);
+  width: calc(100% - var(--candidate-sidebar-width));
+  margin-left: var(--candidate-sidebar-width);
   z-index: var(--z-header);
 }
 
@@ -291,7 +286,7 @@ body {
 }
 
 .content {
-  padding: var(--candidate-header-height) 32px 44px;
+  padding: 0 32px 44px;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -1350,12 +1345,12 @@ body {
   .cd-main {
     margin-left: 0;
     width: 100%;
-    height: var(--app-height);
+    height: 100%;
   }
 
   .cd-topbar {
-    left: 0;
-    right: 0;
+    width: 100%;
+    margin-left: 0;
   }
 
   .mobile-only {
@@ -1371,7 +1366,7 @@ body {
   }
 
   .content {
-    padding: var(--candidate-header-height) 16px 16px;
+    padding: 0 16px 16px;
   }
 
   .hero {
@@ -1384,13 +1379,7 @@ body {
   }
 
   .page--dashboard .cd-topbar {
-    padding: calc(14px + var(--sat)) 16px 14px;
-    height: calc(var(--candidate-header-height) + var(--sat));
-  }
-
-  .page--dashboard .content {
-    padding-top: calc(var(--candidate-header-height) + var(--sat));
-    padding-bottom: calc(16px + var(--sab));
+    padding: 14px 16px;
   }
 
   .cd-topbar h2 {

@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
 import PagesFeedSidebar from "../components/PagesFeedSidebar";
 import RightSidebar from "../components/RightSidebar";
+import AppShell from "../layouts/AppShell";
 import {
   fetchRelationStatus,
   sendFriendRequest,
@@ -1653,11 +1654,19 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   );
 
   if (isJobsFeed && isMobile) {
-    return (
-      <div className="jobs-mobile-layout">
-        {header}
+    const shellStyle = {
+      "--app-header-height": hideHeader ? "0px" : "var(--fb-header-height)",
+    };
 
-        <main className="jobs-mobile-content">
+    return (
+      <AppShell
+        className="jobs-mobile-layout"
+        header={header}
+        bottomNav={bottomNav}
+        style={shellStyle}
+        mainClassName="jobs-mobile-content"
+      >
+        <div>
           {children || (
             <Outlet
               context={{
@@ -1666,61 +1675,68 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               }}
             />
           )}
-        </main>
-
-        {bottomNav}
+        </div>
 
         {toast && <div className="fb-toast">{toast}</div>}
-      </div>
+      </AppShell>
     );
   }
 
   if (isCompactLayout) {
-    return (
-      <div className="fb-compact-shell">
-        {header}
+    const shellStyle = {
+      "--app-header-height": hideHeader ? "0px" : "var(--fb-header-height)",
+    };
 
-        <main className="fb-compact-body">
+    return (
+      <AppShell
+        className="fb-compact-shell"
+        header={header}
+        style={shellStyle}
+        mainClassName="fb-compact-body"
+      >
+        <div>
           {children || <Outlet />}
-        </main>
+        </div>
 
         {toast && <div className="fb-toast">{toast}</div>}
-      </div>
+      </AppShell>
     );
   }
 
+  const shellStyle = {
+    "--app-header-height": hideHeader ? "0px" : "var(--fb-header-height)",
+  };
+
   return (
-    <div className="fb-app fb-app--with-bottom-nav">
-      {header}
+    <AppShell
+      className="fb-app fb-app--with-bottom-nav"
+      header={header}
+      bottomNav={bottomNav}
+      style={shellStyle}
+      mainClassName="app-shell__main--no-scroll fb-app-body"
+    >
+      <div className="fb-layout">
+        <aside className="fb-left-column">
+          {leftMenuContent}
+        </aside>
 
-      {/* APP BODY */}
-      <main className="fb-app-body">
-        <div className="fb-layout">
-          <aside className="fb-left-column">
-            {leftMenuContent}
-          </aside>
+        <section
+          className={`fb-center-column ${
+            isPagesFeed ? "fb-center-column--pages" : ""
+          }`}
+        >
+          {children || <Outlet />}
+        </section>
 
-          <section
-            className={`fb-center-column ${
-              isPagesFeed ? "fb-center-column--pages" : ""
-            }`}
-          >
-            {children || <Outlet />}
-          </section>
-
-          <aside
-            className={`fb-right-column ${
-              isPagesFeed || isFacebookFeed ? "fb-right-column--visible" : ""
-            }`}
-          >
-            {isPagesFeed && <PagesFeedSidebar />}
-            {isFacebookFeed && <RightSidebar />}
-          </aside>
-        </div>
-      </main>
-
-      {/* BOTTOM NAV */}
-      {bottomNav}
+        <aside
+          className={`fb-right-column ${
+            isPagesFeed || isFacebookFeed ? "fb-right-column--visible" : ""
+          }`}
+        >
+          {isPagesFeed && <PagesFeedSidebar />}
+          {isFacebookFeed && <RightSidebar />}
+        </aside>
+      </div>
 
       {/* FULLSCREEN MENU */}
       {showMobileMenu === true && !isJobsFeed && (
@@ -1851,6 +1867,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       )}
 
       {toast && <div className="fb-toast">{toast}</div>}
-    </div>
+    </AppShell>
   );
 }

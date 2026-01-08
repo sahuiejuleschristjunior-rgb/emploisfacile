@@ -19,12 +19,9 @@
 }
 
 .page--jobs .emplois-mobile__header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: calc(16px + var(--sat)) 16px 12px;
+  padding: 16px 16px 12px;
+  height: var(--jobs-header-height);
+  box-sizing: border-box;
   background: #f6f7fb;
 }
 
@@ -33,12 +30,7 @@
   flex-direction: column;
   gap: 16px;
   flex: 1;
-  padding: calc(var(--jobs-header-height) + var(--sat)) 16px
-    calc(var(--jobs-bottom-height) + var(--sab));
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 16px;
 }
 
 .emplois-mobile__header {
