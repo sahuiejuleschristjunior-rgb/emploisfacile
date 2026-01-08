@@ -32,6 +32,31 @@ body {
   position: relative;
 }
 
+.page--dashboard {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.page--dashboard .cd-main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: auto;
+}
+
+.page--dashboard .cd-topbar {
+  padding-top: calc(16px + var(--sat));
+  height: calc(var(--candidate-header-height) + var(--sat));
+}
+
+.page--dashboard .content {
+  padding-top: calc(var(--candidate-header-height) + var(--sat));
+  padding-bottom: calc(16px + var(--sab));
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .cd-side {
   background: #141414;
   color: var(--text);
@@ -1356,6 +1381,16 @@ body {
   .cd-topbar {
     padding: 14px 16px;
     background: var(--bg);
+  }
+
+  .page--dashboard .cd-topbar {
+    padding: calc(14px + var(--sat)) 16px 14px;
+    height: calc(var(--candidate-header-height) + var(--sat));
+  }
+
+  .page--dashboard .content {
+    padding-top: calc(var(--candidate-header-height) + var(--sat));
+    padding-bottom: calc(16px + var(--sab));
   }
 
   .cd-topbar h2 {

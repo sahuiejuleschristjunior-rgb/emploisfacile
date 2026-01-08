@@ -1,8 +1,8 @@
 // ================================
 // IMPORTS — TOUJOURS EN PREMIER
 // ================================
-import { Component } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { Component, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import ChangePassword from "./pages/ChangePassword";
 import LandingPage from "./pages/LandingPage";
@@ -69,6 +69,7 @@ import { SocketProvider } from "./context/SocketContext";
 import { ActiveConversationProvider } from "./context/ActiveConversationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoadingOverlay from "./components/AppLoadingOverlay";
+import { getSafeAreaValues, isSafeAreaDebugEnabled } from "./utils/safeArea";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -122,6 +123,7 @@ export default function App() {
             <ActiveConversationProvider>
               <NotificationProvider>
                 <BrowserRouter>
+                  <SafeAreaRouteLogger />
                   <Routes>
                 {/* Landing */}
                 <Route
@@ -318,6 +320,30 @@ export default function App() {
       </AppErrorBoundary>
     </>
   );
+}
+
+function SafeAreaRouteLogger() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isSafeAreaDebugEnabled()) return;
+    const safeArea = getSafeAreaValues();
+    const viewport = window.visualViewport;
+
+    console.debug("[safe-area][route-change]", {
+      path: location.pathname,
+      search: location.search,
+      safeArea,
+      innerHeight: window.innerHeight,
+      visualViewport: {
+        height: viewport?.height ?? null,
+        width: viewport?.width ?? null,
+        offsetTop: viewport?.offsetTop ?? null,
+      },
+    });
+  }, [location.pathname, location.search]);
+
+  return null;
 }
 
 // ================================

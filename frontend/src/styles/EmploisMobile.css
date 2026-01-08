@@ -9,6 +9,38 @@
   box-sizing: border-box;
 }
 
+.page--jobs {
+  --jobs-header-height: clamp(104px, 18vw, 140px);
+  --jobs-bottom-height: 0px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  gap: 0;
+}
+
+.page--jobs .emplois-mobile__header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: calc(16px + var(--sat)) 16px 12px;
+  background: #f6f7fb;
+}
+
+.page--jobs .emplois-mobile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  padding: calc(var(--jobs-header-height) + var(--sat)) 16px
+    calc(var(--jobs-bottom-height) + var(--sab));
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .emplois-mobile__header {
   display: flex;
   justify-content: space-between;
@@ -181,6 +213,10 @@
   .emplois-mobile {
     background: #0b1120;
     color: #e2e8f0;
+  }
+
+  .page--jobs .emplois-mobile__header {
+    background: #0b1120;
   }
 
   .emplois-mobile__eyebrow {
