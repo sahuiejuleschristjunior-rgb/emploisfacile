@@ -31,8 +31,8 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a0a13] px-6">
-      <div className="w-full max-w-md bg-[#111827] rounded-2xl shadow-2xl p-8 border border-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-[#0b0b0b] px-6">
+      <div className="w-full max-w-md bg-[#141414] rounded-2xl shadow-2xl p-8 border border-gray-800">
 
         <h1 className="text-3xl font-bold text-center text-white mb-8">
           ������ Nouveau mot de passe
@@ -47,7 +47,7 @@ export default function ChangePassword() {
               required
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
-              className="w-full mt-1 px-4 py-3 rounded-xl bg-[#1f2937] text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full mt-1 px-4 py-3 rounded-xl bg-[#1f1f1f] text-white focus:ring-2 focus:ring-gray-500 outline-none transition-all"
             />
           </div>
 
@@ -58,7 +58,7 @@ export default function ChangePassword() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 px-4 py-3 rounded-xl bg-[#1f2937] text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full mt-1 px-4 py-3 rounded-xl bg-[#1f1f1f] text-white focus:ring-2 focus:ring-gray-500 outline-none transition-all"
             />
           </div>
 
@@ -69,13 +69,13 @@ export default function ChangePassword() {
               required
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="w-full mt-1 px-4 py-3 rounded-xl bg-[#1f2937] text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full mt-1 px-4 py-3 rounded-xl bg-[#1f1f1f] text-white focus:ring-2 focus:ring-gray-500 outline-none transition-all"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 transition-all rounded-xl text-white font-semibold shadow-lg shadow-blue-900/40"
+            className="w-full py-3 bg-gray-700 hover:bg-gray-600 transition-all rounded-xl text-white font-semibold shadow-lg shadow-black/40"
           >
             Mettre à jour
           </button>

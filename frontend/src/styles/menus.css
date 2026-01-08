@@ -557,7 +557,7 @@ html {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 0, #22c55e, #0ea5e9);
+  background: radial-gradient(circle at 30% 0, #22c55e, #4b5563);
 }
 
 .feed-post-author {

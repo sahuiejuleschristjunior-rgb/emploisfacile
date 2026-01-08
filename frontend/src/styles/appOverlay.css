@@ -21,7 +21,7 @@
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #1877f2, #3b82f6);
+  background: linear-gradient(135deg, #4b5563, #4b5563);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -57,7 +57,7 @@
   height: 100%;
   width: 45%;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(24,119,242,0.95), rgba(59,130,246,0.95));
+  background: linear-gradient(90deg, rgba(120, 120, 120,0.95), rgba(120, 120, 120,0.95));
   animation: overlaySlide 1.2s ease-in-out infinite;
 }
 

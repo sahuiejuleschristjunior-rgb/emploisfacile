@@ -37,7 +37,7 @@
 
 .fb-story-create {
   border-style: dashed;
-  border-color: #1877f2;
+  border-color: #4b5563;
 }
 
 /* 🔥 AVATAR CENTRÉ */
@@ -59,7 +59,7 @@
 }
 
 .story-circle.has-story {
-  border: 3px solid #1877f2;
+  border: 3px solid #4b5563;
 }
 
 .story-circle.no-story {
@@ -67,7 +67,7 @@
 }
 
 .create-story-circle {
-  border: 2px dashed #1877f2;
+  border: 2px dashed #4b5563;
 }
 
 /* 🔥 TEXTE BAS */
