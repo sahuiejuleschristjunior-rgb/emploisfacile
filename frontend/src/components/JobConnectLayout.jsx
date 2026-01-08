@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const defaultMenuItems = [
-  { key: "home", label: "🏠 Accueil", path: "/fb/dashboard" },
+  { key: "home", label: "🏠 Accueil", path: "/fb" },
   { key: "jobs", label: "💼 Emplois", path: "/emplois" },
   { key: "dashboard", label: "Tableau de bord", path: "/jobconnect/dashboard" },
   { key: "candidatures", label: "Mes candidatures", path: "/jobconnect/candidatures" },
