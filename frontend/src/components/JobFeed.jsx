@@ -2,8 +2,10 @@ import React, { useMemo } from "react";
 import PostCard from "./PostCard";
 import "../styles/JobFeed.css";
 import useJobSearch from "../hooks/useJobSearch";
+import useIsMobile from "../hooks/useIsMobile";
 
 export default function JobFeed() {
+  const isMobile = useIsMobile();
   const {
     jobs,
     loading,
@@ -56,88 +58,91 @@ export default function JobFeed() {
           <div className="jobs-feed-header">
             <div>
               <h1>Offres d’emploi</h1>
-              <p>Recherche par mot-clé, ville, type et mode de travail.</p>
+              {!isMobile && <p>Recherche par mot-clé, ville, type et mode de travail.</p>}
             </div>
             <div className="jobs-feed-count">{jobs.length} offre(s)</div>
           </div>
+          {!isMobile && (
+            <>
+              <div className="jobs-feed-filters">
+                <label className="jobs-feed-field" htmlFor="jobs-q">
+                  <span>Recherche</span>
+                  <input
+                    id="jobs-q"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Titre, compétences, entreprise (ex: marketer, react…)"
+                  />
+                </label>
+                <label className="jobs-feed-field" htmlFor="jobs-city">
+                  <span>Ville</span>
+                  <select
+                    id="jobs-city"
+                    value={cityFilter}
+                    onChange={(event) => setCityFilter(event.target.value)}
+                  >
+                    <option value="">Toutes villes</option>
+                    {cityOptions.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="jobs-feed-field" htmlFor="jobs-type">
+                  <span>Contrat</span>
+                  <select
+                    id="jobs-type"
+                    value={contractFilter}
+                    onChange={(event) => setContractFilter(event.target.value)}
+                  >
+                    <option value="">Tous contrats</option>
+                    {contractOptions.map((contract) => (
+                      <option key={contract} value={contract}>
+                        {contract}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="jobs-feed-field" htmlFor="jobs-mode">
+                  <span>Mode</span>
+                  <select
+                    id="jobs-mode"
+                    value={modeFilter}
+                    onChange={(event) => setModeFilter(event.target.value)}
+                  >
+                    <option value="">Tous modes</option>
+                    {modeOptions.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="jobs-feed-reset" onClick={handleReset}>
+                  Réinitialiser
+                </button>
+              </div>
 
-          <div className="jobs-feed-filters">
-            <label className="jobs-feed-field" htmlFor="jobs-q">
-              <span>Recherche</span>
-              <input
-                id="jobs-q"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Titre, compétences, entreprise (ex: marketer, react…)"
-              />
-            </label>
-            <label className="jobs-feed-field" htmlFor="jobs-city">
-              <span>Ville</span>
-              <select
-                id="jobs-city"
-                value={cityFilter}
-                onChange={(event) => setCityFilter(event.target.value)}
-              >
-                <option value="">Toutes villes</option>
-                {cityOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="jobs-feed-field" htmlFor="jobs-type">
-              <span>Contrat</span>
-              <select
-                id="jobs-type"
-                value={contractFilter}
-                onChange={(event) => setContractFilter(event.target.value)}
-              >
-                <option value="">Tous contrats</option>
-                {contractOptions.map((contract) => (
-                  <option key={contract} value={contract}>
-                    {contract}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="jobs-feed-field" htmlFor="jobs-mode">
-              <span>Mode</span>
-              <select
-                id="jobs-mode"
-                value={modeFilter}
-                onChange={(event) => setModeFilter(event.target.value)}
-              >
-                <option value="">Tous modes</option>
-                {modeOptions.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {mode}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="jobs-feed-reset" onClick={handleReset}>
-              Réinitialiser
-            </button>
-          </div>
-
-          <div className="jobs-feed-tags">
-            <span>Top tags :</span>
-            {topTags.length ? (
-              topTags.map((tag) => (
-                <span key={tag} className="jobs-feed-tag">
-                  {tag}
-                </span>
-              ))
-            ) : (
-              <>
-                <span className="jobs-feed-tag">React</span>
-                <span className="jobs-feed-tag">Marketing</span>
-                <span className="jobs-feed-tag">SQL / BI</span>
-                <span className="jobs-feed-tag">Remote</span>
-              </>
-            )}
-          </div>
+              <div className="jobs-feed-tags">
+                <span>Top tags :</span>
+                {topTags.length ? (
+                  topTags.map((tag) => (
+                    <span key={tag} className="jobs-feed-tag">
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <>
+                    <span className="jobs-feed-tag">React</span>
+                    <span className="jobs-feed-tag">Marketing</span>
+                    <span className="jobs-feed-tag">SQL / BI</span>
+                    <span className="jobs-feed-tag">Remote</span>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </section>
 
         {loading && <div className="fb-loader">Chargement des offres...</div>}
