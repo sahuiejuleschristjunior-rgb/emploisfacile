@@ -15,16 +15,6 @@ export default function EmploisMobile() {
     jobs,
     loading,
     error,
-    cityFilter,
-    setCityFilter,
-    contractFilter,
-    setContractFilter,
-    modeFilter,
-    setModeFilter,
-    cityOptions,
-    contractOptions,
-    modeOptions,
-    handleReset,
   } = useJobSearch();
 
   const navigate = useNavigate();
@@ -57,62 +47,6 @@ export default function EmploisMobile() {
           <span className="emplois-mobile__count">{jobs.length} offres</span>
         </div>
       </header>
-
-      <section className="emplois-mobile__search-bar">
-        <div className="emplois-mobile__filters">
-          <label className="emplois-mobile__field" htmlFor="jobs-city-mobile">
-            <span>Ville</span>
-            <select
-              id="jobs-city-mobile"
-              value={cityFilter}
-              onChange={(event) => setCityFilter(event.target.value)}
-            >
-              <option value="">Toutes</option>
-              {cityOptions.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="emplois-mobile__field" htmlFor="jobs-contract-mobile">
-            <span>Contrat</span>
-            <select
-              id="jobs-contract-mobile"
-              value={contractFilter}
-              onChange={(event) => setContractFilter(event.target.value)}
-            >
-              <option value="">Tous</option>
-              {contractOptions.map((contract) => (
-                <option key={contract} value={contract}>
-                  {contract}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="emplois-mobile__field" htmlFor="jobs-mode-mobile">
-            <span>Mode</span>
-            <select
-              id="jobs-mode-mobile"
-              value={modeFilter}
-              onChange={(event) => setModeFilter(event.target.value)}
-            >
-              <option value="">Tous</option>
-              {modeOptions.map((mode) => (
-                <option key={mode} value={mode}>
-                  {mode}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <button type="button" className="emplois-mobile__reset" onClick={handleReset}>
-          Réinitialiser
-        </button>
-      </section>
 
       <section className="emplois-mobile__results" aria-live="polite">
         {loading && <div className="emplois-mobile__state">Chargement des offres...</div>}
