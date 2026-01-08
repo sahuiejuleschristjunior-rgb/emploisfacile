@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PostCard from "./PostCard";
+import SmartVideo from "./SmartVideo";
 import SkeletonPost from "./SkeletonPost";
 import PostEditModal from "./PostEditModal";
 import CommentsModal from "./CommentsModal";
@@ -538,9 +539,10 @@ export default function PostFeed({
                   alt=""
                 />
               ) : (
-                <video className="fb-media-viewer-video" controls autoPlay>
-                  <source src={getImageUrl(mediaViewerContent.media.url)} />
-                </video>
+                <SmartVideo
+                  videoClassName="fb-media-viewer-video"
+                  src={getImageUrl(mediaViewerContent.media.url)}
+                />
               )}
 
               {mediaViewerContent.post.media.length > 1 && (
