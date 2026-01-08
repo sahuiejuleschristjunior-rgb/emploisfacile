@@ -13,17 +13,6 @@
   margin: 0 auto;
 }
 
-.job-feed-screen--facebook .fb-feed {
-  max-width: 100%;
-  width: 100%;
-  padding-left: clamp(16px, 4vw, 40px);
-  padding-right: clamp(16px, 4vw, 40px);
-}
-
-.job-feed-screen--facebook .jobs-feed {
-  max-width: none;
-}
-
 .jobs-feed-card h1 {
   margin: 0 0 4px;
   font-size: 20px;
@@ -126,7 +115,6 @@
   margin-bottom: 0;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  max-width: none;
 }
 
 .jobs-feed-tagline {
