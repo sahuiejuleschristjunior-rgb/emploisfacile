@@ -1480,38 +1480,6 @@ body {
 }
 
 @media (max-width: 768px) {
-  .cd-side {
-    top: var(--facebook-header-height);
-    height: calc(var(--app-height) - var(--facebook-header-height));
-  }
-
-  .cd-main {
-    height: var(--app-height);
-    padding-top: var(--facebook-header-height);
-    box-sizing: border-box;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .cd-topbar {
-    position: sticky;
-    top: var(--facebook-header-height);
-  }
-
-  .content {
-    padding-top: 16px;
-    padding-bottom: calc(var(--bottom-nav-height) + var(--sab));
-    height: auto;
-    overflow: visible;
-  }
-
-  .page--dashboard .content {
-    padding-top: 16px;
-    padding-bottom: calc(var(--bottom-nav-height) + var(--sab));
-    min-height: auto;
-    overflow: visible;
-  }
-
   .candidate-dashboard.job-chat-shell .cd-topbar {
     display: none;
   }
