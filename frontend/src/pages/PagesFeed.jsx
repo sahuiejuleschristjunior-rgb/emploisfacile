@@ -337,7 +337,7 @@ export default function PagesFeed() {
   );
 
   return (
-    <div className="fb-feed">
+    <div className="fb-feed pages-feed">
       <CreatePostFB
         onOptimisticPost={addOptimisticPost}
         onPostCreated={replaceOptimisticPost}
