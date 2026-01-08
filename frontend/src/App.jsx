@@ -169,12 +169,21 @@ export default function App() {
                 <Route
                   element={
                     <ProtectedRoute>
-                      <FacebookLayout />
+                      <FacebookLayout fullWidth />
                     </ProtectedRoute>
                   }
                 >
                   <Route path="/emplois" element={<EmploisPage />} />
                   <Route path="/emplois/:id" element={<JobDetailPage />} />
+                </Route>
+
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <FacebookLayout />
+                    </ProtectedRoute>
+                  }
+                >
                   {/* Groupe /fb avec colonnes latérales sur desktop */}
                   <Route path="/fb" element={<Outlet />}>
                     <Route index element={<FacebookFeed />} />

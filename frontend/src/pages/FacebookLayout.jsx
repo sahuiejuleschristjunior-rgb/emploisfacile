@@ -16,7 +16,7 @@ import {
 import { getMyPages } from "../api/pagesApi";
 import { useNotifications } from "../context/NotificationContext";
 
-export default function FacebookLayout({ headerOnly = false, children }) {
+export default function FacebookLayout({ headerOnly = false, fullWidth = false, children }) {
   const location = useLocation();
   const nav = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL;
@@ -1644,7 +1644,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   if (isJobsFeed && isMobile) {
     return (
-      <div className="jobs-mobile-layout">
+      <div className={`jobs-mobile-layout${fullWidth ? " layout-fullscreen" : ""}`}>
         {header}
 
         <main className="jobs-mobile-content">
@@ -1662,7 +1662,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
   if (isCompactLayout) {
     return (
-      <div className="fb-compact-shell">
+      <div className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}`}>
         {header}
 
         <main className="fb-compact-body">
@@ -1677,7 +1677,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   }
 
   return (
-    <div className="fb-app fb-app--with-bottom-nav">
+    <div
+      className={`fb-app fb-app--with-bottom-nav${fullWidth ? " layout-fullscreen" : ""}`}
+    >
       {header}
 
       {/* APP BODY */}
