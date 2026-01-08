@@ -85,6 +85,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showJobsMenu, setShowJobsMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
