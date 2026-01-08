@@ -439,11 +439,11 @@
 
 
 .fb-create-post-box {
-  background: #1c1e21;
+  background: #1b1b1d;
   padding: 14px;
   border-radius: 12px;
   margin-bottom: 16px;
-  border: 1px solid #3a3b3c;
+  border: 1px solid #343434;
 }
 
 .fb-create-post-header {
@@ -3127,7 +3127,7 @@
    BARRE CREATE POST (comme Facebook)
 ========================================================= */
 .fb-create-post-bar {
-  background: #1c1e21;
+  background: #242526;
   border-radius: 40px;
   padding: 8px 14px;
   display: flex;
