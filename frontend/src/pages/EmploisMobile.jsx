@@ -15,8 +15,6 @@ export default function EmploisMobile() {
     jobs,
     loading,
     error,
-    searchQuery,
-    setSearchQuery,
     cityFilter,
     setCityFilter,
     contractFilter,
@@ -61,16 +59,6 @@ export default function EmploisMobile() {
       </header>
 
       <section className="emplois-mobile__search-bar">
-        <label className="emplois-mobile__field">
-          <span>Recherche</span>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Métier, compétence, entreprise..."
-          />
-        </label>
-
         <div className="emplois-mobile__filters">
           <label className="emplois-mobile__field" htmlFor="jobs-city-mobile">
             <span>Ville</span>
