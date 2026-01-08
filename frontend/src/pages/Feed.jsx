@@ -155,9 +155,6 @@ export default function Feed() {
                     type={m.type}
                     mimeType={m.mimeType}
                     mediaClassName={isVideo ? "post-video" : "post-image"}
-                    controls={isVideo}
-                    muted={isVideo ? m.muted : undefined}
-                    autoPlay={m.autoPlay}
                   />
                 );
               })}

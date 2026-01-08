@@ -1,6 +1,7 @@
 // CommentsModal.jsx
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import SmartVideo from "./SmartVideo";
 import "../styles/comments-modal.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 
@@ -39,7 +40,10 @@ function MediaCarousel({ items = [], maxHeight = "70vh" }) {
 
       <div className="cm-media-current" style={{ maxHeight }}>
         {item.type === "video" ? (
-          <video controls src={getImageUrl(item.url)} style={{ maxHeight, borderRadius: 14 }} />
+          <SmartVideo
+            src={getImageUrl(item.url)}
+            videoStyle={{ maxHeight, borderRadius: 14 }}
+          />
         ) : (
           <img src={getImageUrl(item.url)} alt="" style={{ maxHeight, borderRadius: 14 }} loading="lazy" />
         )}
@@ -652,7 +656,10 @@ export default function CommentsModal({
                           {replyMedia[c._id].type.startsWith("image/") ? (
                             <img className="cm-reply-preview-media" src={URL.createObjectURL(replyMedia[c._id])} alt="" loading="lazy" />
                           ) : (
-                            <video className="cm-reply-preview-media" controls src={URL.createObjectURL(replyMedia[c._id])} />
+                            <SmartVideo
+                              videoClassName="cm-reply-preview-media"
+                              src={URL.createObjectURL(replyMedia[c._id])}
+                            />
                           )}
                         </div>
                       )}
@@ -688,7 +695,10 @@ export default function CommentsModal({
 
                               {r.media && (
                                 <div className="cm-reply-media" style={{ marginTop: 8 }}>
-                                  {normalizeMedia(r.media).map((m, i) => m.type === "image" ? <img key={i} src={getImageUrl(m.url)} alt="" loading="lazy" /> : <video key={i} controls src={getImageUrl(m.url)} />)}
+                                  {normalizeMedia(r.media).map((m, i) => m.type === "image"
+                                    ? <img key={i} src={getImageUrl(m.url)} alt="" loading="lazy" />
+                                    : <SmartVideo key={i} src={getImageUrl(m.url)} />
+                                  )}
                                 </div>
                               )}
 
@@ -762,7 +772,10 @@ export default function CommentsModal({
                 {commentMedia.type?.startsWith?.("image/") ? (
                   <img className="cm-comment-preview-media" src={URL.createObjectURL(commentMedia)} alt="" loading="lazy" />
                 ) : (
-                  <video className="cm-comment-preview-media" controls src={URL.createObjectURL(commentMedia)} />
+                  <SmartVideo
+                    videoClassName="cm-comment-preview-media"
+                    src={URL.createObjectURL(commentMedia)}
+                  />
                 )}
               </div>
             )}
