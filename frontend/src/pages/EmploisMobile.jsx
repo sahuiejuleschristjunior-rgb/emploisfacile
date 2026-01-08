@@ -102,7 +102,7 @@ export default function EmploisMobile() {
   const visibleJobs = useMemo(() => jobs.slice(0, visibleCount), [jobs, visibleCount]);
 
   return (
-    <div className="emplois-mobile">
+    <div className="emplois-mobile page--jobs">
       <header className="emplois-mobile__header">
         <div>
           <p className="emplois-mobile__eyebrow">EmploisFacile</p>
@@ -113,102 +113,104 @@ export default function EmploisMobile() {
         </div>
       </header>
 
-      <section className="emplois-mobile__filters">
-        <label className="emplois-mobile__field">
-          <span>Recherche</span>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Métier, compétence, entreprise..."
-          />
-        </label>
-        <label className="emplois-mobile__field">
-          <span>Localisation</span>
-          <input
-            type="search"
-            value={locationQuery}
-            onChange={(event) => setLocationQuery(event.target.value)}
-            placeholder="Ville, région..."
-          />
-        </label>
-      </section>
+      <div className="emplois-mobile__body">
+        <section className="emplois-mobile__filters">
+          <label className="emplois-mobile__field">
+            <span>Recherche</span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Métier, compétence, entreprise..."
+            />
+          </label>
+          <label className="emplois-mobile__field">
+            <span>Localisation</span>
+            <input
+              type="search"
+              value={locationQuery}
+              onChange={(event) => setLocationQuery(event.target.value)}
+              placeholder="Ville, région..."
+            />
+          </label>
+        </section>
 
-      <section className="emplois-mobile__results" aria-live="polite">
-        {loading && <div className="emplois-mobile__state">Chargement des offres...</div>}
-        {error && <div className="emplois-mobile__state emplois-mobile__state--error">{error}</div>}
-        {!loading && !error && jobs.length === 0 && (
-          <div className="emplois-mobile__state">Aucune offre ne correspond à votre recherche.</div>
-        )}
+        <section className="emplois-mobile__results" aria-live="polite">
+          {loading && <div className="emplois-mobile__state">Chargement des offres...</div>}
+          {error && <div className="emplois-mobile__state emplois-mobile__state--error">{error}</div>}
+          {!loading && !error && jobs.length === 0 && (
+            <div className="emplois-mobile__state">Aucune offre ne correspond à votre recherche.</div>
+          )}
 
-        <div className="emplois-mobile__list">
-          {visibleJobs.map((job) => {
-            const companyName = getRecruiterName(job);
-            const logoUrl = getImageUrl(job.recruiter?.avatar);
-            const jobDate = getJobDate(job);
+          <div className="emplois-mobile__list">
+            {visibleJobs.map((job) => {
+              const companyName = getRecruiterName(job);
+              const logoUrl = getImageUrl(job.recruiter?.avatar);
+              const jobDate = getJobDate(job);
 
-            return (
-              <article
-                key={job._id}
-                className="emplois-mobile__card"
-                onClick={() =>
-                  navigate(`/emplois/${job._id}`, {
-                    state: { job, from: "/emplois" },
-                  })
-                }
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
+              return (
+                <article
+                  key={job._id}
+                  className="emplois-mobile__card"
+                  onClick={() =>
                     navigate(`/emplois/${job._id}`, {
                       state: { job, from: "/emplois" },
-                    });
+                    })
                   }
-                }}
-              >
-                <div className="emplois-mobile__card-head">
-                  <div className="emplois-mobile__logo">
-                    {logoUrl ? (
-                      <img src={logoUrl} alt={`Logo ${companyName}`} />
-                    ) : (
-                      <span>{companyName.slice(0, 2).toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div>
-                    <h2>{job.title}</h2>
-                    <p className="emplois-mobile__company">{companyName}</p>
-                  </div>
-                </div>
-
-                <div className="emplois-mobile__meta">
-                  <span>{getLocation(job)}</span>
-                  <span>{getContract(job)}</span>
-                  {jobDate && <span>{jobDate}</span>}
-                </div>
-
-                <button
-                  type="button"
-                  className="emplois-mobile__cta"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    navigate(`/emplois/${job._id}`, {
-                      state: { job, from: "/emplois" },
-                    });
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      navigate(`/emplois/${job._id}`, {
+                        state: { job, from: "/emplois" },
+                      });
+                    }
                   }}
                 >
-                  Voir l&apos;offre
-                </button>
-              </article>
-            );
-          })}
-        </div>
+                  <div className="emplois-mobile__card-head">
+                    <div className="emplois-mobile__logo">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt={`Logo ${companyName}`} />
+                      ) : (
+                        <span>{companyName.slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div>
+                      <h2>{job.title}</h2>
+                      <p className="emplois-mobile__company">{companyName}</p>
+                    </div>
+                  </div>
 
-        {!loading && !error && visibleCount < jobs.length && (
-          <button type="button" className="emplois-mobile__load" onClick={handleLoadMore}>
-            Charger plus
-          </button>
-        )}
-      </section>
+                  <div className="emplois-mobile__meta">
+                    <span>{getLocation(job)}</span>
+                    <span>{getContract(job)}</span>
+                    {jobDate && <span>{jobDate}</span>}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="emplois-mobile__cta"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigate(`/emplois/${job._id}`, {
+                        state: { job, from: "/emplois" },
+                      });
+                    }}
+                  >
+                    Voir l&apos;offre
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+
+          {!loading && !error && visibleCount < jobs.length && (
+            <button type="button" className="emplois-mobile__load" onClick={handleLoadMore}>
+              Charger plus
+            </button>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

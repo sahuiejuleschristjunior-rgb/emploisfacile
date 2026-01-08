@@ -111,7 +111,7 @@ export default function CandidateDashboard() {
   }, [data.groupedApps.inReview]);
 
   return (
-    <CandidateLayout user={data.user} onLogout={logout}>
+    <CandidateLayout user={data.user} onLogout={logout} shellClassName="page--dashboard">
       <section className="hero" id="recent">
         <div className="hero__info">
           <div className="hero__badge">Action prioritaire</div>

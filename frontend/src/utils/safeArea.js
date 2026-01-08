@@ -1,15 +1,16 @@
 const DEBUG_STORAGE_KEY = "safe-area-debug";
 
-function isDebugEnabled() {
+export function isSafeAreaDebugEnabled() {
   if (typeof window === "undefined") return false;
   const params = new URLSearchParams(window.location.search);
   return (
+    params.get("insets") === "1" ||
     params.has("safeAreaDebug") ||
     window.localStorage.getItem(DEBUG_STORAGE_KEY) === "1"
   );
 }
 
-function getSafeAreaValues() {
+export function getSafeAreaValues() {
   const styles = getComputedStyle(document.documentElement);
   return {
     sat: styles.getPropertyValue("--sat").trim(),
@@ -23,7 +24,7 @@ export function initSafeAreaDebug() {
   if (typeof window === "undefined") return;
 
   const root = document.documentElement;
-  const debugEnabled = isDebugEnabled();
+  const debugEnabled = isSafeAreaDebugEnabled();
   let debugEl = null;
 
   const update = () => {
