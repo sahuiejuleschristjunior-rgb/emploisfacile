@@ -12,7 +12,7 @@
 
 .page--jobs {
   --jobs-header-height: 56px;
-  --jobs-search-height: 240px;
+  --jobs-search-height: 160px;
   --jobs-bottom-height: var(--fb-bottom-nav-height, 0px);
 }
 
