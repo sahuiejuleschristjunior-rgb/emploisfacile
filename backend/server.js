@@ -17,6 +17,7 @@ const storyRoutes = require("./routes/story");
 const notificationRoutes = require("./routes/notifications");
 const savedJobRoutes = require("./routes/SavedJobRoutes");
 const messageRoutes = require("./routes/MessageRoutes");
+const conversationRoutes = require("./routes/ConversationRoutes");
 const pagesRoutes = require("./routes/pages");
 const pagePostsRoutes = require("./routes/pagePosts");
 
@@ -88,6 +89,7 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/saved-jobs", savedJobRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api", conversationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/ads", adsRoutes);

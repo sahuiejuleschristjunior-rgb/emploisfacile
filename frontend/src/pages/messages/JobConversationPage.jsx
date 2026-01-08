@@ -27,11 +27,22 @@ const ensureJsonResponse = async (res) => {
 
 const getId = (value) => (typeof value === "object" ? value?._id : value);
 
-const resolveOtherParticipant = (participants, currentUserId) => {
-  if (!Array.isArray(participants)) return null;
-  return (
-    participants.find((p) => getId(p) !== currentUserId) || participants[0] || null
-  );
+const resolveOtherParticipant = (conversation, currentUserId) => {
+  if (!conversation) return null;
+  if (conversation.recruiter && getId(conversation.recruiter) !== currentUserId) {
+    return conversation.recruiter;
+  }
+  if (conversation.candidate && getId(conversation.candidate) !== currentUserId) {
+    return conversation.candidate;
+  }
+  if (Array.isArray(conversation.participants)) {
+    return (
+      conversation.participants.find((p) => getId(p) !== currentUserId) ||
+      conversation.participants[0] ||
+      null
+    );
+  }
+  return null;
 };
 
 const resolveJobId = (conversation, fallbackJobId) =>
@@ -111,7 +122,7 @@ export default function JobConversationPage() {
         const derivedJobId = resolveJobId(data, jobId);
         setJobId(derivedJobId);
         if (!otherParticipant) {
-          setOtherParticipant(resolveOtherParticipant(data?.participants, user?._id));
+          setOtherParticipant(resolveOtherParticipant(data, user?._id));
         }
       } catch (err) {
         if (!active) return;
@@ -170,42 +181,30 @@ export default function JobConversationPage() {
   }, [jobId, job, token]);
 
   useEffect(() => {
-    if (!jobId || !token || !role) return;
+    if (!role) return;
 
-    let active = true;
-
-    const verifyAccess = async () => {
-      try {
-        if (role === "recruiter") {
-          const recruiterId = getId(job?.recruiter);
-          if (!recruiterId) return;
-          if (active) {
-            setAccessDenied(recruiterId !== user?._id);
-          }
-        }
-
-        if (role === "candidate") {
-          const res = await fetch(`${API_URL}/applications/status?jobId=${jobId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-          if (!res.ok) return;
-          const data = await ensureJsonResponse(res);
-          if (active) setAccessDenied(!data?.hasApplied);
-        }
-      } catch (err) {
-        console.error("Erreur sécurité", err);
+    if (conversation) {
+      if (role === "recruiter") {
+        const recruiterId = getId(conversation.recruiter);
+        setAccessDenied(recruiterId && recruiterId !== user?._id);
+        return;
       }
-    };
+      if (role === "candidate") {
+        const candidateId = getId(conversation.candidate);
+        setAccessDenied(candidateId && candidateId !== user?._id);
+        return;
+      }
+    }
 
-    verifyAccess();
-
-    return () => {
-      active = false;
-    };
-  }, [jobId, job, token, role, user?._id]);
+    if (role === "recruiter") {
+      const recruiterId = getId(job?.recruiter);
+      if (recruiterId) {
+        setAccessDenied(recruiterId !== user?._id);
+      }
+    } else if (role === "candidate") {
+      setAccessDenied(false);
+    }
+  }, [conversation, jobId, job, role, user?._id]);
 
   useEffect(() => {
     let active = true;
@@ -217,8 +216,9 @@ export default function JobConversationPage() {
       }
       setError("");
       try {
-        const targetUserId = getId(otherParticipant) || conversationId;
-        const list = await fetchConversationMessages(targetUserId);
+        const targetConversationId =
+          conversation?._id || conversationId || getId(otherParticipant);
+        const list = await fetchConversationMessages(targetConversationId);
         if (!active) return;
         const filtered = jobId
           ? list.filter((msg) =>
@@ -240,7 +240,7 @@ export default function JobConversationPage() {
     return () => {
       active = false;
     };
-  }, [conversationId, jobId, otherParticipant, token]);
+  }, [conversationId, jobId, otherParticipant, token, conversation]);
 
   const scrollToBottom = (behavior = "smooth") => {
     if (!messages.length) return;

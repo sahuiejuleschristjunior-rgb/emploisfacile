@@ -115,15 +115,9 @@ export default function RecruiterInbox() {
     };
   }, [conversations, jobsById, token]);
 
-  const filteredConversations = useMemo(() => {
-    return conversations.filter((conv) => {
-      const jobId = conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
-      if (!jobId) return false;
-      const job = jobsById[String(jobId)] || conv?.job;
-      const recruiterId = getId(job?.recruiter);
-      return recruiterId && recruiterId === user?._id;
-    });
-  }, [conversations, jobsById, user?._id]);
+  const visibleConversations = useMemo(() => {
+    return conversations;
+  }, [conversations]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -138,7 +132,7 @@ export default function RecruiterInbox() {
           <p className="eyebrow">RecruiterChat</p>
           <h3>Vos échanges avec les candidats</h3>
           <p className="job-chat-subtitle">
-            Retrouvez chaque conversation liée à une offre et continuez le suivi en temps réel.
+            Retrouvez chaque conversation liée à une offre, même clôturée, et continuez le suivi.
           </p>
         </div>
       </section>
@@ -147,22 +141,23 @@ export default function RecruiterInbox() {
         <div className="card-header">
           <div>
             <h3>Conversations</h3>
-            <p className="job-chat-muted">Offres actives et messages reçus.</p>
+            <p className="job-chat-muted">Historique complet de vos échanges.</p>
           </div>
         </div>
 
         {loading && <div className="loader">Chargement…</div>}
         {error && <div className="error-message">{error}</div>}
-        {!loading && !error && filteredConversations.length === 0 && (
+        {!loading && !error && visibleConversations.length === 0 && (
           <div className="empty-state">Aucune conversation liée à vos offres.</div>
         )}
 
         <div className="job-chat-list">
-          {filteredConversations.map((conv) => {
+          {visibleConversations.map((conv) => {
             const jobId =
               conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
             const job = jobsById[String(jobId)] || conv?.job;
-            const other = resolveOtherParticipant(conv?.participants, user?._id);
+            const other =
+              conv?.candidate || resolveOtherParticipant(conv?.participants, user?._id);
             const otherName = other?.name || other?.companyName || "Candidat";
             const lastMessage =
               conv?.lastMessage?.type === "file"
