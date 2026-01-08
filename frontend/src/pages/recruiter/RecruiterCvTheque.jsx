@@ -5,6 +5,7 @@ import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboa
 import "../../styles/RecruiterDashboard.css";
 
 const recruiterMenu = [
+  { key: "home", label: "Accueil", path: "/fb" },
   { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },
   { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
   { key: "offers", label: "Mes offres", path: "/recruiter/offres" },

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const recruiterMenu = [
+  { key: "home", label: "Accueil", path: "/fb" },
   { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
   { key: "create", label: "Publier une offre", path: "/recruiter/create-job" },
   { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
