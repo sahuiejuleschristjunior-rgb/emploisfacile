@@ -9,7 +9,7 @@
 
 .ads-layout {
   display: flex;
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: var(--ads-bg);
   color: var(--ads-text);
 }
@@ -94,7 +94,7 @@
   gap: 16px;
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: var(--app-height);
 }
 
 .ads-sidebar__brand {
@@ -172,7 +172,7 @@
 
 .ads-shell {
   background: var(--ads-bg);
-  min-height: calc(100vh - 60px);
+  min-height: calc(var(--app-height) - 60px);
   padding: 24px;
   color: var(--ads-text);
 }

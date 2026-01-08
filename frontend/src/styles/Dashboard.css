@@ -13,7 +13,7 @@
 
 .recruiter-dashboard{
   background:linear-gradient(180deg,#050816 0%, #0b0b0b 100%);
-  min-height:100vh;
+  min-height:var(--app-height);
   color:var(--text);
   font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto;
   padding:20px;

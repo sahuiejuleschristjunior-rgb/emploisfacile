@@ -1,5 +1,5 @@
 .otp-page {
-  height: 100vh;
+  height: var(--app-height);
   width: 100%;
   background: radial-gradient(circle at top, #1a1f29, #0c0f14);
   display: flex;

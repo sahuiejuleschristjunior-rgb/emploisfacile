@@ -9,7 +9,7 @@
    LAYOUT GLOBAL
 ========================= */
 .messages-page {
-  height: calc(100vh - 72px);
+  height: calc(var(--app-height) - 72px);
   width: 100%;
   display: flex;
   background: #18191a;
@@ -1197,7 +1197,7 @@
 ========================= */
 .messages-page {
   flex-direction: column;
-  height: 100vh;
+  height: var(--app-height);
 }
 
 .messages-sidebar {
@@ -1599,7 +1599,7 @@
 .vc-call {
   position: relative;
   width: min(100%, 980px);
-  height: min(100vh, 640px);
+  height: min(var(--app-height), 640px);
   background: #0f1012;
   border-radius: 18px;
   overflow: hidden;

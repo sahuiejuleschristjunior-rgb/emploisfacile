@@ -4,7 +4,7 @@
 
 .jobs-page {
   background: #000;
-  min-height: 100vh;
+  min-height: var(--app-height);
   padding: 20px;
   color: #fff;
   font-family: system-ui, sans-serif;

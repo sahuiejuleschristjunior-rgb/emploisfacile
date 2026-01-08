@@ -1,5 +1,5 @@
 .emplois-mobile {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: #f6f7fb;
   color: #0f172a;
   display: flex;

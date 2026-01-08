@@ -10,7 +10,7 @@
 html,body,#root{height:100%;margin:0;}
 body{background:var(--bg);color:var(--text);font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
 
-.ef-root{min-height:100vh;display:flex;flex-direction:column;justify-content:space-between;}
+.ef-root{min-height:var(--app-height);display:flex;flex-direction:column;justify-content:space-between;}
 .ef-main{padding:28px;flex:1;display:flex;flex-direction:column;align-items:center;gap:32px;}
 
 /* Hero */

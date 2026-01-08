@@ -3,7 +3,7 @@
 }
 
 .job-detail-page {
-  min-height: 100vh;
+  min-height: var(--app-height);
   background: var(--bg, #111111);
   color: var(--text, #e2e8f0);
   padding: 32px 20px 60px;
