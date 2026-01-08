@@ -1,6 +1,7 @@
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AdsSidebar from "../components/AdsSidebar";
+import AppShell from "../layouts/AppShell";
 import "../styles/ads.css";
 
 export default function AdsLayout() {
@@ -20,27 +21,36 @@ export default function AdsLayout() {
         .toUpperCase()
     : "EF";
 
-  return (
-    <div className="ads-layout">
-      <AdsSidebar />
-      <div className="ads-main">
-        <header className="ads-topbar">
-          <div>
-            <div className="ads-brand">Ads Manager</div>
-            <div className="ads-topnote">Centre publicitaire dédié</div>
-          </div>
-          <div className="ads-user-chip">
-            <div className="ads-user-avatar">{initials}</div>
-            <div>
-              <div className="ads-user-name">{user?.name || "Annonceur"}</div>
-              <div className="ads-user-role">Publicités | Contrôle</div>
-            </div>
-          </div>
-        </header>
-        <div className="ads-content">
-          <Outlet />
+  const header = (
+    <header className="ads-topbar">
+      <div>
+        <div className="ads-brand">Ads Manager</div>
+        <div className="ads-topnote">Centre publicitaire dédié</div>
+      </div>
+      <div className="ads-user-chip">
+        <div className="ads-user-avatar">{initials}</div>
+        <div>
+          <div className="ads-user-name">{user?.name || "Annonceur"}</div>
+          <div className="ads-user-role">Publicités | Contrôle</div>
         </div>
       </div>
-    </div>
+    </header>
+  );
+
+  return (
+    <AppShell
+      className="ads-shell"
+      header={header}
+      style={{ "--app-header-height": "var(--ads-header-height)" }}
+    >
+      <div className="ads-layout">
+        <AdsSidebar />
+        <div className="ads-main">
+          <div className="ads-content">
+            <Outlet />
+          </div>
+        </div>
+      </div>
+    </AppShell>
   );
 }

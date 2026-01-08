@@ -1,0 +1,48 @@
+:root {
+  --app-header-height: 0px;
+  --app-bottom-nav-height: 0px;
+}
+
+.app-shell {
+  min-height: var(--app-height);
+  background: #0b0b0b;
+  color: inherit;
+  position: relative;
+  --app-header-offset: calc(var(--app-header-height) + var(--sat));
+  --app-bottom-offset: calc(var(--app-bottom-nav-height) + var(--sab));
+}
+
+.app-shell__header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  padding-top: var(--sat);
+  height: var(--app-header-offset);
+  box-sizing: border-box;
+}
+
+.app-shell__main {
+  min-height: var(--app-height);
+  padding-top: var(--app-header-offset);
+  padding-bottom: var(--app-bottom-offset);
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-shell__main--no-scroll {
+  overflow: hidden;
+}
+
+.app-shell__bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1200;
+  padding-bottom: var(--sab);
+  height: var(--app-bottom-offset);
+  box-sizing: border-box;
+}
