@@ -165,15 +165,6 @@ export default function App() {
                   </Route>
                 </Route>
 
-                {/* Emplois — accessible sans le FacebookLayout pour éviter les conflits mobiles */}
-                <Route
-                  path="/emplois"
-                  element={
-                    <ProtectedRoute>
-                      <EmploisPage />
-                    </ProtectedRoute>
-                  }
-                />
                 <Route
                   path="/emplois/:id"
                   element={
@@ -191,11 +182,13 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 >
+                  <Route path="/emplois" element={<EmploisPage />} />
                   {/* Groupe /fb avec colonnes latérales sur desktop */}
                   <Route path="/fb" element={<Outlet />}>
                     <Route index element={<FacebookFeed />} />
                     <Route path="post/:id" element={<PostPage />} />
                     <Route path="pages-feed" element={<PagesFeed />} />
+                  </Route>
 
                   <Route
                     path="dashboard"

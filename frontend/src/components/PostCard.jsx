@@ -181,9 +181,12 @@ export default function PostCard({
     jobData?.recruiter?.companyName ||
     jobData?.recruiter?.name ||
     "Entreprise";
-  const jobLogo = jobData?.image || jobData?.recruiter?.avatar;
+  const jobLogo = jobData?.logo || jobData?.recruiter?.avatar || jobData?.image;
   const jobTitle = jobData?.title || "";
   const jobDescription = jobData?.description || "";
+  const jobContract = jobData?.contractType || "Contrat non précisé";
+  const jobLocation = jobData?.location || jobData?.city || "Lieu non précisé";
+  const jobSalary = jobData?.salaryRange || jobData?.salary || "";
   const jobText = useMemo(
     () => [jobTitle, jobDescription].filter(Boolean).join("\n"),
     [jobTitle, jobDescription]
@@ -422,6 +425,9 @@ export default function PostCard({
             />
             <div className="fb-post-user">
               <div className="fb-post-author">{displayName}</div>
+              {isJobPost && jobTitle && (
+                <div className="fb-post-subtitle">{jobTitle}</div>
+              )}
               <div className="fb-post-meta">
                 {new Date(post.createdAt).toLocaleString()}
                 {isSponsored && (
@@ -439,12 +445,18 @@ export default function PostCard({
                 </div>
               )}
             </div>
-            {!isJobPost && (
-              <div className="fb-post-menu fb-post-menu-container">
-                <button className="fb-post-menu-btn" onClick={toggleMenu}>
-                  ⋯
-                </button>
+            <div className="fb-post-menu fb-post-menu-container">
+              <button
+                className="fb-post-menu-btn"
+                onClick={
+                  isJobPost ? (event) => event.stopPropagation() : toggleMenu
+                }
+                aria-label="Options"
+              >
+                ⋯
+              </button>
 
+              {!isJobPost && (
                 <div
                   className={`fb-post-menu-popup ${isMenuOpen ? "open" : ""}`}
                   onClick={(event) => event.stopPropagation()}
@@ -476,14 +488,32 @@ export default function PostCard({
                     </button>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {textContent && (
-            <div className="fb-post-text">
-              <TextClamp text={textContent} className="text-content" />
+          {isJobPost ? (
+            <div className="fb-job-body">
+              {jobTitle && <div className="fb-job-title">{jobTitle}</div>}
+              {jobDescription && (
+                <div className="fb-post-text fb-job-description">
+                  <TextClamp text={jobDescription} className="text-content" />
+                </div>
+              )}
+              <div className="fb-job-meta">
+                <span className="fb-sponsored-badge fb-sponsored-badge--job">
+                  {jobContract}
+                </span>
+                <span>{jobLocation}</span>
+                {jobSalary && <span>{jobSalary}</span>}
+              </div>
             </div>
+          ) : (
+            textContent && (
+              <div className="fb-post-text">
+                <TextClamp text={textContent} className="text-content" />
+              </div>
+            )
           )}
         </div>
 
@@ -615,12 +645,17 @@ export default function PostCard({
 
           <div className="fb-post-actions">
             {isJobPost ? (
-              <button
-                className="fb-post-action-btn fb-post-action-btn--apply"
-                onClick={handleApply}
-              >
-                Postuler
-              </button>
+              <>
+                <button className="fb-post-action-btn">
+                  <FBIcon name="like" size={18} /> Intéressé
+                </button>
+                <button
+                  className="fb-post-action-btn fb-post-action-btn--apply"
+                  onClick={handleApply}
+                >
+                  Postuler
+                </button>
+              </>
             ) : (
               <>
                 <button
