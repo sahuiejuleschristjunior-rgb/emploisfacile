@@ -117,7 +117,7 @@
   gap: 12px;
   flex: 1;
   padding: calc(var(--jobs-header-height) + var(--jobs-search-height) + var(--sat)) 0
-    calc(var(--jobs-bottom-height) + var(--sab));
+    var(--sab);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: y mandatory;
