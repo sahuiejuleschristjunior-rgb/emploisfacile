@@ -435,6 +435,8 @@ export default function PagesFeed() {
                           }
                           className="fb-post-media-renderer"
                           alt=""
+                          muted={isVideo}
+                          autoPlay={m.autoPlay}
                         />
 
                         {post.media.length > 4 &&

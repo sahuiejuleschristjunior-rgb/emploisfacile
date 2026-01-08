@@ -1,19 +1,21 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
 import FBIcon from "./FBIcon";
 import MediaRenderer from "./MediaRenderer";
 import FacebookImage from "./FacebookImage";
 import TextClamp from "./TextClamp";
-import SmartVideo from "./SmartVideo";
 import "../styles/facebook-feed.css";
 import "../styles/post.css";
 
-function FeedVideoMedia({ media, onClick }) {
+let activeVideoRef = null;
+
+function FeedVideoMedia({ media, onClick, onExpand }) {
   const MIN_FEED_VIDEO_RATIO = 4 / 5;
   const MAX_FEED_VIDEO_RATIO = 16 / 9;
 
   const [aspectRatio, setAspectRatio] = useState(1);
+  const videoRef = useRef(null);
 
   const handleMetadata = (event) => {
     const videoEl = event?.target;
@@ -31,6 +33,64 @@ function FeedVideoMedia({ media, onClick }) {
     }
   };
 
+  const pauseVideo = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    videoEl.pause();
+    if (activeVideoRef === videoEl) {
+      activeVideoRef = null;
+    }
+  }, []);
+
+  const playVideo = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    if (activeVideoRef && activeVideoRef !== videoEl) {
+      activeVideoRef.pause();
+    }
+
+    videoEl.muted = true;
+    videoEl.play().catch(() => {});
+    activeVideoRef = videoEl;
+  }, []);
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio >= 0.5) {
+            playVideo();
+          } else {
+            pauseVideo();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(videoEl);
+
+    const handleUserPlay = () => {
+      if (activeVideoRef && activeVideoRef !== videoEl) {
+        activeVideoRef.pause();
+      }
+      activeVideoRef = videoEl;
+    };
+
+    videoEl.addEventListener("play", handleUserPlay);
+
+    return () => {
+      videoEl.removeEventListener("play", handleUserPlay);
+      observer.disconnect();
+      pauseVideo();
+    };
+  }, [pauseVideo, playVideo]);
+
   const containerStyle = { aspectRatio };
   const videoStyle = { width: "100%", height: "100%", objectFit: "cover" };
 
@@ -38,14 +98,25 @@ function FeedVideoMedia({ media, onClick }) {
     <div
       className="fb-post-media fb-post-media-video fbVideoWrap"
       style={containerStyle}
+      onClick={onClick}
     >
-      <SmartVideo
+      <MediaRenderer
+        media={media}
         src={media.resolvedUrl}
+        type={media.type}
+        mimeType={media.mimeType}
+        mediaClassName="fb-post-video fbVideo"
         className="fb-post-media-renderer"
-        videoClassName="fb-post-video fbVideo"
+        alt=""
+        muted
+        autoPlay={false}
+        playsInline
+        externalVideoRef={videoRef}
+        enableIntersectionObserver={false}
+        autoPlayOnLoad={false}
+        onExpand={onExpand}
         onLoadedMetadata={handleMetadata}
         style={videoStyle}
-        onClick={onClick}
       />
     </div>
   );
@@ -436,6 +507,7 @@ export default function PostCard({
                     if (isLocalMedia) return;
                     return onOpenReels?.(post._id);
                   }}
+                  onExpand={() => onOpenReels?.(post._id)}
                 />
               ) : (
                 <div
@@ -454,6 +526,8 @@ export default function PostCard({
                     mediaClassName="fb-post-image"
                     className="fb-post-media-renderer"
                     alt=""
+                    muted={false}
+                    autoPlay={media.autoPlay ?? true}
                   />
                 </div>
               );

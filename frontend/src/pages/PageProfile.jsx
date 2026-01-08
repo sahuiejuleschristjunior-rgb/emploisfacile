@@ -9,7 +9,6 @@ import {
 import { getImageUrl } from "../utils/imageUtils";
 import "../styles/page.css";
 import Post from "../components/Post";
-import SmartVideo from "../components/SmartVideo";
 import CommentsModal from "../components/CommentsModal";
 import { filterHiddenPosts, rememberHiddenPost } from "../utils/hiddenPosts";
 
@@ -400,7 +399,7 @@ export default function PageProfile() {
                       </button>
 
                       {item.file.type.startsWith("video/") ? (
-                        <SmartVideo src={item.preview} />
+                        <video src={item.preview} controls muted />
                       ) : (
                         <img src={item.preview} alt="Prévisualisation" loading="lazy" />
                       )}
@@ -445,3 +444,4 @@ export default function PageProfile() {
     </div>
   );
 }
+
