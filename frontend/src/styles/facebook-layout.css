@@ -57,7 +57,7 @@
 
 .jobs-mobile-content {
   min-height: calc(var(--app-height) - var(--fb-header-height));
-  padding: calc(var(--fb-header-height) + 8px) 12px
+  padding: var(--fb-header-height) 12px
     calc(var(--fb-bottom-nav-height) + var(--sab));
   box-sizing: border-box;
 }
@@ -119,6 +119,43 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.fb-header--jobs-mobile {
+  padding: calc(6px + var(--sat)) 8px 6px;
+}
+
+.fb-header-inner--jobs-mobile {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+.fb-header-jobs-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #222;
+  border-radius: 999px;
+  padding: 8px 12px;
+  min-height: 40px;
+}
+
+.fb-header-jobs-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+}
+
+.fb-header-jobs-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .fb-header--minimal {

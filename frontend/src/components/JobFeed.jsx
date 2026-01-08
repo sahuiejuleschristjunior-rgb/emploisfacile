@@ -1,28 +1,26 @@
 import React, { useMemo } from "react";
 import PostCard from "./PostCard";
 import "../styles/JobFeed.css";
-import useJobSearch from "../hooks/useJobSearch";
 import useIsMobile from "../hooks/useIsMobile";
 
-export default function JobFeed() {
+export default function JobFeed({
+  jobs = [],
+  loading = false,
+  error = null,
+  searchQuery = "",
+  setSearchQuery = () => {},
+  cityFilter = "",
+  setCityFilter = () => {},
+  contractFilter = "",
+  setContractFilter = () => {},
+  modeFilter = "",
+  setModeFilter = () => {},
+  cityOptions = [],
+  contractOptions = [],
+  modeOptions = [],
+  handleReset = () => {},
+}) {
   const isMobile = useIsMobile();
-  const {
-    jobs,
-    loading,
-    error,
-    searchQuery,
-    setSearchQuery,
-    cityFilter,
-    setCityFilter,
-    contractFilter,
-    setContractFilter,
-    modeFilter,
-    setModeFilter,
-    cityOptions,
-    contractOptions,
-    modeOptions,
-    handleReset,
-  } = useJobSearch();
 
   const getRecruiterName = (job) =>
     job.recruiter?.companyName || job.recruiter?.name || "Entreprise inconnue";
