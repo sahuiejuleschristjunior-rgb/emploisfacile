@@ -123,6 +123,37 @@ exports.getAllJobs = async (req, res) => {
 };
 
 /* ============================================================
+   GET /api/jobs/recent
+   ➤ Offres récentes (compactes pour le feed)
+============================================================ */
+exports.getRecentJobs = async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit, 10) || 5, 20);
+
+        const jobs = await Job.find({ isActive: { $ne: false } })
+            .populate("recruiter", "companyName name")
+            .sort({ createdAt: -1 })
+            .limit(limit);
+
+        const data = jobs.map((job) => ({
+            jobId: job._id,
+            title: job.title,
+            company: job.recruiter?.companyName || job.recruiter?.name || "Entreprise",
+            location: job.location,
+            type: job.contractType,
+            createdAt: job.createdAt,
+        }));
+
+        return res.json({ ok: true, data });
+    } catch (error) {
+        return res.status(500).json({
+            error: "Erreur serveur lors de la récupération des offres récentes.",
+            details: error.message,
+        });
+    }
+};
+
+/* ============================================================
    GET /api/jobs/:id
    ➤ Détails d'une offre
 ============================================================ */

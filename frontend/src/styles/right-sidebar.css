@@ -1,0 +1,206 @@
+.right-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 12px;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.right-sidebar-section {
+  background: #242526;
+  border: 1px solid #3a3b3c;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.right-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.right-sidebar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e4e6eb;
+}
+
+.right-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.right-sidebar-empty {
+  font-size: 13px;
+  color: #b0b3b8;
+  padding: 6px 2px 2px;
+}
+
+.sponsored-ad-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.2s ease;
+}
+
+.sponsored-ad-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sponsored-ad-thumb-wrapper {
+  flex: 0 0 auto;
+}
+
+.sponsored-ad-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #3a3b3c;
+}
+
+.sponsored-ad-thumb.placeholder {
+  display: block;
+}
+
+.sponsored-ad-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sponsored-ad-badge {
+  font-size: 11px;
+  color: #2d88ff;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.sponsored-ad-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0f2f5;
+  line-height: 1.2;
+}
+
+.sponsored-ad-desc {
+  font-size: 12px;
+  color: #b0b3b8;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sponsored-ad-advertiser {
+  font-size: 12px;
+  color: #8a8d91;
+}
+
+.recent-job-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.recent-job-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.recent-job-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0f2f5;
+}
+
+.recent-job-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #b0b3b8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recent-job-foot {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #8a8d91;
+}
+
+.recent-job-type {
+  font-weight: 600;
+  color: #9cb7ff;
+}
+
+.right-sidebar-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.right-sidebar-skeleton-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.right-sidebar-skeleton-job {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.right-sidebar-skeleton {
+  background: linear-gradient(90deg, #2f3136, #3a3b3c, #2f3136);
+  background-size: 200% 100%;
+  animation: right-sidebar-shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+
+.right-sidebar-skeleton.thumb {
+  width: 72px;
+  height: 72px;
+}
+
+.right-sidebar-skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.right-sidebar-skeleton.line {
+  height: 12px;
+  width: 100%;
+}
+
+.right-sidebar-skeleton.line.short {
+  width: 65%;
+}
+
+@keyframes right-sidebar-shimmer {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}

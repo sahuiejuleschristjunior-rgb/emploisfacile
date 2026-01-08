@@ -458,7 +458,7 @@
 /* ========================= */
 
 .fb-right-column {
-  width: 260px;
+  width: 320px;
   position: sticky;
   top: 0;
   height: 100%;
@@ -635,7 +635,7 @@
 /* RESPONSIVE RULES     */
 /* ========================= */
 
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .fb-left-column,
   .fb-right-column {
     display: none;
