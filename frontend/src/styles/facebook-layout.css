@@ -5,7 +5,9 @@
 :root {
   --fb-header-base-height: 40px;
   --fb-header-height: calc(var(--fb-header-base-height) + var(--sat));
+  --facebook-header-height: var(--fb-header-base-height);
   --fb-bottom-nav-height: 60px;
+  --bottom-nav-height: var(--fb-bottom-nav-height);
 }
 
 .fb-app {
@@ -43,6 +45,12 @@
   padding-top: var(--fb-header-height);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.fb-compact-body--dashboard {
+  height: var(--app-height);
+  padding-top: 0;
+  overflow: hidden;
 }
 
 .jobs-mobile-layout {
@@ -843,12 +851,20 @@
 }
 
 @media (max-width: 768px) {
+  :root {
+    --facebook-header-height: 56px;
+    --fb-header-base-height: var(--facebook-header-height);
+  }
+
   .fb-header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 11000;
+    height: calc(var(--facebook-header-height) + var(--sat));
+    padding: var(--sat) 0 0;
+    box-sizing: border-box;
   }
 
   .fb-app-body {
