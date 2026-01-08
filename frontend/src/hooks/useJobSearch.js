@@ -4,8 +4,9 @@ const DEFAULT_CITY_OPTIONS = ["Abidjan", "Cocody", "Plateau"];
 const DEFAULT_MODE_OPTIONS = ["Remote", "Hybride", "Présentiel"];
 const DEFAULT_CONTRACT_OPTIONS = ["CDI", "CDD", "Stage", "Freelance", "Alternance", "Temps Partiel"];
 
-export default function useJobSearch() {
-  const [loading, setLoading] = useState(true);
+export default function useJobSearch(options = {}) {
+  const { enabled = true } = options;
+  const [loading, setLoading] = useState(enabled);
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,6 +25,15 @@ export default function useJobSearch() {
   };
 
   useEffect(() => {
+    if (!enabled) {
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort();
+      }
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
     if (searchAbortRef.current) {
       searchAbortRef.current.abort();
     }
@@ -81,7 +91,7 @@ export default function useJobSearch() {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [API_URL, token, searchQuery, cityFilter, contractFilter, modeFilter]);
+  }, [API_URL, token, searchQuery, cityFilter, contractFilter, modeFilter, enabled]);
 
   const cityOptions = useMemo(() => {
     const values = collectOptions(jobs.map((job) => job.location || job.city));

@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
 import PagesFeedSidebar from "../components/PagesFeedSidebar";
 import RightSidebar from "../components/RightSidebar";
+import useJobSearch from "../hooks/useJobSearch";
 import {
   fetchRelationStatus,
   sendFriendRequest,
@@ -24,6 +25,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const { notifications: notifList = [] } = useNotifications() || {};
 
   const isJobsFeed = location.pathname.startsWith("/emplois");
+  const jobsSearchState = useJobSearch({ enabled: isJobsFeed });
   const isCompleteProfile = location.pathname === "/complete-profile";
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1292,6 +1294,48 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     </div>
   );
 
+  const jobsMobileHeader = (
+    <header className="fb-header fb-header--jobs-mobile">
+      <div className="fb-header-inner fb-header-inner--jobs-mobile">
+        <label className="fb-header-jobs-search" htmlFor="jobs-mobile-search">
+          <FBIcon name="search" size={18} />
+          <input
+            id="jobs-mobile-search"
+            type="search"
+            inputMode="search"
+            placeholder="Rechercher un emploi, un métier, une entreprise"
+            value={jobsSearchState.searchQuery}
+            onChange={(event) => jobsSearchState.setSearchQuery(event.target.value)}
+          />
+        </label>
+
+        <div className="fb-header-jobs-actions">
+          <button
+            type="button"
+            className="fb-header-icon-btn notif-btn"
+            onClick={() => {
+              loadNotifications();
+              setIsDropdownOpen((v) => !v);
+            }}
+            aria-label="Notifications"
+          >
+            <FBIcon name="notif" size={22} />
+            {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+          </button>
+
+          <button
+            type="button"
+            className="fb-header-icon-btn"
+            onClick={() => setProfileSwitcherOpen((v) => !v)}
+            aria-label="Profil"
+          >
+            <div className="fb-header-avatar" style={avatarStyle} />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
@@ -1305,6 +1349,8 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
         <div className="fb-header-minimal-text">Complétez votre profil</div>
       </div>
     </header>
+  ) : isJobsFeed && isMobile ? (
+    jobsMobileHeader
   ) : (
     <header
       className="fb-header"
@@ -1642,15 +1688,15 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     </nav>
   );
 
+  const outletContext = isJobsFeed ? jobsSearchState : undefined;
+
   if (isJobsFeed && isMobile) {
     return (
       <div className={`jobs-mobile-layout${fullWidth ? " layout-fullscreen" : ""}`}>
         {header}
 
         <main className="jobs-mobile-content">
-          {children || (
-            <Outlet />
-          )}
+          {children || <Outlet context={outletContext} />}
         </main>
 
         {bottomNav}
@@ -1666,7 +1712,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
         {header}
 
         <main className="fb-compact-body">
-          {children || <Outlet />}
+          {children || <Outlet context={outletContext} />}
         </main>
 
         {isJobsFeed && bottomNav}
