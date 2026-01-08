@@ -145,6 +145,7 @@ export default function PostCard({
   post,
   currentUser,
   currentUserId,
+  currentUserRole,
   isAdmin,
   context = "feed",
   actionMenuPostId,
@@ -168,11 +169,31 @@ export default function PostCard({
   resolveMediaUrl,
   isImageMedia,
   textButtonStyle = defaultTextButtonStyle,
+  apiUrl,
+  token,
 }) {
   const nav = useNavigate();
   const [localMenuOpen, setLocalMenuOpen] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
 
   if (!post) return null;
+
+  const isJobPost = Boolean(post.isJobPost);
+  const jobData = post.jobData || post.job || null;
+  const jobCompanyName =
+    jobData?.company ||
+    jobData?.recruiter?.companyName ||
+    jobData?.recruiter?.name ||
+    "Entreprise";
+  const jobLogo = jobData?.image || jobData?.recruiter?.avatar;
+  const jobTitle = jobData?.title || "";
+  const jobDescription = jobData?.description || "";
+  const jobText = useMemo(
+    () => [jobTitle, jobDescription].filter(Boolean).join("\n"),
+    [jobTitle, jobDescription]
+  );
+  const isCandidate = (currentUserRole || "").toLowerCase() === "candidate";
 
   const resolvedUserId = currentUserId ?? currentUser?._id;
   const resolvedIsAdmin =
@@ -283,25 +304,38 @@ export default function PostCard({
   );
 
   const isPagePost = post.authorType === "page";
-  const postAvatarStyle = getAvatarStyle(
-    isPagePost ? post.page?.avatar : post.user?.avatar
-  );
-  const authorProfilePath = isPagePost
+  const postAvatarStyle = isJobPost
+    ? getAvatarStyle(jobLogo)
+    : getAvatarStyle(isPagePost ? post.page?.avatar : post.user?.avatar);
+  const authorProfilePath = isJobPost
+    ? null
+    : isPagePost
     ? post.page?.slug
       ? `/pages/${post.page.slug}`
       : null
     : post.user?._id
     ? `/profil/${post.user._id}`
     : null;
-  const displayName = isPagePost ? post.page?.name : post.user?.name;
+  const displayName = isJobPost
+    ? jobCompanyName
+    : isPagePost
+    ? post.page?.name
+    : post.user?.name;
   const likes = post.likes?.length || 0;
   const commentsCount = post.comments?.length || 0;
   const isSharedPost = Boolean(post.sharedBy);
   const canShare = !isSharedPost;
   const sharedByName = post.sharedBy?.name;
-  const canSponsor = canSponsorPostFn(post);
-  const isSponsored = Boolean(post.isSponsored);
-  const permissions = getPostPermissionsFn(post);
+  const canSponsor = isJobPost ? false : canSponsorPostFn(post);
+  const isSponsored = !isJobPost && Boolean(post.isSponsored);
+  const permissions = isJobPost
+    ? {
+        canEdit: false,
+        canDelete: false,
+        canHide: false,
+        canReport: false,
+      }
+    : getPostPermissionsFn(post);
 
   const resolvedMedia = useMemo(
     () =>
@@ -333,6 +367,7 @@ export default function PostCard({
     : "";
 
   const handleOpenComments = () => {
+    if (isJobPost) return;
     if (onOpenComments) {
       onOpenComments(post);
       return;
@@ -342,6 +377,7 @@ export default function PostCard({
   };
 
   const handleOpenCommentsCount = () => {
+    if (isJobPost) return;
     if (onCommentsCountClick) {
       onCommentsCountClick(post);
       return;
@@ -356,6 +392,7 @@ export default function PostCard({
   };
 
   const handleOpenLikesCount = () => {
+    if (isJobPost) return;
     if (onLikesCountClick) {
       onLikesCountClick(post);
       return;
@@ -363,6 +400,56 @@ export default function PostCard({
 
     nav(`/likes/${post._id}`);
   };
+
+  const checkApplicationStatus = useCallback(async () => {
+    if (!isJobPost || !jobData?._id || !apiUrl || !token || !isCandidate) return;
+
+    try {
+      const res = await fetch(`${apiUrl}/applications/status?jobId=${jobData._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setHasApplied(Boolean(data?.hasApplied));
+    } catch (err) {
+      console.error("CHECK APPLICATION STATUS ERROR:", err);
+    }
+  }, [apiUrl, isCandidate, isJobPost, jobData?._id, token]);
+
+  useEffect(() => {
+    checkApplicationStatus();
+  }, [checkApplicationStatus]);
+
+  const handleApply = useCallback(async () => {
+    if (!isJobPost || !jobData?._id || !apiUrl || !token) return;
+    if (hasApplied || isApplying || !isCandidate) return;
+
+    setIsApplying(true);
+    try {
+      const res = await fetch(`${apiUrl}/applications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ jobId: jobData._id }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("APPLY ERROR:", data?.message || "Erreur candidature.");
+        return;
+      }
+
+      setHasApplied(true);
+    } catch (err) {
+      console.error("APPLY ERROR:", err);
+    } finally {
+      setIsApplying(false);
+    }
+  }, [apiUrl, hasApplied, isApplying, isCandidate, isJobPost, jobData?._id, token]);
+
+  const textContent = isJobPost ? jobText : post.text;
 
   return (
     <div
@@ -381,7 +468,7 @@ export default function PostCard({
                 event.stopPropagation();
                 if (authorProfilePath) nav(authorProfilePath);
               }}
-              aria-label="Ouvrir le profil"
+              aria-label={isJobPost ? "Logo entreprise" : "Ouvrir le profil"}
             />
             <div className="fb-post-user">
               <div className="fb-post-author">{displayName}</div>
@@ -390,6 +477,9 @@ export default function PostCard({
                 {isSponsored && (
                   <span className="fb-sponsored-badge">Sponsorisé</span>
                 )}
+                {isJobPost && (
+                  <span className="fb-sponsored-badge">Offre d’emploi</span>
+                )}
               </div>
               {isSharedPost && (
                 <div className="fb-post-meta fb-post-meta-shared">
@@ -397,48 +487,50 @@ export default function PostCard({
                 </div>
               )}
             </div>
-            <div className="fb-post-menu fb-post-menu-container">
-              <button className="fb-post-menu-btn" onClick={toggleMenu}>
-                ⋯
-              </button>
+            {!isJobPost && (
+              <div className="fb-post-menu fb-post-menu-container">
+                <button className="fb-post-menu-btn" onClick={toggleMenu}>
+                  ⋯
+                </button>
 
-              <div
-                className={`fb-post-menu-popup ${isMenuOpen ? "open" : ""}`}
-                onClick={(event) => event.stopPropagation()}
-              >
-                {permissions.canEdit && (
-                  <button onClick={() => onOpenEditPost?.(post)}>
-                    Modifier la publication
-                  </button>
-                )}
+                <div
+                  className={`fb-post-menu-popup ${isMenuOpen ? "open" : ""}`}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {permissions.canEdit && (
+                    <button onClick={() => onOpenEditPost?.(post)}>
+                      Modifier la publication
+                    </button>
+                  )}
 
-                {permissions.canDelete && (
-                  <button
-                    className="danger"
-                    onClick={() => onDeletePost?.(post._id)}
-                  >
-                    Supprimer
-                  </button>
-                )}
+                  {permissions.canDelete && (
+                    <button
+                      className="danger"
+                      onClick={() => onDeletePost?.(post._id)}
+                    >
+                      Supprimer
+                    </button>
+                  )}
 
-                {permissions.canHide && (
-                  <button onClick={() => onHidePost?.(post._id)}>
-                    Masquer la publication
-                  </button>
-                )}
+                  {permissions.canHide && (
+                    <button onClick={() => onHidePost?.(post._id)}>
+                      Masquer la publication
+                    </button>
+                  )}
 
-                {permissions.canReport && (
-                  <button onClick={() => onReportPost?.(post)}>
-                    Signaler
-                  </button>
-                )}
+                  {permissions.canReport && (
+                    <button onClick={() => onReportPost?.(post)}>
+                      Signaler
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {post.text && (
+          {textContent && (
             <div className="fb-post-text">
-              <TextClamp text={post.text} className="text-content" />
+              <TextClamp text={textContent} className="text-content" />
             </div>
           )}
         </div>
@@ -536,77 +628,98 @@ export default function PostCard({
         )}
 
         <div className="fb-post-content fb-post-content--footer">
-          <div className="fb-post-stats">
-            <div className="fb-post-stats-left">
-              {likes > 0 && (
-                <>
-                  <span className="fb-reactions-bubble">
-                    <FBIcon name="like" size={14} />
-                  </span>
-                  <button
-                    type="button"
-                    className="fb-post-stats-text"
-                    style={textButtonStyle}
-                    onClick={handleOpenLikesCount}
-                  >
-                    {likes} j’aime
-                  </button>
-                </>
-              )}
-            </div>
+          {!isJobPost && (
+            <div className="fb-post-stats">
+              <div className="fb-post-stats-left">
+                {likes > 0 && (
+                  <>
+                    <span className="fb-reactions-bubble">
+                      <FBIcon name="like" size={14} />
+                    </span>
+                    <button
+                      type="button"
+                      className="fb-post-stats-text"
+                      style={textButtonStyle}
+                      onClick={handleOpenLikesCount}
+                    >
+                      {likes} j’aime
+                    </button>
+                  </>
+                )}
+              </div>
 
-            <div className="fb-post-stats-right">
-              <button
-                type="button"
-                className="fb-post-stats-text fb-comments-link"
-                style={textButtonStyle}
-                onClick={handleOpenCommentsCount}
-              >
-                {commentsCount} commentaires
-              </button>
+              <div className="fb-post-stats-right">
+                <button
+                  type="button"
+                  className="fb-post-stats-text fb-comments-link"
+                  style={textButtonStyle}
+                  onClick={handleOpenCommentsCount}
+                >
+                  {commentsCount} commentaires
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="fb-post-actions">
-            <button
-              className="fb-post-action-btn"
-              onClick={() => onLike?.(post)}
-            >
-              <FBIcon name="like" size={18} /> J’aime
-            </button>
-
-            <button className="fb-post-action-btn" onClick={handleOpenComments}>
-              <FBIcon name="comment" size={18} /> Commenter
-            </button>
-
-            <button
-              className="fb-post-action-btn"
-              disabled={sharingPostIds[post._id] || !canShare}
-              onClick={() => onShare?.(post)}
-            >
-              <FBIcon name="share" size={18} />
-              {sharingPostIds[post._id] ? "Partage…" : "Partager"}
-            </button>
-
-            {canSponsor && (
+            {isJobPost ? (
               <button
-                className="fb-post-action-btn fb-sponsor-menu"
-                onClick={() => onSponsor?.(post)}
+                className="fb-post-action-btn"
+                onClick={handleApply}
+                disabled={!isCandidate || !token || hasApplied || isApplying}
               >
-                <span className="fb-sponsor-icon" aria-hidden="true">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M4 14.5V5.8c0-.6.4-1.1 1-1.3l10.3-3.3c.8-.2 1.6.4 1.6 1.2V6l2.3.7c.5.2.8.6.8 1.1v4.4c0 .5-.3 1-.8 1.1l-2.3.7v3.5c0 .8-.8 1.4-1.6 1.2L5 15.7c-.6-.2-1-.7-1-1.2Z" />
-                    <path d="M4 18.5c0-1 .9-1.8 2-1.5l2.4.7c.9.3 1.6 1.1 1.6 2v2.5c0 1-.9 1.8-2 1.5l-2.4-.7c-.9-.3-1.6-1.1-1.6-2v-2.5Z" />
-                  </svg>
-                </span>
-                Sponsoriser
+                {hasApplied
+                  ? "Vous avez déjà postulé"
+                  : isApplying
+                  ? "Postuler..."
+                  : "Postuler"}
               </button>
+            ) : (
+              <>
+                <button
+                  className="fb-post-action-btn"
+                  onClick={() => onLike?.(post)}
+                >
+                  <FBIcon name="like" size={18} /> J’aime
+                </button>
+
+                <button
+                  className="fb-post-action-btn"
+                  onClick={handleOpenComments}
+                >
+                  <FBIcon name="comment" size={18} /> Commenter
+                </button>
+
+                <button
+                  className="fb-post-action-btn"
+                  disabled={sharingPostIds[post._id] || !canShare}
+                  onClick={() => onShare?.(post)}
+                >
+                  <FBIcon name="share" size={18} />
+                  {sharingPostIds[post._id] ? "Partage…" : "Partager"}
+                </button>
+
+                {canSponsor && (
+                  <button
+                    className="fb-post-action-btn fb-sponsor-menu"
+                    onClick={() => onSponsor?.(post)}
+                  >
+                    <span className="fb-sponsor-icon" aria-hidden="true">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M4 14.5V5.8c0-.6.4-1.1 1-1.3l10.3-3.3c.8-.2 1.6.4 1.6 1.2V6l2.3.7c.5.2.8.6.8 1.1v4.4c0 .5-.3 1-.8 1.1l-2.3.7v3.5c0 .8-.8 1.4-1.6 1.2L5 15.7c-.6-.2-1-.7-1-1.2Z" />
+                        <path d="M4 18.5c0-1 .9-1.8 2-1.5l2.4.7c.9.3 1.6 1.1 1.6 2v2.5c0 1-.9 1.8-2 1.5l-2.4-.7c-.9-.3-1.6-1.1-1.6-2v-2.5Z" />
+                      </svg>
+                    </span>
+                    Sponsoriser
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

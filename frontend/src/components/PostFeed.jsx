@@ -15,6 +15,7 @@ export default function PostFeed({
   posts,
   setPosts,
   currentUserId,
+  currentUserRole,
   isAdmin = false,
   token,
   apiUrl,
@@ -397,6 +398,7 @@ export default function PostFeed({
             key={post._id}
             post={post}
             currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
             isAdmin={isAdmin}
             context={context}
             actionMenuPostId={actionMenuPostId}
@@ -420,6 +422,8 @@ export default function PostFeed({
             getPostPermissions={getPostPermissions}
             resolveMediaUrl={resolveMediaUrl}
             isImageMedia={isImageMedia}
+            apiUrl={apiUrl}
+            token={token}
           />
         ))}
 

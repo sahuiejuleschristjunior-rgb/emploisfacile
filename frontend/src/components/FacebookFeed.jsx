@@ -1,7 +1,7 @@
 // FacebookFeed.jsx
 import StoriesFB from "../components/StoriesFB";
 import CreatePostFB from "./CreatePostFB";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/facebook-feed.css";
 import "../styles/post.css";
@@ -87,6 +87,7 @@ export default function FacebookFeed() {
 
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [latestJob, setLatestJob] = useState(null);
 
   const filterVisiblePosts = useCallback(
     (list) => filterHiddenPosts(list, userId),
@@ -263,6 +264,28 @@ export default function FacebookFeed() {
     loadPosts(1, true);
   }, []);
 
+  const loadLatestJob = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_URL}/jobs/latest`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data?._id) return;
+
+      setLatestJob(data);
+    } catch (err) {
+      console.error("LOAD LATEST JOB ERROR:", err);
+    }
+  }, [API_URL, token]);
+
+  useEffect(() => {
+    loadLatestJob();
+  }, [loadLatestJob]);
+
   useEffect(() => {
     if (!notifPayload?.postId) return;
     if (!posts?.length) {
@@ -361,6 +384,51 @@ export default function FacebookFeed() {
   /* =================================================================
         RENDER FEED
   ================================================================= */
+  const jobPost = useMemo(() => {
+    if (!latestJob?._id) return null;
+
+    const jobText = [latestJob.title, latestJob.description]
+      .filter(Boolean)
+      .join("\n");
+
+    const media = latestJob.image
+      ? [
+          {
+            url: latestJob.image,
+            type: "image",
+          },
+        ]
+      : [];
+
+    return {
+      _id: `job-${latestJob._id}`,
+      isJobPost: true,
+      jobData: latestJob,
+      createdAt: latestJob.createdAt || new Date().toISOString(),
+      text: jobText,
+      media,
+      likes: [],
+      comments: [],
+    };
+  }, [latestJob]);
+
+  const feedPosts = useMemo(() => {
+    if (!jobPost) return posts;
+
+    const sanitizedPosts = posts.filter(
+      (post) => !post?.isJobPost && post?._id !== jobPost._id
+    );
+
+    if (sanitizedPosts.length < 2) {
+      return sanitizedPosts;
+    }
+
+    const insertIndex = Math.min(3, sanitizedPosts.length);
+    const next = [...sanitizedPosts];
+    next.splice(insertIndex, 0, jobPost);
+    return next;
+  }, [posts, jobPost]);
+
   return (
     <div className="fb-feed">
       <CreatePostFB
@@ -371,9 +439,10 @@ export default function FacebookFeed() {
       <StoriesFB />
 
       <PostFeed
-        posts={posts}
+        posts={feedPosts}
         setPosts={setPosts}
         currentUserId={userId}
+        currentUserRole={userRole}
         isAdmin={isAdmin}
         token={token}
         apiUrl={API_URL}

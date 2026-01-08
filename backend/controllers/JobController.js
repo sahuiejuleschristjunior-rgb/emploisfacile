@@ -154,6 +154,42 @@ exports.getRecentJobs = async (req, res) => {
 };
 
 /* ============================================================
+   GET /api/jobs/latest
+   ➤ Dernière offre active (pour le feed)
+============================================================ */
+exports.getLatestJob = async (req, res) => {
+    try {
+        const job = await Job.findOne({ isActive: { $ne: false } })
+            .populate("recruiter", "companyName name email avatar")
+            .sort({ createdAt: -1 });
+
+        if (!job) {
+            return res.status(404).json({ message: "Aucune offre active disponible." });
+        }
+
+        const company = job.recruiter?.companyName || job.recruiter?.name || "Entreprise";
+        const image = job.media?.images?.[0] || null;
+
+        return res.status(200).json({
+            _id: job._id,
+            title: job.title,
+            company,
+            location: job.location,
+            type: job.contractType,
+            description: job.description,
+            image,
+            recruiter: job.recruiter,
+            createdAt: job.createdAt,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            error: "Erreur serveur lors de la récupération de l'offre.",
+            details: error.message,
+        });
+    }
+};
+
+/* ============================================================
    GET /api/jobs/:id
    ➤ Détails d'une offre
 ============================================================ */
