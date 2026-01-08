@@ -103,8 +103,8 @@
   position: sticky;
   top: 0;
   width: 100%;
-  background: #111;
-  border-bottom: 1px solid #222;
+  background: #1c1e21;
+  border-bottom: 1px solid #3a3b3c;
   padding: 6px 0;
   z-index: 1000;
 }
