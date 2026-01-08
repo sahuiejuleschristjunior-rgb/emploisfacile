@@ -7,6 +7,7 @@ import FBIcon from "../components/FBIcon";
 import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
 import PagesFeedSidebar from "../components/PagesFeedSidebar";
+import RightSidebar from "../components/RightSidebar";
 import {
   fetchRelationStatus,
   sendFriendRequest,
@@ -32,6 +33,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const isHeaderOnly = headerOnly || isJobsFeed || isCompleteProfile;
   const isCompactLayout = isHeaderOnly || !isFullLayout;
   const isPagesFeed = location.pathname.startsWith("/fb/pages-feed");
+  const isFacebookFeed = location.pathname === "/fb" || location.pathname === "/fb/";
   const isCandidateSpace = [
     "/dashboard",
     "/jobconnect",
@@ -1708,10 +1710,11 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
           <aside
             className={`fb-right-column ${
-              isPagesFeed ? "fb-right-column--visible" : ""
+              isPagesFeed || isFacebookFeed ? "fb-right-column--visible" : ""
             }`}
           >
             {isPagesFeed && <PagesFeedSidebar />}
+            {isFacebookFeed && <RightSidebar />}
           </aside>
         </div>
       </main>

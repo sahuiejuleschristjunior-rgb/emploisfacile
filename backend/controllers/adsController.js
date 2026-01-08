@@ -71,6 +71,51 @@ function buildPaymentLink(campaignId) {
   return `${base}/fb/ads/pay/${campaignId}`;
 }
 
+function truncateText(value, maxLength) {
+  if (!value) return "";
+  const trimmed = String(value).trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  return `${trimmed.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function resolveAdImage(campaign, post) {
+  const creativeMedia = (campaign?.creative?.media || []).find(
+    (media) => media?.url && media.type === "image"
+  );
+  const postMedia = (post?.media || []).find((media) => media?.url && media.type === "image");
+
+  return (
+    creativeMedia?.url ||
+    campaign?.creative?.media?.[0]?.url ||
+    postMedia?.url ||
+    post?.media?.[0]?.url ||
+    post?.page?.avatar ||
+    post?.user?.avatar ||
+    ""
+  );
+}
+
+function buildAdPayload(campaign) {
+  const post = campaign?.post;
+  if (!post) return null;
+
+  const advertiserName = post.page?.name || post.user?.name || "Annonceur";
+  const rawText = campaign?.creative?.text || post.text || "";
+  const normalizedText = String(rawText).trim();
+  const [primaryLine, ...rest] = normalizedText.split("\n");
+  const fallbackTitle = primaryLine || advertiserName;
+
+  return {
+    id: campaign._id,
+    image: resolveAdImage(campaign, post),
+    title: truncateText(fallbackTitle || advertiserName, 70),
+    description: truncateText(rest.join(" ").trim() || normalizedText, 120),
+    url: campaign?.creative?.link || "",
+    advertiserName,
+    isSponsored: true,
+  };
+}
+
 async function resolveCampaignRecipient(campaign) {
   try {
     if (!campaign) return { email: null, name: null, firstName: null };
@@ -484,5 +529,37 @@ exports.track = async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ ok: false, error: "Erreur tracking" });
+  }
+};
+
+exports.getActive = async (req, res) => {
+  try {
+    const now = new Date();
+    const campaigns = await SponsoredPost.find({
+      status: "active",
+      archived: { $ne: true },
+      startDate: { $lte: now },
+      $or: [
+        { endDate: { $exists: false } },
+        { endDate: null },
+        { endDate: { $gte: now } },
+      ],
+    }).populate({
+      path: "post",
+      populate: [
+        { path: "user", select: "name avatar" },
+        { path: "page", select: "name avatar" },
+      ],
+    });
+
+    const ads = campaigns
+      .filter((campaign) => isCampaignActive(campaign))
+      .map((campaign) => buildAdPayload(campaign))
+      .filter(Boolean);
+
+    res.json({ ok: true, data: ads });
+  } catch (err) {
+    console.error("ADS ACTIVE FETCH ERROR", err.message || err);
+    res.status(500).json({ ok: false, error: "Erreur chargement publicités" });
   }
 };
