@@ -149,39 +149,6 @@ export default function App() {
 
                 {/* Centre publicitaire indépendant */}
                 <Route path="/fb/ads/*" element={<Navigate to="/ads" replace />} />
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <AdsLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/ads" element={<Outlet />}>
-                    <Route index element={<AdsDashboard />} />
-                    <Route path="create" element={<AdsCreate />} />
-                    <Route path="pay/:campaignId" element={<AdsPayment />} />
-                    <Route path="archives" element={<AdsDashboard view="archives" />} />
-                    <Route path=":id" element={<AdsDetails />} />
-                  </Route>
-                </Route>
-
-                {/* Emplois — accessible sans le FacebookLayout pour éviter les conflits mobiles */}
-                <Route
-                  path="/emplois"
-                  element={
-                    <ProtectedRoute>
-                      <EmploisPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/emplois/:id"
-                  element={
-                    <ProtectedRoute>
-                      <JobDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
 
                 {/* ================= FACEBOOK LAYOUT — GLOBAL WRAPPER ================= */}
                 <Route
@@ -191,6 +158,19 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 >
+                  {/* Centre publicitaire */}
+                  <Route path="/ads" element={<AdsLayout />}>
+                    <Route index element={<AdsDashboard />} />
+                    <Route path="create" element={<AdsCreate />} />
+                    <Route path="pay/:campaignId" element={<AdsPayment />} />
+                    <Route path="archives" element={<AdsDashboard view="archives" />} />
+                    <Route path=":id" element={<AdsDetails />} />
+                  </Route>
+
+                  {/* Emplois */}
+                  <Route path="/emplois" element={<EmploisPage />} />
+                  <Route path="/emplois/:id" element={<JobDetailPage />} />
+
                   {/* Groupe /fb avec colonnes latérales sur desktop */}
                   <Route path="/fb" element={<Outlet />}>
                     <Route index element={<FacebookFeed />} />

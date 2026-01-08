@@ -45,6 +45,10 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.fb-compact-body--no-header {
+  padding-top: 0;
+}
+
 .jobs-mobile-layout {
   width: 100%;
   min-height: 100%;
@@ -662,6 +666,10 @@
   }
 
   .fb-layout {
+    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab));
+  }
+
+  .fb-compact-body {
     padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab));
   }
 }

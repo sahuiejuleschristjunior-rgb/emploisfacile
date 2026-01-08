@@ -50,7 +50,9 @@ export default function FacebookLayout({ headerOnly = false, children }) {
     "/recruiter/create-job",
     "/recruiter/messages",
   ].some((path) => location.pathname.startsWith(path));
-  const hideHeader = isCandidateSpace || isRecruiterSpace;
+  const isAdsCenter = location.pathname.startsWith("/ads");
+  const hideHeader =
+    !isMobile && (isCandidateSpace || isRecruiterSpace || isAdsCenter || isJobsFeed);
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -1680,9 +1682,15 @@ export default function FacebookLayout({ headerOnly = false, children }) {
       <div className="fb-compact-shell">
         {header}
 
-        <main className="fb-compact-body">
+        <main
+          className={`fb-compact-body${
+            hideHeader ? " fb-compact-body--no-header" : ""
+          }`}
+        >
           {children || <Outlet />}
         </main>
+
+        {isMobile && bottomNav}
 
         {toast && <div className="fb-toast">{toast}</div>}
       </div>
