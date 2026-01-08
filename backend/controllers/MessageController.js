@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Message = require("../models/Message");
 const User = require("../models/User");
 const Conversation = require("../models/Conversation");
+const Job = require("../models/Job");
 const MessageRequest = require("../models/MessageRequest");
 const { getIO } = require("../socket");
 const Notification = require("../models/Notification");
@@ -154,6 +155,72 @@ async function findOrCreateConversation(senderId, receiverId) {
   }
 
   return conversation;
+}
+
+async function resolveJobConversationContext({ senderUser, receiverUser, jobId }) {
+  if (!jobId) {
+    return {
+      errorStatus: 400,
+      message: "jobId est requis pour cette conversation.",
+    };
+  }
+
+  const job = await Job.findById(jobId).select("recruiter title");
+  if (!job) {
+    return {
+      errorStatus: 404,
+      message: "Offre introuvable.",
+    };
+  }
+
+  const jobRecruiterId = job.recruiter?.toString();
+  if (!jobRecruiterId) {
+    return {
+      errorStatus: 400,
+      message: "L'offre n'est pas associée à un recruteur.",
+    };
+  }
+
+  let recruiterId = null;
+  let candidateId = null;
+
+  if (senderUser?.role === "recruiter") {
+    recruiterId = senderUser._id;
+    candidateId = receiverUser?._id;
+  } else if (receiverUser?.role === "recruiter") {
+    recruiterId = receiverUser?._id;
+    candidateId = senderUser?._id;
+  } else {
+    return {
+      errorStatus: 403,
+      message: "Une conversation liée à une offre nécessite un recruteur.",
+    };
+  }
+
+  if (!candidateId) {
+    return {
+      errorStatus: 400,
+      message: "Candidat introuvable.",
+    };
+  }
+
+  if (String(recruiterId) !== String(jobRecruiterId)) {
+    return {
+      errorStatus: 403,
+      message: "Ce recruteur n'est pas associé à l'offre.",
+    };
+  }
+
+  return { job, recruiterId, candidateId };
+}
+
+async function findExistingJobConversation({ jobId, recruiterId, candidateId }) {
+  if (!jobId || !recruiterId || !candidateId) return null;
+  return Conversation.findOne({
+    job: jobId,
+    recruiter: recruiterId,
+    candidate: candidateId,
+  });
 }
 
 /* ============================================================
@@ -363,6 +430,7 @@ exports.sendMessage = async (req, res) => {
       type,
       clientTempId,
       replyTo,
+      conversationId,
     } = req.body;
 
     const receiverId = receiver;
@@ -405,6 +473,20 @@ exports.sendMessage = async (req, res) => {
 
     const messageType = type || (file ? "file" : "text");
     const messageText = (content ?? text ?? "").trim();
+
+    const jobContext = jobId
+      ? await resolveJobConversationContext({
+          senderUser,
+          receiverUser,
+          jobId,
+        })
+      : null;
+
+    if (jobContext?.errorStatus) {
+      return res.status(jobContext.errorStatus).json({
+        message: jobContext.message,
+      });
+    }
 
     let filePayload = null;
     if (messageType === "file") {
@@ -487,15 +569,38 @@ exports.sendMessage = async (req, res) => {
       };
     }
 
-    const existingConversation = await findExistingConversation(
-      sender,
-      receiverId
-    );
+    let existingConversation = null;
+    if (conversationId && mongoose.Types.ObjectId.isValid(conversationId)) {
+      existingConversation = await Conversation.findById(conversationId);
+      if (existingConversation) {
+        const isConversationParticipant =
+          String(existingConversation.recruiter || "") === String(sender) ||
+          String(existingConversation.candidate || "") === String(sender) ||
+          (Array.isArray(existingConversation.participants) &&
+            existingConversation.participants.some(
+              (participant) => String(participant) === String(sender)
+            ));
+
+        if (!isConversationParticipant) {
+          return res.status(403).json({ message: "Accès interdit à la conversation." });
+        }
+      }
+    }
+
+    if (!existingConversation) {
+      existingConversation = jobContext
+        ? await findExistingJobConversation({
+            jobId,
+            recruiterId: jobContext.recruiterId,
+            candidateId: jobContext.candidateId,
+          })
+        : await findExistingConversation(sender, receiverId);
+    }
 
     // =====================
     // MESSAGE REQUEST FLOW
     // =====================
-    if (!isFriend && !existingConversation) {
+    if (!jobId && !isFriend && !existingConversation) {
       if (messageType !== "text") {
         return res
           .status(400)
@@ -562,12 +667,27 @@ exports.sendMessage = async (req, res) => {
 
     let conversation = existingConversation;
     if (!conversation) {
-      if (!isFriend) {
+      if (!jobContext && !isFriend) {
         return res.status(403).json({
           message: "Impossible d'envoyer un message sans accepter la demande.",
         });
       }
-      conversation = await findOrCreateConversation(sender, receiverId);
+      if (jobContext) {
+        conversation = await Conversation.create({
+          job: jobId,
+          recruiter: jobContext.recruiterId,
+          candidate: jobContext.candidateId,
+          participants: [jobContext.recruiterId, jobContext.candidateId],
+        });
+      } else {
+        conversation = await findOrCreateConversation(sender, receiverId);
+      }
+    }
+
+    if (jobContext && conversation?.job && String(conversation.job) !== String(jobId)) {
+      return res.status(400).json({
+        message: "Conversation invalide pour cette offre.",
+      });
     }
 
     const message = await Message.create({
@@ -577,7 +697,7 @@ exports.sendMessage = async (req, res) => {
       content: messageType === "text" ? messageText : "",
       text: messageType === "text" ? messageText : "",
       application: applicationId || null,
-      job: jobId || null,
+      job: jobId || conversation?.job || null,
       type: messageType,
       file: filePayload,
       fileUrl: filePayload?.url || null,
@@ -590,6 +710,15 @@ exports.sendMessage = async (req, res) => {
     });
 
     conversation.lastMessage = message._id;
+    conversation.lastMessageAt = message.createdAt || new Date();
+    if (conversation.recruiter && String(receiverId) === String(conversation.recruiter)) {
+      conversation.unreadCountRecruiter =
+        (conversation.unreadCountRecruiter || 0) + 1;
+    }
+    if (conversation.candidate && String(receiverId) === String(conversation.candidate)) {
+      conversation.unreadCountCandidate =
+        (conversation.unreadCountCandidate || 0) + 1;
+    }
     conversation.updatedAt = new Date();
     await conversation.save();
 
@@ -1019,16 +1148,45 @@ GET /api/messages/conversation/:userId
 exports.getConversation = async (req, res) => {
   try {
     const myId = req.user.id;
-    const otherId = req.params.userId;
+    const targetId = req.params.userId;
 
     const myObjectId = new mongoose.Types.ObjectId(myId);
+
+    if (mongoose.Types.ObjectId.isValid(targetId)) {
+      const conversation = await Conversation.findById(targetId);
+      if (conversation) {
+        const isParticipant =
+          String(conversation.recruiter || "") === String(myId) ||
+          String(conversation.candidate || "") === String(myId) ||
+          (Array.isArray(conversation.participants) &&
+            conversation.participants.some(
+              (participant) => String(participant) === String(myId)
+            ));
+
+        if (!isParticipant) {
+          return res.status(403).json({ message: "Accès interdit." });
+        }
+
+        const messages = await Message.find({
+          conversation: conversation._id,
+          deletedForAll: { $ne: true },
+          deletedFor: { $ne: myObjectId },
+        })
+          .sort({ createdAt: 1 })
+          .populate("sender", "name avatar role")
+          .populate("receiver", "name avatar role")
+          .populate("replyTo", "content type sender receiver");
+
+        return res.status(200).json(messages);
+      }
+    }
 
     const messages = await Message.find({
       $and: [
         {
           $or: [
-            { sender: myId, receiver: otherId },
-            { sender: otherId, receiver: myId },
+            { sender: myId, receiver: targetId },
+            { sender: targetId, receiver: myId },
           ],
         },
         { deletedForAll: { $ne: true } },
@@ -1072,6 +1230,144 @@ exports.getInbox = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       error: "Erreur lors du chargement de la boîte de réception.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+GET /api/recruiter/conversations
+➤ Conversations recruteur
+============================================================ */
+exports.getRecruiterConversations = async (req, res) => {
+  try {
+    const recruiterId = req.user.id;
+
+    const conversations = await Conversation.find({ recruiter: recruiterId })
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .populate("candidate", "name avatar role")
+      .populate("job")
+      .populate({
+        path: "lastMessage",
+        populate: [
+          { path: "sender", select: "name avatar role" },
+          { path: "receiver", select: "name avatar role" },
+        ],
+      });
+
+    return res.status(200).json({ success: true, data: conversations });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du chargement des conversations.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+GET /api/candidate/conversations
+➤ Conversations candidat
+============================================================ */
+exports.getCandidateConversations = async (req, res) => {
+  try {
+    const candidateId = req.user.id;
+
+    const conversations = await Conversation.find({ candidate: candidateId })
+      .sort({ lastMessageAt: -1, createdAt: -1 })
+      .populate("recruiter", "name avatar role companyName")
+      .populate("job")
+      .populate({
+        path: "lastMessage",
+        populate: [
+          { path: "sender", select: "name avatar role" },
+          { path: "receiver", select: "name avatar role" },
+        ],
+      });
+
+    return res.status(200).json({ success: true, data: conversations });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors du chargement des conversations.",
+      details: error.message,
+    });
+  }
+};
+
+/* ============================================================
+POST /api/conversations/job
+➤ Créer / récupérer une conversation liée à une offre
+============================================================ */
+exports.getOrCreateJobConversation = async (req, res) => {
+  try {
+    const senderId = getSenderId(req);
+    const { jobId, otherUserId } = req.body;
+
+    if (!senderId) {
+      return res.status(401).json({ message: "Authentification requise." });
+    }
+
+    if (!jobId || !otherUserId) {
+      return res.status(400).json({
+        message: "jobId et otherUserId sont requis.",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(otherUserId)) {
+      return res.status(400).json({ message: "Destinataire invalide." });
+    }
+
+    const [senderUser, receiverUser] = await Promise.all([
+      User.findById(senderId),
+      User.findById(otherUserId),
+    ]);
+
+    if (!senderUser || !receiverUser) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    const jobContext = await resolveJobConversationContext({
+      senderUser,
+      receiverUser,
+      jobId,
+    });
+
+    if (jobContext?.errorStatus) {
+      return res.status(jobContext.errorStatus).json({
+        message: jobContext.message,
+      });
+    }
+
+    let conversation = await findExistingJobConversation({
+      jobId,
+      recruiterId: jobContext.recruiterId,
+      candidateId: jobContext.candidateId,
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        job: jobId,
+        recruiter: jobContext.recruiterId,
+        candidate: jobContext.candidateId,
+        participants: [jobContext.recruiterId, jobContext.candidateId],
+      });
+    }
+
+    const populated = await Conversation.findById(conversation._id)
+      .populate("candidate", "name avatar role")
+      .populate("recruiter", "name avatar role companyName")
+      .populate("job")
+      .populate({
+        path: "lastMessage",
+        populate: [
+          { path: "sender", select: "name avatar role" },
+          { path: "receiver", select: "name avatar role" },
+        ],
+      });
+
+    return res.status(200).json({ success: true, data: populated });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Erreur lors de la création de la conversation.",
       details: error.message,
     });
   }

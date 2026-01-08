@@ -33,7 +33,6 @@ export default function CandidateInbox() {
 
   const [conversations, setConversations] = useState([]);
   const [jobsById, setJobsById] = useState({});
-  const [allowedJobIds, setAllowedJobIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -65,35 +64,6 @@ export default function CandidateInbox() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!token) return;
-
-    let active = true;
-    const fetchApplications = async () => {
-      try {
-        const res = await fetch(`${API_URL}/applications/my-applications`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!res.ok) return;
-        const data = await ensureJsonResponse(res);
-        const apps = Array.isArray(data) ? data : data.applications || [];
-        if (!active) return;
-        setAllowedJobIds(new Set(apps.map((app) => String(app?.job?._id)).filter(Boolean)));
-      } catch (err) {
-        console.error("Erreur candidatures", err);
-      }
-    };
-
-    fetchApplications();
-
-    return () => {
-      active = false;
-    };
-  }, [token]);
 
   useEffect(() => {
     const jobIds = conversations
@@ -146,14 +116,9 @@ export default function CandidateInbox() {
     };
   }, [conversations, jobsById, token]);
 
-  const filteredConversations = useMemo(() => {
-    return conversations.filter((conv) => {
-      const jobId = conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
-      if (!jobId) return false;
-      if (!allowedJobIds.size) return false;
-      return allowedJobIds.has(String(jobId));
-    });
-  }, [conversations, allowedJobIds]);
+  const visibleConversations = useMemo(() => {
+    return conversations;
+  }, [conversations]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -168,7 +133,7 @@ export default function CandidateInbox() {
           <p className="eyebrow">JobChat</p>
           <h3>Vos échanges avec les recruteurs</h3>
           <p className="job-chat-subtitle">
-            Discutez uniquement pour vos candidatures actives, offre par offre.
+            Retrouvez toutes vos conversations avec les recruteurs, même après clôture.
           </p>
         </div>
       </section>
@@ -183,16 +148,17 @@ export default function CandidateInbox() {
 
         {loading && <div className="loader">Chargement…</div>}
         {error && <div className="error-message">{error}</div>}
-        {!loading && !error && filteredConversations.length === 0 && (
+        {!loading && !error && visibleConversations.length === 0 && (
           <div className="empty-state">Aucune conversation pour vos candidatures.</div>
         )}
 
         <div className="job-chat-list">
-          {filteredConversations.map((conv) => {
+          {visibleConversations.map((conv) => {
             const jobId =
               conv?.job?._id || conv?.jobId || conv?.job || conv?.lastMessage?.job;
             const job = jobsById[String(jobId)] || conv?.job;
-            const other = resolveOtherParticipant(conv?.participants, user?._id);
+            const other =
+              conv?.recruiter || resolveOtherParticipant(conv?.participants, user?._id);
             const otherName = other?.companyName || other?.name || "Recruteur";
             const lastMessage =
               conv?.lastMessage?.type === "file"

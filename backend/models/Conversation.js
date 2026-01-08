@@ -17,10 +17,40 @@ const conversationSchema = new mongoose.Schema(
         message: "Une conversation doit avoir exactement 2 participants.",
       },
     },
+    job: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Job",
+      default: null,
+      index: true,
+    },
+    recruiter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
+    candidate: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     lastMessage: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
       default: null,
+    },
+    lastMessageAt: {
+      type: Date,
+      default: null,
+    },
+    unreadCountRecruiter: {
+      type: Number,
+      default: 0,
+    },
+    unreadCountCandidate: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
@@ -29,6 +59,19 @@ const conversationSchema = new mongoose.Schema(
 conversationSchema.index(
   { participants: 1 },
   { background: true }
+);
+
+conversationSchema.index(
+  { job: 1, recruiter: 1, candidate: 1 },
+  {
+    unique: true,
+    background: true,
+    partialFilterExpression: {
+      job: { $type: "objectId" },
+      recruiter: { $type: "objectId" },
+      candidate: { $type: "objectId" },
+    },
+  }
 );
 
 module.exports = mongoose.model("Conversation", conversationSchema);

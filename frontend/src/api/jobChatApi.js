@@ -31,6 +31,16 @@ function getStoredUserId() {
   }
 }
 
+function getStoredUserRole() {
+  const storedUser = localStorage.getItem("user");
+  if (!storedUser) return null;
+  try {
+    return JSON.parse(storedUser)?.role || null;
+  } catch (err) {
+    return null;
+  }
+}
+
 function unwrapPayload(data) {
   if (!data) return null;
   return data.data || data.conversation || data.conversations || data;
@@ -42,7 +52,15 @@ export async function fetchJobChatConversations() {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox`, {
+  const role = getStoredUserRole();
+  const endpoint =
+    role === "recruiter"
+      ? `${API_URL}/recruiter/conversations`
+      : role === "candidate"
+      ? `${API_URL}/candidate/conversations`
+      : `${API_URL}/messages/inbox`;
+
+  const res = await fetch(endpoint, {
     headers: getAuthHeaders(token),
   });
 
@@ -61,16 +79,7 @@ export async function fetchJobConversation(conversationId) {
     throw new Error(AUTH_ERROR_MESSAGE);
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox`, {
-    headers: getAuthHeaders(token),
-  });
-
-  const data = await parseJsonResponse(res);
-  if (!res.ok) {
-    throw new Error(AUTH_ERROR_MESSAGE);
-  }
-
-  const list = Array.isArray(data) ? data : data?.data || [];
+  const list = await fetchJobChatConversations();
   const currentUserId = getStoredUserId();
   const match =
     list.find((conv) => String(conv?._id) === String(conversationId)) ||
@@ -91,28 +100,21 @@ export async function createJobConversation({ participants, jobId }) {
     throw new Error("Vous devez être connecté pour accéder à vos conversations.");
   }
 
-  const res = await fetch(`${API_URL}/messages/inbox`, {
-    headers: getAuthHeaders(token),
-  });
-
-  const data = await parseJsonResponse(res);
-  if (!res.ok) {
-    throw new Error(AUTH_ERROR_MESSAGE);
-  }
-
-  const list = Array.isArray(data) ? data : data?.data || [];
+  const list = await fetchJobChatConversations();
   const participantIds = (participants || []).map((p) => String(p?._id || p));
+  const currentUserId = getStoredUserId();
   const existing = list.find((conv) =>
-    Array.isArray(conv?.participants)
-      ? participantIds.every((id) =>
-          conv.participants.some((p) => String(p?._id || p) === id)
-        )
-      : false
+    String(conv?.job?._id || conv?.job) === String(jobId) &&
+    (String(conv?.recruiter?._id || conv?.recruiter) === String(currentUserId) ||
+      String(conv?.candidate?._id || conv?.candidate) === String(currentUserId)) &&
+    (String(conv?.recruiter?._id || conv?.recruiter) ===
+      String(participantIds.find((id) => id !== String(currentUserId))) ||
+      String(conv?.candidate?._id || conv?.candidate) ===
+        String(participantIds.find((id) => id !== String(currentUserId))))
   );
 
   if (existing) return existing;
 
-  const currentUserId = getStoredUserId();
   const otherParticipant =
     participantIds.find((id) => id && id !== String(currentUserId)) ||
     participantIds[0] ||
@@ -122,12 +124,22 @@ export async function createJobConversation({ participants, jobId }) {
     throw new Error("Impossible de créer la conversation.");
   }
 
-  return {
-    _id: otherParticipant,
-    participants: participants || [],
-    jobId,
-    __placeholder: true,
-  };
+  const res = await fetch(`${API_URL}/conversations/job`, {
+    method: "POST",
+    headers: getAuthHeaders(token),
+    body: JSON.stringify({
+      jobId,
+      otherUserId: otherParticipant,
+    }),
+  });
+
+  const data = await parseJsonResponse(res);
+  if (!res.ok) {
+    throw new Error(AUTH_ERROR_MESSAGE);
+  }
+
+  const created = unwrapPayload(data);
+  return created || null;
 }
 
 export async function fetchConversationMessages(conversationId) {
