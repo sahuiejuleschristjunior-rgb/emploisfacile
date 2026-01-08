@@ -1630,17 +1630,10 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <div
           className="fb-bottom-nav-item"
-          onClick={() => safeNavigate("/messages")}
+          onClick={() => safeNavigate("/fb/dashboard")}
         >
-          <div style={{ position: "relative" }}>
-            <FBIcon name="messages" size={22} />
-            {totalUnreadMessages > 0 && (
-              <span className="notif-badge" aria-label="Nouveaux messages">
-                {totalUnreadMessages > 9 ? "9+" : totalUnreadMessages}
-              </span>
-            )}
-          </div>
-          <div>Messages</div>
+          <FBIcon name="dashboard" size={22} />
+          <div>Tableau</div>
         </div>
 
         <div
