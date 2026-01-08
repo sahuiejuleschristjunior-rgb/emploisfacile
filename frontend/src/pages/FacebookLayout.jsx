@@ -1640,7 +1640,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
               </span>
             )}
           </div>
-          <div>Tableau de bord</div>
+          <div>Messages</div>
         </div>
 
         <div
