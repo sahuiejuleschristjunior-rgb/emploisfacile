@@ -162,7 +162,7 @@
 
 @media (max-width: 768px) {
   .job-feed-screen {
-    padding: 8px 0 100px;
+    padding: 8px 0 0;
   }
 
   .job-feed-screen .fb-feed.jobs-feed {
