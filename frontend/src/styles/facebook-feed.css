@@ -9,6 +9,10 @@
   margin: 0 auto;
 }
 
+.fb-feed--jobs {
+  max-width: 600px;
+}
+
 /* ================================
    ÉTATS
 ================================ */
@@ -414,6 +418,24 @@
 @media (min-width: 768px) {
   .fb-feed {
     padding-top: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .fb-feed--jobs {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .fb-feed--jobs .fb-post {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .fb-feed--jobs .fb-post-media-wrapper {
+    margin-left: -12px;
+    margin-right: -12px;
   }
 }
 
