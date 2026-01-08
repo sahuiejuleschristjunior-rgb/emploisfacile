@@ -52,8 +52,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     "/recruiter/create-job",
     "/recruiter/messages",
   ].some((path) => location.pathname.startsWith(path));
-  const isDashboardSpace = isCandidateSpace || isRecruiterSpace;
-  const hideHeader = isDashboardSpace && !isMobile;
+  const hideHeader = isCandidateSpace || isRecruiterSpace;
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -1709,18 +1708,10 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
 
   if (isCompactLayout) {
     return (
-      <div
-        className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}${
-          isDashboardSpace ? " fb-compact-shell--dashboard" : ""
-        }`}
-      >
+      <div className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}`}>
         {header}
 
-        <main
-          className={`fb-compact-body${
-            isDashboardSpace ? " fb-compact-body--dashboard" : ""
-          }`}
-        >
+        <main className="fb-compact-body">
           {children || <Outlet context={outletContext} />}
         </main>
 
