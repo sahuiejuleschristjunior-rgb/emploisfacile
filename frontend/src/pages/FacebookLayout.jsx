@@ -85,7 +85,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showJobsMenu, setShowJobsMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
@@ -1313,16 +1312,6 @@ export default function FacebookLayout({ headerOnly = false, children }) {
           
           {/* LOGO */}
           <div className="fb-header-left">
-            {isJobsFeed && isMobile && (
-              <button
-                type="button"
-                className="fb-header-burger"
-                aria-label="Ouvrir le menu"
-                onClick={() => setShowJobsMenu((prev) => !prev)}
-              >
-                <FBIcon name="menu" size={20} />
-              </button>
-            )}
             <div className="fb-header-brand" onClick={() => nav("/fb")}>
               <div className="fb-logo"><span>EF</span></div>
               <span className="fb-logo-label">EmploisFacile</span>
@@ -1659,12 +1648,7 @@ export default function FacebookLayout({ headerOnly = false, children }) {
 
         <main className="jobs-mobile-content">
           {children || (
-            <Outlet
-              context={{
-                jobsMenuOpen: showJobsMenu,
-                setJobsMenuOpen: setShowJobsMenu,
-              }}
-            />
+            <Outlet />
           )}
         </main>
 
