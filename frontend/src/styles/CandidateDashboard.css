@@ -1416,6 +1416,14 @@ body {
     padding-top: 0;
   }
 
+  .page--candidate-applications .cd-topbar {
+    display: none;
+  }
+
+  .page--candidate-applications .content {
+    padding-top: 0;
+  }
+
   .candidate-dashboard.job-chat-shell .cd-topbar {
     display: none;
   }
