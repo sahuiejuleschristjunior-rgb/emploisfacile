@@ -140,6 +140,12 @@
   padding: calc(6px + var(--sat)) 12px 6px;
 }
 
+.fb-header--candidate-dashboard {
+  background: rgba(12, 17, 31, 0.92);
+  border-bottom: 1px solid var(--border, #1f2937);
+  backdrop-filter: blur(10px);
+}
+
 .fb-header-inner--dashboard-mobile {
   max-width: 100%;
   margin: 0;
