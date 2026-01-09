@@ -57,12 +57,6 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-@media (max-width: 780px) {
-  .page--dashboard .content--with-bottom-menu {
-    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab) + 16px);
-  }
-}
-
 .cd-side {
   background: #141414;
   color: var(--text);
