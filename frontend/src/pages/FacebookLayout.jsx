@@ -1375,7 +1375,11 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   };
 
   const dashboardMobileHeader = (
-    <header className="fb-header fb-header--dashboard-mobile">
+    <header
+      className={`fb-header fb-header--dashboard-mobile${
+        isCandidateSpace ? " fb-header--candidate-dashboard" : ""
+      }`}
+    >
       <div className="fb-header-inner fb-header-inner--dashboard-mobile">
         <div className="fb-header-dashboard-left">
           <button
