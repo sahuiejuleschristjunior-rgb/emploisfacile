@@ -38,11 +38,23 @@
   color: inherit;
 }
 
+.fb-compact-shell--dashboard {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .fb-compact-body {
   min-height: calc(var(--app-height) - var(--fb-header-height));
   padding-top: var(--fb-header-height);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.fb-compact-body--dashboard {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
 }
 
 .fb-compact-shell--no-header .fb-compact-body {

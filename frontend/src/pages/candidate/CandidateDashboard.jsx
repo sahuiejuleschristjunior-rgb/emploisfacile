@@ -5,6 +5,7 @@ import CandidateLayout from "../../layouts/CandidateLayout";
 import FacebookLayout from "../FacebookLayout";
 import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
 import { createJobConversation } from "../../api/jobChatApi";
+import useDashboardSafeAreaDebug from "../../utils/dashboardSafeAreaDebug";
 import {
   ApplicationCard,
   ApplicationPipeline,
@@ -14,6 +15,7 @@ import {
 export default function CandidateDashboard() {
   const nav = useNavigate();
   const data = useCandidateDashboardData();
+  useDashboardSafeAreaDebug("candidate-dashboard");
 
   const logout = () => {
     localStorage.removeItem("token");
