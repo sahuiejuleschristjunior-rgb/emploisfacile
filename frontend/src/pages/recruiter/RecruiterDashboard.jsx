@@ -141,7 +141,7 @@ export default function RecruiterDashboard() {
         eyebrow="Espace recruteur"
         titlePrefix="Bonjour"
         avatarFallback="R"
-        shellClassName="page--dashboard"
+        shellClassName="page--dashboard recruiter-dashboard-shell"
         menuItems={[
           { key: "home", label: "Accueil", path: "/fb" },
           { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },

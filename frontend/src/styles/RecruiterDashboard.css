@@ -1488,6 +1488,14 @@ body {
     padding-top: 0;
   }
 
+  .recruiter-dashboard-shell .cd-topbar {
+    display: flex;
+  }
+
+  .recruiter-dashboard-shell .content {
+    padding-top: var(--candidate-header-height);
+  }
+
   .candidate-dashboard.job-chat-shell .cd-topbar {
     display: none;
   }
