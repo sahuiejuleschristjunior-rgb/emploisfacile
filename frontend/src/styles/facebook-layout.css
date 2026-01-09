@@ -163,7 +163,32 @@
 
 .fb-header-dashboard-title {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #f3f4f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fb-header-dashboard-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.fb-header-dashboard-text .eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+}
+
+.fb-header-dashboard-greeting {
   font-weight: 600;
   font-size: 16px;
   color: #f3f4f6;
