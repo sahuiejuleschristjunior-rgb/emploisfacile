@@ -12,7 +12,7 @@ export default function CandidateLayout({
   titlePrefix = "Bonjour",
   avatarFallback = "C",
   shellClassName = "",
-  showBottomMenu = false,
+  showBottomMenu = true,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const nav = useNavigate();

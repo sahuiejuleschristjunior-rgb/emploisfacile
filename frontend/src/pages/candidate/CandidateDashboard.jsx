@@ -117,7 +117,6 @@ export default function CandidateDashboard() {
         user={data.user}
         onLogout={logout}
         shellClassName="page--dashboard"
-        showBottomMenu
       >
         <section className="hero" id="recent">
         <div className="hero__info">
