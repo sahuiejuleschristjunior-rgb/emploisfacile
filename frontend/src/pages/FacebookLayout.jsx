@@ -1375,6 +1375,10 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     dashboardMenuTouchStartX.current = null;
   };
 
+  const candidateDashboardTitle = `Bonjour ${
+    currentUser?.name || currentUser?.companyName || "!"
+  }`;
+
   const dashboardMobileHeader = (
     <header
       className={`fb-header fb-header--dashboard-mobile${
@@ -1393,7 +1397,16 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
           </button>
         </div>
 
-        <div className="fb-header-dashboard-title">{dashboardTitle}</div>
+        <div className="fb-header-dashboard-title">
+          {isCandidateSpace ? (
+            <div className="fb-header-dashboard-text">
+              <span className="eyebrow">Espace candidat</span>
+              <span className="fb-header-dashboard-greeting">{candidateDashboardTitle}</span>
+            </div>
+          ) : (
+            dashboardTitle
+          )}
+        </div>
 
         <div className="fb-header-dashboard-right">
           <button
