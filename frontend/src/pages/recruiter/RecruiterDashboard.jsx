@@ -5,13 +5,11 @@ import RecruiterLayout from "../../layouts/RecruiterLayout";
 import FacebookLayout from "../FacebookLayout";
 import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboardData";
 import { createJobConversation } from "../../api/jobChatApi";
-import useDashboardSafeAreaDebug from "../../utils/dashboardSafeAreaDebug";
 import { RecruiterPipeline } from "../../components/jobconnect/JobConnectWidgets";
 
 export default function RecruiterDashboard() {
   const nav = useNavigate();
   const data = useRecruiterDashboardData();
-  useDashboardSafeAreaDebug("recruiter-dashboard");
 
   const logout = () => {
     localStorage.removeItem("token");

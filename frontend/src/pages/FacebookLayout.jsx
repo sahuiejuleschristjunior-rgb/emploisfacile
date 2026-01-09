@@ -56,8 +56,6 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   ].some((path) => location.pathname.startsWith(path));
   const hideRecruiterMobileChrome = isRecruiterSpace && isMobile;
   const hideHeader = (isRecruiterSpace && !isMobile) || (isCandidateSpace && !isMobile);
-  const isDashboardRoute =
-    (isCandidateSpace || isRecruiterSpace) && location.pathname.endsWith("/dashboard");
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -1749,12 +1747,12 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
       <div
         className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}${
           hideHeader ? " fb-compact-shell--no-header" : ""
-        }${isDashboardRoute ? " fb-compact-shell--dashboard" : ""}`}
+        }`}
       >
         {header}
         {dashboardMenuDrawer}
 
-        <main className={`fb-compact-body${isDashboardRoute ? " fb-compact-body--dashboard" : ""}`}>
+        <main className="fb-compact-body">
           {children || <Outlet context={outletContext} />}
         </main>
 
