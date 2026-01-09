@@ -55,7 +55,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     "/recruiter/messages",
   ].some((path) => location.pathname.startsWith(path));
   const hideRecruiterMobileChrome = isRecruiterSpace && isMobile;
-  const hideHeader = isRecruiterSpace || (isCandidateSpace && !isMobile);
+  const hideHeader = (isRecruiterSpace && !isMobile) || (isCandidateSpace && !isMobile);
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -898,7 +898,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
   const dashboardRole = isRecruiterSpace ? "recruiter" : "candidate";
   const dashboardTitle = isRecruiterSpace ? "Espace recruteur" : "Espace candidat";
-  const showDashboardHeader = isMobile && isCandidateSpace;
+  const showDashboardHeader = isMobile && (isCandidateSpace || isRecruiterSpace);
 
   const renderSearchContent = () => {
     if (loadingSearch)
