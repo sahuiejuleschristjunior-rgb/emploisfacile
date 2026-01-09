@@ -285,6 +285,12 @@ body {
   min-width: 0;
 }
 
+@media (max-width: 780px) {
+  .content--with-bottom-menu {
+    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab) + 16px);
+  }
+}
+
 .content > * {
   max-width: 100%;
 }
