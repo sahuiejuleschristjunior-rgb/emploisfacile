@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import "../../styles/CandidateDashboard.css";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import FacebookLayout from "../FacebookLayout";
 import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";

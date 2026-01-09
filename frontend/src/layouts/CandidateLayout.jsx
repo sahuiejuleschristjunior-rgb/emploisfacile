@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardMenu, { candidateMenuItems } from "../components/DashboardMenu";
 import FacebookBottomNav from "../components/FacebookBottomNav";
+import "../styles/CandidateDashboard.css";
 
 export default function CandidateLayout({
   user,
