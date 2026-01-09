@@ -32,6 +32,7 @@ const getMenuItemsForRole = (role) => {
 };
 
 export default function DashboardMenu({
+  as: Component = "aside",
   role = "candidate",
   menuItems,
   onLogout,
@@ -54,7 +55,7 @@ export default function DashboardMenu({
   };
 
   return (
-    <aside className={`cd-side ${className}`.trim()} {...rest}>
+    <Component className={`cd-side ${className}`.trim()} {...rest}>
       <div className="side-header">
         <div className="side-brand">EmploisFacile</div>
         {onClose && (
@@ -102,6 +103,6 @@ export default function DashboardMenu({
         </button>
         <div className="side-footer">© 2025 EmploisFacile</div>
       </div>
-    </aside>
+    </Component>
   );
 }

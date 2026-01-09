@@ -166,15 +166,59 @@
   text-overflow: ellipsis;
 }
 
-.fb-dashboard-menu-backdrop {
+.dashboard-drawer-root {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 12000;
+  z-index: 9999;
 }
 
-.fb-dashboard-menu-panel {
-  z-index: 12001;
+.dashboard-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.dashboard-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 80vw;
+  max-width: 320px;
+  background: #ffffff;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+  transform: translateX(0);
+}
+
+.dashboard-drawer .cd-side {
+  position: static;
+  width: 100%;
+  height: 100%;
+  border-right: none;
+  background: #ffffff;
+  color: #1f2937;
+  z-index: auto;
+}
+
+.dashboard-drawer .side-link {
+  color: #475569;
+}
+
+.dashboard-drawer .side-link.active,
+.dashboard-drawer .side-link:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.dashboard-drawer .side-logout {
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.dashboard-drawer .side-logout:hover {
+  color: #0f172a;
+  border-color: #94a3b8;
 }
 
 .fb-header-jobs-search {
@@ -878,7 +922,7 @@
 
 /* AJOUTS POUR HARMONISATION DU THÈME SOMBRE */
 /* === HEADER FIXE === */
-.fb-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; background: #242526; border-bottom: 1px solid #3a3b3c; }
+.fb-header { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background: #242526; border-bottom: 1px solid #3a3b3c; }
 
 /* Décaler le contenu sous le header */
 .fb-app-body {
@@ -893,7 +937,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 11000;
+    z-index: 1000;
   }
 
   .fb-app-body {
