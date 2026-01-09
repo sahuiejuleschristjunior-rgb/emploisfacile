@@ -14,6 +14,7 @@
   --candidate-shell-padding: 0px;
   --candidate-sidebar-width: 260px;
   --candidate-header-height: 88px;
+  --fb-bottom-nav-height: 60px;
   --z-header: 100;
   --z-sidebar: 200;
   --z-burger: 1000;
@@ -1451,6 +1452,10 @@ body {
 
   .page--candidate-applications .content {
     padding-top: 0;
+  }
+
+  .candidate-dashboard .content--with-bottom-menu {
+    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab) + 16px);
   }
 
   .candidate-dashboard.job-chat-shell .cd-topbar {
