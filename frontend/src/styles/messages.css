@@ -905,7 +905,6 @@
   flex: 1;
   overflow-y: auto;
   padding: 12px;
-  padding-bottom: 120px; /* ✅ espace pour l’input fixe */
 }
 /* =========================
    ATTACH & MIC
@@ -1569,10 +1568,6 @@
   .messages-sidebar {
     width: 360px;
     max-height: none;
-  }
-
-  .chat-body {
-    padding-bottom: 120px;
   }
 
   .chat-input-bar {
