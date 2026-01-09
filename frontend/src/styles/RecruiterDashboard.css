@@ -1504,6 +1504,14 @@ body {
     padding: 0;
     overflow: hidden;
   }
+
+  .recruiter-dashboard-shell .fb-bottom-nav {
+    display: none;
+  }
+
+  .recruiter-dashboard-shell .content--with-bottom-menu {
+    padding-bottom: 16px;
+  }
 }
 
 .recruiter-profiles-grid {
