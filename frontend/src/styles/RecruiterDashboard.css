@@ -180,6 +180,10 @@ body {
   z-index: var(--z-header);
 }
 
+.recruiter-dashboard-header {
+  gap: 20px;
+}
+
 .cd-topbar h2 {
   margin: 4px 0;
   font-size: 22px;
@@ -1493,7 +1497,7 @@ body {
   }
 
   .recruiter-dashboard-shell .content {
-    padding-top: var(--candidate-header-height);
+    padding-top: 16px;
   }
 
   .candidate-dashboard.job-chat-shell .cd-topbar {
@@ -1511,6 +1515,37 @@ body {
 
   .recruiter-dashboard-shell .content--with-bottom-menu {
     padding-bottom: 16px;
+  }
+
+  .recruiter-dashboard-header {
+    position: static;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .recruiter-dashboard-header .topbar-left {
+    width: 100%;
+  }
+
+  .recruiter-dashboard-header .topbar-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .recruiter-dashboard-header .topbar-actions::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .recruiter-dashboard-header .topbar-actions::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.45);
+    border-radius: 999px;
   }
 }
 
