@@ -25,8 +25,12 @@ export default function RecruiterLayout({
     };
   }, [sidebarOpen]);
 
+  const rootClassName = ["candidate-dashboard", "recruiter-dashboard-shell", shellClassName]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`candidate-dashboard ${shellClassName}`.trim()}>
+    <div className={rootClassName}>
       <DashboardMenu
         role="recruiter"
         menuItems={menuItems}
