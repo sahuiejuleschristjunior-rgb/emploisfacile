@@ -1485,15 +1485,18 @@ body {
 
 @media (max-width: 768px) {
   .page--dashboard {
-    min-height: calc(var(--app-height) - var(--fb-header-height));
-    height: calc(var(--app-height) - var(--fb-header-height));
-  }
-
-  .page--dashboard .cd-main {
+    min-height: calc(
+      var(--app-height) - var(--fb-header-height) - var(--fb-bottom-nav-height) -
+        var(--sab)
+    );
     height: calc(
       var(--app-height) - var(--fb-header-height) - var(--fb-bottom-nav-height) -
         var(--sab)
     );
+  }
+
+  .page--dashboard .cd-main {
+    height: 100%;
   }
 
   .page--dashboard .content {
