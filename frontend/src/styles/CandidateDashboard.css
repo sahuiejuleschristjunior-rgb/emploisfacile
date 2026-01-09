@@ -1408,6 +1408,14 @@ body {
 }
 
 @media (max-width: 768px) {
+  .candidate-dashboard .cd-topbar {
+    display: none;
+  }
+
+  .candidate-dashboard .content {
+    padding-top: 0;
+  }
+
   .page--dashboard .cd-topbar {
     display: none;
   }
