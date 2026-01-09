@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardMenu, { candidateMenuItems } from "../components/DashboardMenu";
 import FacebookBottomNav from "../components/FacebookBottomNav";
-import FacebookLayout from "../pages/FacebookLayout";
 
 export default function CandidateLayout({
+  user,
   onLogout,
   children,
   menuItems = candidateMenuItems,
+  eyebrow = "Espace candidat",
+  titlePrefix = "Bonjour",
+  avatarFallback = "C",
   shellClassName = "",
   showBottomMenu = true,
 }) {
@@ -23,31 +26,55 @@ export default function CandidateLayout({
   }, [sidebarOpen]);
 
   return (
-    <FacebookLayout headerOnly fullWidth>
-      <div className={`candidate-dashboard ${shellClassName}`.trim()}>
-        <DashboardMenu
-          role="candidate"
-          menuItems={menuItems}
-          onLogout={onLogout}
-          onClose={() => setSidebarOpen(false)}
-          className={sidebarOpen ? "cd-side-open" : ""}
-        />
+    <div className={`candidate-dashboard ${shellClassName}`.trim()}>
+      <DashboardMenu
+        role="candidate"
+        menuItems={menuItems}
+        onLogout={onLogout}
+        onClose={() => setSidebarOpen(false)}
+        className={sidebarOpen ? "cd-side-open" : ""}
+      />
 
-        {sidebarOpen && <div className="cd-overlay" onClick={() => setSidebarOpen(false)}></div>}
+      {sidebarOpen && <div className="cd-overlay" onClick={() => setSidebarOpen(false)}></div>}
 
-        <main className="cd-main">
-          <div className={`content${showBottomMenu ? " content--with-bottom-menu" : ""}`}>
-            {children}
+      <main className="cd-main">
+        <header className="cd-topbar">
+          <div className="topbar-left">
+            <p className="eyebrow">{eyebrow}</p>
+            <h2>
+              {titlePrefix} {user?.name || user?.companyName || "!"}
+            </h2>
           </div>
-        </main>
-        {showBottomMenu && (
-          <FacebookBottomNav
-            onNavigate={nav}
-            onSearch={() => nav("/fb")}
-            onMenu={() => setSidebarOpen((prev) => !prev)}
-          />
-        )}
-      </div>
-    </FacebookLayout>
+          <div className="topbar-actions">
+            <button
+              className="notif-btn mobile-only"
+              aria-label="Ouvrir le menu"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              ☰
+            </button>
+            <button className="notif-btn" onClick={() => nav("/notifications")} aria-label="Notifications">
+              🔔
+            </button>
+            <div className="avatar">
+              {user?.name?.charAt(0)?.toUpperCase() ||
+                user?.companyName?.charAt(0)?.toUpperCase() ||
+                avatarFallback}
+            </div>
+          </div>
+        </header>
+
+        <div className={`content${showBottomMenu ? " content--with-bottom-menu" : ""}`}>
+          {children}
+        </div>
+      </main>
+      {showBottomMenu && (
+        <FacebookBottomNav
+          onNavigate={nav}
+          onSearch={() => nav("/fb")}
+          onMenu={() => setSidebarOpen((prev) => !prev)}
+        />
+      )}
+    </div>
   );
 }
