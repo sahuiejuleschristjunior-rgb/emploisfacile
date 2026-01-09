@@ -898,7 +898,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
   const dashboardRole = isRecruiterSpace ? "recruiter" : "candidate";
   const dashboardTitle = isRecruiterSpace ? "Espace recruteur" : "Espace candidat";
-  const showDashboardHeader = isMobile && isCandidateSpace;
+  const showDashboardHeader = isMobile && (isCandidateSpace || isRecruiterSpace);
 
   const renderSearchContent = () => {
     if (loadingSearch)
@@ -1450,7 +1450,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  const header = hideHeader || hideRecruiterMobileChrome ? null : isCompleteProfile ? (
+  const header = hideHeader ? null : isCompleteProfile ? (
     <header className="fb-header fb-header--minimal">
       <div className="fb-header-inner fb-header-inner--minimal">
         <div className="fb-header-brand" onClick={() => nav("/fb")}>
