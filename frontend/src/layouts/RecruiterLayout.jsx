@@ -12,7 +12,7 @@ export default function RecruiterLayout({
   titlePrefix = "Bonjour",
   avatarFallback = "R",
   shellClassName = "",
-  showBottomMenu = false,
+  showBottomMenu = true,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const nav = useNavigate();
