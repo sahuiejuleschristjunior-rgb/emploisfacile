@@ -50,7 +50,7 @@ export default function JobConnectApplications() {
   };
 
   return (
-    <CandidateLayout user={data.user} onLogout={handleLogout}>
+    <CandidateLayout user={data.user} onLogout={handleLogout} shellClassName="page--candidate-applications">
       <section className="hero" id="recent">
         <div className="hero__info">
           <p className="eyebrow">Mes candidatures</p>
