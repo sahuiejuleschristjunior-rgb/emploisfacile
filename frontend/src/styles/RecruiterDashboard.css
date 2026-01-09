@@ -32,6 +32,32 @@ body {
   position: relative;
 }
 
+.page--dashboard {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  --dashboard-header-height: var(--candidate-header-height);
+  --dashboard-bottom-height: var(--fb-bottom-nav-height);
+}
+
+.page--dashboard .cd-main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: auto;
+}
+
+.page--dashboard .cd-topbar {
+  padding-top: calc(16px + var(--sat));
+  height: calc(var(--candidate-header-height) + var(--sat));
+}
+
+.page--dashboard .content {
+  padding-top: calc(var(--dashboard-header-height) + var(--sat));
+  padding-bottom: calc(var(--dashboard-bottom-height) + var(--sab));
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .cd-side {
   background: #141414;
   color: var(--text);
@@ -1490,6 +1516,7 @@ body {
 
   .page--dashboard .content {
     padding-top: 0;
+    padding-bottom: calc(var(--dashboard-bottom-height) + var(--sab));
   }
 
   .recruiter-dashboard-shell .cd-topbar {
