@@ -1,31 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-
-const recruiterMenu = [
-  { key: "home", label: "Accueil", path: "/fb" },
-  { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
-  { key: "create", label: "Publier une offre", path: "/recruiter/create-job" },
-  { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
-  { key: "applications", label: "Candidatures", path: "/recruiter/candidatures" },
-  { key: "profiles", label: "Profils candidats", path: "/recruiter/profils-candidats" },
-  { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
-  { key: "messages", label: "Messages", path: "/recruiter/messages" },
-  { key: "company", label: "Entreprise", path: "/profil" },
-  { key: "settings", label: "Paramètres", path: "/settings" },
-];
+import { useNavigate } from "react-router-dom";
+import DashboardMenu, { recruiterMenuItems } from "../components/DashboardMenu";
 
 export default function RecruiterLayout({
   user,
   onLogout,
   children,
-  menuItems = recruiterMenu,
+  menuItems = recruiterMenuItems,
   eyebrow = "Espace recruteur",
   titlePrefix = "Bonjour",
   avatarFallback = "R",
   shellClassName = "",
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
   const nav = useNavigate();
 
   useEffect(() => {
@@ -38,40 +25,13 @@ export default function RecruiterLayout({
 
   return (
     <div className={`candidate-dashboard ${shellClassName}`.trim()}>
-      <aside className={`cd-side ${sidebarOpen ? "cd-side-open" : ""}`}>
-        <div className="side-header">
-          <div className="side-brand">EmploisFacile</div>
-          <button
-            className="side-close mobile-only"
-            aria-label="Fermer le menu"
-            onClick={() => setSidebarOpen(false)}
-            type="button"
-          >
-            ✕
-          </button>
-        </div>
-        <nav className="side-nav">
-          {menuItems.map((item) => {
-            const active = location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.key}
-                to={item.path}
-                className={`side-link ${active ? "active" : ""}`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="side-bottom">
-          <button className="side-logout" onClick={onLogout}>
-            ⏻ Se déconnecter
-          </button>
-          <div className="side-footer">© 2025 EmploisFacile</div>
-        </div>
-      </aside>
+      <DashboardMenu
+        role="recruiter"
+        menuItems={menuItems}
+        onLogout={onLogout}
+        onClose={() => setSidebarOpen(false)}
+        className={sidebarOpen ? "cd-side-open" : ""}
+      />
 
       {sidebarOpen && <div className="cd-overlay" onClick={() => setSidebarOpen(false)}></div>}
 

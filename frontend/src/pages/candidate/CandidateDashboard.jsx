@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/CandidateDashboard.css";
 import CandidateLayout from "../../layouts/CandidateLayout";
+import FacebookLayout from "../FacebookLayout";
 import useCandidateDashboardData from "../../hooks/candidate/useCandidateDashboardData";
 import { createJobConversation } from "../../api/jobChatApi";
 import {
@@ -111,8 +112,9 @@ export default function CandidateDashboard() {
   }, [data.groupedApps.inReview]);
 
   return (
-    <CandidateLayout user={data.user} onLogout={logout} shellClassName="page--dashboard">
-      <section className="hero" id="recent">
+    <FacebookLayout headerOnly fullWidth>
+      <CandidateLayout user={data.user} onLogout={logout} shellClassName="page--dashboard">
+        <section className="hero" id="recent">
         <div className="hero__info">
           <div className="hero__badge">Action prioritaire</div>
           <h3>{nextAction.title}</h3>
@@ -325,6 +327,7 @@ export default function CandidateDashboard() {
           </div>
         </section>
       </div>
-    </CandidateLayout>
+      </CandidateLayout>
+    </FacebookLayout>
   );
 }
