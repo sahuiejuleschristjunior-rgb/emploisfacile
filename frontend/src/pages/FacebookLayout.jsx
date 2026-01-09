@@ -1417,23 +1417,28 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   );
 
   const dashboardMenuDrawer = showDashboardMenu ? (
-    <>
+    <div className="dashboard-drawer-root">
       <div
-        className="fb-dashboard-menu-backdrop"
+        className="dashboard-drawer-overlay"
         onClick={() => setShowDashboardMenu(false)}
       />
-      <DashboardMenu
-        role={dashboardRole}
-        onLogout={handleLogout}
-        onClose={() => setShowDashboardMenu(false)}
-        onNavigate={safeNavigate}
-        useLinks={false}
-        className="cd-side-open fb-dashboard-menu-panel"
+      <aside
+        className="dashboard-drawer"
         onTouchStart={handleDashboardMenuTouchStart}
         onTouchMove={handleDashboardMenuTouchMove}
         onTouchEnd={handleDashboardMenuTouchEnd}
-      />
-    </>
+      >
+        <DashboardMenu
+          as="div"
+          role={dashboardRole}
+          onLogout={handleLogout}
+          onClose={() => setShowDashboardMenu(false)}
+          onNavigate={safeNavigate}
+          useLinks={false}
+          className="cd-side-open"
+        />
+      </aside>
+    </div>
   ) : null;
 
   /* ============================================================
