@@ -142,6 +142,7 @@ export default function RecruiterDashboard() {
         titlePrefix="Bonjour"
         avatarFallback="R"
         shellClassName="page--dashboard"
+        showBottomMenu
         menuItems={[
           { key: "home", label: "Accueil", path: "/fb" },
           { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },

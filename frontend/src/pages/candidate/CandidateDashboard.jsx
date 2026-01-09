@@ -113,7 +113,12 @@ export default function CandidateDashboard() {
 
   return (
     <FacebookLayout headerOnly fullWidth>
-      <CandidateLayout user={data.user} onLogout={logout} shellClassName="page--dashboard">
+      <CandidateLayout
+        user={data.user}
+        onLogout={logout}
+        shellClassName="page--dashboard"
+        showBottomMenu
+      >
         <section className="hero" id="recent">
         <div className="hero__info">
           <div className="hero__badge">Action prioritaire</div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DashboardBottomMenu from "../components/DashboardBottomMenu";
 import DashboardMenu, { recruiterMenuItems } from "../components/DashboardMenu";
 
 export default function RecruiterLayout({
@@ -11,6 +12,7 @@ export default function RecruiterLayout({
   titlePrefix = "Bonjour",
   avatarFallback = "R",
   shellClassName = "",
+  showBottomMenu = false,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const nav = useNavigate();
@@ -66,8 +68,11 @@ export default function RecruiterLayout({
           </div>
         </header>
 
-        <div className="content">{children}</div>
+        <div className={`content${showBottomMenu ? " content--with-bottom-menu" : ""}`}>
+          {children}
+        </div>
       </main>
+      {showBottomMenu && <DashboardBottomMenu role="recruiter" />}
     </div>
   );
 }
