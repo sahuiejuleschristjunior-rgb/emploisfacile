@@ -1480,6 +1480,14 @@ body {
 }
 
 @media (max-width: 768px) {
+  .page--dashboard .cd-topbar {
+    display: none;
+  }
+
+  .page--dashboard .content {
+    padding-top: 0;
+  }
+
   .candidate-dashboard.job-chat-shell .cd-topbar {
     display: none;
   }

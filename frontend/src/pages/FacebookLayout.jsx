@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { io } from "socket.io-client";
 import PagesFeedSidebar from "../components/PagesFeedSidebar";
 import RightSidebar from "../components/RightSidebar";
+import DashboardMenu from "../components/DashboardMenu";
 import useJobSearch from "../hooks/useJobSearch";
 import {
   fetchRelationStatus,
@@ -52,7 +53,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     "/recruiter/create-job",
     "/recruiter/messages",
   ].some((path) => location.pathname.startsWith(path));
-  const hideHeader = isCandidateSpace || isRecruiterSpace;
+  const hideHeader = (isCandidateSpace || isRecruiterSpace) && !isMobile;
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
@@ -89,6 +90,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showJobsMenu, setShowJobsMenu] = useState(false);
   const [profileSwitcherOpen, setProfileSwitcherOpen] = useState(false);
+  const [showDashboardMenu, setShowDashboardMenu] = useState(false);
   const [pages, setPages] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
 
@@ -96,6 +98,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const notifIdsRef = useRef(new Set());
   const publicMessageIdsRef = useRef(new Set());
   const jobMessageIdsRef = useRef(new Set());
+  const dashboardMenuTouchStartX = useRef(null);
   const [toast, setToast] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -184,6 +187,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     setShowMobileSearch(false);
     setShowMobileMenu(false);
     setShowJobsMenu(false);
+    setShowDashboardMenu(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
@@ -195,6 +199,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     setSearchOpen(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
+    setShowDashboardMenu(false);
   }, [headerOnly]);
 
   useEffect(() => {
@@ -204,7 +209,17 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     setSearchOpen(false);
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
+    setShowDashboardMenu(false);
   }, [isJobsFeed]);
+
+  useEffect(() => {
+    if (!showDashboardMenu) return undefined;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showDashboardMenu]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -238,6 +253,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
       setIsDropdownOpen(false);
       setProfileSwitcherOpen(false);
       setShowJobsMenu(false);
+      setShowDashboardMenu(false);
 
       requestAnimationFrame(() => {
         nav(path, options);
@@ -863,6 +879,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     }
 
     setShowJobsDrawer(false);
+    setShowDashboardMenu(false);
     nav("/login", { replace: true });
 
     setTimeout(() => {
@@ -877,6 +894,9 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   };
 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
+  const dashboardRole = isRecruiterSpace ? "recruiter" : "candidate";
+  const dashboardTitle = isRecruiterSpace ? "Espace recruteur" : "Espace candidat";
+  const showDashboardHeader = isMobile && (isCandidateSpace || isRecruiterSpace);
 
   const renderSearchContent = () => {
     if (loadingSearch)
@@ -1336,6 +1356,86 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     </header>
   );
 
+  const handleDashboardMenuTouchStart = (event) => {
+    dashboardMenuTouchStartX.current = event.touches?.[0]?.clientX ?? null;
+  };
+
+  const handleDashboardMenuTouchMove = (event) => {
+    if (dashboardMenuTouchStartX.current === null) return;
+    const currentX = event.touches?.[0]?.clientX ?? dashboardMenuTouchStartX.current;
+    if (dashboardMenuTouchStartX.current - currentX > 60) {
+      setShowDashboardMenu(false);
+      dashboardMenuTouchStartX.current = null;
+    }
+  };
+
+  const handleDashboardMenuTouchEnd = () => {
+    dashboardMenuTouchStartX.current = null;
+  };
+
+  const dashboardMobileHeader = (
+    <header className="fb-header fb-header--dashboard-mobile">
+      <div className="fb-header-inner fb-header-inner--dashboard-mobile">
+        <div className="fb-header-dashboard-left">
+          <button
+            type="button"
+            className="fb-header-burger"
+            aria-label="Ouvrir le menu"
+            onClick={() => setShowDashboardMenu(true)}
+          >
+            ☰
+          </button>
+        </div>
+
+        <div className="fb-header-dashboard-title">{dashboardTitle}</div>
+
+        <div className="fb-header-dashboard-right">
+          <button
+            type="button"
+            className="fb-header-icon-btn notif-btn"
+            onClick={() => {
+              loadNotifications();
+              setIsDropdownOpen((v) => !v);
+            }}
+            aria-label="Notifications"
+          >
+            <FBIcon name="notif" size={22} />
+            {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+          </button>
+
+          <button
+            type="button"
+            className="fb-header-icon-btn"
+            onClick={() => setProfileSwitcherOpen((v) => !v)}
+            aria-label="Profil"
+          >
+            <div className="fb-header-avatar" style={avatarStyle} />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+
+  const dashboardMenuDrawer = showDashboardMenu ? (
+    <>
+      <div
+        className="fb-dashboard-menu-backdrop"
+        onClick={() => setShowDashboardMenu(false)}
+      />
+      <DashboardMenu
+        role={dashboardRole}
+        onLogout={handleLogout}
+        onClose={() => setShowDashboardMenu(false)}
+        onNavigate={safeNavigate}
+        useLinks={false}
+        className="cd-side-open fb-dashboard-menu-panel"
+        onTouchStart={handleDashboardMenuTouchStart}
+        onTouchMove={handleDashboardMenuTouchMove}
+        onTouchEnd={handleDashboardMenuTouchEnd}
+      />
+    </>
+  ) : null;
+
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
@@ -1351,6 +1451,8 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     </header>
   ) : isJobsFeed && isMobile ? (
     jobsMobileHeader
+  ) : showDashboardHeader ? (
+    dashboardMobileHeader
   ) : (
     <header
       className="fb-header"
@@ -1694,6 +1796,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     return (
       <div className={`jobs-mobile-layout${fullWidth ? " layout-fullscreen" : ""}`}>
         {header}
+        {dashboardMenuDrawer}
 
         <main className="jobs-mobile-content">
           {children || <Outlet context={outletContext} />}
@@ -1708,8 +1811,13 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
 
   if (isCompactLayout) {
     return (
-      <div className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}`}>
+      <div
+        className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}${
+          hideHeader ? " fb-compact-shell--no-header" : ""
+        }`}
+      >
         {header}
+        {dashboardMenuDrawer}
 
         <main className="fb-compact-body">
           {children || <Outlet context={outletContext} />}
@@ -1727,6 +1835,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
       className={`fb-app fb-app--with-bottom-nav${fullWidth ? " layout-fullscreen" : ""}`}
     >
       {header}
+      {dashboardMenuDrawer}
 
       {/* APP BODY */}
       <main className="fb-app-body">
