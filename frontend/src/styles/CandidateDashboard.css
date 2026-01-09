@@ -13,7 +13,7 @@
   --gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
   --candidate-shell-padding: 0px;
   --candidate-sidebar-width: 260px;
-  --candidate-header-height: var(--fb-header-height);
+  --candidate-header-height: 88px;
   --z-header: 100;
   --z-sidebar: 200;
   --z-burger: 1000;
@@ -43,8 +43,13 @@ body {
   height: auto;
 }
 
+.page--dashboard .cd-topbar {
+  padding-top: calc(16px + var(--sat));
+  height: calc(var(--candidate-header-height) + var(--sat));
+}
+
 .page--dashboard .content {
-  padding-top: var(--candidate-header-height);
+  padding-top: calc(var(--candidate-header-height) + var(--sat));
   padding-bottom: calc(16px + var(--sab));
   min-height: 100vh;
   min-height: 100dvh;
@@ -1362,7 +1367,7 @@ body {
 
 @media (max-width: 720px) {
   :root {
-    --candidate-header-height: var(--fb-header-height);
+    --candidate-header-height: 72px;
   }
 
   .content {
@@ -1378,8 +1383,13 @@ body {
     background: var(--bg);
   }
 
+  .page--dashboard .cd-topbar {
+    padding: calc(14px + var(--sat)) 16px 14px;
+    height: calc(var(--candidate-header-height) + var(--sat));
+  }
+
   .page--dashboard .content {
-    padding-top: var(--candidate-header-height);
+    padding-top: calc(var(--candidate-header-height) + var(--sat));
     padding-bottom: calc(16px + var(--sab));
   }
 
@@ -1403,7 +1413,7 @@ body {
   }
 
   .page--dashboard .content {
-    padding-top: var(--candidate-header-height);
+    padding-top: 0;
   }
 
   .candidate-dashboard.job-chat-shell .cd-topbar {
