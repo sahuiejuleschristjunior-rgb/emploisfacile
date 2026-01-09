@@ -1535,7 +1535,7 @@ body {
   }
 
   .recruiter-dashboard-shell .content--with-bottom-menu {
-    padding-bottom: 16px;
+    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab) + 16px);
   }
 
   .recruiter-dashboard-header {

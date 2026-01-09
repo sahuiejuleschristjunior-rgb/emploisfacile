@@ -978,6 +978,7 @@
   .fb-app-body {
     padding-top: var(--fb-header-height);
     height: var(--app-height);
+    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab));
   }
 
   .fb-compact-body {
