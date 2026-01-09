@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/RecruiterDashboard.css";
 import RecruiterLayout from "../../layouts/RecruiterLayout";
-import FacebookLayout from "../FacebookLayout";
 import useRecruiterDashboardData from "../../hooks/recruiter/useRecruiterDashboardData";
 import { createJobConversation } from "../../api/jobChatApi";
 import { RecruiterPipeline } from "../../components/jobconnect/JobConnectWidgets";
@@ -134,27 +133,23 @@ export default function RecruiterDashboard() {
   }, [data.activeJobs, data.pendingReview, data.upcomingInterviews, nav]);
 
   return (
-    <FacebookLayout headerOnly fullWidth>
-      <RecruiterLayout
-        user={data.user}
-        onLogout={logout}
-        eyebrow="Espace recruteur"
-        titlePrefix="Bonjour"
-        avatarFallback="R"
-        shellClassName="page--dashboard"
-        menuItems={[
-          { key: "home", label: "Accueil", path: "/fb" },
-          { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },
-          { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
-          { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
-          { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
-          { key: "profiles", label: "Profils candidats", path: "/recruiter/profils-candidats" },
-          { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
-          { key: "messages", label: "Messages", path: "/recruiter/messages" },
-          { key: "profil", label: "Entreprise", path: "/profil" },
-          { key: "settings", label: "Paramètres", path: "/settings" },
-        ]}
-      >
+    <RecruiterLayout
+      user={data.user}
+      onLogout={logout}
+      shellClassName="page--dashboard"
+      menuItems={[
+        { key: "home", label: "Accueil", path: "/fb" },
+        { key: "create", label: "➕ Créer une nouvelle offre", path: "/recruiter/create-job" },
+        { key: "dashboard", label: "Tableau de bord", path: "/recruiter/dashboard" },
+        { key: "offers", label: "Mes offres", path: "/recruiter/offres" },
+        { key: "candidatures", label: "Candidatures", path: "/recruiter/candidatures" },
+        { key: "profiles", label: "Profils candidats", path: "/recruiter/profils-candidats" },
+        { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
+        { key: "messages", label: "Messages", path: "/recruiter/messages" },
+        { key: "profil", label: "Entreprise", path: "/profil" },
+        { key: "settings", label: "Paramètres", path: "/settings" },
+      ]}
+    >
         <section className="hero" id="recent">
         <div className="hero__info">
           <div className="hero__badge">Action prioritaire</div>
@@ -450,7 +445,6 @@ export default function RecruiterDashboard() {
           </div>
         )}
       </section>
-      </RecruiterLayout>
-    </FacebookLayout>
+    </RecruiterLayout>
   );
 }

@@ -13,7 +13,7 @@
   --gradient: linear-gradient(135deg, #1f3b73, #7c3aed);
   --candidate-shell-padding: 0px;
   --candidate-sidebar-width: 260px;
-  --candidate-header-height: 88px;
+  --candidate-header-height: var(--fb-header-height);
   --z-header: 100;
   --z-sidebar: 200;
   --z-burger: 1000;
@@ -1449,7 +1449,7 @@ body {
 
 @media (max-width: 720px) {
   :root {
-    --candidate-header-height: 72px;
+    --candidate-header-height: var(--fb-header-height);
   }
 
   .content {
@@ -1485,7 +1485,7 @@ body {
   }
 
   .page--dashboard .content {
-    padding-top: 0;
+    padding-top: var(--candidate-header-height);
   }
 
   .candidate-dashboard.job-chat-shell .cd-topbar {
