@@ -1484,6 +1484,24 @@ body {
 }
 
 @media (max-width: 768px) {
+  .page--dashboard {
+    min-height: calc(var(--app-height) - var(--fb-header-height));
+    height: calc(var(--app-height) - var(--fb-header-height));
+  }
+
+  .page--dashboard .cd-main {
+    height: calc(
+      var(--app-height) - var(--fb-header-height) - var(--fb-bottom-nav-height) -
+        var(--sab)
+    );
+  }
+
+  .page--dashboard .content {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .page--dashboard .cd-topbar {
     display: none;
   }
@@ -1493,11 +1511,11 @@ body {
   }
 
   .recruiter-dashboard-shell .cd-topbar {
-    display: flex;
+    display: none;
   }
 
   .recruiter-dashboard-shell .content {
-    padding-top: 16px;
+    padding-top: 0;
   }
 
   .candidate-dashboard.job-chat-shell .cd-topbar {
@@ -1510,7 +1528,7 @@ body {
   }
 
   .recruiter-dashboard-shell .fb-bottom-nav {
-    display: none;
+    display: block;
   }
 
   .recruiter-dashboard-shell .content--with-bottom-menu {

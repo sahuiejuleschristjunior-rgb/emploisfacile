@@ -1408,6 +1408,24 @@ body {
 }
 
 @media (max-width: 768px) {
+  .page--dashboard {
+    min-height: calc(var(--app-height) - var(--fb-header-height));
+    height: calc(var(--app-height) - var(--fb-header-height));
+  }
+
+  .page--dashboard .cd-main {
+    height: calc(
+      var(--app-height) - var(--fb-header-height) - var(--fb-bottom-nav-height) -
+        var(--sab)
+    );
+  }
+
+  .page--dashboard .content {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .candidate-dashboard .cd-topbar {
     display: none;
   }
