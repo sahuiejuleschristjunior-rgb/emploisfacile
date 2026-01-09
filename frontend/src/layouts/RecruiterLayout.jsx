@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardBottomMenu from "../components/DashboardBottomMenu";
 import DashboardMenu, { recruiterMenuItems } from "../components/DashboardMenu";
+import FacebookBottomNav from "../components/FacebookBottomNav";
 
 export default function RecruiterLayout({
   user,
@@ -72,7 +72,13 @@ export default function RecruiterLayout({
           {children}
         </div>
       </main>
-      {showBottomMenu && <DashboardBottomMenu role="recruiter" />}
+      {showBottomMenu && (
+        <FacebookBottomNav
+          onNavigate={nav}
+          onSearch={() => nav("/fb")}
+          onMenu={() => setSidebarOpen((prev) => !prev)}
+        />
+      )}
     </div>
   );
 }

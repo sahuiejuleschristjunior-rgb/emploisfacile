@@ -791,6 +791,10 @@
   .fb-layout {
     padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab));
   }
+
+  .content--with-bottom-menu {
+    padding-bottom: calc(var(--fb-bottom-nav-height) + var(--sab) + 16px);
+  }
 }
 
 @media (max-width: 600px) {
