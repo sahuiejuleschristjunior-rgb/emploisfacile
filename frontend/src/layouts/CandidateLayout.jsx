@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DashboardBottomMenu from "../components/DashboardBottomMenu";
 import DashboardMenu, { candidateMenuItems } from "../components/DashboardMenu";
 
 export default function CandidateLayout({
@@ -11,6 +12,7 @@ export default function CandidateLayout({
   titlePrefix = "Bonjour",
   avatarFallback = "C",
   shellClassName = "",
+  showBottomMenu = false,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const nav = useNavigate();
@@ -62,8 +64,11 @@ export default function CandidateLayout({
           </div>
         </header>
 
-        <div className="content">{children}</div>
+        <div className={`content${showBottomMenu ? " content--with-bottom-menu" : ""}`}>
+          {children}
+        </div>
       </main>
+      {showBottomMenu && <DashboardBottomMenu role="candidate" />}
     </div>
   );
 }
