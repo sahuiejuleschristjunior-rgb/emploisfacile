@@ -54,6 +54,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     "/recruiter/create-job",
     "/recruiter/messages",
   ].some((path) => location.pathname.startsWith(path));
+  const hideRecruiterMobileChrome = isRecruiterSpace && isMobile;
   const hideHeader = (isCandidateSpace || isRecruiterSpace) && !isMobile;
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
@@ -897,7 +898,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const avatarStyle = getAvatarStyle(currentUser?.avatar);
   const dashboardRole = isRecruiterSpace ? "recruiter" : "candidate";
   const dashboardTitle = isRecruiterSpace ? "Espace recruteur" : "Espace candidat";
-  const showDashboardHeader = isMobile && (isCandidateSpace || isRecruiterSpace);
+  const showDashboardHeader = isMobile && isCandidateSpace;
 
   const renderSearchContent = () => {
     if (loadingSearch)
@@ -1449,7 +1450,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   /* ============================================================
      🚀 RENDER UI
   ============================================================ */
-  const header = hideHeader ? null : isCompleteProfile ? (
+  const header = hideHeader || hideRecruiterMobileChrome ? null : isCompleteProfile ? (
     <header className="fb-header fb-header--minimal">
       <div className="fb-header-inner fb-header-inner--minimal">
         <div className="fb-header-brand" onClick={() => nav("/fb")}>
@@ -1707,6 +1708,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
       isJobsFeed={isJobsFeed}
     />
   );
+  const showBottomNav = !hideRecruiterMobileChrome;
 
   const outletContext = isJobsFeed ? jobsSearchState : undefined;
 
@@ -1741,7 +1743,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
           {children || <Outlet context={outletContext} />}
         </main>
 
-        {isJobsFeed && bottomNav}
+        {isJobsFeed && showBottomNav && bottomNav}
 
         {toast && <div className="fb-toast">{toast}</div>}
       </div>
@@ -1782,7 +1784,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
       </main>
 
       {/* BOTTOM NAV */}
-      {bottomNav}
+      {showBottomNav && bottomNav}
 
       {/* FULLSCREEN MENU */}
       {showMobileMenu === true && !isJobsFeed && (
