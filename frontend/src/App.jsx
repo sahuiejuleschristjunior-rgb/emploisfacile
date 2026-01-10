@@ -355,11 +355,11 @@ function AndroidBackButtonHandler() {
     let isMounted = true;
     let removeHandler = null;
 
-    const registerBackButtonHandler = async () => {
-      const { App: CapacitorApp } = await import(/* @vite-ignore */ "@capacitor/app");
-      if (!isMounted) return;
+    const registerBackButtonHandler = () => {
+      const capacitorApp = Capacitor.Plugins?.App;
+      if (!isMounted || !capacitorApp?.addListener) return;
 
-      const handler = CapacitorApp.addListener("backButton", ({ canGoBack }) => {
+      const handler = capacitorApp.addListener("backButton", ({ canGoBack }) => {
         const historyIndex = typeof window !== "undefined" ? window.history.state?.idx : null;
         const hasNavigationHistory =
           Boolean(canGoBack) ||
@@ -374,7 +374,7 @@ function AndroidBackButtonHandler() {
         const now = Date.now();
         if (now - lastBackPressRef.current < 2000) {
           setToastVisible(false);
-          CapacitorApp.exitApp();
+          capacitorApp.exitApp();
           return;
         }
 
