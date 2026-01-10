@@ -70,7 +70,6 @@ import { ActiveConversationProvider } from "./context/ActiveConversationContext"
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoadingOverlay from "./components/AppLoadingOverlay";
 import { getSafeAreaValues, isSafeAreaDebugEnabled } from "./utils/safeArea";
-import useAndroidBackButton from "./hooks/useAndroidBackButton";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -125,7 +124,6 @@ export default function App() {
               <NotificationProvider>
                 <BrowserRouter>
                   <SafeAreaRouteLogger />
-                  <AndroidBackButtonHandler />
                   <Routes>
                 {/* Landing */}
                 <Route
@@ -338,11 +336,6 @@ function SafeAreaRouteLogger() {
     });
   }, [location.pathname, location.search]);
 
-  return null;
-}
-
-function AndroidBackButtonHandler() {
-  useAndroidBackButton();
   return null;
 }
 
