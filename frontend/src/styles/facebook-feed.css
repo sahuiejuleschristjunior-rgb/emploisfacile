@@ -7,6 +7,9 @@
   padding: 12px 8px 80px;
   max-width: 600px;
   margin: 0 auto;
+  background: #18191a;
+  box-sizing: border-box;
+  min-height: 100%;
 }
 
 /* ================================
@@ -4896,7 +4899,7 @@
 /* ===================================================== */
 @media (max-width: 768px) {
   .fb-feed {
-    padding: 0 0 72px;
+    padding: 0 0 calc(var(--fb-bottom-nav-height) + var(--sab));
     max-width: 100%;
   }
 
