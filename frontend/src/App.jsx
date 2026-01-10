@@ -3,7 +3,6 @@
 // ================================
 import { Component, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
 import ChangePassword from "./pages/ChangePassword";
@@ -353,31 +352,46 @@ function AndroidBackButtonHandler() {
       return undefined;
     }
 
-    const handler = CapacitorApp.addListener("backButton", ({ canGoBack }) => {
-      const historyIndex = typeof window !== "undefined" ? window.history.state?.idx : null;
-      const hasNavigationHistory =
-        Boolean(canGoBack) ||
-        (typeof historyIndex === "number" && historyIndex > 0) ||
-        (typeof window !== "undefined" && window.history.length > 1);
+    let isMounted = true;
+    let removeHandler = null;
 
-      if (hasNavigationHistory) {
-        navigate(-1);
-        return;
-      }
+    const registerBackButtonHandler = async () => {
+      const { App: CapacitorApp } = await import(/* @vite-ignore */ "@capacitor/app");
+      if (!isMounted) return;
 
-      const now = Date.now();
-      if (now - lastBackPressRef.current < 2000) {
-        setToastVisible(false);
-        CapacitorApp.exitApp();
-        return;
-      }
+      const handler = CapacitorApp.addListener("backButton", ({ canGoBack }) => {
+        const historyIndex = typeof window !== "undefined" ? window.history.state?.idx : null;
+        const hasNavigationHistory =
+          Boolean(canGoBack) ||
+          (typeof historyIndex === "number" && historyIndex > 0) ||
+          (typeof window !== "undefined" && window.history.length > 1);
 
-      lastBackPressRef.current = now;
-      setToastVisible(true);
-    });
+        if (hasNavigationHistory) {
+          navigate(-1);
+          return;
+        }
+
+        const now = Date.now();
+        if (now - lastBackPressRef.current < 2000) {
+          setToastVisible(false);
+          CapacitorApp.exitApp();
+          return;
+        }
+
+        lastBackPressRef.current = now;
+        setToastVisible(true);
+      });
+
+      removeHandler = () => handler.remove();
+    };
+
+    registerBackButtonHandler();
 
     return () => {
-      handler.remove();
+      isMounted = false;
+      if (removeHandler) {
+        removeHandler();
+      }
     };
   }, [navigate]);
 
