@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
 const ROOT_PATHS = new Set([
@@ -30,37 +31,24 @@ export default function useAndroidBackButton() {
       return undefined;
     }
 
-    let listener;
-    let isActive = true;
+    const listener = CapacitorApp.addListener("backButton", (event) => {
+      const currentPath = normalizePath(locationRef.current.pathname);
+      const isRootPath = ROOT_PATHS.has(currentPath);
+      const canGoBack = event?.canGoBack ?? window.history.length > 1;
 
-    const setupListener = async () => {
-      const { App } = await import("@capacitor/app");
-      if (!isActive) {
+      if (!isRootPath && canGoBack) {
+        navigate(-1);
         return;
       }
 
-      listener = App.addListener("backButton", (event) => {
-        const currentPath = normalizePath(locationRef.current.pathname);
-        const isRootPath = ROOT_PATHS.has(currentPath);
-        const canGoBack = event?.canGoBack ?? window.history.length > 1;
-
-        if (!isRootPath && canGoBack) {
-          navigate(-1);
-          return;
-        }
-
-        const shouldExit = window.confirm("Voulez-vous quitter l'application ?");
-        if (shouldExit) {
-          App.exitApp();
-        }
-      });
-    };
-
-    setupListener();
+      const shouldExit = window.confirm("Voulez-vous quitter l'application ?");
+      if (shouldExit) {
+        CapacitorApp.exitApp();
+      }
+    });
 
     return () => {
-      isActive = false;
-      listener?.remove();
+      listener.remove();
     };
   }, [navigate]);
 }
