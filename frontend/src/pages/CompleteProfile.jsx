@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getImageUrl } from "../utils/imageUtils";
@@ -35,6 +35,8 @@ export default function CompleteProfile() {
   const [coverPreview, setCoverPreview] = useState(() => getImageUrl(user?.coverPhoto));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const coverInputId = useId();
+  const avatarInputId = useId();
 
   useEffect(() => {
     if (profileCompleted) {
@@ -261,6 +263,20 @@ export default function CompleteProfile() {
 
       <form className="complete-profile__card" onSubmit={handleSubmit}>
         {error && <div className="complete-profile__error">{error}</div>}
+        <input
+          id={coverInputId}
+          type="file"
+          className="complete-profile__file-input"
+          accept="image/*"
+          onChange={handleCoverChange}
+        />
+        <input
+          id={avatarInputId}
+          type="file"
+          className="complete-profile__file-input"
+          accept="image/*"
+          onChange={handleAvatarChange}
+        />
 
         <div className="complete-profile__media">
           <div className="complete-profile__cover">
@@ -271,9 +287,8 @@ export default function CompleteProfile() {
                 Ajoutez une photo de couverture
               </div>
             )}
-            <label className="complete-profile__upload">
+            <label className="complete-profile__upload" htmlFor={coverInputId}>
               Photo de couverture
-              <input type="file" accept="image/*" onChange={handleCoverChange} />
             </label>
           </div>
 
@@ -285,9 +300,8 @@ export default function CompleteProfile() {
                 <span>🙂</span>
               )}
             </div>
-            <label className="complete-profile__upload">
+            <label className="complete-profile__upload" htmlFor={avatarInputId}>
               Photo de profil
-              <input type="file" accept="image/*" onChange={handleAvatarChange} />
             </label>
           </div>
         </div>
