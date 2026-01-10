@@ -523,6 +523,10 @@
   box-sizing: border-box;
 }
 
+.fb-layout--facebook-feed {
+  padding: 0;
+}
+
 /* ========================= */
 /* LEFT SIDEBAR          */
 /* ========================= */
