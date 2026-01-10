@@ -1772,7 +1772,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
 
       {/* APP BODY */}
       <main className="fb-app-body">
-        <div className={`fb-layout${isFacebookFeed ? " fb-layout--facebook-feed" : ""}`}>
+        <div className="fb-layout">
           <aside className="fb-left-column">
             {leftMenuContent}
           </aside>
