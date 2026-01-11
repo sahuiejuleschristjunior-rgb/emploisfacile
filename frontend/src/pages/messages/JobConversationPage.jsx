@@ -86,6 +86,15 @@ export default function JobConversationPage() {
   const basePath = role === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
 
   useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    if (!window.matchMedia("(max-width: 768px)").matches) return undefined;
+    document.body.classList.add("job-chat-fullscreen");
+    return () => {
+      document.body.classList.remove("job-chat-fullscreen");
+    };
+  }, []);
+
+  useEffect(() => {
     deleteByType?.("job");
   }, [deleteByType]);
 
