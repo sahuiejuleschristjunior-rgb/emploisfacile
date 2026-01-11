@@ -375,6 +375,14 @@
 }
 
 @media (max-width: 768px) {
+  body.job-chat-fullscreen {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: hidden;
+    touch-action: none;
+  }
+
   body.job-chat-fullscreen .fb-header {
     display: none;
   }
