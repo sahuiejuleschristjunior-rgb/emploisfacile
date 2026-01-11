@@ -2870,7 +2870,7 @@ export default function Messages() {
             <h3>Commence la conversation 👋</h3>
           </div>
         ) : (
-          <div className="chat-panel">
+          <div className="chat-panel job-messages-root">
             {/* HEADER */}
             <div className="chat-header">
               <button
@@ -2929,7 +2929,7 @@ export default function Messages() {
         </div>
 
             {/* BODY */}
-            <div className="chat-scroll" ref={chatBodyRef}>
+            <div className="chat-scroll messages-scroll-area" ref={chatBodyRef}>
               <div className="chat-body">
                 {topPinnedMessage && (
                   <div className="pinned-banner">
@@ -3131,7 +3131,7 @@ export default function Messages() {
               </div>
             )}
             <div
-              className="chat-input-bar"
+              className="chat-input-bar message-input-bar"
               onMouseMove={updateRecordingDrag}
               onTouchMove={updateRecordingDrag}
               onMouseUp={
