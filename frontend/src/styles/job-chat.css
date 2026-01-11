@@ -381,6 +381,27 @@
 }
 
 @media (max-width: 768px) {
+  body.job-chat-fullscreen {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body.job-chat-fullscreen .fb-header {
+    display: none;
+  }
+
+  body.job-chat-fullscreen .fb-compact-body {
+    min-height: var(--app-height);
+    padding-top: 0;
+  }
+
+  body.job-chat-fullscreen .job-chat-page {
+    height: var(--app-height);
+  }
+
   .job-chat-page {
     border-radius: 0;
     padding: 0;
@@ -393,7 +414,7 @@
 
   .job-chat-header {
     z-index: 5;
-    padding: 16px;
+    padding: calc(16px + var(--sat)) 16px 16px;
     background: #141414;
     border-bottom: 1px solid #1f2a44;
   }
