@@ -8,8 +8,7 @@ import {
 } from "../../api/jobChatApi";
 import MessageList from "../../components/jobchat/MessageList";
 import MessageInput from "../../components/jobchat/MessageInput";
-import CandidateLayout from "../../layouts/CandidateLayout";
-import RecruiterLayout from "../../layouts/RecruiterLayout";
+import FacebookLayout from "../FacebookLayout";
 import "../../styles/job-chat.css";
 import { useActiveConversation } from "../../context/ActiveConversationContext";
 import { useNotifications } from "../../context/NotificationContext";
@@ -86,22 +85,9 @@ export default function JobConversationPage() {
 
   const basePath = role === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    nav("/login");
-  };
-
   useEffect(() => {
     deleteByType?.("job");
   }, [deleteByType]);
-
-  useEffect(() => {
-    document.body.classList.add("job-chat-fullscreen");
-    return () => {
-      document.body.classList.remove("job-chat-fullscreen");
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -477,11 +463,9 @@ export default function JobConversationPage() {
     socket.emit("typing", { to: getId(otherParticipant), isTyping: typingFlag });
   };
 
-  const Layout = role === "recruiter" ? RecruiterLayout : CandidateLayout;
-
   if (accessDenied) {
     return (
-      <Layout user={user} onLogout={handleLogout} shellClassName="job-chat-shell">
+      <FacebookLayout fullWidth>
         <div className="job-chat-denied">
           <h3>Accès refusé</h3>
           <p>Vous n'êtes pas autorisé à accéder à cette conversation.</p>
@@ -489,12 +473,12 @@ export default function JobConversationPage() {
             Retour aux messages
           </button>
         </div>
-      </Layout>
+      </FacebookLayout>
     );
   }
 
   return (
-    <Layout user={user} onLogout={handleLogout} shellClassName="job-chat-shell">
+    <FacebookLayout fullWidth>
       <div className="job-chat-page">
         <header className="job-chat-header">
           <button className="ghost-link" onClick={() => nav(basePath)}>
@@ -512,17 +496,19 @@ export default function JobConversationPage() {
         {loading && <div className="job-chat-loading">Chargement…</div>}
         {error && <div className="job-chat-error">{error}</div>}
 
-        <MessageList
-          ref={chatListRef}
-          messages={messages}
-          currentUserId={user?._id}
-          endRef={messagesEndRef}
-          onScroll={handleScroll}
-        />
+        <div className="job-chat-body">
+          <MessageList
+            ref={chatListRef}
+            messages={messages}
+            currentUserId={user?._id}
+            endRef={messagesEndRef}
+            onScroll={handleScroll}
+          />
 
-        {isTyping && (
-          <div className="job-chat-typing">{otherName} est en train d'écrire…</div>
-        )}
+          {isTyping && (
+            <div className="job-chat-typing">{otherName} est en train d'écrire…</div>
+          )}
+        </div>
 
         <MessageInput
           onSend={handleSend}
@@ -532,6 +518,6 @@ export default function JobConversationPage() {
           disabled={!conversationId || !jobId || !otherParticipant}
         />
       </div>
-    </Layout>
+    </FacebookLayout>
   );
 }
