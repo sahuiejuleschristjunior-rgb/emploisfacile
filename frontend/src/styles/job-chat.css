@@ -418,7 +418,7 @@
   .job-chat-messages {
     max-height: none;
     overflow-y: auto;
-    padding: 16px;
+    padding: 16px 16px 0;
   }
 
   .job-chat-typing {
