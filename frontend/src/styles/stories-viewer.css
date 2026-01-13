@@ -6,7 +6,6 @@
     left: 0;
     width: 100dvw;
     height: 100dvh;
-    height: 100svh;
     background-color: rgba(0, 0, 0, 0.95); /* Fond très sombre */
     display: flex;
     flex-direction: column;
@@ -25,8 +24,7 @@
 
 .story-media {
     max-width: 100%;
-    max-height: calc(100dvh - 160px);
-    max-height: calc(100svh - 160px);
+    max-height: calc(100dvh - 140px);
     object-fit: contain; /* Assure que le média est visible sans être coupé */
     position: absolute;
     top: 50%;
