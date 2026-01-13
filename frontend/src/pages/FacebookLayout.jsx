@@ -1822,76 +1822,64 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
           </div>
 
           <div className="fs-menu-grid">
-            <div
+            <button
+              type="button"
               className="fs-item"
-              onClick={() => {
-                nav("/emplois");
-                setShowMobileMenu(false);
-              }}
+              onClick={() => safeNavigate("/emplois")}
             >
               <FBIcon name="jobs" size={22} />
               <span>Emplois</span>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               className="fs-item"
-              onClick={() => {
-                nav("/pages/me");
-                setShowMobileMenu(false);
-              }}
+              onClick={() => safeNavigate("/pages/me")}
             >
               <FBIcon name="profile" size={22} />
               <span>Pages</span>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               className="fs-item"
-              onClick={() => {
-                nav("/fb");
-                setShowMobileMenu(false);
-              }}
+              onClick={() => safeNavigate("/fb")}
             >
               <FBIcon name="home" size={22} />
               <span>Acceuil</span>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               className="fs-item"
-              onClick={() => {
-                nav("/fb/relations");
-                setShowMobileMenu(false);
-              }}
+              onClick={() => safeNavigate("/fb/relations")}
             >
               <FBIcon name="friends" size={22} />
               <span>Relation</span>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               className="fs-item"
-              onClick={() => {
-                nav("/fb/dashboard");
-                setShowMobileMenu(false);
-              }}
+              onClick={() => safeNavigate("/fb/dashboard")}
             >
               <FBIcon name="dashboard" size={22} />
               <span>Tableau de bord</span>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               className="fs-item"
-              onClick={() => {
-                nav("/settings");
-                setShowMobileMenu(false);
-              }}
+              onClick={() => safeNavigate("/settings")}
             >
               <FBIcon name="settings" size={22} />
               <span>Paramètres</span>
-            </div>
+            </button>
 
-            <div className="fs-item logout" onClick={handleLogout}>
+            <button type="button" className="fs-item logout" onClick={handleLogout}>
               <FBIcon name="logout" size={22} />
               <span>Déconnexion</span>
-            </div>
+            </button>
           </div>
         </div>
       )}

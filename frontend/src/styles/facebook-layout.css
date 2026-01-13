@@ -1714,6 +1714,10 @@ body { background: #18191a !important; }
   border-radius: 12px;
   text-align: center;
   color: #fff;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
 }
 
 .fs-item span {
