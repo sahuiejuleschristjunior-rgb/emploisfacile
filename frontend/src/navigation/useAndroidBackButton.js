@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
-import { HOME_PATH, isNavigationDebugEnabled } from "./constants";
+import { DASHBOARD_PATH, HOME_PATH, isNavigationDebugEnabled } from "./constants";
 import { useNavigationStack } from "./NavigationStackProvider";
 
 const isAndroidNative = () =>
@@ -26,6 +26,16 @@ const SHEET_SELECTORS = [
   ".reaction-picker",
 ];
 
+const DASHBOARD_PATHS = [
+  DASHBOARD_PATH,
+  "/candidate/dashboard",
+  "/recruiter/dashboard",
+  "/jobconnect/dashboard",
+];
+
+const buildRouteKey = (location) =>
+  `${location?.pathname ?? ""}${location?.search ?? ""}${location?.hash ?? ""}`;
+
 const tryCloseOverlay = () => {
   if (typeof document === "undefined") return false;
 
@@ -45,6 +55,22 @@ const tryCloseOverlay = () => {
   return false;
 };
 
+const showExitPrompt = async (message) => {
+  if (typeof window !== "undefined") {
+    const toastPlugin = window?.Capacitor?.Plugins?.Toast;
+    if (toastPlugin?.show) {
+      try {
+        await toastPlugin.show({ text: message, duration: "short" });
+        return;
+      } catch (error) {
+        console.debug("[android-back] toast failed", error);
+      }
+    }
+  }
+
+  console.log(message);
+};
+
 export default function useAndroidBackButton() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +80,7 @@ export default function useAndroidBackButton() {
   const locationRef = useRef(location);
   const overlayCloseRef = useRef(overlayCloseHandler);
   const debugEnabledRef = useRef(isNavigationDebugEnabled());
+  const lastExitAttemptRef = useRef(0);
 
   useEffect(() => {
     navigateRef.current = navigate;
@@ -65,6 +92,7 @@ export default function useAndroidBackButton() {
 
   useEffect(() => {
     locationRef.current = location;
+    lastExitAttemptRef.current = 0;
   }, [location]);
 
   useEffect(() => {
@@ -85,6 +113,7 @@ export default function useAndroidBackButton() {
         const handler = App.addListener("backButton", () => {
           const currentLocation = locationRef.current;
           const currentPath = currentLocation?.pathname || "";
+          const currentRouteKey = buildRouteKey(currentLocation);
           const currentStack = stackRef.current || [];
 
           const overlayHandled =
@@ -100,23 +129,68 @@ export default function useAndroidBackButton() {
             return;
           }
 
+          if (currentPath === HOME_PATH) {
+            const now = Date.now();
+            const elapsed = now - lastExitAttemptRef.current;
+            if (elapsed < 2000) {
+              if (debugEnabledRef.current) {
+                console.debug("[android-back] exit app", {
+                  route: currentPath,
+                  stackLength: currentStack.length,
+                  action: "exit-app",
+                });
+              }
+              App.exitApp();
+              return;
+            }
+
+            lastExitAttemptRef.current = now;
+            showExitPrompt("Appuyez à nouveau pour quitter");
+            if (debugEnabledRef.current) {
+              console.debug("[android-back] exit prompt", {
+                route: currentPath,
+                stackLength: currentStack.length,
+                action: "exit-prompt",
+              });
+            }
+            return;
+          }
+
           if (currentStack.length > 1) {
             if (debugEnabledRef.current) {
               console.debug("[android-back] navigate back", {
                 route: currentPath,
                 stackLength: currentStack.length,
+                action: "navigate-back",
               });
             }
             navigateRef.current(-1);
+            setTimeout(() => {
+              const nextRouteKey = buildRouteKey(locationRef.current);
+              if (nextRouteKey === currentRouteKey) {
+                const fallbackTarget =
+                  currentStack[currentStack.length - 2] || HOME_PATH;
+                if (debugEnabledRef.current) {
+                  console.debug("[android-back] fallback navigate", {
+                    route: currentPath,
+                    stackLength: currentStack.length,
+                    action: "fallback",
+                    target: fallbackTarget,
+                  });
+                }
+                navigateRef.current(fallbackTarget);
+              }
+            }, 80);
             return;
           }
 
-          if (currentPath !== HOME_PATH) {
+          if (DASHBOARD_PATHS.includes(currentPath)) {
             if (debugEnabledRef.current) {
-              console.debug("[android-back] go home", {
+              console.debug("[android-back] dashboard to home", {
                 route: currentPath,
                 stackLength: currentStack.length,
                 home: HOME_PATH,
+                action: "dashboard-home",
               });
             }
             navigateRef.current(HOME_PATH);
@@ -124,13 +198,15 @@ export default function useAndroidBackButton() {
           }
 
           if (debugEnabledRef.current) {
-            console.debug("[android-back] exit app", {
+            console.debug("[android-back] go home", {
               route: currentPath,
               stackLength: currentStack.length,
+              home: HOME_PATH,
+              action: "home",
             });
           }
 
-          App.exitApp();
+          navigateRef.current(HOME_PATH);
         });
 
         removeHandler = () => handler.remove();
