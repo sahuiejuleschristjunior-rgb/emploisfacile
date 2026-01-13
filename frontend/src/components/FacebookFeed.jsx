@@ -3,6 +3,7 @@ import StoriesFB from "../components/StoriesFB";
 import CreatePostFB from "./CreatePostFB";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import PullToRefresh from "react-simple-pull-to-refresh";
 import "../styles/facebook-feed.css";
 import "../styles/post.css";
 import { getImageUrl } from "../utils/imageUtils";
@@ -232,7 +233,7 @@ export default function FacebookFeed() {
   /* =================================================================
         LOAD POSTS
   ================================================================= */
-  const loadPosts = async (pageToLoad = page, isInitial = false) => {
+  const loadPosts = useCallback(async (pageToLoad = page, isInitial = false) => {
     try {
       if (isInitial) setLoadingInitial(true);
       else setLoadingMore(true);
@@ -258,11 +259,16 @@ export default function FacebookFeed() {
     } finally {
       isInitial ? setLoadingInitial(false) : setLoadingMore(false);
     }
-  };
+  }, [API_URL, filterVisiblePosts, limit, page, token]);
 
   useEffect(() => {
     loadPosts(1, true);
-  }, []);
+  }, [loadPosts]);
+
+  const refreshFeed = useCallback(async () => {
+    setHasMore(true);
+    await loadPosts(1, true);
+  }, [loadPosts]);
 
   const loadLatestJob = useCallback(async () => {
     if (!token) return;
@@ -364,22 +370,19 @@ export default function FacebookFeed() {
   /* =================================================================
         SCROLL INFINI
   ================================================================= */
-  const handleScroll = useCallback(() => {
+  const handleScroll = useCallback((event) => {
     if (loadingMore || !hasMore) return;
 
+    const target = event.currentTarget;
+    if (!target) return;
+
     if (
-      window.innerHeight + window.scrollY >=
-      document.body.offsetHeight - 300
+      target.scrollTop + target.clientHeight >=
+      target.scrollHeight - 300
     ) {
       loadPosts(page + 1);
     }
-  }, [loadingMore, hasMore, page]);
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () =>
-      window.removeEventListener("scroll", handleScroll);
-  }, [handleScroll]);
+  }, [loadingMore, hasMore, page, loadPosts]);
 
   /* =================================================================
         RENDER FEED
@@ -430,33 +433,41 @@ export default function FacebookFeed() {
   }, [posts, jobPost]);
 
   return (
-    <div className="fb-feed">
-      <CreatePostFB
-        onOptimisticPost={addOptimisticPost}
-        onPostCreated={replaceOptimisticPost}
-        onPostError={removeOptimisticPost}
-      />
-      <StoriesFB />
+    <PullToRefresh
+      className="fb-feed-scroll"
+      onRefresh={refreshFeed}
+      onScroll={handleScroll}
+      pullingContent={<div className="pull-to-refresh-label">Tirer pour actualiser</div>}
+      refreshingContent={<div className="pull-to-refresh-label">Actualisation…</div>}
+    >
+      <div className="fb-feed">
+        <CreatePostFB
+          onOptimisticPost={addOptimisticPost}
+          onPostCreated={replaceOptimisticPost}
+          onPostError={removeOptimisticPost}
+        />
+        <StoriesFB />
 
-      <PostFeed
-        posts={feedPosts}
-        setPosts={setPosts}
-        currentUserId={userId}
-        currentUserRole={userRole}
-        isAdmin={isAdmin}
-        token={token}
-        apiUrl={API_URL}
-        filterPosts={filterVisiblePosts}
-        context="feed"
-        loadingInitial={loadingInitial}
-        loadingMore={loadingMore}
-        focusPostId={notifPayload?.postId}
-        focusCommentId={notifPayload?.commentId}
-        focusReplyId={notifPayload?.replyId}
-        fromNotification={Boolean(notifPayload)}
-      />
+        <PostFeed
+          posts={feedPosts}
+          setPosts={setPosts}
+          currentUserId={userId}
+          currentUserRole={userRole}
+          isAdmin={isAdmin}
+          token={token}
+          apiUrl={API_URL}
+          filterPosts={filterVisiblePosts}
+          context="feed"
+          loadingInitial={loadingInitial}
+          loadingMore={loadingMore}
+          focusPostId={notifPayload?.postId}
+          focusCommentId={notifPayload?.commentId}
+          focusReplyId={notifPayload?.replyId}
+          fromNotification={Boolean(notifPayload)}
+        />
 
-      {feedToast && <div className="fb-sponsor-toast">{feedToast}</div>}
-    </div>
+        {feedToast && <div className="fb-sponsor-toast">{feedToast}</div>}
+      </div>
+    </PullToRefresh>
   );
 }

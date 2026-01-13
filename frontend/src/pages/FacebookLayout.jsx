@@ -1789,7 +1789,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
           <section
             className={`fb-center-column ${
               isPagesFeed ? "fb-center-column--pages" : ""
-            }`}
+            }${isFacebookFeed ? " fb-center-column--feed" : ""}`}
           >
             {children || <Outlet />}
           </section>

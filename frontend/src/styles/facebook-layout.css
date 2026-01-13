@@ -613,6 +613,10 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.fb-center-column--feed {
+  overflow: hidden;
+}
+
 /* ========================= */
 /* RIGHT SIDEBAR         */
 /* ========================= */
