@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { Toast } from "@capacitor/toast";
 import { HOME_PATH, isNavigationDebugEnabled } from "./constants";
 import { useNavigationStack } from "./NavigationStackProvider";
 
 const isAndroidNative = () =>
   Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+
+const ENABLE_EXIT_TOAST = true;
 
 const OVERLAY_SELECTORS = [
   ".dashboard-drawer-overlay",
@@ -54,6 +57,7 @@ export default function useAndroidBackButton() {
   const locationRef = useRef(location);
   const overlayCloseRef = useRef(overlayCloseHandler);
   const debugEnabledRef = useRef(isNavigationDebugEnabled());
+  const lastBackPressAt = useRef(0);
 
   useEffect(() => {
     navigateRef.current = navigate;
@@ -66,6 +70,12 @@ export default function useAndroidBackButton() {
   useEffect(() => {
     locationRef.current = location;
   }, [location]);
+
+  useEffect(() => {
+    if (location.pathname !== HOME_PATH) {
+      lastBackPressAt.current = 0;
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     overlayCloseRef.current = overlayCloseHandler;
@@ -129,8 +139,26 @@ export default function useAndroidBackButton() {
               stackLength: currentStack.length,
             });
           }
+          const now = Date.now();
+          if (now - lastBackPressAt.current < 2000) {
+            lastBackPressAt.current = 0;
+            App.exitApp();
+            return;
+          }
 
-          App.exitApp();
+          lastBackPressAt.current = now;
+
+          if (ENABLE_EXIT_TOAST) {
+            Toast.show({
+              text: "Appuyez à nouveau pour quitter",
+              duration: "short",
+              position: "bottom",
+            }).catch((error) => {
+              console.warn("[android-back] toast failed", error);
+            });
+          } else {
+            console.info("[android-back] press again to exit");
+          }
         });
 
         removeHandler = () => handler.remove();
