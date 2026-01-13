@@ -36,6 +36,27 @@ const DASHBOARD_PATHS = [
 const buildRouteKey = (location) =>
   `${location?.pathname ?? ""}${location?.search ?? ""}${location?.hash ?? ""}`;
 
+const extractPathname = (routeKey) => routeKey.split(/[?#]/)[0] || "";
+
+const selectFallbackTarget = ({ currentStack, currentPath, currentRouteKey }) => {
+  for (let i = currentStack.length - 2; i >= 0; i -= 1) {
+    const candidate = currentStack[i];
+    if (!candidate || candidate === currentRouteKey) continue;
+
+    const candidatePath = extractPathname(candidate);
+    if (
+      DASHBOARD_PATHS.includes(currentPath) &&
+      DASHBOARD_PATHS.includes(candidatePath)
+    ) {
+      continue;
+    }
+
+    return candidate;
+  }
+
+  return HOME_PATH;
+};
+
 const tryCloseOverlay = () => {
   if (typeof document === "undefined") return false;
 
@@ -168,8 +189,11 @@ export default function useAndroidBackButton() {
             setTimeout(() => {
               const nextRouteKey = buildRouteKey(locationRef.current);
               if (nextRouteKey === currentRouteKey) {
-                const fallbackTarget =
-                  currentStack[currentStack.length - 2] || HOME_PATH;
+                const fallbackTarget = selectFallbackTarget({
+                  currentStack,
+                  currentPath,
+                  currentRouteKey,
+                });
                 if (debugEnabledRef.current) {
                   console.debug("[android-back] fallback navigate", {
                     route: currentPath,
