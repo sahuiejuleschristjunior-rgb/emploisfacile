@@ -27,6 +27,8 @@ const OVERLAY_SELECTORS = [
   ".post-edit-modal-backdrop",
   ".ppv-overlay",
   ".global-feedback-overlay",
+  ".mobile-menu-overlay.show",
+  ".fullscreen-menu",
 ];
 
 const SHEET_SELECTORS = [
