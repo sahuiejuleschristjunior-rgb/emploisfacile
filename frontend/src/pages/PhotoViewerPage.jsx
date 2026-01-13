@@ -18,14 +18,6 @@ export default function PhotoViewerPage() {
   const [loading, setLoading] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
 
-  const handleBack = useCallback(() => {
-    if (window.history.length > 1) {
-      nav(-1);
-    } else {
-      nav("/");
-    }
-  }, [nav]);
-
   // load post
   const loadPost = useCallback(async () => {
     try {
@@ -71,21 +63,12 @@ export default function PhotoViewerPage() {
     const onKey = (e) => {
       if (e.key === "ArrowLeft") goPrev();
       if (e.key === "ArrowRight") goNext();
-      if (e.key === "Escape") handleBack();
+      if (e.key === "Escape") nav(-1);
       if (e.key === "f" || (e.key === "F")) setFullscreen((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleBack, post]);
-
-  useEffect(() => {
-    const onHardwareBack = (event) => {
-      event.preventDefault();
-      handleBack();
-    };
-    document.addEventListener("backbutton", onHardwareBack);
-    return () => document.removeEventListener("backbutton", onHardwareBack);
-  }, [handleBack]);
+  }, [nav, post]);
 
   if (loading) {
     return (
@@ -99,7 +82,7 @@ export default function PhotoViewerPage() {
     return (
       <div className="pv-root">
         <div className="pv-empty">Publication introuvable</div>
-        <button className="pv-back" onClick={handleBack}>Retour</button>
+        <button className="pv-back" onClick={() => nav(-1)}>Retour</button>
       </div>
     );
   }
@@ -126,7 +109,7 @@ export default function PhotoViewerPage() {
   return (
     <div className={`pv-root ${fullscreen ? "pv-fullscreen" : ""}`}>
       <div className="pv-topbar">
-        <button className="pv-close" onClick={handleBack}>✕</button>
+        <button className="pv-close" onClick={() => nav(-1)}>✕</button>
 
         <div className="pv-user">
           <button
