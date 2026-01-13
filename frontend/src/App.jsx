@@ -345,7 +345,10 @@ function SafeAreaRouteLogger() {
 function AndroidBackButtonHandler() {
   const navigate = useNavigate();
   const lastBackPressRef = useRef(0);
+  const backPressCountRef = useRef(0);
+  const resetTimerRef = useRef(null);
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Appuyez encore pour quitter");
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") {
@@ -372,13 +375,35 @@ function AndroidBackButtonHandler() {
         }
 
         const now = Date.now();
-        if (now - lastBackPressRef.current < 2000) {
+        if (now - lastBackPressRef.current > 2000) {
+          backPressCountRef.current = 0;
+        }
+
+        lastBackPressRef.current = now;
+        backPressCountRef.current += 1;
+
+        if (resetTimerRef.current) {
+          clearTimeout(resetTimerRef.current);
+        }
+
+        resetTimerRef.current = setTimeout(() => {
+          backPressCountRef.current = 0;
+          resetTimerRef.current = null;
+          setToastVisible(false);
+        }, 2000);
+
+        if (backPressCountRef.current >= 3) {
           setToastVisible(false);
           capacitorApp.exitApp();
           return;
         }
 
-        lastBackPressRef.current = now;
+        const remaining = 3 - backPressCountRef.current;
+        setToastMessage(
+          remaining === 1
+            ? "Appuyez encore pour quitter (2/3)"
+            : "Appuyez encore pour quitter (1/3)"
+        );
         setToastVisible(true);
       });
 
@@ -392,12 +417,16 @@ function AndroidBackButtonHandler() {
       if (removeHandler) {
         removeHandler();
       }
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = null;
+      }
     };
   }, [navigate]);
 
   return (
     <Toast
-      message="Appuyez encore pour quitter"
+      message={toastMessage}
       type="info"
       visible={toastVisible}
       duration={1800}
