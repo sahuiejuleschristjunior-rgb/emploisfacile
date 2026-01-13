@@ -89,11 +89,11 @@ export default function PostEditModal({ post, onClose, onPostUpdated }) {
       }
 
       onPostUpdated(updated);
-      setStatusMessage("Modification enregistrée. Rafraîchissement de la page...");
+      setStatusMessage("Modification enregistrée.");
 
       setTimeout(() => {
-        window.location.reload();
-      }, 600);
+        onClose?.();
+      }, 400);
     } catch (err) {
       console.log("UPDATE ERROR:", err);
       setError("Impossible de modifier le post.");

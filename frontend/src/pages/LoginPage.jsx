@@ -1,6 +1,6 @@
 import "../styles/Auth.css";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
@@ -115,16 +115,16 @@ export default function LoginPage() {
         </form>
 
         <div className="link-muted">
-          <a href="/forgot" className="small-link">
+          <Link to="/forgot" className="small-link">
             Mot de passe oublié ?
-          </a>
+          </Link>
         </div>
 
         <div className="link-muted">
           Nouveau sur EmploisFacile ?{" "}
-          <a href="/register" className="small-link">
+          <Link to="/register" className="small-link">
             S'inscrire
-          </a>
+          </Link>
         </div>
       </div>
     </div>

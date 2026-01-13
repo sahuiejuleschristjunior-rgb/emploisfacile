@@ -130,7 +130,7 @@ export default function NotificationItem({ notif, onHandled }) {
 
     if (actionType === "message_request") {
       await deleteByRelated?.(notif.relatedId);
-      navigate("/messages", { replace: true, state: { source: "notification" } });
+      navigate("/messages", { state: { source: "notification" } });
       return;
     }
 
@@ -141,12 +141,10 @@ export default function NotificationItem({ notif, onHandled }) {
         const basePath =
           currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
         navigate(`${basePath}/${notifConversationId || ""}`, {
-          replace: true,
           state: { source: "notification" },
         });
       } else {
         navigate("/messages", {
-          replace: true,
           state: {
             openConversationId: notifConversationId || null,
             source: "notification",

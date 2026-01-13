@@ -70,7 +70,8 @@ import { ActiveConversationProvider } from "./context/ActiveConversationContext"
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoadingOverlay from "./components/AppLoadingOverlay";
 import { getSafeAreaValues, isSafeAreaDebugEnabled } from "./utils/safeArea";
-import useAndroidBackButton from "./hooks/useAndroidBackButton";
+import { NavigationStackProvider } from "./navigation/NavigationStackProvider";
+import useAndroidBackButton from "./navigation/useAndroidBackButton";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -114,15 +115,6 @@ class AppErrorBoundary extends Component {
   }
 }
 
-const ANDROID_ROOT_PATHS = [
-  "/",
-  "/fb",
-  "/emplois",
-  "/ads",
-  "/recruiter/dashboard",
-  "/candidate/dashboard",
-];
-
 export default function App() {
   return (
     <>
@@ -133,9 +125,10 @@ export default function App() {
             <ActiveConversationProvider>
               <NotificationProvider>
                 <BrowserRouter>
-                  <AndroidBackHandler />
-                  <SafeAreaRouteLogger />
-                  <Routes>
+                  <NavigationStackProvider>
+                    <AndroidBackHandler />
+                    <SafeAreaRouteLogger />
+                    <Routes>
                 {/* Landing */}
                 <Route
                   path="/"
@@ -159,7 +152,7 @@ export default function App() {
                 <Route path="/profil/:id/amis" element={<FriendViewer />} />
 
                 {/* Centre publicitaire indépendant */}
-                <Route path="/fb/ads/*" element={<Navigate to="/ads" replace />} />
+                <Route path="/fb/ads/*" element={<Navigate to="/ads" />} />
                 <Route
                   element={
                     <ProtectedRoute>
@@ -222,11 +215,11 @@ export default function App() {
                 <Route path="/messages/:id" element={<ChatPage />} />
                 <Route
                   path="/create-job"
-                  element={<Navigate to="/recruiter/create-job" replace />}
+                  element={<Navigate to="/recruiter/create-job" />}
                 />
                 <Route
                   path="/settings"
-                  element={<Navigate to="/fb/settings" replace />}
+                  element={<Navigate to="/fb/settings" />}
                 />
                 <Route path="/pages/create" element={<PageCreate />} />
                 <Route path="/pages/me" element={<MyPages />} />
@@ -281,41 +274,42 @@ export default function App() {
 
                 <Route
                   path="/jobconnect/dashboard"
-                  element={<Navigate to="/candidate/dashboard" replace />}
+                  element={<Navigate to="/candidate/dashboard" />}
                 />
                 <Route
                   path="/jobconnect/candidatures"
-                  element={<Navigate to="/candidate/candidatures" replace />}
+                  element={<Navigate to="/candidate/candidatures" />}
                 />
                 <Route
                   path="/jobconnect/entretiens"
-                  element={<Navigate to="/candidate/entretiens" replace />}
+                  element={<Navigate to="/candidate/entretiens" />}
                 />
                 <Route
                   path="/jobconnect/messages"
-                  element={<Navigate to="/candidate/messages" replace />}
+                  element={<Navigate to="/candidate/messages" />}
                 />
                 <Route
                   path="/jobconnect/favoris"
-                  element={<Navigate to="/candidate/favoris" replace />}
+                  element={<Navigate to="/candidate/favoris" />}
                 />
                 <Route
                   path="/jobconnect/agenda"
-                  element={<Navigate to="/candidate/agenda" replace />}
+                  element={<Navigate to="/candidate/agenda" />}
                 />
                 <Route
                   path="/jobconnect/profil"
-                  element={<Navigate to="/candidate/profil" replace />}
+                  element={<Navigate to="/candidate/profil" />}
                 />
                 <Route
                   path="/jobconnect/profil-professionnel"
-                  element={<Navigate to="/candidate/profil-professionnel" replace />}
+                  element={<Navigate to="/candidate/profil-professionnel" />}
                 />
 
                 <Route path="/photo/:postId/:index" element={<PhotoViewerPage />} />
                 <Route path="/photo/:postId" element={<PhotoViewerPage />} />
               </Route>
-            </Routes>
+                    </Routes>
+                  </NavigationStackProvider>
                 </BrowserRouter>
               </NotificationProvider>
             </ActiveConversationProvider>
@@ -327,7 +321,7 @@ export default function App() {
 }
 
 function AndroidBackHandler() {
-  useAndroidBackButton({ rootPaths: ANDROID_ROOT_PATHS });
+  useAndroidBackButton();
   return null;
 }
 
@@ -360,10 +354,10 @@ function SafeAreaRouteLogger() {
 // ================================
 function DashboardRouter() {
   const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) return <Navigate to="/fb" replace />;
+  if (!user) return <Navigate to="/fb" />;
 
-  if (user.role === "recruiter") return <Navigate to="/recruiter/dashboard" replace />;
-  if (user.role === "candidate") return <Navigate to="/candidate/dashboard" replace />;
+  if (user.role === "recruiter") return <Navigate to="/recruiter/dashboard" />;
+  if (user.role === "candidate") return <Navigate to="/candidate/dashboard" />;
 
-  return <Navigate to="/fb" replace />;
+  return <Navigate to="/fb" />;
 }

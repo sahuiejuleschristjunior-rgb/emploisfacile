@@ -110,7 +110,7 @@ export default function FacebookFeed() {
         commentId: state.focusCommentId,
         replyId: state.focusReplyId,
       });
-      nav("/fb", { replace: true });
+      nav("/fb");
     }
   }, [location.key, nav]);
 

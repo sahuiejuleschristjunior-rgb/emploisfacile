@@ -24,7 +24,7 @@ export default function ProtectedRoute({
      2) Route publique : si déjà connecté → redirection
   ============================================================ */
   if (redirectIfAuth && isAuthenticated) {
-    return <Navigate to={to} replace />;
+    return <Navigate to={to} />;
   }
 
   if (redirectIfAuth) {
@@ -38,7 +38,6 @@ export default function ProtectedRoute({
     return (
       <Navigate
         to="/login"
-        replace
         state={{ from: location.pathname + location.search }}
       />
     );
@@ -55,7 +54,7 @@ export default function ProtectedRoute({
      4.5) Profil incomplet → redirection forcée
   ============================================================ */
   if (!profileCompleted && !isCompleteProfileRoute) {
-    return <Navigate to="/complete-profile" replace />;
+    return <Navigate to="/complete-profile" />;
   }
 
   /* ============================================================
@@ -65,7 +64,7 @@ export default function ProtectedRoute({
     const allowedRoles = Array.isArray(roles) ? roles : [roles];
 
     if (!allowedRoles.includes(user.role)) {
-      return <Navigate to="/fb" replace />;
+      return <Navigate to="/fb" />;
     }
   }
 
