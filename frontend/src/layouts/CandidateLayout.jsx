@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PullToRefresh from "react-simple-pull-to-refresh";
 import DashboardMenu, { candidateMenuItems } from "../components/DashboardMenu";
 import FacebookBottomNav from "../components/FacebookBottomNav";
 import "../styles/CandidateDashboard.css";
@@ -14,6 +15,7 @@ export default function CandidateLayout({
   avatarFallback = "C",
   shellClassName = "",
   showBottomMenu = true,
+  onRefresh,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const nav = useNavigate();
@@ -25,6 +27,20 @@ export default function CandidateLayout({
       document.body.style.overflow = "";
     };
   }, [sidebarOpen]);
+
+  const contentClassName = useMemo(
+    () => `content${showBottomMenu ? " content--with-bottom-menu" : ""}`,
+    [showBottomMenu],
+  );
+  const contentProps = onRefresh
+    ? {
+        onRefresh,
+        pullingContent: <div className="pull-to-refresh-label">Tirer pour actualiser</div>,
+        refreshingContent: <div className="pull-to-refresh-label">Actualisation…</div>,
+        className: contentClassName,
+      }
+    : { className: contentClassName };
+  const ContentWrapper = onRefresh ? PullToRefresh : "div";
 
   return (
     <div className={`candidate-dashboard ${shellClassName}`.trim()}>
@@ -65,9 +81,7 @@ export default function CandidateLayout({
           </div>
         </header>
 
-        <div className={`content${showBottomMenu ? " content--with-bottom-menu" : ""}`}>
-          {children}
-        </div>
+        <ContentWrapper {...contentProps}>{children}</ContentWrapper>
       </main>
       {showBottomMenu && (
         <FacebookBottomNav

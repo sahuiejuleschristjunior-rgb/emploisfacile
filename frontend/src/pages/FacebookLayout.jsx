@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, Outlet, useLocation, Navigate } from "react-router-dom";
+import PullToRefresh from "react-simple-pull-to-refresh";
 import NotificationItem from "../components/NotificationItem";
 import "../styles/facebook-layout.css";
 import { getAvatarStyle, getImageUrl } from "../utils/imageUtils";
@@ -1718,10 +1719,23 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   const showBottomNav = !hideRecruiterMobileChrome;
 
   const outletContext = isJobsFeed ? jobsSearchState : undefined;
+  const jobsRefresh = jobsSearchState?.refreshJobs;
+
+  const jobsPullProps = jobsRefresh
+    ? {
+        onRefresh: jobsRefresh,
+        pullingContent: <div className="pull-to-refresh-label">Tirer pour actualiser</div>,
+        refreshingContent: <div className="pull-to-refresh-label">Actualisation…</div>,
+      }
+    : {};
 
   if (isJobsFeed && isMobile) {
+    const JobsMobileWrapper = jobsRefresh ? PullToRefresh : "div";
     return (
-      <div className={`jobs-mobile-layout${fullWidth ? " layout-fullscreen" : ""}`}>
+      <JobsMobileWrapper
+        className={`jobs-mobile-layout${fullWidth ? " layout-fullscreen" : ""}`}
+        {...jobsPullProps}
+      >
         {header}
         {dashboardMenuDrawer}
 
@@ -1732,11 +1746,12 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
         {bottomNav}
 
         {toast && <div className="fb-toast">{toast}</div>}
-      </div>
+      </JobsMobileWrapper>
     );
   }
 
   if (isCompactLayout) {
+    const CompactBodyWrapper = jobsRefresh && isJobsFeed ? PullToRefresh : "main";
     return (
       <div
         className={`fb-compact-shell${fullWidth ? " layout-fullscreen" : ""}${
@@ -1746,9 +1761,9 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
         {header}
         {dashboardMenuDrawer}
 
-        <main className="fb-compact-body">
+        <CompactBodyWrapper className="fb-compact-body" {...jobsPullProps}>
           {children || <Outlet context={outletContext} />}
-        </main>
+        </CompactBodyWrapper>
 
         {isJobsFeed && showBottomNav && bottomNav}
 

@@ -50,15 +50,7 @@ export default function useCandidateDashboardData() {
     }
   }, [API_URL, token]);
 
-  useEffect(() => {
-    if (!token) return;
-    fetchUserProfile();
-    fetchApplications();
-    fetchSavedJobs();
-    fetchRecommended();
-  }, [fetchUserProfile, token]);
-
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     setLoadingApps(true);
     setError(null);
     try {
@@ -76,9 +68,9 @@ export default function useCandidateDashboardData() {
     } finally {
       setLoadingApps(false);
     }
-  };
+  }, [API_URL, commonHeaders]);
 
-  const fetchSavedJobs = async () => {
+  const fetchSavedJobs = useCallback(async () => {
     setLoadingSaved(true);
     try {
       const res = await fetch(`${API_URL}/saved-jobs`, {
@@ -89,9 +81,10 @@ export default function useCandidateDashboardData() {
       setSavedJobs(Array.isArray(data) ? data : data.savedJobs || []);
     } catch (err) {
       setSavedJobs([]);
+    } finally {
+      setLoadingSaved(false);
     }
-    setLoadingSaved(false);
-  };
+  }, [API_URL, commonHeaders]);
 
   const saveJob = async (jobId) => {
     await fetch(`${API_URL}/saved-jobs`, {
@@ -110,7 +103,7 @@ export default function useCandidateDashboardData() {
     fetchSavedJobs();
   };
 
-  const fetchRecommended = async () => {
+  const fetchRecommended = useCallback(async () => {
     setLoadingReco(true);
     try {
       const res = await fetch(`${API_URL}/jobs`, {
@@ -120,9 +113,25 @@ export default function useCandidateDashboardData() {
       setRecommendedJobs(Array.isArray(data) ? data : data.jobs || []);
     } catch (err) {
       setRecommendedJobs([]);
+    } finally {
+      setLoadingReco(false);
     }
-    setLoadingReco(false);
-  };
+  }, [API_URL, commonHeaders]);
+
+  const refreshDashboard = useCallback(() => {
+    if (!token) return Promise.resolve([]);
+    return Promise.allSettled([
+      fetchUserProfile(),
+      fetchApplications(),
+      fetchSavedJobs(),
+      fetchRecommended(),
+    ]);
+  }, [fetchApplications, fetchRecommended, fetchSavedJobs, fetchUserProfile, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    refreshDashboard();
+  }, [refreshDashboard, token]);
 
   const groupedApps = useMemo(() => {
     const groups = {
@@ -194,6 +203,7 @@ export default function useCandidateDashboardData() {
     recentApplications,
     upcomingAgenda,
     refreshUser: fetchUserProfile,
+    refreshDashboard,
     updateUser: setUser,
     saveJob,
     unsaveJob,

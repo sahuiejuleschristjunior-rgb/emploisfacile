@@ -1,6 +1,7 @@
 // src/pages/FeedPage.jsx
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import PullToRefresh from "react-simple-pull-to-refresh";
 
 import LeftMenuDesktop from "../components/LeftMenuDesktop";
 import RightMenu from "../components/MenuRight";
@@ -219,27 +220,16 @@ export default function FeedPage() {
   /* ========================================================= */
   /* FETCH POSTS — TOKEN FIXÉ + BEARER OK */
   /* ========================================================= */
-  useEffect(() => {
-    if (!token) {
-      nav("/login");
-      return;
-    }
-
-    if (initialLoadDoneRef.current) return;
-
-    fetchPosts();
-  }, [token, nav]);
-
   const focusCommentBox = (postId) => {
     const box = document.querySelector(`#comment-box-${postId}`);
     box?.scrollIntoView({ behavior: "smooth" });
     setTimeout(() => box?.focus(), 150);
   };
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async ({ showLoader = false } = {}) => {
     const isInitialLoad = !initialLoadDoneRef.current;
 
-    if (isInitialLoad && !loading) setLoading(true);
+    if (showLoader || isInitialLoad) setLoading(true);
 
     try {
       const res = await fetch(`${API_BASE}/api/posts`, {
@@ -280,10 +270,27 @@ export default function FeedPage() {
     } finally {
       if (isInitialLoad) {
         initialLoadDoneRef.current = true;
+      }
+      if (showLoader || isInitialLoad) {
         setLoading(false);
       }
     }
-  };
+  }, [nav, token]);
+
+  const handleRefresh = useCallback(async () => {
+    await fetchPosts({ showLoader: true });
+  }, [fetchPosts]);
+
+  useEffect(() => {
+    if (!token) {
+      nav("/login");
+      return;
+    }
+
+    if (initialLoadDoneRef.current) return;
+
+    fetchPosts({ showLoader: true });
+  }, [fetchPosts, nav, token]);
 
   useEffect(() => {
     postsRef.current = posts;
@@ -721,7 +728,12 @@ export default function FeedPage() {
       </div>
 
       {/* FEED MOBILE */}
-      <main className="feed-main-mobile">
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        className="feed-main-mobile"
+        pullingContent={<div className="pull-to-refresh-label">Tirer pour actualiser</div>}
+        refreshingContent={<div className="pull-to-refresh-label">Actualisation…</div>}
+      >
         <StoriesBar
           stories={storiesData}
           onOpen={(i) => {
@@ -730,7 +742,7 @@ export default function FeedPage() {
           }}
         />
         {loading ? <div>Chargement…</div> : renderFeedPosts()}
-      </main>
+      </PullToRefresh>
 
       {/* FEED DESKTOP */}
       <div className="desktop-layout">
