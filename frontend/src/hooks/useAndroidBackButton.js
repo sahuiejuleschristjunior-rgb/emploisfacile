@@ -29,6 +29,8 @@ const OVERLAY_SELECTORS = [
   ".global-feedback-overlay",
   ".mobile-menu-overlay.show",
   ".fullscreen-menu",
+  ".story-viewer",
+  ".fb-viewer-overlay",
 ];
 
 const SHEET_SELECTORS = [
@@ -42,6 +44,11 @@ const tryCloseOverlay = () => {
 
   const overlay = document.querySelector(OVERLAY_SELECTORS.join(", "));
   if (overlay) {
+    const storyClose = overlay.querySelector(".story-close");
+    if (storyClose) {
+      storyClose.click?.();
+      return true;
+    }
     overlay.click?.();
     return true;
   }
