@@ -198,28 +198,6 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
   }, [location.pathname]);
 
   useEffect(() => {
-    const rootEl = typeof document !== "undefined" ? document.getElementById("root") : null;
-    const htmlEl = typeof document !== "undefined" ? document.documentElement : null;
-    const bodyEl = typeof document !== "undefined" ? document.body : null;
-
-    if (isFullLayout) {
-      htmlEl?.classList.add("fb-theme");
-      bodyEl?.classList.add("fb-theme");
-      rootEl?.classList.add("fb-theme-root");
-    } else {
-      htmlEl?.classList.remove("fb-theme");
-      bodyEl?.classList.remove("fb-theme");
-      rootEl?.classList.remove("fb-theme-root");
-    }
-
-    return () => {
-      htmlEl?.classList.remove("fb-theme");
-      bodyEl?.classList.remove("fb-theme");
-      rootEl?.classList.remove("fb-theme-root");
-    };
-  }, [isFullLayout]);
-
-  useEffect(() => {
     if (!setOverlayCloseHandler) return undefined;
 
     const hasOverlay =

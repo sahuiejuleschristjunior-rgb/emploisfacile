@@ -6,14 +6,12 @@
   --fb-header-base-height: 40px;
   --fb-header-height: calc(var(--fb-header-base-height) + var(--sat));
   --fb-bottom-nav-height: 60px;
-  --fb-bottom-offset: 0px;
-  --fb-bg-app: #18191a;
 }
 
 .fb-app {
   width: 100%;
   min-height: var(--app-height);
-  background: var(--fb-bg-app);
+  background: #000;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -102,17 +100,6 @@
   min-height: calc(var(--app-height) - var(--fb-header-height));
   overflow: hidden;
   box-sizing: border-box;
-  background: var(--fb-bg-app);
-}
-
-html.fb-theme,
-body.fb-theme,
-#root.fb-theme-root {
-  background: var(--fb-bg-app);
-}
-
-body.fb-theme {
-  overscroll-behavior-y: none;
 }
 
 /* ========================= */
@@ -534,7 +521,6 @@ body.fb-theme {
   padding: 20px 16px;
   height: calc(var(--app-height) - var(--fb-header-height));
   box-sizing: border-box;
-  background: var(--fb-bg-app);
 }
 
 /* ========================= */
@@ -625,7 +611,6 @@ body.fb-theme {
   overflow-y: auto;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  background: var(--fb-bg-app);
 }
 
 .fb-center-column--feed {
@@ -834,10 +819,6 @@ body.fb-theme {
 }
 
 @media (max-width: 780px) {
-  :root {
-    --fb-bottom-offset: calc(var(--fb-bottom-nav-height) + var(--sab));
-  }
-
   .fb-bottom-nav {
     display: block;
   }
