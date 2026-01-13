@@ -133,7 +133,7 @@ export default function App() {
             <ActiveConversationProvider>
               <NotificationProvider>
                 <BrowserRouter>
-                  <BackButtonHandler />
+                  <AndroidBackHandler />
                   <SafeAreaRouteLogger />
                   <Routes>
                 {/* Landing */}
@@ -326,7 +326,7 @@ export default function App() {
   );
 }
 
-function BackButtonHandler() {
+function AndroidBackHandler() {
   useAndroidBackButton({ rootPaths: ANDROID_ROOT_PATHS });
   return null;
 }
