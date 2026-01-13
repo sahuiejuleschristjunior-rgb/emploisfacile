@@ -124,8 +124,6 @@ const ANDROID_ROOT_PATHS = [
 ];
 
 export default function App() {
-  useAndroidBackButton({ rootPaths: ANDROID_ROOT_PATHS });
-
   return (
     <>
       <AppLoadingOverlay />
@@ -135,6 +133,7 @@ export default function App() {
             <ActiveConversationProvider>
               <NotificationProvider>
                 <BrowserRouter>
+                  <BackButtonHandler />
                   <SafeAreaRouteLogger />
                   <Routes>
                 {/* Landing */}
@@ -325,6 +324,11 @@ export default function App() {
       </AppErrorBoundary>
     </>
   );
+}
+
+function BackButtonHandler() {
+  useAndroidBackButton({ rootPaths: ANDROID_ROOT_PATHS });
+  return null;
 }
 
 function SafeAreaRouteLogger() {
