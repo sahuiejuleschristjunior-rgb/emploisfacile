@@ -1,9 +1,8 @@
 // ================================
 // IMPORTS — TOUJOURS EN PREMIER
 // ================================
-import { Component, useEffect, useRef, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Capacitor } from "@capacitor/core";
+import { Component, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 
 import ChangePassword from "./pages/ChangePassword";
 import LandingPage from "./pages/LandingPage";
@@ -70,8 +69,8 @@ import { SocketProvider } from "./context/SocketContext";
 import { ActiveConversationProvider } from "./context/ActiveConversationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLoadingOverlay from "./components/AppLoadingOverlay";
-import Toast from "./components/Toast";
 import { getSafeAreaValues, isSafeAreaDebugEnabled } from "./utils/safeArea";
+import useAndroidBackButton from "./hooks/useAndroidBackButton";
 
 // ================================
 // CODE RUNTIME (APRÈS IMPORTS)
@@ -115,7 +114,18 @@ class AppErrorBoundary extends Component {
   }
 }
 
+const ANDROID_ROOT_PATHS = [
+  "/",
+  "/fb",
+  "/emplois",
+  "/ads",
+  "/recruiter/dashboard",
+  "/candidate/dashboard",
+];
+
 export default function App() {
+  useAndroidBackButton({ rootPaths: ANDROID_ROOT_PATHS });
+
   return (
     <>
       <AppLoadingOverlay />
@@ -125,7 +135,6 @@ export default function App() {
             <ActiveConversationProvider>
               <NotificationProvider>
                 <BrowserRouter>
-                  <AndroidBackButtonHandler />
                   <SafeAreaRouteLogger />
                   <Routes>
                 {/* Landing */}
@@ -340,70 +349,6 @@ function SafeAreaRouteLogger() {
   }, [location.pathname, location.search]);
 
   return null;
-}
-
-function AndroidBackButtonHandler() {
-  const navigate = useNavigate();
-  const lastBackPressRef = useRef(0);
-  const [toastVisible, setToastVisible] = useState(false);
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") {
-      return undefined;
-    }
-
-    let isMounted = true;
-    let removeHandler = null;
-
-    const registerBackButtonHandler = () => {
-      const capacitorApp = Capacitor.Plugins?.App;
-      if (!isMounted || !capacitorApp?.addListener) return;
-
-      const handler = capacitorApp.addListener("backButton", ({ canGoBack }) => {
-        const historyIndex = typeof window !== "undefined" ? window.history.state?.idx : null;
-        const hasNavigationHistory =
-          Boolean(canGoBack) ||
-          (typeof historyIndex === "number" && historyIndex > 0) ||
-          (typeof window !== "undefined" && window.history.length > 1);
-
-        if (hasNavigationHistory) {
-          navigate(-1);
-          return;
-        }
-
-        const now = Date.now();
-        if (now - lastBackPressRef.current < 2000) {
-          setToastVisible(false);
-          capacitorApp.exitApp();
-          return;
-        }
-
-        lastBackPressRef.current = now;
-        setToastVisible(true);
-      });
-
-      removeHandler = () => handler.remove();
-    };
-
-    registerBackButtonHandler();
-
-    return () => {
-      isMounted = false;
-      if (removeHandler) {
-        removeHandler();
-      }
-    };
-  }, [navigate]);
-
-  return (
-    <Toast
-      message="Appuyez encore pour quitter"
-      type="info"
-      visible={toastVisible}
-      duration={1800}
-      onClose={() => setToastVisible(false)}
-    />
-  );
 }
 
 // ================================
