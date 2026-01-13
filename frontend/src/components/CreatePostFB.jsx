@@ -118,7 +118,7 @@ export default function CreatePostFB({
   ===================================================== */
   const handleCreate = async () => {
     if (!text.trim() && files.length === 0) return;
-    if (!token) return (window.location.href = "/login");
+    if (!token) return nav("/login");
 
     let tempId = null;
 
@@ -190,7 +190,7 @@ export default function CreatePostFB({
         MODAL HANDLERS
   ===================================================== */
   const openModal = () => {
-    if (!token) return (window.location.href = "/login");
+    if (!token) return nav("/login");
     setIsModalOpen(true);
   };
 

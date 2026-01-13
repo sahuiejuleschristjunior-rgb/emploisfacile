@@ -30,8 +30,11 @@ export function isLogged() {
 // ===============================
 // 🔐 DÉCONNEXION
 // ===============================
-export function logout() {
+export function logout(navigate) {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-  window.location.href = "/login";
+
+  if (typeof navigate === "function") {
+    navigate("/login");
+  }
 }

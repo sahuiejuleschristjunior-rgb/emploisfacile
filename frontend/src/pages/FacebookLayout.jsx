@@ -59,7 +59,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
 
   if (location.pathname.startsWith("/login")) return <Outlet />;
   if (!authToken)
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/login" state={{ from: location }} />;
   if (!authUser)
     return (
       <div className="fb-loading-screen">
@@ -882,13 +882,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
 
     setShowJobsDrawer(false);
     setShowDashboardMenu(false);
-    nav("/login", { replace: true });
-
-    setTimeout(() => {
-      if (!localStorage.getItem("token")) {
-        window.location.href = "/login";
-      }
-    }, 150);
+    nav("/login");
   };
 
   const handleMessagesIconClick = () => {

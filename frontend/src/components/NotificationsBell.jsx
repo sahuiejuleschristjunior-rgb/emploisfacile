@@ -54,7 +54,6 @@ export default function NotificationsBell() {
     if (actionType === "message_request") {
       deleteByRelated?.(n.relatedId);
       navigate("/messages", {
-        replace: true,
         state: { source: "notification" },
       });
       setOpen(false);
@@ -68,12 +67,10 @@ export default function NotificationsBell() {
         const basePath =
           currentRole === "recruiter" ? "/recruiter/messages" : "/candidate/messages";
         navigate(`${basePath}/${notifConversationId || ""}`, {
-          replace: true,
           state: { source: "notification" },
         });
       } else {
         navigate("/messages", {
-          replace: true,
           state: {
             openConversationId: notifConversationId || null,
             source: "notification",

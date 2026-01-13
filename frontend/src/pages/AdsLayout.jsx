@@ -8,7 +8,7 @@ export default function AdsLayout() {
   const location = useLocation();
 
   if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/login" state={{ from: location }} />;
   }
 
   const initials = user?.name

@@ -1,6 +1,6 @@
 import "../styles/Auth.css";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -74,7 +74,7 @@ export default function ForgotPassword() {
         </form>
 
         <div className="link-muted" style={{ marginTop: 16 }}>
-          <a href="/login" className="small-link">Retour à la connexion</a>
+          <Link to="/login" className="small-link">Retour à la connexion</Link>
         </div>
       </div>
     </div>

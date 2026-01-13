@@ -40,7 +40,7 @@ export default function CompleteProfile() {
 
   useEffect(() => {
     if (profileCompleted) {
-      nav("/fb", { replace: true });
+      nav("/fb");
     }
   }, [profileCompleted, nav]);
 
@@ -228,7 +228,7 @@ export default function CompleteProfile() {
 
       const nextUser = { ...updatedUser, ...(data.user || {}) };
       updateUser(nextUser);
-      nav("/", { replace: true });
+      nav("/");
     } catch (err) {
       setError(err.message || "Erreur lors de la mise à jour du profil.");
     } finally {
