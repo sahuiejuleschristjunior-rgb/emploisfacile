@@ -3,6 +3,12 @@
 /* ================================
    WRAPPER GLOBAL DU FEED
 ================================ */
+.fb-feed-scroll {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .fb-feed {
   padding: 12px 8px 80px;
   max-width: 600px;
