@@ -272,6 +272,37 @@ body[data-theme="dark"] {
     flex-direction: column;
   }
 
+  .pv-topbar {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .pv-user {
+    min-width: 0;
+  }
+
+  .pv-user-info {
+    min-width: 0;
+  }
+
+  .pv-user-name,
+  .pv-date {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pv-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .pv-action {
+    width: 100%;
+  }
+
   .pv-side {
     border-left: none;
     border-top: 1px solid var(--pv-border);
@@ -287,6 +318,19 @@ body[data-theme="dark"] {
     width: 32px;
     height: 32px;
     font-size: 26px;
+  }
+
+  .pv-side-actions {
+    flex-wrap: wrap;
+  }
+
+  .pv-side-actions button {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .pv-thumb {
+    width: 48px;
+    height: 48px;
   }
 }
 
