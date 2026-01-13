@@ -1,6 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
 const DEFAULT_ROOT_PATHS = [
@@ -21,30 +20,43 @@ export default function useAndroidBackButton(options = {}) {
   const { rootPaths = DEFAULT_ROOT_PATHS } = options;
   const navigate = useNavigate();
   const location = useLocation();
-  const locationRef = useRef(location);
-
-  useEffect(() => {
-    locationRef.current = location;
-  }, [location]);
+  const pathname = location.pathname;
 
   useEffect(() => {
     if (!isAndroidNative()) {
       return undefined;
     }
 
-    const handler = App.addListener("backButton", () => {
-      const { pathname } = locationRef.current;
+    let removeHandler;
+    let isActive = true;
 
-      if (!isRootPath(pathname, rootPaths)) {
-        navigate(-1);
-        return;
-      }
+    import("@capacitor/app")
+      .then(({ App }) => {
+        if (!isActive) return;
+        const handler = App.addListener("backButton", () => {
+          if (!isRootPath(pathname, rootPaths)) {
+            navigate(-1);
+            return;
+          }
 
-      App.exitApp();
-    });
+          App.exitApp();
+        });
+
+        removeHandler = () => handler.remove();
+      })
+      .catch((error) => {
+        console.warn("[android-back-button] listener disabled:", error);
+      });
 
     return () => {
-      handler.remove();
+      isActive = false;
+      if (removeHandler) {
+        try {
+          removeHandler();
+        } catch (error) {
+          console.warn("[android-back-button] cleanup failed:", error);
+        }
+      }
     };
-  }, [navigate, rootPaths]);
+  }, [navigate, pathname, rootPaths]);
 }
