@@ -28,19 +28,12 @@ body[data-theme="dark"] {
 /* ROOT */
 .pv-root {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: var(--app-height);
-  padding-top: var(--sat);
-  padding-bottom: var(--sab);
+  inset: 0;
   background: var(--pv-backdrop);
   z-index: 99999;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-sizing: border-box;
 }
 
 .pv-fullscreen {
