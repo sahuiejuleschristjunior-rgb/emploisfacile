@@ -1,6 +1,7 @@
 // src/components/StoriesViewer.jsx (CORRIGÉ INTÉGRAL)
 
 import { useEffect, useRef, useState } from "react";
+import { App } from "@capacitor/app";
 import "../styles/stories-viewer.css"; 
 // 💥 IMPORT CORRIGÉ
 import { getImageUrl } from "../utils/imageUtils"; // Import de la fonction utilitaire
@@ -12,6 +13,41 @@ export default function StoriesViewer({ stories, startIndex, onClose }) {
   const [mediaLoading, setMediaLoading] = useState(true);
 
   const intervalRef = useRef(null);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleBack = () => {
+      onClose();
+    };
+
+    let removeBackListener = () => {};
+    let active = true;
+
+    App.addListener("backButton", handleBack).then((listener) => {
+      if (!active) {
+        listener.remove();
+        return;
+      }
+      removeBackListener = () => listener.remove();
+    });
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      active = false;
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      removeBackListener();
+    };
+  }, [onClose]);
   
   // --- VARIABLES CLÉS ---
   const current = stories[index];
