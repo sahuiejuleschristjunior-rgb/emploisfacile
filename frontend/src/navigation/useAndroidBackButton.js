@@ -115,9 +115,6 @@ export default function useAndroidBackButton() {
           const currentPath = currentLocation?.pathname || "";
           const currentRouteKey = buildRouteKey(currentLocation);
           const currentStack = stackRef.current || [];
-          const historyIndex =
-            typeof window !== "undefined" ? window.history.state?.idx ?? 0 : 0;
-          const canGoBack = currentStack.length > 1 || historyIndex > 0;
 
           const overlayHandled =
             overlayCloseRef.current?.() || tryCloseOverlay();
@@ -159,12 +156,11 @@ export default function useAndroidBackButton() {
             return;
           }
 
-          if (canGoBack) {
+          if (currentStack.length > 1) {
             if (debugEnabledRef.current) {
               console.debug("[android-back] navigate back", {
                 route: currentPath,
                 stackLength: currentStack.length,
-                historyIndex,
                 action: "navigate-back",
               });
             }
