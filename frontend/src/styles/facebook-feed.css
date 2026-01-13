@@ -4,9 +4,12 @@
    WRAPPER GLOBAL DU FEED
 ================================ */
 .fb-feed-scroll {
-  height: 100%;
+  height: calc(var(--app-height) - var(--fb-header-height) - var(--fb-bottom-offset));
+  min-height: calc(var(--app-height) - var(--fb-header-height) - var(--fb-bottom-offset));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  background: var(--fb-bg-app);
 }
 
 .fb-feed {
