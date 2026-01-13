@@ -25,28 +25,36 @@ const computeNextStack = ({
 }) => {
   const lastEntry = currentStack[currentStack.length - 1];
 
-  if (routeKey === lastEntry) {
-    return currentStack;
-  }
-
-  if (navigationType === "POP") {
-    const popped = currentStack.length > 1
-      ? currentStack.slice(0, -1)
-      : currentStack;
-    const lastAfterPop = popped[popped.length - 1];
-
-    if (lastAfterPop === routeKey) {
-      return popped;
+  if (navigationType === "PUSH") {
+    if (routeKey === lastEntry) {
+      return currentStack;
     }
-
-    return [...popped, routeKey];
+    return [...currentStack, routeKey];
   }
 
   if (navigationType === "REPLACE") {
-    const base = currentStack.length > 0
-      ? currentStack.slice(0, -1)
-      : [];
+    if (currentStack.length === 0) {
+      return [routeKey];
+    }
+    const base = currentStack.slice(0, -1);
     return [...base, routeKey];
+  }
+
+  if (navigationType === "POP") {
+    if (routeKey === lastEntry) {
+      return currentStack;
+    }
+
+    const existingIndex = currentStack.lastIndexOf(routeKey);
+    if (existingIndex >= 0) {
+      return currentStack.slice(0, existingIndex + 1);
+    }
+
+    return [...currentStack, routeKey];
+  }
+
+  if (routeKey === lastEntry) {
+    return currentStack;
   }
 
   return [...currentStack, routeKey];
