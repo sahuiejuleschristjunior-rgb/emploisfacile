@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_CITY_OPTIONS = ["Abidjan", "Cocody", "Plateau"];
 const DEFAULT_MODE_OPTIONS = ["Remote", "Hybride", "Présentiel"];
@@ -17,6 +17,57 @@ export default function useJobSearch(options = {}) {
   const token = localStorage.getItem("token");
   const API_URL = import.meta.env.VITE_API_URL;
   const searchAbortRef = useRef(null);
+
+  const executeSearch = useCallback(
+    async ({ signal, shouldSetLoading = true } = {}) => {
+      if (shouldSetLoading) {
+        setLoading(true);
+      }
+      setError(null);
+
+      try {
+        const params = new URLSearchParams();
+
+        if (searchQuery.trim()) params.append("q", searchQuery.trim());
+        if (cityFilter.trim()) params.append("city", cityFilter.trim());
+        if (contractFilter.trim()) params.append("contract", contractFilter.trim());
+        if (modeFilter.trim()) params.append("mode", modeFilter.trim());
+
+        const queryString = params.toString();
+        const url = `${API_URL}/jobs/search${queryString ? `?${queryString}` : ""}`;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const res = await fetch(url, {
+          headers,
+          signal,
+        });
+
+        if (!res.ok) throw new Error("Échec de la récupération des offres.");
+
+        const data = await res.json();
+        let jobList = [];
+
+        if (Array.isArray(data?.data)) jobList = data.data;
+        else if (Array.isArray(data?.jobs)) jobList = data.jobs;
+        else if (Array.isArray(data)) jobList = data;
+
+        if (!signal?.aborted) {
+          setJobs(jobList);
+        }
+      } catch (err) {
+        if (err.name === "AbortError") return;
+
+        console.error("JOB FEED ERROR:", err);
+        setError(err.message || "Erreur lors de la récupération des offres.");
+        setJobs([]);
+      } finally {
+        if (!signal?.aborted && shouldSetLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    [API_URL, token, searchQuery, cityFilter, contractFilter, modeFilter],
+  );
 
   const collectOptions = (items) => {
     const uniq = Array.from(new Set(items.map((value) => value?.trim()).filter(Boolean)));
@@ -41,57 +92,15 @@ export default function useJobSearch(options = {}) {
     const controller = new AbortController();
     searchAbortRef.current = controller;
 
-    const timeoutId = setTimeout(async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const params = new URLSearchParams();
-
-        if (searchQuery.trim()) params.append("q", searchQuery.trim());
-        if (cityFilter.trim()) params.append("city", cityFilter.trim());
-        if (contractFilter.trim()) params.append("contract", contractFilter.trim());
-        if (modeFilter.trim()) params.append("mode", modeFilter.trim());
-
-        const queryString = params.toString();
-        const url = `${API_URL}/jobs/search${queryString ? `?${queryString}` : ""}`;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-        const res = await fetch(url, {
-          headers,
-          signal: controller.signal,
-        });
-
-        if (!res.ok) throw new Error("Échec de la récupération des offres.");
-
-        const data = await res.json();
-        let jobList = [];
-
-        if (Array.isArray(data?.data)) jobList = data.data;
-        else if (Array.isArray(data?.jobs)) jobList = data.jobs;
-        else if (Array.isArray(data)) jobList = data;
-
-        if (!controller.signal.aborted) {
-          setJobs(jobList);
-        }
-      } catch (err) {
-        if (err.name === "AbortError") return;
-
-        console.error("JOB FEED ERROR:", err);
-        setError(err.message || "Erreur lors de la récupération des offres.");
-        setJobs([]);
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
+    const timeoutId = setTimeout(() => {
+      executeSearch({ signal: controller.signal });
     }, 400);
 
     return () => {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [API_URL, token, searchQuery, cityFilter, contractFilter, modeFilter, enabled]);
+  }, [executeSearch, searchQuery, cityFilter, contractFilter, modeFilter, enabled]);
 
   const cityOptions = useMemo(() => {
     const values = collectOptions(jobs.map((job) => job.location || job.city));
@@ -115,6 +124,16 @@ export default function useJobSearch(options = {}) {
     setModeFilter("");
   };
 
+  const refreshJobs = useCallback(() => {
+    if (!enabled) return Promise.resolve();
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    return executeSearch({ signal: controller.signal });
+  }, [executeSearch, enabled]);
+
   return {
     jobs,
     loading,
@@ -131,5 +150,6 @@ export default function useJobSearch(options = {}) {
     contractOptions,
     modeOptions,
     handleReset,
+    refreshJobs,
   };
 }

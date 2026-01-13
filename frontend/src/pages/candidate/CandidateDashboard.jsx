@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CandidateLayout from "../../layouts/CandidateLayout";
 import FacebookLayout from "../FacebookLayout";
@@ -13,6 +13,10 @@ import {
 export default function CandidateDashboard() {
   const nav = useNavigate();
   const data = useCandidateDashboardData();
+
+  const handleRefresh = useCallback(async () => {
+    await data.refreshDashboard();
+  }, [data]);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -116,6 +120,7 @@ export default function CandidateDashboard() {
         user={data.user}
         onLogout={logout}
         shellClassName="page--dashboard"
+        onRefresh={handleRefresh}
       >
         <section className="hero" id="recent">
         <div className="hero__info">

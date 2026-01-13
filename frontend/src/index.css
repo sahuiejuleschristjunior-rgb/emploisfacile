@@ -41,6 +41,15 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+.pull-to-refresh-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  font-size: 13px;
+  color: #b0b3b8;
+}
+
 img, video {
   max-width: 100%;
   display: block;
