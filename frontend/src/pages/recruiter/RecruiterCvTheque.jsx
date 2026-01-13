@@ -14,7 +14,7 @@ const recruiterMenu = [
   { key: "cv-theque", label: "CV thèque", path: "/recruiter/cv-theque" },
   { key: "messages", label: "Messages", path: "/recruiter/messages" },
   { key: "profil", label: "Entreprise", path: "/profil" },
-  { key: "settings", label: "Paramètres", path: "/settings" },
+  { key: "settings", label: "Paramètres", path: "/fb/settings" },
 ];
 
 const buildProfile = (candidate = {}) => {

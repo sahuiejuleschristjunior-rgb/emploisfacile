@@ -19,6 +19,7 @@ import {
 } from "../api/socialApi";
 import { getMyPages } from "../api/pagesApi";
 import { useNotifications } from "../context/NotificationContext";
+import { useNavigationStack } from "../navigation/NavigationStackProvider";
 
 export default function FacebookLayout({ headerOnly = false, fullWidth = false, children }) {
   const location = useLocation();
@@ -127,6 +128,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     jobs: [],
     pages: [],
   });
+  const { setOverlayCloseHandler } = useNavigationStack();
 
   const [relationStatuses, setRelationStatuses] = useState({});
   const resolveMessageType = useCallback((message) => {
@@ -194,6 +196,72 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
     setIsDropdownOpen(false);
     setProfileSwitcherOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!setOverlayCloseHandler) return undefined;
+
+    const hasOverlay =
+      showMobileMenu ||
+      showMobileSearch ||
+      showJobsMenu ||
+      showDashboardMenu ||
+      isDropdownOpen ||
+      profileSwitcherOpen;
+
+    if (!hasOverlay) {
+      setOverlayCloseHandler(null);
+      return undefined;
+    }
+
+    const handler = () => {
+      let closed = false;
+
+      if (showMobileMenu) {
+        setShowMobileMenu(false);
+        closed = true;
+      }
+
+      if (showMobileSearch) {
+        setShowMobileSearch(false);
+        setSearchOpen(false);
+        closed = true;
+      }
+
+      if (showJobsMenu) {
+        setShowJobsMenu(false);
+        closed = true;
+      }
+
+      if (showDashboardMenu) {
+        setShowDashboardMenu(false);
+        closed = true;
+      }
+
+      if (isDropdownOpen) {
+        setIsDropdownOpen(false);
+        closed = true;
+      }
+
+      if (profileSwitcherOpen) {
+        setProfileSwitcherOpen(false);
+        closed = true;
+      }
+
+      return closed;
+    };
+
+    setOverlayCloseHandler(() => handler);
+
+    return () => setOverlayCloseHandler(null);
+  }, [
+    setOverlayCloseHandler,
+    showMobileMenu,
+    showMobileSearch,
+    showJobsMenu,
+    showDashboardMenu,
+    isDropdownOpen,
+    profileSwitcherOpen,
+  ]);
 
   useEffect(() => {
     if (!headerOnly) return;
@@ -1870,7 +1938,7 @@ export default function FacebookLayout({ headerOnly = false, fullWidth = false, 
             <button
               type="button"
               className="fs-item"
-              onClick={() => safeNavigate("/settings")}
+              onClick={() => safeNavigate("/fb/settings")}
             >
               <FBIcon name="settings" size={22} />
               <span>Paramètres</span>
