@@ -33,6 +33,8 @@ const DASHBOARD_PATHS = [
   "/jobconnect/dashboard",
 ];
 
+const EXIT_PATHS = [HOME_PATH, "/fb", "/fb/"];
+
 const buildRouteKey = (location) =>
   `${location?.pathname ?? ""}${location?.search ?? ""}${location?.hash ?? ""}`;
 
@@ -150,7 +152,7 @@ export default function useAndroidBackButton() {
             return;
           }
 
-          if (currentPath === HOME_PATH) {
+          if (EXIT_PATHS.includes(currentPath)) {
             const now = Date.now();
             const elapsed = now - lastExitAttemptRef.current;
             if (elapsed < 2000) {
