@@ -435,7 +435,9 @@ export default function Messages() {
       document.body.appendChild(textarea);
       textarea.select();
       const success = document.execCommand("copy");
-      document.body.removeChild(textarea);
+      if (textarea.parentNode) {
+        textarea.parentNode.removeChild(textarea);
+      }
       return success;
     } catch (err) {
       console.error("Échec de la copie via fallback", err);
